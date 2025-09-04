@@ -18,32 +18,78 @@
                             <label for="player_id" class="form-label">
                                 <i class="fas fa-user me-1"></i>Select Player *
                             </label>
-                            <select class="form-select" id="player_id" name="player_id" required>
+                            <select class="form-select" id="player_id" name="player_id" required onchange="updatePlayerInfo()">
                                 <option value="">Choose a registered player</option>
                                 {% for player in players %}
-                                    <option value="{{ player.id }}">{{ player.full_name }} ({{ player.email }})</option>
+                                    <option value="{{ player.id }}" data-skill="{{ player.skill_level }}" data-sport="{{ player.preferred_sport }}">
+                                        {{ player.full_name }} ({{ player.skill_level }} - {{ player.preferred_sport }})
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="tournament_name" class="form-label">
-                                <i class="fas fa-trophy me-1"></i>Tournament Name *
+                            <label for="sport" class="form-label">
+                                <i class="fas fa-futbol me-1"></i>Sport *
                             </label>
-                            <input type="text" class="form-control" id="tournament_name" name="tournament_name" 
-                                   placeholder="Enter tournament name" required>
+                            <select class="form-select" id="sport" name="sport" required>
+                                <option value="">Select sport</option>
+                                <option value="Tennis">Tennis</option>
+                                <option value="Basketball">Basketball</option>
+                                <option value="Badminton">Badminton</option>
+                                <option value="Table Tennis">Table Tennis</option>
+                                <option value="Squash">Squash</option>
+                                <option value="Pickleball">Pickleball</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-trophy me-1"></i>Tournament Level *
+                            </label>
+                            <div class="row">
+                                {% for level_key, level_info in tournament_levels.items() %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card tournament-card" onclick="selectTournament('{{ level_key }}')">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <input type="radio" name="tournament_level" value="{{ level_key }}" id="level_{{ level_key }}" class="form-check-input">
+                                                    <label for="level_{{ level_key }}" class="form-check-label fw-bold ms-2">
+                                                        {{ level_info.name }}
+                                                    </label>
+                                                </div>
+                                                <span class="badge bg-primary fs-6">${{ "%.0f"|format(level_info.entry_fee) }}</span>
+                                            </div>
+                                            <p class="card-text small mb-2">{{ level_info.description }}</p>
+                                            <p class="card-text small text-muted mb-1">
+                                                <i class="fas fa-trophy me-1"></i>{{ level_info.prize_pool }}
+                                            </p>
+                                            <p class="card-text small text-muted mb-0">
+                                                <i class="fas fa-star me-1"></i>{{ level_info.skill_requirements }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
                         
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Important:</strong> Once entered, players have 7 days to complete their matches. 
-                            The match deadline will be automatically calculated.
+                            <strong>Tournament Rules:</strong> 
+                            <ul class="mb-0 mt-2">
+                                <li>Tournaments run for 2 weeks from entry date</li>
+                                <li>Players are matched based on skill level</li>
+                                <li>Entry fees contribute to prize pools</li>
+                                <li>Brackets are generated automatically</li>
+                            </ul>
                         </div>
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">Cancel</a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-plus me-1"></i>Enter Tournament
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-credit-card me-1"></i>Enter Tournament
                             </button>
                         </div>
                     </form>
@@ -61,4 +107,74 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectTournament(level) {
+    document.getElementById('level_' + level).checked = true;
+    
+    // Remove active class from all cards
+    document.querySelectorAll('.tournament-card').forEach(card => {
+        card.classList.remove('border-primary', 'bg-light');
+    });
+    
+    // Add active class to selected card
+    event.currentTarget.classList.add('border-primary', 'bg-light');
+}
+
+function updatePlayerInfo() {
+    const select = document.getElementById('player_id');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (selectedOption.value) {
+        const sport = selectedOption.getAttribute('data-sport');
+        const skill = selectedOption.getAttribute('data-skill');
+        
+        // Auto-select the player's preferred sport
+        if (sport) {
+            document.getElementById('sport').value = sport;
+        }
+        
+        // Highlight recommended tournament level based on skill
+        const skillMapping = {
+            'Beginner': 'Beginner',
+            'Intermediate': 'Intermediate',
+            'Advanced': 'Advanced',
+            'Professional': 'Professional'
+        };
+        
+        const recommendedLevel = skillMapping[skill];
+        if (recommendedLevel) {
+            // Add recommendation styling
+            document.querySelectorAll('.tournament-card').forEach(card => {
+                card.classList.remove('border-success');
+            });
+            
+            const recommendedCard = document.querySelector(`input[value="${recommendedLevel}"]`).closest('.tournament-card');
+            if (recommendedCard) {
+                recommendedCard.classList.add('border-success');
+            }
+        }
+    }
+}
+
+// Add styling for interactive cards
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.tournament-card').forEach(card => {
+        card.style.cursor = 'pointer';
+        card.style.transition = 'all 0.2s ease';
+        
+        card.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('border-primary')) {
+                this.classList.add('border-secondary');
+            }
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.classList.remove('border-secondary');
+        });
+    });
+});
+</script>
 {% endblock %}

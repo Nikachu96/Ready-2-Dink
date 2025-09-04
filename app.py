@@ -38,8 +38,8 @@ def init_db():
             dob TEXT NOT NULL,
             location1 TEXT NOT NULL,
             location2 TEXT,
-            preferred_sport TEXT NOT NULL,
-            preferred_court TEXT NOT NULL,
+            preferred_sport TEXT,
+            preferred_court TEXT,
             skill_level TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             selfie TEXT,
@@ -47,6 +47,22 @@ def init_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
+    # Add new columns if they don't exist (for existing databases)
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN preferred_sport TEXT')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN preferred_court TEXT')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN is_looking_for_match INTEGER DEFAULT 1')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
     
     # Matches table
     c.execute('''
@@ -69,20 +85,51 @@ def init_db():
         )
     ''')
     
-    # Keep tournaments table for backward compatibility
+    # Enhanced tournaments table with levels and fees
     c.execute('''
         CREATE TABLE IF NOT EXISTS tournaments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             player_id INTEGER NOT NULL,
             tournament_name TEXT NOT NULL,
+            tournament_level TEXT,
+            entry_fee REAL,
+            sport TEXT,
             entry_date TEXT NOT NULL,
             match_deadline TEXT NOT NULL,
             completed INTEGER DEFAULT 0,
             match_result TEXT,
+            payment_status TEXT DEFAULT 'pending',
+            bracket_position INTEGER,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(player_id) REFERENCES players(id)
         )
     ''')
+    
+    # Add new columns to tournaments if they don't exist
+    try:
+        c.execute('ALTER TABLE tournaments ADD COLUMN tournament_level TEXT')
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        c.execute('ALTER TABLE tournaments ADD COLUMN entry_fee REAL')
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        c.execute('ALTER TABLE tournaments ADD COLUMN sport TEXT')
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        c.execute('ALTER TABLE tournaments ADD COLUMN payment_status TEXT DEFAULT "pending"')
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        c.execute('ALTER TABLE tournaments ADD COLUMN bracket_position INTEGER')
+    except sqlite3.OperationalError:
+        pass
     
     conn.commit()
     conn.close()
@@ -92,6 +139,39 @@ def get_db_connection():
     conn = sqlite3.connect('app.db')
     conn.row_factory = sqlite3.Row
     return conn
+
+def get_tournament_levels():
+    """Get available tournament levels with pricing"""
+    return {
+        'Beginner': {
+            'name': 'Beginner League',
+            'description': 'Perfect for new players and casual competition',
+            'entry_fee': 5.00,
+            'prize_pool': 'Winner takes 60%',
+            'skill_requirements': 'Beginner level players'
+        },
+        'Intermediate': {
+            'name': 'Intermediate Championship',
+            'description': 'For players with solid fundamentals',
+            'entry_fee': 15.00,
+            'prize_pool': 'Winner takes 50%, Runner-up 30%',
+            'skill_requirements': 'Intermediate level players'
+        },
+        'Advanced': {
+            'name': 'Advanced Tournament',
+            'description': 'High-level competitive play',
+            'entry_fee': 35.00,
+            'prize_pool': 'Winner takes 40%, Top 4 share prizes',
+            'skill_requirements': 'Advanced level players'
+        },
+        'Professional': {
+            'name': 'Pro Circuit',
+            'description': 'Elite competition for the best players',
+            'entry_fee': 75.00,
+            'prize_pool': 'Winner takes 35%, Top 8 share prizes',
+            'skill_requirements': 'Professional level players'
+        }
+    }
 
 def find_match_for_player(player_id):
     """Find and create a match for a player based on skill, sport, and location"""
@@ -230,37 +310,66 @@ def register():
 
 @app.route('/tournament', methods=['GET', 'POST'])
 def tournament():
-    """Tournament entry form"""
+    """Tournament entry form with levels and fees"""
     if request.method == 'POST':
-        if not request.form.get('player_id') or not request.form.get('tournament_name'):
-            flash('Player and tournament name are required', 'danger')
-            return redirect(url_for('tournament'))
+        required_fields = ['player_id', 'tournament_level', 'sport']
+        for field in required_fields:
+            if not request.form.get(field):
+                flash(f'{field.replace("_", " ").title()} is required', 'danger')
+                return redirect(url_for('tournament'))
         
         try:
             conn = get_db_connection()
+            
+            # Get player info to verify skill level match
+            player = conn.execute('SELECT * FROM players WHERE id = ?', (request.form['player_id'],)).fetchone()
+            tournament_levels = get_tournament_levels()
+            selected_level = request.form['tournament_level']
+            
+            # Check if player skill matches tournament level (with some flexibility)
+            skill_mapping = {
+                'Beginner': ['Beginner'],
+                'Intermediate': ['Beginner', 'Intermediate'], 
+                'Advanced': ['Intermediate', 'Advanced'],
+                'Professional': ['Advanced', 'Professional']
+            }
+            
+            if player['skill_level'] not in skill_mapping.get(selected_level, []):
+                flash(f'Your skill level ({player["skill_level"]}) may not be suitable for {selected_level} level. Consider a different tournament level.', 'warning')
+                return redirect(url_for('tournament'))
+            
             entry_date = datetime.now()
-            match_deadline = entry_date + timedelta(days=7)
+            match_deadline = entry_date + timedelta(days=14)  # 2 weeks for tournaments
             
             conn.execute('''
-                INSERT INTO tournaments (player_id, tournament_name, entry_date, match_deadline)
-                VALUES (?, ?, ?, ?)
-            ''', (request.form['player_id'], request.form['tournament_name'], 
-                  entry_date.strftime('%Y-%m-%d'), match_deadline.strftime('%Y-%m-%d')))
+                INSERT INTO tournaments (player_id, tournament_name, tournament_level, entry_fee, sport, entry_date, match_deadline, payment_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (request.form['player_id'], 
+                  tournament_levels[selected_level]['name'],
+                  selected_level,
+                  tournament_levels[selected_level]['entry_fee'],
+                  request.form['sport'],
+                  entry_date.strftime('%Y-%m-%d'), 
+                  match_deadline.strftime('%Y-%m-%d'),
+                  'completed'))  # Skip payment for now
+            
             conn.commit()
             conn.close()
             
-            flash('Tournament entry successful!', 'success')
-            return redirect(url_for('index'))
+            flash(f'Tournament entry successful! Entry fee: ${tournament_levels[selected_level]["entry_fee"]}', 'success')
+            return redirect(url_for('dashboard', player_id=request.form['player_id']))
             
         except Exception as e:
             flash(f'Tournament entry failed: {str(e)}', 'danger')
     
     # Get all players for dropdown
     conn = get_db_connection()
-    players = conn.execute('SELECT id, full_name, email FROM players ORDER BY full_name').fetchall()
+    players = conn.execute('SELECT id, full_name, email, skill_level, COALESCE(preferred_sport, "Tennis") as preferred_sport FROM players ORDER BY full_name').fetchall()
     conn.close()
     
-    return render_template('tournament.html', players=players)
+    tournament_levels = get_tournament_levels()
+    
+    return render_template('tournament.html', players=players, tournament_levels=tournament_levels)
 
 @app.route('/dashboard/<int:player_id>')
 def dashboard(player_id):
