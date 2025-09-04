@@ -32,6 +32,9 @@
                             </span>
                             <span class="badge bg-warning text-dark">
                                 <i class="fas fa-trophy me-1"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
+                                {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                    {% for i in range(player.tournament_wins) %}⭐{% endfor %}
+                                {% endif %}
                             </span>
                         </p>
                     </div>
@@ -151,7 +154,12 @@
                         <div class="flex-grow-1">
                             <h6 class="mb-1">
                                 {{ connection.opponent_name }}
-                                <span class="badge bg-secondary ms-2">{{ connection.opponent_wins or 0 }}W-{{ connection.opponent_losses or 0 }}L</span>
+                                <span class="badge bg-secondary ms-2">
+                                    {{ connection.opponent_wins or 0 }}W-{{ connection.opponent_losses or 0 }}L
+                                    {% if connection.opponent_tournament_wins and connection.opponent_tournament_wins > 0 %}
+                                        {% for i in range(connection.opponent_tournament_wins) %}⭐{% endfor %}
+                                    {% endif %}
+                                </span>
                             </h6>
                             <small class="text-muted">
                                 {{ connection.matches_played }} match{{ 'es' if connection.matches_played > 1 else '' }} played

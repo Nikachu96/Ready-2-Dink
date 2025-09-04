@@ -73,6 +73,11 @@ def init_db():
         c.execute('ALTER TABLE players ADD COLUMN losses INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
         pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN tournament_wins INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
     
     # Matches table
     c.execute('''
@@ -313,16 +318,20 @@ def player_home(player_id):
                 WHEN m.player1_id = ? THEN p2.losses
                 ELSE p1.losses 
             END as opponent_losses,
+            CASE 
+                WHEN m.player1_id = ? THEN p2.tournament_wins
+                ELSE p1.tournament_wins 
+            END as opponent_tournament_wins,
             COUNT(*) as matches_played,
             MAX(m.created_at) as last_played
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
         WHERE m.player1_id = ? OR m.player2_id = ?
-        GROUP BY opponent_id, opponent_name, opponent_selfie, opponent_wins, opponent_losses
+        GROUP BY opponent_id, opponent_name, opponent_selfie, opponent_wins, opponent_losses, opponent_tournament_wins
         ORDER BY last_played DESC
         LIMIT 10
-    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
     
     # Get recent activity
     recent_matches = conn.execute('''
@@ -605,15 +614,39 @@ def complete_tournament(tournament_id):
     
     try:
         conn = get_db_connection()
-        conn.execute('''
-            UPDATE tournaments 
-            SET completed = 1, match_result = ?
-            WHERE id = ?
-        ''', (result, tournament_id))
+        
+        # Get tournament info to identify the winner
+        tournament = conn.execute('''
+            SELECT player_id FROM tournaments WHERE id = ?
+        ''', (tournament_id,)).fetchone()
+        
+        if tournament:
+            # Update tournament as completed
+            conn.execute('''
+                UPDATE tournaments 
+                SET completed = 1, match_result = ?
+                WHERE id = ?
+            ''', (result, tournament_id))
+            
+            # Award tournament win if the result indicates a win
+            if result and ("won" in result.lower() or "champion" in result.lower() or "1st" in result.lower() or "first" in result.lower()):
+                conn.execute('''
+                    UPDATE players SET tournament_wins = tournament_wins + 1
+                    WHERE id = ?
+                ''', (tournament['player_id'],))
+                flash('Tournament completed and win awarded!', 'success')
+            else:
+                flash('Tournament marked as completed', 'success')
+        else:
+            conn.execute('''
+                UPDATE tournaments 
+                SET completed = 1, match_result = ?
+                WHERE id = ?
+            ''', (result, tournament_id))
+            flash('Tournament marked as completed', 'success')
+            
         conn.commit()
         conn.close()
-        
-        flash('Tournament marked as completed', 'success')
     except Exception as e:
         flash(f'Error updating tournament: {str(e)}', 'danger')
     
