@@ -167,10 +167,29 @@ def init_db():
     ''')
     
     # Enhanced tournaments table with levels and fees
+    # Create tournament instances table (defines individual tournaments)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS tournament_instances (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            skill_level TEXT NOT NULL,
+            entry_fee REAL NOT NULL,
+            max_players INTEGER DEFAULT 32,
+            current_players INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'open',
+            start_date TEXT,
+            end_date TEXT,
+            winner_id INTEGER,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(winner_id) REFERENCES players(id)
+        )
+    ''')
+
     c.execute('''
         CREATE TABLE IF NOT EXISTS tournaments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             player_id INTEGER NOT NULL,
+            tournament_instance_id INTEGER NOT NULL,
             tournament_name TEXT NOT NULL,
             tournament_level TEXT,
             tournament_type TEXT DEFAULT 'singles',
@@ -183,7 +202,8 @@ def init_db():
             payment_status TEXT DEFAULT 'pending',
             bracket_position INTEGER,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(player_id) REFERENCES players(id)
+            FOREIGN KEY(player_id) REFERENCES players(id),
+            FOREIGN KEY(tournament_instance_id) REFERENCES tournament_instances(id)
         )
     ''')
     
@@ -470,26 +490,28 @@ def player_home(player_id):
     tournament_levels = get_tournament_levels()
     available_tournaments = []
     
-    for level_key, level_info in tournament_levels.items():
-        # Count current entries
-        current_entries = conn.execute('''
-            SELECT COUNT(*) as count FROM tournaments 
-            WHERE tournament_level = ? AND completed = 0
-        ''', (level_key,)).fetchone()['count']
+    # Get all open tournament instances instead of grouping by level
+    open_tournaments = conn.execute('''
+        SELECT * FROM tournament_instances 
+        WHERE status = 'open' AND current_players < max_players
+        ORDER BY skill_level, created_at
+    ''').fetchall()
+    
+    for tournament in open_tournaments:
+        spots_remaining = tournament['max_players'] - tournament['current_players']
+        level_info = tournament_levels.get(tournament['skill_level'], {})
         
-        spots_remaining = level_info['max_players'] - current_entries
-        
-        if spots_remaining > 0:  # Only show tournaments with available spots
-            available_tournaments.append({
-                'level': level_key,
-                'name': level_info['name'],
-                'description': level_info['description'],
-                'entry_fee': level_info['entry_fee'],
-                'current_entries': current_entries,
-                'max_players': level_info['max_players'],
-                'spots_remaining': spots_remaining,
-                'prize_pool': level_info['prize_pool']
-            })
+        available_tournaments.append({
+            'id': tournament['id'],
+            'level': tournament['skill_level'],
+            'name': tournament['name'],
+            'description': level_info.get('description', 'Tournament'),
+            'entry_fee': tournament['entry_fee'],
+            'current_entries': tournament['current_players'],
+            'max_players': tournament['max_players'],
+            'spots_remaining': spots_remaining,
+            'prize_pool': f"1st: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.5:.0f} • 2nd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.3:.0f} • 3rd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.12:.0f} • 4th: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.08:.0f}"
+        })
     
     conn.close()
     
@@ -610,25 +632,41 @@ def tournament_entry(player_id):
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        required_fields = ['tournament_level', 'tournament_type', 'sport']
+        required_fields = ['tournament_instance_id', 'tournament_type', 'sport']
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
                 return redirect(url_for('tournament_entry', player_id=player_id))
         
         try:
-            tournament_levels = get_tournament_levels()
-            selected_level = request.form['tournament_level']
+            # Get tournament instance ID from form
+            tournament_instance_id = request.form.get('tournament_instance_id')
+            if not tournament_instance_id:
+                flash('Please select a specific tournament to join.', 'danger')
+                return redirect(url_for('tournament_entry', player_id=player_id))
+                
+            # Get tournament instance details
+            tournament_instance = conn.execute('''
+                SELECT * FROM tournament_instances WHERE id = ? AND status = 'open'
+            ''', (tournament_instance_id,)).fetchone()
             
-            # Check current tournament entries for this level to enforce player limits
-            current_entries = conn.execute('''
+            if not tournament_instance:
+                flash('Tournament not found or no longer accepting registrations.', 'danger')
+                return redirect(url_for('tournament_entry', player_id=player_id))
+            
+            # Check if tournament is full
+            if tournament_instance['current_players'] >= tournament_instance['max_players']:
+                flash(f'This tournament is full ({tournament_instance["max_players"]} players max).', 'warning')
+                return redirect(url_for('tournament_entry', player_id=player_id))
+            
+            # Check if player already entered THIS specific tournament (allow multiple tournaments)
+            existing_entry = conn.execute('''
                 SELECT COUNT(*) as count FROM tournaments 
-                WHERE tournament_level = ? AND completed = 0
-            ''', (selected_level,)).fetchone()['count']
+                WHERE player_id = ? AND tournament_instance_id = ?
+            ''', (player_id, tournament_instance_id)).fetchone()['count']
             
-            max_players = tournament_levels[selected_level]['max_players']
-            if current_entries >= max_players:
-                flash(f'{selected_level} tournament is full ({max_players} players max). Try a different level.', 'warning')
+            if existing_entry > 0:
+                flash('You are already registered for this tournament.', 'warning')
                 return redirect(url_for('tournament_entry', player_id=player_id))
             
             # Check if player skill matches tournament level (with some flexibility)
@@ -638,21 +676,24 @@ def tournament_entry(player_id):
                 'Advanced': ['Intermediate', 'Advanced']
             }
             
-            if player['skill_level'] not in skill_mapping.get(selected_level, []):
-                flash(f'Your skill level ({player["skill_level"]}) may not be suitable for {selected_level} level. Consider a different tournament level.', 'warning')
-                return redirect(url_for('tournament'))
+            tournament_skill = tournament_instance['skill_level']
+            if player['skill_level'] not in skill_mapping.get(tournament_skill, []):
+                flash(f'Your skill level ({player["skill_level"]}) may not be suitable for {tournament_skill} level. Consider a different tournament.', 'warning')
+                return redirect(url_for('tournament_entry', player_id=player_id))
             
             entry_date = datetime.now()
             match_deadline = entry_date + timedelta(days=14)  # 2 weeks for tournaments
             
+            # Insert tournament entry
             conn.execute('''
-                INSERT INTO tournaments (player_id, tournament_name, tournament_level, tournament_type, entry_fee, sport, entry_date, match_deadline, payment_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tournaments (player_id, tournament_instance_id, tournament_name, tournament_level, tournament_type, entry_fee, sport, entry_date, match_deadline, payment_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (player_id, 
-                  tournament_levels[selected_level]['name'],
-                  selected_level,
+                  tournament_instance_id,
+                  tournament_instance['name'],
+                  tournament_instance['skill_level'],
                   request.form['tournament_type'],
-                  tournament_levels[selected_level]['entry_fee'],
+                  tournament_instance['entry_fee'],
                   request.form['sport'],
                   entry_date.strftime('%Y-%m-%d'), 
                   match_deadline.strftime('%Y-%m-%d'),
@@ -661,25 +702,41 @@ def tournament_entry(player_id):
             conn.commit()
             conn.close()
             
-            flash(f'Tournament entry successful! Entry fee: ${tournament_levels[selected_level]["entry_fee"]:.0f}', 'success')
+            flash(f'Tournament entry successful! Entry fee: ${tournament_instance["entry_fee"]:.0f}', 'success')
             return redirect(url_for('dashboard', player_id=player_id))
             
         except Exception as e:
             flash(f'Tournament entry failed: {str(e)}', 'danger')
     
-    # Get current tournament entries count for each level
-    tournament_levels = get_tournament_levels()
-    for level_key in tournament_levels:
-        count = conn.execute('''
-            SELECT COUNT(*) as count FROM tournaments 
-            WHERE tournament_level = ? AND completed = 0
-        ''', (level_key,)).fetchone()['count']
-        tournament_levels[level_key]['current_entries'] = count
-        tournament_levels[level_key]['spots_remaining'] = tournament_levels[level_key]['max_players'] - count
+    # Get all available tournament instances
+    available_tournaments = conn.execute('''
+        SELECT * FROM tournament_instances 
+        WHERE status = 'open' AND current_players < max_players
+        ORDER BY skill_level, created_at
+    ''').fetchall()
     
+    tournament_levels = get_tournament_levels()
+    tournaments_list = []
+    
+    for tournament in available_tournaments:
+        spots_remaining = tournament['max_players'] - tournament['current_players']
+        level_info = tournament_levels.get(tournament['skill_level'], {})
+        
+        tournaments_list.append({
+            'id': tournament['id'],
+            'name': tournament['name'],
+            'skill_level': tournament['skill_level'],
+            'entry_fee': tournament['entry_fee'],
+            'current_players': tournament['current_players'],
+            'max_players': tournament['max_players'],
+            'spots_remaining': spots_remaining,
+            'description': level_info.get('description', 'Tournament'),
+            'prize_pool': f"1st: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.5:.0f} • 2nd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.3:.0f} • 3rd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.12:.0f} • 4th: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.08:.0f}"
+        })
+
     conn.close()
     
-    return render_template('tournament.html', player=player, tournament_levels=tournament_levels)
+    return render_template('tournament.html', player=player, tournaments_list=tournaments_list)
 
 @app.route('/dashboard/<int:player_id>')
 def dashboard(player_id):
@@ -1181,6 +1238,26 @@ def admin_required(f):
         
         return f(*args, **kwargs)
     return decorated_function
+
+@app.route('/create_tournament', methods=['POST'])
+@admin_required
+def create_tournament():
+    """Create a new tournament instance"""
+    name = request.form.get('name')
+    skill_level = request.form.get('skill_level')
+    entry_fee = float(request.form.get('entry_fee', 0))
+    max_players = int(request.form.get('max_players', 32))
+    
+    conn = get_db_connection()
+    conn.execute('''
+        INSERT INTO tournament_instances (name, skill_level, entry_fee, max_players)
+        VALUES (?, ?, ?, ?)
+    ''', (name, skill_level, entry_fee, max_players))
+    conn.commit()
+    conn.close()
+    
+    flash(f'Tournament "{name}" created successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin')
 @admin_required

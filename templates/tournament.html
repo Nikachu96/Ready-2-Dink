@@ -70,46 +70,55 @@
                         
                         <div class="mb-4">
                             <label class="form-label">
-                                <i class="fas fa-trophy me-1"></i>Tournament Level *
+                                <i class="fas fa-trophy me-1"></i>Available Tournaments *
                             </label>
-                            <div class="row">
-                                {% for level_key, level_info in tournament_levels.items() %}
-                                <div class="col-md-6 mb-3">
-                                    <div class="card tournament-card" onclick="selectTournament('{{ level_key }}')">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <div>
-                                                    <input type="radio" name="tournament_level" value="{{ level_key }}" id="level_{{ level_key }}" class="form-check-input" {% if level_info.spots_remaining <= 0 %}disabled{% endif %}>
-                                                    <label for="level_{{ level_key }}" class="form-check-label fw-bold ms-2">
-                                                        {{ level_info.name }}
-                                                    </label>
+                            {% if tournaments_list %}
+                                <div class="row">
+                                    {% for tournament in tournaments_list %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card tournament-card" onclick="selectTournament('{{ tournament.id }}')">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <div>
+                                                        <input type="radio" name="tournament_instance_id" value="{{ tournament.id }}" id="tournament_{{ tournament.id }}" class="form-check-input" {% if tournament.spots_remaining <= 0 %}disabled{% endif %}>
+                                                        <label for="tournament_{{ tournament.id }}" class="form-check-label fw-bold ms-2">
+                                                            {{ tournament.name }}
+                                                        </label>
+                                                    </div>
+                                                    <span class="badge bg-primary fs-6">${{ "%.0f"|format(tournament.entry_fee) }}</span>
                                                 </div>
-                                                <span class="badge bg-primary fs-6">${{ "%.0f"|format(level_info.entry_fee) }}</span>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-star me-1"></i>{{ tournament.skill_level }}
+                                                    </small>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-users me-1"></i>{{ tournament.current_players }}/{{ tournament.max_players }} players
+                                                    </small>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    {% if tournament.spots_remaining <= 0 %}
+                                                        <span class="badge bg-danger">Full</span>
+                                                    {% elif tournament.spots_remaining <= 5 %}
+                                                        <span class="badge bg-warning">{{ tournament.spots_remaining }} spots left</span>
+                                                    {% else %}
+                                                        <span class="badge bg-success">{{ tournament.spots_remaining }} spots left</span>
+                                                    {% endif %}
+                                                </div>
+                                                <p class="card-text small mb-2">{{ tournament.description }}</p>
+                                                <p class="card-text small text-muted mb-0">
+                                                    <i class="fas fa-trophy me-1"></i>{{ tournament.prize_pool }}
+                                                </p>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <small class="text-muted">
-                                                    <i class="fas fa-users me-1"></i>{{ level_info.current_entries }}/{{ level_info.max_players }} players
-                                                </small>
-                                                {% if level_info.spots_remaining <= 0 %}
-                                                    <span class="badge bg-danger">Full</span>
-                                                {% elif level_info.spots_remaining <= 5 %}
-                                                    <span class="badge bg-warning">{{ level_info.spots_remaining }} spots left</span>
-                                                {% else %}
-                                                    <span class="badge bg-success">{{ level_info.spots_remaining }} spots left</span>
-                                                {% endif %}
-                                            </div>
-                                            <p class="card-text small mb-2">{{ level_info.description }}</p>
-                                            <p class="card-text small text-muted mb-1">
-                                                <i class="fas fa-trophy me-1"></i>{{ level_info.prize_pool }}
-                                            </p>
-                                            <p class="card-text small text-muted mb-0">
-                                                <i class="fas fa-star me-1"></i>{{ level_info.skill_requirements }}
-                                            </p>
                                         </div>
                                     </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
-                            </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    No tournaments are currently open for registration. Check back later!
+                                </div>
+                            {% endif %}
                         </div>
                         
                         <div class="alert alert-info">
@@ -148,8 +157,8 @@
 
 {% block scripts %}
 <script>
-function selectTournament(level) {
-    document.getElementById('level_' + level).checked = true;
+function selectTournament(tournamentId) {
+    document.getElementById('tournament_' + tournamentId).checked = true;
     
     // Remove active class from all cards
     document.querySelectorAll('.tournament-card').forEach(card => {
