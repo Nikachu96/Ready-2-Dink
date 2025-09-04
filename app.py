@@ -490,11 +490,11 @@ def player_home(player_id):
     tournament_levels = get_tournament_levels()
     available_tournaments = []
     
-    # Get all open tournament instances instead of grouping by level
+    # Get all open tournament instances ordered by price (lowest to highest)
     open_tournaments = conn.execute('''
         SELECT * FROM tournament_instances 
         WHERE status = 'open' AND current_players < max_players
-        ORDER BY skill_level, created_at
+        ORDER BY entry_fee ASC, created_at
     ''').fetchall()
     
     for tournament in open_tournaments:
@@ -708,11 +708,11 @@ def tournament_entry(player_id):
         except Exception as e:
             flash(f'Tournament entry failed: {str(e)}', 'danger')
     
-    # Get all available tournament instances
+    # Get all available tournament instances ordered by price (lowest to highest)  
     available_tournaments = conn.execute('''
         SELECT * FROM tournament_instances 
         WHERE status = 'open' AND current_players < max_players
-        ORDER BY skill_level, created_at
+        ORDER BY entry_fee ASC, created_at
     ''').fetchall()
     
     tournament_levels = get_tournament_levels()
