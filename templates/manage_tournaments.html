@@ -49,8 +49,6 @@
                                 {% if tournament.completed %}
                                     <span class="badge bg-success">Completed</span>
                                 {% else %}
-                                    {% set deadline_date = tournament.match_deadline %}
-                                    {% set today_date = moment().format('YYYY-MM-DD') %}
                                     <span class="badge bg-warning">Active</span>
                                 {% endif %}
                             </td>
