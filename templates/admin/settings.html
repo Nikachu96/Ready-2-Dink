@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings - MatchSpark Admin{% endblock %}
+
+{% block content %}
+<div class="row animate-in">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">
+                    <i class="fas fa-cogs me-2"></i>System Settings
+                </h2>
+                <p class="text-muted mb-0">Configure tournament pricing and platform settings</p>
+            </div>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('update_settings') }}">
+                    
+                    <!-- Tournament Pricing -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h4 class="text-primary mb-3">
+                                <i class="fas fa-dollar-sign me-2"></i>Tournament Pricing
+                            </h4>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="beginner_price" class="form-label">
+                                <span class="badge bg-primary me-2">Beginner</span>Entry Fee ($)
+                            </label>
+                            <input type="number" step="0.01" class="form-control" id="beginner_price" name="beginner_price" 
+                                   value="{{ settings | selectattr('key', 'equalto', 'beginner_price') | map(attribute='value') | first or '10' }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="intermediate_price" class="form-label">
+                                <span class="badge bg-warning me-2">Intermediate</span>Entry Fee ($)
+                            </label>
+                            <input type="number" step="0.01" class="form-control" id="intermediate_price" name="intermediate_price" 
+                                   value="{{ settings | selectattr('key', 'equalto', 'intermediate_price') | map(attribute='value') | first or '20' }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="advanced_price" class="form-label">
+                                <span class="badge bg-success me-2">Advanced</span>Entry Fee ($)
+                            </label>
+                            <input type="number" step="0.01" class="form-control" id="advanced_price" name="advanced_price" 
+                                   value="{{ settings | selectattr('key', 'equalto', 'advanced_price') | map(attribute='value') | first or '40' }}" required>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- System Configuration -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h4 class="text-success mb-3">
+                                <i class="fas fa-cog me-2"></i>System Configuration
+                            </h4>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="platform_name" class="form-label">Platform Name</label>
+                            <input type="text" class="form-control" id="platform_name" name="platform_name" 
+                                   value="{{ settings | selectattr('key', 'equalto', 'platform_name') | map(attribute='value') | first or 'MatchSpark' }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="match_deadline_days" class="form-label">Match Completion Deadline (Days)</label>
+                            <input type="number" class="form-control" id="match_deadline_days" name="match_deadline_days" 
+                                   value="{{ settings | selectattr('key', 'equalto', 'match_deadline_days') | map(attribute='value') | first or '7' }}" required>
+                            <small class="text-muted">How many days players have to complete a match</small>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Feature Toggles -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h4 class="text-warning mb-3">
+                                <i class="fas fa-toggle-on me-2"></i>Feature Controls
+                            </h4>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="registration_enabled" class="form-label">Player Registration</label>
+                            <select class="form-select" id="registration_enabled" name="registration_enabled">
+                                <option value="1" {{ 'selected' if (settings | selectattr('key', 'equalto', 'registration_enabled') | map(attribute='value') | first or '1') == '1' }}>Enabled</option>
+                                <option value="0" {{ 'selected' if (settings | selectattr('key', 'equalto', 'registration_enabled') | map(attribute='value') | first or '1') == '0' }}>Disabled</option>
+                            </select>
+                            <small class="text-muted">Allow new players to register</small>
+                        </div>
+                    </div>
+
+                    <!-- All Settings Table -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h4 class="text-info mb-3">
+                                <i class="fas fa-list me-2"></i>All Settings
+                            </h4>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Setting</th>
+                                            <th>Value</th>
+                                            <th>Description</th>
+                                            <th>Last Updated</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for setting in settings %}
+                                        <tr>
+                                            <td><code>{{ setting.key }}</code></td>
+                                            <td><strong>{{ setting.value }}</strong></td>
+                                            <td>{{ setting.description or '-' }}</td>
+                                            <td><small class="text-muted">{{ setting.updated_at[:16] if setting.updated_at else '-' }}</small></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-calculate and show pricing preview
+function updatePricingPreview() {
+    const beginner = document.getElementById('beginner_price').value || 0;
+    const intermediate = document.getElementById('intermediate_price').value || 0;
+    const advanced = document.getElementById('advanced_price').value || 0;
+    
+    // You could add a preview section here if needed
+    console.log('Pricing updated:', {beginner, intermediate, advanced});
+}
+
+document.getElementById('beginner_price').addEventListener('input', updatePricingPreview);
+document.getElementById('intermediate_price').addEventListener('input', updatePricingPreview);
+document.getElementById('advanced_price').addEventListener('input', updatePricingPreview);
+</script>
+{% endblock %}

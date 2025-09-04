@@ -84,6 +84,32 @@ def init_db():
         c.execute('ALTER TABLE players ADD COLUMN is_admin INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
         pass  # Column already exists
+        
+    # Settings table for admin configuration
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            description TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Insert default pricing settings if they don't exist
+    default_settings = [
+        ('beginner_price', '10', 'Beginner tournament entry fee'),
+        ('intermediate_price', '20', 'Intermediate tournament entry fee'),
+        ('advanced_price', '40', 'Advanced tournament entry fee'),
+        ('match_deadline_days', '7', 'Days to complete a match before it expires'),
+        ('platform_name', 'MatchSpark', 'Platform display name'),
+        ('registration_enabled', '1', 'Allow new player registrations')
+    ]
+    
+    for key, value, description in default_settings:
+        c.execute('''
+            INSERT OR IGNORE INTO settings (key, value, description)
+            VALUES (?, ?, ?)
+        ''', (key, value, description))
     
     # Matches table
     c.execute('''
@@ -185,13 +211,34 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def get_setting(key, default=None):
+    """Get a setting value from database"""
+    conn = get_db_connection()
+    setting = conn.execute('SELECT value FROM settings WHERE key = ?', (key,)).fetchone()
+    conn.close()
+    return setting['value'] if setting else default
+
+def update_setting(key, value):
+    """Update a setting in database"""
+    conn = get_db_connection()
+    conn.execute('''
+        INSERT OR REPLACE INTO settings (key, value, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+    ''', (key, value))
+    conn.commit()
+    conn.close()
+
 def get_tournament_levels():
-    """Get available tournament levels with pricing and player limits"""
+    """Get available tournament levels with dynamic pricing from settings"""
+    beginner_price = float(get_setting('beginner_price', '10'))
+    intermediate_price = float(get_setting('intermediate_price', '20'))
+    advanced_price = float(get_setting('advanced_price', '40'))
+    
     return {
         'Beginner': {
             'name': 'Beginner League',
             'description': 'Perfect for new players and casual competition',
-            'entry_fee': 10.00,
+            'entry_fee': beginner_price,
             'prize_pool': 'Winner takes 60%',
             'skill_requirements': 'Beginner level players',
             'max_players': 16
@@ -199,7 +246,7 @@ def get_tournament_levels():
         'Intermediate': {
             'name': 'Intermediate Championship',
             'description': 'For players with solid fundamentals',
-            'entry_fee': 20.00,
+            'entry_fee': intermediate_price,
             'prize_pool': 'Winner takes 50%, Runner-up 30%',
             'skill_requirements': 'Intermediate level players',
             'max_players': 32
@@ -207,7 +254,7 @@ def get_tournament_levels():
         'Advanced': {
             'name': 'Advanced Tournament',
             'description': 'High-level competitive play',
-            'entry_fee': 40.00,
+            'entry_fee': advanced_price,
             'prize_pool': 'Winner takes 40%, Top 4 share prizes',
             'skill_requirements': 'Advanced level players',
             'max_players': 32
@@ -1151,6 +1198,29 @@ def cancel_match(match_id):
     conn.close()
     
     return jsonify({'success': True, 'message': 'Match canceled successfully'})
+
+@app.route('/admin/settings')
+@admin_required
+def admin_settings():
+    """Admin system settings management"""
+    conn = get_db_connection()
+    settings = conn.execute('SELECT * FROM settings ORDER BY key').fetchall()
+    conn.close()
+    
+    return render_template('admin/settings.html', settings=settings)
+
+@app.route('/admin/update_settings', methods=['POST'])
+@admin_required
+def update_settings():
+    """Update system settings"""
+    # Get all form data
+    for key in request.form:
+        value = request.form[key].strip()
+        if value:  # Only update non-empty values
+            update_setting(key, value)
+    
+    flash('Settings updated successfully!', 'success')
+    return redirect(url_for('admin_settings'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
