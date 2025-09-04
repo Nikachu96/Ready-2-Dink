@@ -266,12 +266,14 @@ def get_tournament_levels():
     
     def calculate_prizes(entry_fee, max_players):
         """Calculate prize breakdown for top 4 finishers"""
-        total_pool = entry_fee * max_players
+        total_fees = entry_fee * max_players
+        prize_pool = total_fees * 0.70  # 70% goes to prizes, 30% platform revenue
         return {
-            '1st': total_pool * 0.51,  # 51%
-            '2nd': total_pool * 0.25,  # 25%
-            '3rd': total_pool * 0.12,  # 12%
-            '4th': total_pool * 0.12   # 12%
+            '1st': prize_pool * 0.50,  # 50% of prize pool (35% of total fees)
+            '2nd': prize_pool * 0.30,  # 30% of prize pool (21% of total fees)
+            '3rd': prize_pool * 0.12,  # 12% of prize pool (8.4% of total fees)
+            '4th': prize_pool * 0.08,  # 8% of prize pool (5.6% of total fees)
+            'platform_revenue': total_fees * 0.30  # 30% platform revenue
         }
     
     beginner_prizes = calculate_prizes(beginner_price, 16)
@@ -775,19 +777,22 @@ def update_tournament_level():
     # Update tournament settings in database
     if level == 'Beginner':
         update_setting('beginner_price', entry_fee)
-        update_setting('beginner_max_players', max_players)
-        update_setting('beginner_prize_pool', prize_pool)
-        update_setting('beginner_description', description)
+        if max_players:
+            update_setting('beginner_max_players', max_players)
+        if description:
+            update_setting('beginner_description', description)
     elif level == 'Intermediate':
         update_setting('intermediate_price', entry_fee)
-        update_setting('intermediate_max_players', max_players)
-        update_setting('intermediate_prize_pool', prize_pool)
-        update_setting('intermediate_description', description)
+        if max_players:
+            update_setting('intermediate_max_players', max_players)
+        if description:
+            update_setting('intermediate_description', description)
     elif level == 'Advanced':
         update_setting('advanced_price', entry_fee)
-        update_setting('advanced_max_players', max_players)
-        update_setting('advanced_prize_pool', prize_pool)
-        update_setting('advanced_description', description)
+        if max_players:
+            update_setting('advanced_max_players', max_players)
+        if description:
+            update_setting('advanced_description', description)
     
     flash(f'{level} tournament settings updated successfully! Entry fee: ${entry_fee}', 'success')
     return redirect(url_for('admin_dashboard'))
@@ -1207,8 +1212,8 @@ def admin_dashboard():
         level_revenue = level_entries * entry_fee
         total_revenue += level_revenue
         
-        # Calculate payouts (60% of revenue goes to winners for simplicity)
-        level_payouts = level_revenue * 0.6
+        # Calculate payouts (70% of revenue goes to winners, 30% platform revenue)
+        level_payouts = level_revenue * 0.7
         total_payouts += level_payouts
     
     # Recent activity
