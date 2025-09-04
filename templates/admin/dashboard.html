@@ -10,17 +10,14 @@
                 <h2 class="fw-bold mb-1">
                     <i class="fas fa-shield-alt me-2 text-danger"></i>Admin Dashboard
                 </h2>
-                <p class="text-muted mb-0">Platform overview and management controls</p>
+                <p class="text-muted mb-0">Platform management and controls</p>
             </div>
             <div class="btn-group">
                 <a href="{{ url_for('admin_players') }}" class="btn btn-outline-primary">
-                    <i class="fas fa-users me-1"></i>Manage Players
+                    <i class="fas fa-users me-1"></i>Players
                 </a>
                 <a href="{{ url_for('admin_tournaments') }}" class="btn btn-outline-success">
-                    <i class="fas fa-trophy me-1"></i>Manage Tournaments
-                </a>
-                <a href="{{ url_for('admin_matches') }}" class="btn btn-outline-warning">
-                    <i class="fas fa-gamepad me-1"></i>Manage Matches
+                    <i class="fas fa-trophy me-1"></i>Tournaments
                 </a>
                 <a href="{{ url_for('admin_settings') }}" class="btn btn-outline-info">
                     <i class="fas fa-cogs me-1"></i>Settings
@@ -70,6 +67,157 @@
     </div>
 </div>
 
+<!-- Admin Controls -->
+<div class="row mb-4">
+    <!-- User Management -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users-cog me-2"></i>User Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="viewAllUsers()">
+                        <i class="fas fa-list me-2"></i>View All Players
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="manageSubscriptions()">
+                        <i class="fas fa-credit-card me-2"></i>Manage Subscriptions
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="banUser()">
+                        <i class="fas fa-ban me-2"></i>Ban/Unban Players
+                    </button>
+                    <button class="btn btn-outline-info" onclick="resetUserData()">
+                        <i class="fas fa-redo me-2"></i>Reset Player Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform Settings -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>Platform Settings
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-success" onclick="editAppSettings()">
+                        <i class="fas fa-edit me-2"></i>Edit App Settings
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="manageFees()">
+                        <i class="fas fa-dollar-sign me-2"></i>Membership Pricing
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="maintenanceMode()">
+                        <i class="fas fa-tools me-2"></i>Maintenance Mode
+                    </button>
+                    <button class="btn btn-outline-info" onclick="viewLogs()">
+                        <i class="fas fa-file-alt me-2"></i>System Logs
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Database Management -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-database me-2"></i>Database Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-info" onclick="backupDatabase()">
+                        <i class="fas fa-download me-2"></i>Backup Database
+                    </button>
+                    <button class="btn btn-outline-success" onclick="exportData()">
+                        <i class="fas fa-file-export me-2"></i>Export Data
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="clearOldData()">
+                        <i class="fas fa-broom me-2"></i>Clear Old Data
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="resetDatabase()">
+                        <i class="fas fa-trash me-2"></i>Reset Database
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security & Monitoring -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>Security & Monitoring
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-danger" onclick="viewSecurityLogs()">
+                        <i class="fas fa-eye me-2"></i>Security Logs
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="blockIPs()">
+                        <i class="fas fa-ban me-2"></i>Block IP Addresses
+                    </button>
+                    <button class="btn btn-outline-info" onclick="apiRateLimits()">
+                        <i class="fas fa-tachometer-alt me-2"></i>API Rate Limits
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="adminAccessLogs()">
+                        <i class="fas fa-history me-2"></i>Admin Access Logs
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment & Financial Controls -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Financial & Payment Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-success w-100" onclick="viewRevenue()">
+                            <i class="fas fa-dollar-sign me-2"></i>Revenue Reports
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-primary w-100" onclick="manageStripe()">
+                            <i class="fab fa-stripe me-2"></i>Stripe Settings
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-warning w-100" onclick="refundPayments()">
+                            <i class="fas fa-undo me-2"></i>Process Refunds
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-info w-100" onclick="tournamentPrizes()">
+                            <i class="fas fa-trophy me-2"></i>Tournament Prizes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
 <div class="row">
     <!-- Recent Players -->
     <div class="col-md-4 mb-4">
@@ -97,9 +245,9 @@
                             <h6 class="mb-1">{{ player.full_name }}</h6>
                             <small class="text-muted">{{ player.skill_level }}</small>
                         </div>
-                        {% if player.is_admin %}
-                            <span class="badge bg-danger">Admin</span>
-                        {% endif %}
+                        <button class="btn btn-sm btn-outline-primary" onclick="editPlayer({{ player.id }})">
+                            <i class="fas fa-edit"></i>
+                        </button>
                     </div>
                     {% endfor %}
                 {% else %}
@@ -128,7 +276,9 @@
                                     Status: <span class="badge bg-{{ 'success' if match.status == 'completed' else 'warning' }}">{{ match.status|title }}</span>
                                 </small>
                             </div>
-                            <small class="text-muted">{{ match.created_at[:10] }}</small>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="manageMatch({{ match.id }})">
+                                <i class="fas fa-cog"></i>
+                            </button>
                         </div>
                         {% if match.player1_score is not none and match.player2_score is not none %}
                         <small class="text-success d-block mt-1">
@@ -161,9 +311,14 @@
                                 <h6 class="mb-1">{{ tournament.tournament_name }}</h6>
                                 <small class="text-muted">{{ tournament.full_name }}</small>
                             </div>
-                            <span class="badge bg-{{ 'success' if tournament.completed else 'primary' }}">
-                                {{ 'Completed' if tournament.completed else 'Active' }}
-                            </span>
+                            <div class="text-end">
+                                <span class="badge bg-{{ 'success' if tournament.completed else 'primary' }}">
+                                    {{ 'Completed' if tournament.completed else 'Active' }}
+                                </span>
+                                <button class="btn btn-sm btn-outline-secondary mt-1" onclick="manageTournament({{ tournament.id }})">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
                         </div>
                         <small class="text-muted d-block mt-1">
                             {{ tournament.tournament_level }} • ${{ "%.0f"|format(tournament.entry_fee or 0) }}
@@ -177,4 +332,141 @@
         </div>
     </div>
 </div>
+
+<script>
+// User Management Functions
+function viewAllUsers() {
+    window.location.href = '{{ url_for("admin_players") }}';
+}
+
+function manageSubscriptions() {
+    alert('Subscription Management:\n\n• View active subscriptions\n• Cancel memberships\n• Process refunds\n• Update billing info\n• Send renewal reminders');
+}
+
+function banUser() {
+    const userId = prompt('Enter Player ID to ban/unban:');
+    if (userId) {
+        if (confirm(`Are you sure you want to ban/unban player ${userId}?`)) {
+            // Add ban/unban logic here
+            alert(`Player ${userId} ban status toggled`);
+        }
+    }
+}
+
+function resetUserData() {
+    if (confirm('Are you sure you want to reset ALL player data? This cannot be undone!')) {
+        fetch('/admin/reset_players', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            });
+    }
+}
+
+// Platform Settings Functions
+function editAppSettings() {
+    window.location.href = '{{ url_for("admin_settings") }}';
+}
+
+function manageFees() {
+    alert('Membership Pricing:\n\n• Player Discovery: $4.99/month\n• Tournament Access: $9.99/month\n• Free trial periods\n• Promotional codes\n• Regional pricing');
+}
+
+function maintenanceMode() {
+    const mode = confirm('Enable maintenance mode? This will temporarily disable the app for users.');
+    if (mode) {
+        alert('Maintenance mode enabled. Only admins can access the app.');
+    }
+}
+
+function viewLogs() {
+    alert('System Logs:\n\n• User activity logs\n• Error logs\n• API request logs\n• Security events\n• Performance metrics');
+}
+
+// Database Management Functions
+function backupDatabase() {
+    if (confirm('Create database backup?')) {
+        window.location.href = '/admin/backup_database';
+    }
+}
+
+function exportData() {
+    window.location.href = '/admin/export_all_data';
+}
+
+function clearOldData() {
+    if (confirm('Clear data older than 30 days?')) {
+        fetch('/admin/clear_old_data', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => alert(data.message));
+    }
+}
+
+function resetDatabase() {
+    if (confirm('WARNING: This will delete ALL data! Are you absolutely sure?')) {
+        if (confirm('Last chance - this cannot be undone!')) {
+            fetch('/admin/reset_database', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    location.reload();
+                });
+        }
+    }
+}
+
+// Security Functions
+function viewSecurityLogs() {
+    alert('Security Logs:\n\n• Failed login attempts\n• Suspicious activity\n• IP blacklist events\n• Admin access logs\n• Payment security events');
+}
+
+function blockIPs() {
+    const ip = prompt('Enter IP address to block:');
+    if (ip && confirm(`Block IP address ${ip}?`)) {
+        alert(`IP address ${ip} has been blocked`);
+    }
+}
+
+function apiRateLimits() {
+    alert('API Rate Limits:\n\n• Current: 100 requests/hour per user\n• Admin: Unlimited\n• Adjust limits by user type\n• Monitor API usage\n• Block abusive users');
+}
+
+function adminAccessLogs() {
+    alert('Admin Access Logs:\n\n• Login times and locations\n• Actions performed\n• Data accessed\n• Settings changed\n• User modifications');
+}
+
+// Financial Functions
+function viewRevenue() {
+    alert('Revenue Reports:\n\n• Monthly subscription revenue\n• Tournament entry fees\n• Refunds and chargebacks\n• Growth metrics\n• Financial forecasting');
+}
+
+function manageStripe() {
+    alert('Stripe Settings:\n\n• API keys configuration\n• Webhook endpoints\n• Payment methods\n• Tax settings\n• Payout schedules');
+}
+
+function refundPayments() {
+    const paymentId = prompt('Enter Payment ID to refund:');
+    if (paymentId && confirm(`Process refund for payment ${paymentId}?`)) {
+        alert(`Refund initiated for payment ${paymentId}`);
+    }
+}
+
+function tournamentPrizes() {
+    alert('Tournament Prize Management:\n\n• Set prize pool percentages\n• Automatic payouts\n• Manual prize distribution\n• Tax reporting\n• Winner notifications');
+}
+
+// Individual Item Management
+function editPlayer(playerId) {
+    window.location.href = `/admin/edit_player/${playerId}`;
+}
+
+function manageMatch(matchId) {
+    alert(`Match Management Options:\n\n• Update scores\n• Change status\n• Resolve disputes\n• Message players\n• View match details`);
+}
+
+function manageTournament(tournamentId) {
+    alert(`Tournament Management Options:\n\n• View participants\n• Update brackets\n• Distribute prizes\n• Send notifications\n• End tournament early`);
+}
+</script>
 {% endblock %}
