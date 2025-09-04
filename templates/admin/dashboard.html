@@ -19,6 +19,9 @@
                 <button class="btn btn-outline-primary" onclick="toggleSection('users')">
                     <i class="fas fa-users me-1"></i>Users
                 </button>
+                <button class="btn btn-outline-danger" onclick="toggleSection('analytics')">
+                    <i class="fas fa-chart-bar me-1"></i>Analytics
+                </button>
                 <button class="btn btn-outline-warning" onclick="toggleSection('database')">
                     <i class="fas fa-database me-1"></i>Database
                 </button>
@@ -319,6 +322,190 @@
                             <i class="fas fa-trophy me-2"></i>Tournament Prizes
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Section -->
+<div id="analytics-section" class="admin-section" style="display: none;">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="fw-bold mb-3">
+                <i class="fas fa-chart-bar me-2 text-danger"></i>Key Performance Indicators
+            </h3>
+        </div>
+    </div>
+
+    <!-- Player Analytics -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center" style="background: var(--gradient-primary); color: white; border: none;">
+                <div class="card-body">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <h3 class="fw-bold mb-1">{{ metrics.total_players }}</h3>
+                    <small class="opacity-75">Total Players</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none;">
+                <div class="card-body">
+                    <i class="fas fa-seedling fa-2x mb-2"></i>
+                    <h3 class="fw-bold mb-1">{{ metrics.beginner_players }}</h3>
+                    <small class="opacity-75">Beginner Players</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); color: white; border: none;">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-2x mb-2"></i>
+                    <h3 class="fw-bold mb-1">{{ metrics.intermediate_players }}</h3>
+                    <small class="opacity-75">Intermediate Players</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center" style="background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%); color: white; border: none;">
+                <div class="card-body">
+                    <i class="fas fa-crown fa-2x mb-2"></i>
+                    <h3 class="fw-bold mb-1">{{ metrics.advanced_players }}</h3>
+                    <small class="opacity-75">Advanced Players</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tournament Analytics -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card text-center" style="background: var(--gradient-success); color: white; border: none;">
+                <div class="card-body">
+                    <i class="fas fa-trophy fa-2x mb-2"></i>
+                    <h3 class="fw-bold mb-1">{{ metrics.total_tournaments }}</h3>
+                    <small class="opacity-75">Total Tournaments</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-center" style="background: linear-gradient(135deg, #17a2b8 0%, #007bff 100%); color: white; border: none;">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <h3 class="fw-bold mb-1">{{ metrics.active_tournaments }}</h3>
+                    <small class="opacity-75">Active Tournaments</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-center" style="background: var(--gradient-warning); color: white; border: none;">
+                <div class="card-body">
+                    <i class="fas fa-gamepad fa-2x mb-2"></i>
+                    <h3 class="fw-bold mb-1">{{ metrics.total_matches }}</h3>
+                    <small class="opacity-75">Total Matches</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Analytics -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card text-center" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none;">
+                <div class="card-body">
+                    <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                    <h3 class="fw-bold mb-1">${{ "%.2f"|format(metrics.total_revenue) }}</h3>
+                    <small class="opacity-75">Total Revenue</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-center" style="background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%); color: white; border: none;">
+                <div class="card-body">
+                    <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+                    <h3 class="fw-bold mb-1">${{ "%.2f"|format(metrics.total_payouts) }}</h3>
+                    <small class="opacity-75">Total Payouts</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-center" style="background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%); color: white; border: none;">
+                <div class="card-body">
+                    <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                    <h3 class="fw-bold mb-1">${{ "%.2f"|format(metrics.net_revenue) }}</h3>
+                    <small class="opacity-75">Net Revenue</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Breakdown -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>Player Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Beginner Players</span>
+                        <span class="badge bg-success">{{ metrics.beginner_players }}</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: {{ (metrics.beginner_players / metrics.total_players * 100) if metrics.total_players > 0 else 0 }}%"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Intermediate Players</span>
+                        <span class="badge bg-warning">{{ metrics.intermediate_players }}</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar bg-warning" style="width: {{ (metrics.intermediate_players / metrics.total_players * 100) if metrics.total_players > 0 else 0 }}%"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Advanced Players</span>
+                        <span class="badge bg-danger">{{ metrics.advanced_players }}</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-danger" style="width: {{ (metrics.advanced_players / metrics.total_players * 100) if metrics.total_players > 0 else 0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Financial Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Total Entry Fees</span>
+                        <span class="h5 text-success mb-0">${{ "%.2f"|format(metrics.total_revenue) }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Prize Payouts</span>
+                        <span class="h5 text-danger mb-0">${{ "%.2f"|format(metrics.total_payouts) }}</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Platform Revenue</span>
+                        <span class="h4 text-primary mb-0">${{ "%.2f"|format(metrics.net_revenue) }}</span>
+                    </div>
+                    
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        60% goes to prize pool, 40% platform revenue
+                    </small>
                 </div>
             </div>
         </div>

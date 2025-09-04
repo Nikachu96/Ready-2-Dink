@@ -1144,6 +1144,33 @@ def admin_dashboard():
     total_tournaments = conn.execute('SELECT COUNT(*) as count FROM tournaments').fetchone()['count']
     active_tournaments = conn.execute('SELECT COUNT(*) as count FROM tournaments WHERE completed = 0').fetchone()['count']
     
+    # Get detailed player metrics by skill level
+    beginner_players = conn.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = "Beginner"').fetchone()['count']
+    intermediate_players = conn.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = "Intermediate"').fetchone()['count']
+    advanced_players = conn.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = "Advanced"').fetchone()['count']
+    
+    # Get tournament financial metrics
+    tournament_levels = get_tournament_levels()
+    total_revenue = 0
+    total_payouts = 0
+    
+    for level_key, level_info in tournament_levels.items():
+        entry_fee = level_info['entry_fee']
+        
+        # Count entries for this level
+        level_entries = conn.execute('''
+            SELECT COUNT(*) as count FROM tournaments 
+            WHERE tournament_level = ?
+        ''', (level_key,)).fetchone()['count']
+        
+        # Calculate revenue for this level
+        level_revenue = level_entries * entry_fee
+        total_revenue += level_revenue
+        
+        # Calculate payouts (60% of revenue goes to winners for simplicity)
+        level_payouts = level_revenue * 0.6
+        total_payouts += level_payouts
+    
     # Recent activity
     recent_players = conn.execute('''
         SELECT * FROM players ORDER BY created_at DESC LIMIT 5
@@ -1169,7 +1196,13 @@ def admin_dashboard():
         'total_players': total_players,
         'total_matches': total_matches,
         'total_tournaments': total_tournaments,
-        'active_tournaments': active_tournaments
+        'active_tournaments': active_tournaments,
+        'beginner_players': beginner_players,
+        'intermediate_players': intermediate_players,
+        'advanced_players': advanced_players,
+        'total_revenue': total_revenue,
+        'total_payouts': total_payouts,
+        'net_revenue': total_revenue - total_payouts
     }
     
     return render_template('admin/dashboard.html', 
