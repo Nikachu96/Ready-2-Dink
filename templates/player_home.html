@@ -50,15 +50,6 @@
                                 </button>
                             {% endif %}
                             
-                            {% if player.membership_type == 'tournament' %}
-                                <a href="{{ url_for('tournament_entry', player_id=player.id) }}" class="btn btn-warning btn-lg px-4">
-                                    <i class="fas fa-trophy me-2"></i>Join Tournament
-                                </a>
-                            {% else %}
-                                <button onclick="showMembershipModal('tournament')" class="btn btn-outline-warning btn-lg px-4">
-                                    <i class="fas fa-lock me-2"></i>Join Tournament
-                                </button>
-                            {% endif %}
                             
                             {% if not player.membership_type %}
                                 <button onclick="showMembershipModal('discovery')" class="btn btn-success btn-lg px-3">
