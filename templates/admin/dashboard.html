@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - MatchSpark{% endblock %}
+
+{% block content %}
+<div class="row animate-in">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">
+                    <i class="fas fa-shield-alt me-2 text-danger"></i>Admin Dashboard
+                </h2>
+                <p class="text-muted mb-0">Platform overview and management controls</p>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('admin_players') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-users me-1"></i>Manage Players
+                </a>
+                <a href="{{ url_for('admin_tournaments') }}" class="btn btn-outline-success">
+                    <i class="fas fa-trophy me-1"></i>Manage Tournaments
+                </a>
+                <a href="{{ url_for('admin_matches') }}" class="btn btn-outline-warning">
+                    <i class="fas fa-gamepad me-1"></i>Manage Matches
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="row mb-4 animate-in">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center" style="background: var(--gradient-primary); color: white; border: none;">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h3 class="fw-bold mb-1">{{ metrics.total_players }}</h3>
+                <small class="opacity-75">Total Players</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center" style="background: var(--gradient-success); color: white; border: none;">
+            <div class="card-body">
+                <i class="fas fa-gamepad fa-2x mb-2"></i>
+                <h3 class="fw-bold mb-1">{{ metrics.total_matches }}</h3>
+                <small class="opacity-75">Total Matches</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center" style="background: var(--gradient-warning); color: white; border: none;">
+            <div class="card-body">
+                <i class="fas fa-trophy fa-2x mb-2"></i>
+                <h3 class="fw-bold mb-1">{{ metrics.total_tournaments }}</h3>
+                <small class="opacity-75">Total Tournaments</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+            <div class="card-body">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <h3 class="fw-bold mb-1">{{ metrics.active_tournaments }}</h3>
+                <small class="opacity-75">Active Tournaments</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Players -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-plus me-2"></i>Recent Players
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_players %}
+                    {% for player in recent_players %}
+                    <div class="d-flex align-items-center mb-3">
+                        {% if player.selfie %}
+                            <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                 class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;" 
+                                 alt="Player">
+                        {% else %}
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-3" 
+                                 style="width: 40px; height: 40px;">
+                                <i class="fas fa-user text-white"></i>
+                            </div>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ player.full_name }}</h6>
+                            <small class="text-muted">{{ player.skill_level }}</small>
+                        </div>
+                        {% if player.is_admin %}
+                            <span class="badge bg-danger">Admin</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No players yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Matches -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-gamepad me-2"></i>Recent Matches
+                </h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% if recent_matches %}
+                    {% for match in recent_matches %}
+                    <div class="match-item mb-3 p-2 border rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ match.player1_name }} vs {{ match.player2_name }}</h6>
+                                <small class="text-muted">
+                                    Status: <span class="badge bg-{{ 'success' if match.status == 'completed' else 'warning' }}">{{ match.status|title }}</span>
+                                </small>
+                            </div>
+                            <small class="text-muted">{{ match.created_at[:10] }}</small>
+                        </div>
+                        {% if match.player1_score is not none and match.player2_score is not none %}
+                        <small class="text-success d-block mt-1">
+                            Score: {{ match.player1_score }}-{{ match.player2_score }}
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No matches yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Tournaments -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-trophy me-2"></i>Recent Tournaments
+                </h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% if recent_tournaments %}
+                    {% for tournament in recent_tournaments %}
+                    <div class="tournament-item mb-3 p-2 border rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ tournament.tournament_name }}</h6>
+                                <small class="text-muted">{{ tournament.full_name }}</small>
+                            </div>
+                            <span class="badge bg-{{ 'success' if tournament.completed else 'primary' }}">
+                                {{ 'Completed' if tournament.completed else 'Active' }}
+                            </span>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            {{ tournament.tournament_level }} • ${{ "%.0f"|format(tournament.entry_fee or 0) }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No tournaments yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

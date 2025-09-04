@@ -3,6 +3,7 @@ import sqlite3
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.utils import secure_filename
+from functools import wraps
 import logging
 
 # Configure logging
@@ -76,6 +77,11 @@ def init_db():
         
     try:
         c.execute('ALTER TABLE players ADD COLUMN tournament_wins INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN is_admin INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
         pass  # Column already exists
     
@@ -279,6 +285,8 @@ def index():
     
     # If only one player, go directly to their home
     if len(players) == 1:
+        # Set session for admin access
+        session['current_player_id'] = players[0]['id']
         return redirect(url_for('player_home', player_id=players[0]['id']))
     
     # If multiple players exist (legacy), show selection
@@ -288,6 +296,9 @@ def index():
 def player_home(player_id):
     """Personalized home page for a player"""
     conn = get_db_connection()
+    
+    # Set session for admin access
+    session['current_player_id'] = player_id
     
     # Get player info
     player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
@@ -609,47 +620,40 @@ def manage_tournaments():
 
 @app.route('/complete_tournament/<int:tournament_id>', methods=['POST'])
 def complete_tournament(tournament_id):
-    """Mark tournament as completed"""
-    result = request.form.get('result', '')
+    """Complete a tournament with results"""
+    result = request.form.get('result')
+    if not result:
+        flash('Please select a tournament result', 'warning')
+        return redirect(url_for('manage_tournaments'))
     
-    try:
-        conn = get_db_connection()
-        
-        # Get tournament info to identify the winner
-        tournament = conn.execute('''
-            SELECT player_id FROM tournaments WHERE id = ?
-        ''', (tournament_id,)).fetchone()
-        
-        if tournament:
-            # Update tournament as completed
-            conn.execute('''
-                UPDATE tournaments 
-                SET completed = 1, match_result = ?
-                WHERE id = ?
-            ''', (result, tournament_id))
-            
-            # Award tournament win if the result indicates a win
-            if result and ("won" in result.lower() or "champion" in result.lower() or "1st" in result.lower() or "first" in result.lower()):
-                conn.execute('''
-                    UPDATE players SET tournament_wins = tournament_wins + 1
-                    WHERE id = ?
-                ''', (tournament['player_id'],))
-                flash('Tournament completed and win awarded!', 'success')
-            else:
-                flash('Tournament marked as completed', 'success')
-        else:
-            conn.execute('''
-                UPDATE tournaments 
-                SET completed = 1, match_result = ?
-                WHERE id = ?
-            ''', (result, tournament_id))
-            flash('Tournament marked as completed', 'success')
-            
-        conn.commit()
+    conn = get_db_connection()
+    
+    # Get tournament info
+    tournament = conn.execute('SELECT * FROM tournaments WHERE id = ?', (tournament_id,)).fetchone()
+    if not tournament:
+        flash('Tournament not found', 'danger')
         conn.close()
-    except Exception as e:
-        flash(f'Error updating tournament: {str(e)}', 'danger')
+        return redirect(url_for('manage_tournaments'))
     
+    # Update tournament
+    conn.execute('''
+        UPDATE tournaments 
+        SET completed = 1, match_result = ?
+        WHERE id = ?
+    ''', (result, tournament_id))
+    
+    # If they won (1st place), add tournament win star
+    if 'Won - 1st Place' in result:
+        conn.execute('''
+            UPDATE players 
+            SET tournament_wins = tournament_wins + 1
+            WHERE id = ?
+        ''', (tournament['player_id'],))
+    
+    conn.commit()
+    conn.close()
+    
+    flash(f'Tournament completed successfully: {result}', 'success')
     return redirect(url_for('manage_tournaments'))
 
 @app.route('/find_match/<int:player_id>', methods=['POST'])
@@ -933,6 +937,220 @@ def get_pending_matches(player_id):
     conn.close()
     
     return jsonify({'matches': [dict(match) for match in matches]})
+
+# Admin functionality
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        current_player_id = session.get('current_player_id')
+        if not current_player_id:
+            flash('Please select your player profile first', 'warning')
+            return redirect(url_for('index'))
+        
+        conn = get_db_connection()
+        player = conn.execute('SELECT is_admin FROM players WHERE id = ?', (current_player_id,)).fetchone()
+        conn.close()
+        
+        if not player or not player['is_admin']:
+            flash('Admin access required', 'danger')
+            return redirect(url_for('index'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/admin')
+@admin_required
+def admin_dashboard():
+    """Admin dashboard with platform overview"""
+    conn = get_db_connection()
+    
+    # Get key metrics
+    total_players = conn.execute('SELECT COUNT(*) as count FROM players').fetchone()['count']
+    total_matches = conn.execute('SELECT COUNT(*) as count FROM matches').fetchone()['count']
+    total_tournaments = conn.execute('SELECT COUNT(*) as count FROM tournaments').fetchone()['count']
+    active_tournaments = conn.execute('SELECT COUNT(*) as count FROM tournaments WHERE completed = 0').fetchone()['count']
+    
+    # Recent activity
+    recent_players = conn.execute('''
+        SELECT * FROM players ORDER BY created_at DESC LIMIT 5
+    ''').fetchall()
+    
+    recent_matches = conn.execute('''
+        SELECT m.*, p1.full_name as player1_name, p2.full_name as player2_name
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        ORDER BY m.created_at DESC LIMIT 10
+    ''').fetchall()
+    
+    recent_tournaments = conn.execute('''
+        SELECT t.*, p.full_name FROM tournaments t
+        JOIN players p ON t.player_id = p.id
+        ORDER BY t.created_at DESC LIMIT 10
+    ''').fetchall()
+    
+    conn.close()
+    
+    metrics = {
+        'total_players': total_players,
+        'total_matches': total_matches,
+        'total_tournaments': total_tournaments,
+        'active_tournaments': active_tournaments
+    }
+    
+    return render_template('admin/dashboard.html', 
+                         metrics=metrics,
+                         recent_players=recent_players,
+                         recent_matches=recent_matches,
+                         recent_tournaments=recent_tournaments)
+
+@app.route('/admin/players')
+@admin_required
+def admin_players():
+    """Admin player management"""
+    conn = get_db_connection()
+    players = conn.execute('''
+        SELECT * FROM players ORDER BY created_at DESC
+    ''').fetchall()
+    conn.close()
+    
+    return render_template('admin/players.html', players=players)
+
+@app.route('/admin/tournaments')
+@admin_required
+def admin_tournaments():
+    """Admin tournament management"""
+    conn = get_db_connection()
+    tournaments = conn.execute('''
+        SELECT t.*, p.full_name, p.email
+        FROM tournaments t
+        JOIN players p ON t.player_id = p.id
+        ORDER BY t.created_at DESC
+    ''').fetchall()
+    conn.close()
+    
+    return render_template('admin/tournaments.html', tournaments=tournaments)
+
+@app.route('/admin/toggle_admin/<int:player_id>', methods=['POST'])
+@admin_required
+def toggle_admin(player_id):
+    """Toggle admin status for a player"""
+    conn = get_db_connection()
+    
+    current_status = conn.execute('SELECT is_admin FROM players WHERE id = ?', (player_id,)).fetchone()
+    new_status = 1 if not current_status['is_admin'] else 0
+    
+    conn.execute('UPDATE players SET is_admin = ? WHERE id = ?', (new_status, player_id))
+    conn.commit()
+    conn.close()
+    
+    action = "granted" if new_status else "revoked"
+    flash(f'Admin access {action} successfully', 'success')
+    return redirect(url_for('admin_players'))
+
+@app.route('/admin/set_player_session/<int:player_id>')
+def set_player_session(player_id):
+    """Set current player session (for testing/admin purposes)"""
+    session['current_player_id'] = player_id
+    return redirect(url_for('player_home', player_id=player_id))
+
+
+@app.route('/admin/matches')
+@admin_required
+def admin_matches():
+    """Admin match management and dispute resolution"""
+    conn = get_db_connection()
+    
+    # Get all matches with player information
+    matches = conn.execute('''
+        SELECT m.*, 
+               p1.full_name as player1_name, p1.email as player1_email,
+               p2.full_name as player2_name, p2.email as player2_email
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        ORDER BY m.created_at DESC
+    ''').fetchall()
+    
+    # Get pending matches that need attention
+    pending_matches = conn.execute('''
+        SELECT m.*, 
+               p1.full_name as player1_name,
+               p2.full_name as player2_name
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        WHERE m.status = 'pending'
+          AND datetime(m.created_at, '+7 days') < datetime('now')
+        ORDER BY m.created_at ASC
+    ''').fetchall()
+    
+    conn.close()
+    
+    return render_template('admin/matches.html', 
+                         matches=matches, 
+                         pending_matches=pending_matches)
+
+@app.route('/admin/force_complete_match/<int:match_id>', methods=['POST'])
+@admin_required
+def force_complete_match(match_id):
+    """Force complete a match with admin scores"""
+    player1_score = request.form.get('player1_score', type=int)
+    player2_score = request.form.get('player2_score', type=int)
+    
+    if player1_score is None or player2_score is None:
+        flash('Please enter valid scores for both players', 'warning')
+        return redirect(url_for('admin_matches'))
+    
+    conn = get_db_connection()
+    
+    # Get match info
+    match = conn.execute('SELECT * FROM matches WHERE id = ?', (match_id,)).fetchone()
+    if not match:
+        flash('Match not found', 'danger')
+        conn.close()
+        return redirect(url_for('admin_matches'))
+    
+    # Update match
+    conn.execute('''
+        UPDATE matches 
+        SET player1_score = ?, player2_score = ?, status = 'completed'
+        WHERE id = ?
+    ''', (player1_score, player2_score, match_id))
+    
+    # Update player records
+    if player1_score > player2_score:
+        winner_id, loser_id = match['player1_id'], match['player2_id']
+    else:
+        winner_id, loser_id = match['player2_id'], match['player1_id']
+    
+    conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (winner_id,))
+    conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (loser_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    flash(f'Match completed: {player1_score}-{player2_score}', 'success')
+    return redirect(url_for('admin_matches'))
+
+@app.route('/admin/cancel_match/<int:match_id>', methods=['POST'])
+@admin_required
+def cancel_match(match_id):
+    """Cancel a match"""
+    conn = get_db_connection()
+    
+    # Check if match exists
+    match = conn.execute('SELECT * FROM matches WHERE id = ?', (match_id,)).fetchone()
+    if not match:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Match not found'})
+    
+    # Delete the match
+    conn.execute('DELETE FROM matches WHERE id = ?', (match_id,))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'Match canceled successfully'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
