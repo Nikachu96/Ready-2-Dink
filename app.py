@@ -235,12 +235,20 @@ init_db()
 
 @app.route('/')
 def index():
-    """Home page - redirect to player selection or show player home"""
-    # For now, show player selection. Later we can add login/session management
+    """Home page - single player app"""
     conn = get_db_connection()
     players = conn.execute('SELECT id, full_name, selfie, skill_level FROM players ORDER BY full_name').fetchall()
     conn.close()
     
+    # If no players exist, redirect to registration
+    if not players:
+        return redirect(url_for('register'))
+    
+    # If only one player, go directly to their home
+    if len(players) == 1:
+        return redirect(url_for('player_home', player_id=players[0]['id']))
+    
+    # If multiple players exist (legacy), show selection
     return render_template('player_select.html', players=players)
 
 @app.route('/home/<int:player_id>')

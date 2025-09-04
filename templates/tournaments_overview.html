@@ -146,17 +146,12 @@
                         {% endfor %}
                     </div>
                     
-                    <div class="mt-3">
-                        <a href="{{ url_for('register') }}" class="btn btn-outline-primary w-100">
-                            <i class="fas fa-user-plus me-1"></i>Register New Player
-                        </a>
-                    </div>
                 {% else %}
                     <div class="text-center">
                         <i class="fas fa-user-slash fa-2x text-muted mb-3"></i>
-                        <p class="text-muted mb-3">No players registered yet.</p>
-                        <a href="{{ url_for('register') }}" class="btn btn-primary">
-                            <i class="fas fa-user-plus me-1"></i>Register First Player
+                        <p class="text-muted mb-3">Please complete your registration first.</p>
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-1"></i>Go to Home
                         </a>
                     </div>
                 {% endif %}
