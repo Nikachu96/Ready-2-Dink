@@ -324,6 +324,64 @@
                         </div>
                     </div>
 
+                    <!-- Existing Tournament Management -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-edit me-2"></i>Manage Existing Tournaments</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if existing_tournaments %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Tournament Name</th>
+                                                <th>Skill Level</th>
+                                                <th>Entry Fee</th>
+                                                <th>Players</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for tournament in existing_tournaments %}
+                                            <tr>
+                                                <td>{{ tournament.name }}</td>
+                                                <td>
+                                                    <span class="badge bg-secondary">{{ tournament.skill_level }}</span>
+                                                </td>
+                                                <td>${{ "%.0f"|format(tournament.entry_fee) }}</td>
+                                                <td>{{ tournament.current_players }}/{{ tournament.max_players }}</td>
+                                                <td>
+                                                    {% if tournament.status == 'open' %}
+                                                        <span class="badge bg-success">Open</span>
+                                                    {% elif tournament.status == 'in_progress' %}
+                                                        <span class="badge bg-warning">In Progress</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">{{ tournament.status|title }}</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="editTournament({{ tournament.id }}, '{{ tournament.name }}', {{ tournament.entry_fee }}, {{ tournament.max_players }})">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    {% if tournament.status == 'open' and tournament.current_players >= 4 %}
+                                                        <button class="btn btn-sm btn-outline-success" onclick="startTournament({{ tournament.id }})">
+                                                            <i class="fas fa-play"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-muted">No tournaments created yet.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
                     <!-- Global Tournament Settings -->
                     <div class="card mt-3">
                         <div class="card-header">
@@ -1056,5 +1114,66 @@ function manageTournament(tournamentId) {
 document.addEventListener('DOMContentLoaded', function() {
     toggleSection('tournaments');
 });
+
+// Tournament editing functions
+function editTournament(id, name, entryFee, maxPlayers) {
+    document.getElementById('edit_tournament_id').value = id;
+    document.getElementById('edit_tournament_name').value = name;
+    document.getElementById('edit_entry_fee').value = entryFee;
+    document.getElementById('edit_max_players').value = maxPlayers;
+    
+    new bootstrap.Modal(document.getElementById('editTournamentModal')).show();
+}
+
+function startTournament(id) {
+    if (confirm('Start this tournament? This will begin the bracket generation.')) {
+        fetch(`/admin/start_tournament/${id}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            });
+    }
+}
+
 </script>
+
+<!-- Edit Tournament Modal -->
+<div class="modal fade" id="editTournamentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Tournament</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('update_tournament_instance') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="tournament_id" id="edit_tournament_id">
+                    <div class="mb-3">
+                        <label class="form-label">Tournament Name</label>
+                        <input type="text" class="form-control" name="name" id="edit_tournament_name" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Entry Fee ($)</label>
+                                <input type="number" class="form-control" name="entry_fee" id="edit_entry_fee" min="1" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Max Players</label>
+                                <input type="number" class="form-control" name="max_players" id="edit_max_players" min="4" max="64" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Tournament</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

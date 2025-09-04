@@ -1265,6 +1265,12 @@ def admin_dashboard():
     """Admin dashboard with platform overview"""
     conn = get_db_connection()
     
+    # Get existing tournament instances for management
+    existing_tournaments = conn.execute('''
+        SELECT * FROM tournament_instances 
+        ORDER BY skill_level, created_at
+    ''').fetchall()
+    
     # Get key metrics
     total_players = conn.execute('SELECT COUNT(*) as count FROM players').fetchone()['count']
     total_matches = conn.execute('SELECT COUNT(*) as count FROM matches').fetchone()['count']
@@ -1336,7 +1342,8 @@ def admin_dashboard():
                          metrics=metrics,
                          recent_players=recent_players,
                          recent_matches=recent_matches,
-                         recent_tournaments=recent_tournaments)
+                         recent_tournaments=recent_tournaments,
+                         existing_tournaments=existing_tournaments)
 
 @app.route('/admin/players')
 @admin_required
@@ -1349,6 +1356,27 @@ def admin_players():
     conn.close()
     
     return render_template('admin/players.html', players=players)
+
+@app.route('/update_tournament_instance', methods=['POST'])
+@admin_required
+def update_tournament_instance():
+    """Update individual tournament instance"""
+    tournament_id = request.form.get('tournament_id')
+    name = request.form.get('name')
+    entry_fee = float(request.form.get('entry_fee', 0))
+    max_players = int(request.form.get('max_players', 32))
+    
+    conn = get_db_connection()
+    conn.execute('''
+        UPDATE tournament_instances 
+        SET name = ?, entry_fee = ?, max_players = ?
+        WHERE id = ?
+    ''', (name, entry_fee, max_players, tournament_id))
+    conn.commit()
+    conn.close()
+    
+    flash(f'Tournament updated successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/tournaments')
 @admin_required

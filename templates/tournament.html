@@ -76,7 +76,7 @@
                                 <div class="row">
                                     {% for tournament in tournaments_list %}
                                     <div class="col-md-6 mb-3">
-                                        <div class="card tournament-card" onclick="selectTournament('{{ tournament.id }}')">
+                                        <div class="card tournament-card" onclick="selectTournament('{{ tournament.id }}', this)">
                                             <div class="card-body">
                                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                                     <div>
@@ -157,7 +157,7 @@
 
 {% block scripts %}
 <script>
-function selectTournament(tournamentId) {
+function selectTournament(tournamentId, cardElement) {
     document.getElementById('tournament_' + tournamentId).checked = true;
     
     // Remove active class from all cards
@@ -166,7 +166,9 @@ function selectTournament(tournamentId) {
     });
     
     // Add active class to selected card
-    event.currentTarget.classList.add('border-primary', 'bg-light');
+    if (cardElement) {
+        cardElement.classList.add('border-primary', 'bg-light');
+    }
 }
 
 // Highlight recommended tournament level based on player skill
