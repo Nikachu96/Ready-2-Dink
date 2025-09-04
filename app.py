@@ -301,13 +301,39 @@ def player_home(player_id):
         LIMIT 5
     ''', (player_id,)).fetchall()
     
+    # Get available tournaments (call-to-action)
+    tournament_levels = get_tournament_levels()
+    available_tournaments = []
+    
+    for level_key, level_info in tournament_levels.items():
+        # Count current entries
+        current_entries = conn.execute('''
+            SELECT COUNT(*) as count FROM tournaments 
+            WHERE tournament_level = ? AND completed = 0
+        ''', (level_key,)).fetchone()['count']
+        
+        spots_remaining = level_info['max_players'] - current_entries
+        
+        if spots_remaining > 0:  # Only show tournaments with available spots
+            available_tournaments.append({
+                'level': level_key,
+                'name': level_info['name'],
+                'description': level_info['description'],
+                'entry_fee': level_info['entry_fee'],
+                'current_entries': current_entries,
+                'max_players': level_info['max_players'],
+                'spots_remaining': spots_remaining,
+                'prize_pool': level_info['prize_pool']
+            })
+    
     conn.close()
     
     return render_template('player_home.html', 
                          player=player, 
                          connections=connections,
                          recent_matches=recent_matches,
-                         tournaments=tournaments)
+                         tournaments=tournaments,
+                         available_tournaments=available_tournaments)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
