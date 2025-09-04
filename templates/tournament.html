@@ -174,19 +174,20 @@ function selectTournament(tournamentId, cardElement) {
 // Highlight recommended tournament level based on player skill
 document.addEventListener('DOMContentLoaded', function() {
     const playerSkill = '{{ player.skill_level }}';
-    const skillMapping = {
-        'Beginner': 'Beginner',
-        'Intermediate': 'Intermediate',
-        'Advanced': 'Advanced'
-    };
     
-    const recommendedLevel = skillMapping[playerSkill];
-    if (recommendedLevel) {
-        const recommendedCard = document.querySelector(`input[value="${recommendedLevel}"]`);
-        if (recommendedCard && !recommendedCard.disabled) {
-            recommendedCard.closest('.tournament-card').classList.add('border-success');
+    // Find tournament card that matches player's skill level
+    const tournamentCards = document.querySelectorAll('.tournament-card');
+    tournamentCards.forEach(card => {
+        const skillBadge = card.querySelector('.badge.bg-secondary');
+        if (skillBadge && skillBadge.textContent.trim() === playerSkill) {
+            const radioInput = card.querySelector('input[type="radio"]');
+            if (radioInput) {
+                radioInput.checked = true;
+                card.classList.add('border-primary', 'bg-light');
+            }
         }
-    }
+    });
+});
 });
 
 // Add styling for interactive cards
