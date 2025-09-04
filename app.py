@@ -63,6 +63,16 @@ def init_db():
         c.execute('ALTER TABLE players ADD COLUMN is_looking_for_match INTEGER DEFAULT 1')
     except sqlite3.OperationalError:
         pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN wins INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN losses INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
     
     # Matches table
     c.execute('''
@@ -77,11 +87,15 @@ def init_db():
             player1_confirmed INTEGER DEFAULT 0,
             player2_confirmed INTEGER DEFAULT 0,
             winner_id INTEGER,
+            player1_score INTEGER DEFAULT 0,
+            player2_score INTEGER DEFAULT 0,
             match_result TEXT,
+            result_submitted_by INTEGER,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(player1_id) REFERENCES players(id),
             FOREIGN KEY(player2_id) REFERENCES players(id),
-            FOREIGN KEY(winner_id) REFERENCES players(id)
+            FOREIGN KEY(winner_id) REFERENCES players(id),
+            FOREIGN KEY(result_submitted_by) REFERENCES players(id)
         )
     ''')
     
@@ -291,16 +305,24 @@ def player_home(player_id):
                 WHEN m.player1_id = ? THEN p2.selfie
                 ELSE p1.selfie 
             END as opponent_selfie,
+            CASE 
+                WHEN m.player1_id = ? THEN p2.wins
+                ELSE p1.wins 
+            END as opponent_wins,
+            CASE 
+                WHEN m.player1_id = ? THEN p2.losses
+                ELSE p1.losses 
+            END as opponent_losses,
             COUNT(*) as matches_played,
             MAX(m.created_at) as last_played
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
         WHERE m.player1_id = ? OR m.player2_id = ?
-        GROUP BY opponent_id, opponent_name, opponent_selfie
+        GROUP BY opponent_id, opponent_name, opponent_selfie, opponent_wins, opponent_losses
         ORDER BY last_played DESC
         LIMIT 10
-    ''', (player_id, player_id, player_id, player_id, player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
     
     # Get recent activity
     recent_matches = conn.execute('''
@@ -721,6 +743,78 @@ def get_unread_count(player_id):
     conn.close()
     
     return jsonify({'unread_count': count})
+
+@app.route('/submit_match_result', methods=['POST'])
+def submit_match_result():
+    """Submit match result with scores"""
+    data = request.get_json()
+    match_id = data.get('match_id')
+    player1_score = int(data.get('player1_score', 0))
+    player2_score = int(data.get('player2_score', 0))
+    submitter_id = data.get('submitter_id')
+    
+    if player1_score == player2_score:
+        return jsonify({'success': False, 'message': 'Scores cannot be tied. Please enter the correct scores.'})
+    
+    conn = get_db_connection()
+    
+    # Get match details
+    match = conn.execute('''
+        SELECT * FROM matches WHERE id = ?
+    ''', (match_id,)).fetchone()
+    
+    if not match:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Match not found'})
+    
+    # Check if submitter is part of this match
+    if submitter_id not in [match['player1_id'], match['player2_id']]:
+        conn.close()
+        return jsonify({'success': False, 'message': 'You are not part of this match'})
+    
+    # Determine winner
+    winner_id = match['player1_id'] if player1_score > player2_score else match['player2_id']
+    loser_id = match['player2_id'] if player1_score > player2_score else match['player1_id']
+    
+    # Update match with results
+    conn.execute('''
+        UPDATE matches 
+        SET player1_score = ?, player2_score = ?, winner_id = ?, 
+            status = 'completed', result_submitted_by = ?,
+            match_result = ?
+        WHERE id = ?
+    ''', (player1_score, player2_score, winner_id, submitter_id, 
+          f"{player1_score}-{player2_score}", match_id))
+    
+    # Update player win/loss records
+    conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (winner_id,))
+    conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (loser_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'Match result submitted successfully!'})
+
+@app.route('/get_pending_matches/<int:player_id>')
+def get_pending_matches(player_id):
+    """Get matches that need score submission"""
+    conn = get_db_connection()
+    
+    matches = conn.execute('''
+        SELECT m.*, 
+               p1.full_name as player1_name,
+               p2.full_name as player2_name
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        WHERE (m.player1_id = ? OR m.player2_id = ?)
+          AND m.status = 'pending'
+        ORDER BY m.created_at DESC
+    ''', (player_id, player_id)).fetchall()
+    
+    conn.close()
+    
+    return jsonify({'matches': [dict(match) for match in matches]})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

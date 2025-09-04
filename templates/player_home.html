@@ -27,8 +27,11 @@
                             <span class="badge bg-light text-dark me-2">
                                 <i class="fas fa-star me-1"></i>{{ player.skill_level }}
                             </span>
-                            <span class="badge bg-light text-dark">
+                            <span class="badge bg-light text-dark me-2">
                                 <i class="fas fa-table-tennis-paddle-ball me-1"></i>Pickleball
+                            </span>
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-trophy me-1"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
                             </span>
                         </p>
                     </div>
@@ -146,7 +149,10 @@
                             </div>
                         {% endif %}
                         <div class="flex-grow-1">
-                            <h6 class="mb-1">{{ connection.opponent_name }}</h6>
+                            <h6 class="mb-1">
+                                {{ connection.opponent_name }}
+                                <span class="badge bg-secondary ms-2">{{ connection.opponent_wins or 0 }}W-{{ connection.opponent_losses or 0 }}L</span>
+                            </h6>
                             <small class="text-muted">
                                 {{ connection.matches_played }} match{{ 'es' if connection.matches_played > 1 else '' }} played
                             </small>
@@ -231,6 +237,60 @@
         </div>
     </div>
 </div>
+
+<!-- Pending Matches for Score Submission -->
+<div class="row mt-4 animate-in" id="pending-matches-section" style="display: none;">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>Submit Match Results
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="pending-matches-container">
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Score Submission Modal -->
+<div class="modal fade" id="scoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-trophy me-2"></i>Submit Match Score
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="match-details" class="mb-3"></div>
+                <div class="row">
+                    <div class="col-6">
+                        <label class="form-label" id="player1-label">Your Score</label>
+                        <input type="number" id="player1-score" class="form-control" min="0" max="50">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" id="player2-label">Opponent Score</label>
+                        <input type="number" id="player2-score" class="form-control" min="0" max="50">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitScore()">Submit Score</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Message Modal -->
 <div class="modal fade" id="messageModal" tabindex="-1">
     <div class="modal-dialog">
@@ -388,12 +448,127 @@ function updateUnreadCount() {
 document.addEventListener('DOMContentLoaded', function() {
     refreshMessages();
     updateUnreadCount();
+    loadPendingMatches();
     
     // Refresh messages every 30 seconds
     setInterval(() => {
         refreshMessages();
         updateUnreadCount();
+        loadPendingMatches();
     }, 30000);
 });
+
+let currentMatchId = null;
+
+function loadPendingMatches() {
+    fetch(`/get_pending_matches/{{ player.id }}`)
+        .then(response => response.json())
+        .then(data => {
+            displayPendingMatches(data.matches);
+        })
+        .catch(error => {
+            console.error('Error loading pending matches:', error);
+        });
+}
+
+function displayPendingMatches(matches) {
+    const section = document.getElementById('pending-matches-section');
+    const container = document.getElementById('pending-matches-container');
+    
+    if (matches.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    section.style.display = 'block';
+    
+    let html = '';
+    matches.forEach(match => {
+        const opponent = match.player1_id === {{ player.id }} ? match.player2_name : match.player1_name;
+        const courtInfo = match.court_location || 'Court TBD';
+        
+        html += `
+            <div class="pending-match-item mb-3 p-3 border rounded">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">Match vs ${opponent}</h6>
+                        <small class="text-muted">
+                            <i class="fas fa-map-marker-alt me-1"></i>${courtInfo} • 
+                            <i class="fas fa-calendar me-1"></i>${new Date(match.created_at).toLocaleDateString()}
+                        </small>
+                    </div>
+                    <button class="btn btn-warning btn-sm" onclick="openScoreModal(${match.id}, '${opponent}', ${match.player1_id}, ${match.player2_id})">
+                        <i class="fas fa-pencil-alt me-1"></i>Submit Score
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function openScoreModal(matchId, opponentName, player1Id, player2Id) {
+    currentMatchId = matchId;
+    const isPlayer1 = {{ player.id }} === player1Id;
+    
+    document.getElementById('match-details').innerHTML = `
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            Recording match result vs <strong>${opponentName}</strong>
+        </div>
+    `;
+    
+    document.getElementById('player1-label').textContent = isPlayer1 ? 'Your Score' : opponentName + "'s Score";
+    document.getElementById('player2-label').textContent = isPlayer1 ? opponentName + "'s Score" : 'Your Score';
+    
+    document.getElementById('player1-score').value = '';
+    document.getElementById('player2-score').value = '';
+    
+    new bootstrap.Modal(document.getElementById('scoreModal')).show();
+}
+
+function submitScore() {
+    const player1Score = parseInt(document.getElementById('player1-score').value);
+    const player2Score = parseInt(document.getElementById('player2-score').value);
+    
+    if (isNaN(player1Score) || isNaN(player2Score)) {
+        alert('Please enter valid scores for both players');
+        return;
+    }
+    
+    if (player1Score === player2Score) {
+        alert('Scores cannot be tied. Please enter the correct scores.');
+        return;
+    }
+    
+    fetch('/submit_match_result', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            match_id: currentMatchId,
+            player1_score: player1Score,
+            player2_score: player2Score,
+            submitter_id: {{ player.id }}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('scoreModal')).hide();
+            loadPendingMatches();
+            // Refresh the page to update wins/losses
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            alert(data.message || 'Failed to submit score');
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting score:', error);
+        alert('Error submitting score. Please try again.');
+    });
+}
 </script>
 {% endblock %}
