@@ -1,183 +1,324 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Tournaments - Tournament Management System{% endblock %}
+{% block title %}Tournament Management - MatchSpark{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h4 class="card-title mb-0">
-            <i class="fas fa-cog me-2"></i>Tournament Management
-        </h4>
-        <div>
-            <a href="{{ url_for('tournament') }}" class="btn btn-primary">
-                <i class="fas fa-plus me-1"></i>New Tournament Entry
-            </a>
-        </div>
-    </div>
-    <div class="card-body">
-        {% if tournaments %}
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Tournament</th>
-                            <th>Player</th>
-                            <th>Email</th>
-                            <th>Entry Date</th>
-                            <th>Deadline</th>
-                            <th>Status</th>
-                            <th>Result</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for tournament in tournaments %}
-                        <tr>
-                            <td>{{ tournament.id }}</td>
-                            <td>{{ tournament.tournament_name }}</td>
-                            <td>
-                                <a href="{{ url_for('dashboard', player_id=tournament.player_id) }}" 
-                                   class="text-decoration-none">
-                                    {{ tournament.full_name }}
-                                </a>
-                            </td>
-                            <td>{{ tournament.email }}</td>
-                            <td>{{ tournament.entry_date }}</td>
-                            <td>{{ tournament.match_deadline }}</td>
-                            <td>
-                                {% if tournament.completed %}
-                                    <span class="badge bg-success">Completed</span>
-                                {% else %}
-                                    <span class="badge bg-warning">Active</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if tournament.match_result %}
-                                    <span class="badge bg-info">{{ tournament.match_result }}</span>
-                                {% else %}
-                                    <span class="text-muted">Pending</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if not tournament.completed %}
-                                    <div class="btn-group" role="group">
-                                        <button type="button" class="btn btn-sm btn-success" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#completeModal{{ tournament.id }}">
-                                            <i class="fas fa-check me-1"></i>Complete
+<div class="container-fluid">
+    <div class="row">
+        <!-- Tournament Settings Panel -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+                    <h4 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-cogs me-2"></i>Tournament Configuration
+                    </h4>
+                    <p class="mb-0 opacity-90">Manage tournament levels, fees, and settings</p>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Beginner Tournament -->
+                        <div class="col-md-4 mb-4">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="fas fa-leaf me-2"></i>Beginner</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST" action="{{ url_for('update_tournament_level') }}">
+                                        <input type="hidden" name="level" value="Beginner">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Entry Fee</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" class="form-control" name="entry_fee" value="25" min="0" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small">Max Players</label>
+                                            <input type="number" class="form-control form-control-sm" name="max_players" value="16" min="4" max="64">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small">Prize Pool</label>
+                                            <input type="text" class="form-control form-control-sm" name="prize_pool" value="Winner takes 60%, Runner-up 25%">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small">Description</label>
+                                            <textarea class="form-control form-control-sm" name="description" rows="2">Fun, casual play for new players</textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-success btn-sm w-100">
+                                            <i class="fas fa-save me-1"></i>Update
                                         </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Intermediate Tournament -->
+                        <div class="col-md-4 mb-4">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0"><i class="fas fa-star me-2"></i>Intermediate</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST" action="{{ url_for('update_tournament_level') }}">
+                                        <input type="hidden" name="level" value="Intermediate">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Entry Fee</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" class="form-control" name="entry_fee" value="50" min="0" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small">Max Players</label>
+                                            <input type="number" class="form-control form-control-sm" name="max_players" value="32" min="4" max="64">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small">Prize Pool</label>
+                                            <input type="text" class="form-control form-control-sm" name="prize_pool" value="Winner takes 50%, Top 4 share prizes">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small">Description</label>
+                                            <textarea class="form-control form-control-sm" name="description" rows="2">Competitive play for developing players</textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-warning btn-sm w-100">
+                                            <i class="fas fa-save me-1"></i>Update
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Tournament -->
+                        <div class="col-md-4 mb-4">
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h6 class="mb-0"><i class="fas fa-fire me-2"></i>Advanced</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST" action="{{ url_for('update_tournament_level') }}">
+                                        <input type="hidden" name="level" value="Advanced">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Entry Fee</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" class="form-control" name="entry_fee" value="100" min="0" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small">Max Players</label>
+                                            <input type="number" class="form-control form-control-sm" name="max_players" value="24" min="4" max="64">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small">Prize Pool</label>
+                                            <input type="text" class="form-control form-control-sm" name="prize_pool" value="Winner takes 40%, Top 4 share prizes">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small">Description</label>
+                                            <textarea class="form-control form-control-sm" name="description" rows="2">High-level competitive play</textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-danger btn-sm w-100">
+                                            <i class="fas fa-save me-1"></i>Update
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Global Tournament Settings -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-globe me-2"></i>Global Tournament Settings</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('update_global_settings') }}">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tournament Duration (days)</label>
+                                            <input type="number" class="form-control" name="tournament_duration" value="14" min="1" max="30">
+                                        </div>
                                     </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Registration Deadline (hours before)</label>
+                                            <input type="number" class="form-control" name="registration_deadline" value="24" min="1" max="168">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Auto-Match Timeout (hours)</label>
+                                            <input type="number" class="form-control" name="match_timeout" value="48" min="12" max="168">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Minimum Players to Start</label>
+                                            <input type="number" class="form-control" name="min_players" value="4" min="2" max="16">
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Save Global Settings
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tournament Entries & Statistics -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Tournament Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <h4 class="mb-1 text-primary">{{ tournaments|length }}</h4>
+                                <small class="text-muted">Total Entries</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <h4 class="mb-1 text-warning">{{ tournaments|selectattr('completed', 'equalto', 0)|list|length }}</h4>
+                                <small class="text-muted">Active</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <a href="{{ url_for('tournament') }}" class="btn btn-success w-100">
+                            <i class="fas fa-plus me-1"></i>New Tournament Entry
+                        </a>
+                    </div>
+
+                    <!-- Recent Tournament Entries -->
+                    {% if tournaments %}
+                    <h6 class="mb-2">Recent Entries</h6>
+                    <div class="list-group list-group-flush">
+                        {% for tournament in tournaments[:5] %}
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ tournament.tournament_level }}</h6>
+                                    <p class="mb-1 small text-muted">{{ tournament.full_name }}</p>
+                                    <small class="text-muted">{{ tournament.entry_date }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge {% if tournament.completed %}bg-success{% else %}bg-warning{% endif %}">
+                                        {% if tournament.completed %}Done{% else %}Active{% endif %}
+                                    </span>
+                                    {% if not tournament.completed %}
+                                    <button class="btn btn-sm btn-outline-success mt-1" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#completeModal{{ tournament.id }}">
+                                        <i class="fas fa-check"></i>
+                                    </button>
                                     
                                     <!-- Complete Tournament Modal -->
                                     <div class="modal fade" id="completeModal{{ tournament.id }}" tabindex="-1">
-                                        <div class="modal-dialog">
+                                        <div class="modal-dialog modal-sm">
                                             <div class="modal-content">
                                                 <form method="POST" action="{{ url_for('complete_tournament', tournament_id=tournament.id) }}">
                                                     <div class="modal-header">
-                                                        <h5 class="modal-title">Complete Tournament</h5>
+                                                        <h6 class="modal-title">Complete Tournament</h6>
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body">
-                                                        <p><strong>Tournament:</strong> {{ tournament.tournament_name }}</p>
-                                                        <p><strong>Player:</strong> {{ tournament.full_name }}</p>
-                                                        
+                                                        <p><strong>{{ tournament.tournament_level }}</strong></p>
                                                         <div class="mb-3">
-                                                            <label for="result{{ tournament.id }}" class="form-label">Match Result</label>
-                                                            <select class="form-select" name="result" id="result{{ tournament.id }}">
-                                                                <option value="Win">Win</option>
-                                                                <option value="Loss">Loss</option>
-                                                                <option value="Draw">Draw</option>
+                                                            <label class="form-label">Result</label>
+                                                            <select class="form-select" name="result">
+                                                                <option value="Won - 1st Place">Won - 1st Place</option>
+                                                                <option value="2nd Place">2nd Place</option>
+                                                                <option value="3rd Place">3rd Place</option>
+                                                                <option value="4th Place">4th Place</option>
+                                                                <option value="Eliminated - Round 1">Eliminated - Round 1</option>
+                                                                <option value="Eliminated - Round 2">Eliminated - Round 2</option>
+                                                                <option value="Eliminated - Semi-Final">Eliminated - Semi-Final</option>
                                                                 <option value="No Show">No Show</option>
                                                                 <option value="Disqualified">Disqualified</option>
                                                             </select>
                                                         </div>
                                                     </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                        <button type="submit" class="btn btn-success">
-                                                            <i class="fas fa-check me-1"></i>Mark Complete
-                                                        </button>
+                                                    <div class="modal-footer p-2">
+                                                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-sm btn-success">Complete</button>
                                                     </div>
                                                 </form>
                                             </div>
                                         </div>
                                     </div>
-                                {% else %}
-                                    <span class="text-muted">
-                                        <i class="fas fa-check-circle me-1"></i>Completed
-                                    </span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Tournament Summary -->
-            <div class="row mt-4">
-                <div class="col-md-12">
-                    <div class="card bg-light">
-                        <div class="card-body">
-                            <h6 class="card-title">Tournament Summary</h6>
-                            <div class="row text-center">
-                                <div class="col-md-2">
-                                    <div class="border rounded p-2 bg-white">
-                                        <h5 class="mb-1 text-primary">{{ tournaments|length }}</h5>
-                                        <small class="text-muted">Total</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="border rounded p-2 bg-white">
-                                        <h5 class="mb-1 text-warning">{{ tournaments|selectattr('completed', 'equalto', 0)|list|length }}</h5>
-                                        <small class="text-muted">Active</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="border rounded p-2 bg-white">
-                                        <h5 class="mb-1 text-success">{{ tournaments|selectattr('completed', 'equalto', 1)|list|length }}</h5>
-                                        <small class="text-muted">Completed</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="border rounded p-2 bg-white">
-                                        <h5 class="mb-1 text-info">{{ tournaments|selectattr('match_result', 'equalto', 'Win')|list|length }}</h5>
-                                        <small class="text-muted">Wins</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="border rounded p-2 bg-white">
-                                        <h5 class="mb-1 text-danger">{{ tournaments|selectattr('match_result', 'equalto', 'Loss')|list|length }}</h5>
-                                        <small class="text-muted">Losses</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="border rounded p-2 bg-white">
-                                        <h5 class="mb-1 text-secondary">{{ tournaments|selectattr('match_result', 'equalto', 'Draw')|list|length }}</h5>
-                                        <small class="text-muted">Draws</small>
-                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-trophy fa-2x text-muted mb-2"></i>
+                        <p class="text-muted small">No tournament entries yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-sm" onclick="resetAllTournaments()">
+                            <i class="fas fa-redo me-1"></i>Reset All Tournaments
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm" onclick="exportTournamentData()">
+                            <i class="fas fa-download me-1"></i>Export Data
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" onclick="showTournamentRules()">
+                            <i class="fas fa-info-circle me-1"></i>Tournament Rules
+                        </button>
                     </div>
                 </div>
             </div>
-        {% else %}
-            <div class="text-center py-5">
-                <i class="fas fa-trophy fa-4x text-muted mb-4"></i>
-                <h4 class="text-muted">No Tournaments Found</h4>
-                <p class="text-muted">No tournament entries have been made yet.</p>
-                <div class="mt-4">
-                    <a href="{{ url_for('register') }}" class="btn btn-outline-primary me-2">
-                        <i class="fas fa-user-plus me-1"></i>Register Players
-                    </a>
-                    <a href="{{ url_for('tournament') }}" class="btn btn-primary">
-                        <i class="fas fa-trophy me-1"></i>Create First Tournament
-                    </a>
-                </div>
-            </div>
-        {% endif %}
+        </div>
     </div>
 </div>
+
+<script>
+function resetAllTournaments() {
+    if (confirm('Are you sure you want to reset all tournament data? This cannot be undone.')) {
+        fetch('/admin/reset_tournaments', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error resetting tournaments');
+                }
+            });
+    }
+}
+
+function exportTournamentData() {
+    window.location.href = '/admin/export_tournaments';
+}
+
+function showTournamentRules() {
+    alert(`Tournament Rules:
+    
+• Tournaments run for the configured duration from entry date
+• Players are matched based on skill level and location
+• Entry fees contribute to prize pools 
+• Brackets are generated automatically when minimum players is reached
+• No-shows result in automatic forfeiture
+• Disputes are resolved by tournament admin`);
+}
+</script>
 {% endblock %}

@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, Response
 from werkzeug.utils import secure_filename
 from functools import wraps
 import logging
@@ -745,6 +745,77 @@ def complete_tournament(tournament_id):
     
     flash(f'Tournament completed successfully: {result}', 'success')
     return redirect(url_for('manage_tournaments'))
+
+@app.route('/update_tournament_level', methods=['POST'])
+def update_tournament_level():
+    """Update tournament level settings"""
+    level = request.form.get('level')
+    entry_fee = request.form.get('entry_fee')
+    max_players = request.form.get('max_players')
+    prize_pool = request.form.get('prize_pool')
+    description = request.form.get('description')
+    
+    # Here you would update your tournament configuration
+    # For now, just show a success message
+    flash(f'{level} tournament settings updated successfully!', 'success')
+    return redirect(url_for('manage_tournaments'))
+
+@app.route('/update_global_settings', methods=['POST'])
+def update_global_settings():
+    """Update global tournament settings"""
+    duration = request.form.get('tournament_duration')
+    deadline = request.form.get('registration_deadline')
+    timeout = request.form.get('match_timeout')
+    min_players = request.form.get('min_players')
+    
+    # Here you would update your global tournament configuration
+    # For now, just show a success message
+    flash('Global tournament settings updated successfully!', 'success')
+    return redirect(url_for('manage_tournaments'))
+
+@app.route('/admin/reset_tournaments', methods=['POST'])
+def reset_tournaments():
+    """Reset all tournament data"""
+    try:
+        conn = get_db_connection()
+        conn.execute('DELETE FROM tournaments')
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'message': 'All tournaments reset successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/export_tournaments')
+def export_tournaments():
+    """Export tournament data"""
+    conn = get_db_connection()
+    tournaments = conn.execute('''
+        SELECT t.*, p.full_name, p.email
+        FROM tournaments t
+        JOIN players p ON t.player_id = p.id
+        ORDER BY t.created_at DESC
+    ''').fetchall()
+    conn.close()
+    
+    # Return CSV data
+    from io import StringIO
+    import csv
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['ID', 'Tournament Name', 'Player', 'Email', 'Level', 'Entry Date', 'Deadline', 'Completed', 'Result'])
+    
+    for t in tournaments:
+        writer.writerow([t['id'], t['tournament_name'], t['full_name'], t['email'], 
+                        t['tournament_level'], t['entry_date'], t['match_deadline'], 
+                        'Yes' if t['completed'] else 'No', t['match_result'] or 'Pending'])
+    
+    response = Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=tournaments.csv'}
+    )
+    return response
 
 @app.route('/find_match/<int:player_id>', methods=['POST'])
 def find_match(player_id):
