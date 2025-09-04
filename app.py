@@ -755,10 +755,25 @@ def update_tournament_level():
     prize_pool = request.form.get('prize_pool')
     description = request.form.get('description')
     
-    # Here you would update your tournament configuration
-    # For now, just show a success message
-    flash(f'{level} tournament settings updated successfully!', 'success')
-    return redirect(url_for('manage_tournaments'))
+    # Update tournament settings in database
+    if level == 'Beginner':
+        update_setting('beginner_price', entry_fee)
+        update_setting('beginner_max_players', max_players)
+        update_setting('beginner_prize_pool', prize_pool)
+        update_setting('beginner_description', description)
+    elif level == 'Intermediate':
+        update_setting('intermediate_price', entry_fee)
+        update_setting('intermediate_max_players', max_players)
+        update_setting('intermediate_prize_pool', prize_pool)
+        update_setting('intermediate_description', description)
+    elif level == 'Advanced':
+        update_setting('advanced_price', entry_fee)
+        update_setting('advanced_max_players', max_players)
+        update_setting('advanced_prize_pool', prize_pool)
+        update_setting('advanced_description', description)
+    
+    flash(f'{level} tournament settings updated successfully! Entry fee: ${entry_fee}', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/update_global_settings', methods=['POST'])
 def update_global_settings():
@@ -768,10 +783,18 @@ def update_global_settings():
     timeout = request.form.get('match_timeout')
     min_players = request.form.get('min_players')
     
-    # Here you would update your global tournament configuration
-    # For now, just show a success message
+    # Update global tournament settings in database
+    if duration:
+        update_setting('tournament_duration', duration)
+    if deadline:
+        update_setting('registration_deadline', deadline)
+    if timeout:
+        update_setting('match_timeout', timeout)
+    if min_players:
+        update_setting('min_players', min_players)
+    
     flash('Global tournament settings updated successfully!', 'success')
-    return redirect(url_for('manage_tournaments'))
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/reset_tournaments', methods=['POST'])
 def reset_tournaments():
