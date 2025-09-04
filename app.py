@@ -121,6 +121,20 @@ def init_db():
         c.execute('ALTER TABLE tournaments ADD COLUMN sport TEXT')
     except sqlite3.OperationalError:
         pass
+    
+    # Messages table for player communication
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            message TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            read_status INTEGER DEFAULT 0,
+            FOREIGN KEY(sender_id) REFERENCES players(id),
+            FOREIGN KEY(receiver_id) REFERENCES players(id)
+        )
+    ''')
         
     try:
         c.execute('ALTER TABLE tournaments ADD COLUMN payment_status TEXT DEFAULT "pending"')
@@ -626,6 +640,87 @@ def players():
     conn.close()
     
     return render_template('players.html', players=players)
+
+@app.route('/send_message', methods=['POST'])
+def send_message():
+    """Send a message between connected players"""
+    data = request.get_json()
+    sender_id = data.get('sender_id')
+    receiver_id = data.get('receiver_id')
+    message = data.get('message', '').strip()
+    
+    if not message:
+        return jsonify({'success': False, 'message': 'Message cannot be empty'})
+    
+    conn = get_db_connection()
+    
+    # Check if players are connected (have played matches together)
+    connection = conn.execute('''
+        SELECT 1 FROM matches 
+        WHERE (player1_id = ? AND player2_id = ?) 
+           OR (player1_id = ? AND player2_id = ?)
+        LIMIT 1
+    ''', (sender_id, receiver_id, receiver_id, sender_id)).fetchone()
+    
+    if not connection:
+        conn.close()
+        return jsonify({'success': False, 'message': 'You can only message players you have connected with'})
+    
+    # Insert message
+    conn.execute('''
+        INSERT INTO messages (sender_id, receiver_id, message)
+        VALUES (?, ?, ?)
+    ''', (sender_id, receiver_id, message))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'Message sent successfully'})
+
+@app.route('/get_messages/<int:player_id>')
+def get_messages(player_id):
+    """Get recent messages for a player"""
+    conn = get_db_connection()
+    
+    # Get recent messages (both sent and received)
+    messages = conn.execute('''
+        SELECT m.*, 
+               sender.full_name as sender_name,
+               receiver.full_name as receiver_name,
+               sender.selfie as sender_selfie
+        FROM messages m
+        JOIN players sender ON m.sender_id = sender.id
+        JOIN players receiver ON m.receiver_id = receiver.id
+        WHERE m.sender_id = ? OR m.receiver_id = ?
+        ORDER BY m.created_at DESC
+        LIMIT 20
+    ''', (player_id, player_id)).fetchall()
+    
+    # Mark received messages as read
+    conn.execute('''
+        UPDATE messages 
+        SET read_status = 1 
+        WHERE receiver_id = ? AND read_status = 0
+    ''', (player_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'messages': [dict(msg) for msg in messages]})
+
+@app.route('/get_unread_count/<int:player_id>')
+def get_unread_count(player_id):
+    """Get count of unread messages"""
+    conn = get_db_connection()
+    
+    count = conn.execute('''
+        SELECT COUNT(*) as count FROM messages 
+        WHERE receiver_id = ? AND read_status = 0
+    ''', (player_id,)).fetchone()['count']
+    
+    conn.close()
+    
+    return jsonify({'unread_count': count})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
