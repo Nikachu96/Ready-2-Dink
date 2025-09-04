@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Welcome {{ player.full_name }} - Tournament Management System{% endblock %}
+{% block title %}Welcome {{ player.full_name }} - MatchSpark{% endblock %}
 
 {% block content %}
 <!-- Welcome Section -->
-<div class="row mb-4">
+<div class="row mb-4 animate-in">
     <div class="col-12">
-        <div class="card bg-primary text-white">
+        <div class="card text-white" style="background: var(--gradient-primary); border: none;">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-auto">
@@ -22,19 +22,23 @@
                         {% endif %}
                     </div>
                     <div class="col">
-                        <h2 class="mb-1">Welcome back, {{ player.full_name }}!</h2>
-                        <p class="mb-0 opacity-75">
-                            <i class="fas fa-star me-1"></i>{{ player.skill_level }} • 
-                            <i class="fas fa-futbol me-1"></i>{{ player.preferred_sport or 'Tennis' }}
+                        <h2 class="mb-2 fw-bold">Welcome back, {{ player.full_name }}!</h2>
+                        <p class="mb-0 opacity-90 fs-5">
+                            <span class="badge bg-light text-dark me-2">
+                                <i class="fas fa-star me-1"></i>{{ player.skill_level }}
+                            </span>
+                            <span class="badge bg-light text-dark">
+                                <i class="fas fa-futbol me-1"></i>{{ player.preferred_sport or 'Tennis' }}
+                            </span>
                         </p>
                     </div>
                     <div class="col-auto">
-                        <div class="btn-group">
-                            <button onclick="findNewMatch({{ player.id }})" class="btn btn-light">
-                                <i class="fas fa-search me-1"></i>Find Match
+                        <div class="d-flex gap-3">
+                            <button onclick="findNewMatch({{ player.id }})" class="btn btn-light btn-lg px-4">
+                                <i class="fas fa-search me-2"></i>Find Match
                             </button>
-                            <a href="{{ url_for('tournament_entry', player_id=player.id) }}" class="btn btn-success">
-                                <i class="fas fa-trophy me-1"></i>Enter Tournament
+                            <a href="{{ url_for('tournament_entry', player_id=player.id) }}" class="btn btn-warning btn-lg px-4">
+                                <i class="fas fa-trophy me-2"></i>Join Tournament
                             </a>
                         </div>
                     </div>
@@ -46,10 +50,10 @@
 
 <!-- Available Tournaments Call-to-Action -->
 {% if available_tournaments %}
-<div class="row mb-4">
+<div class="row mb-4 animate-in">
     <div class="col-12">
-        <div class="card border-success">
-            <div class="card-header bg-success text-white">
+        <div class="card" style="border: 2px solid #38ef7d; background: linear-gradient(135deg, rgba(17, 153, 142, 0.1) 0%, rgba(56, 239, 125, 0.1) 100%);"
+            <div class="card-header text-white" style="background: var(--gradient-success); border: none;">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-trophy me-2"></i>Tournaments Open for Registration
