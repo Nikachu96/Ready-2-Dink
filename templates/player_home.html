@@ -599,70 +599,88 @@ function submitScore() {
 }
 
 // Membership modal functionality
-function showMembershipModal(type) {
-    let title, description, price, features;
-    
-    if (type === 'discovery') {
-        title = 'Player Discovery';
-        description = 'Connect with other pickleball players in your area';
-        price = '$4.99/month';
-        features = [
-            'Find and match with compatible players',
-            'Chat with connected players',
-            'Organize casual games',
-            'View player profiles and skill levels',
-            'Location-based player search'
-        ];
-    } else if (type === 'tournament') {
-        title = 'Tournament Access';
-        description = 'Enter competitive tournaments and climb the ranks';
-        price = '$9.99/month';
-        features = [
-            'Everything in Player Discovery',
-            'Enter paid tournaments',
-            'Compete for cash prizes',
-            'Tournament brackets and standings',
-            'Advanced player statistics',
-            'Priority tournament registration'
-        ];
-    }
-    
+function showMembershipModal(suggestedType = 'discovery') {
     const modalHtml = `
         <div class="modal fade" id="membershipModal" tabindex="-1" aria-labelledby="membershipModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <div class="modal-header text-white" style="background: var(--gradient-primary);">
                         <h5 class="modal-title" id="membershipModalLabel">
-                            <i class="fas fa-star me-2"></i>Upgrade to ${title}
+                            <i class="fas fa-star me-2"></i>Choose Your Membership
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="text-center mb-4">
-                            <div class="display-4 text-primary fw-bold">${price}</div>
-                            <p class="text-muted">${description}</p>
-                            <span class="badge bg-success fs-6 px-3 py-2">First Month FREE</span>
+                            <h3 class="fw-bold">Start Your Journey</h3>
+                            <p class="text-muted">Choose the membership that fits your pickleball goals</p>
+                            <span class="badge bg-success fs-6 px-3 py-2">First Month FREE for both plans</span>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-12">
-                                <h6 class="fw-bold mb-3">What's Included:</h6>
-                                <ul class="list-unstyled">
-                                    ${features.map(feature => `<li class="mb-2"><i class="fas fa-check text-success me-2"></i>${feature}</li>`).join('')}
-                                </ul>
+                        <div class="row g-4">
+                            <!-- Player Discovery -->
+                            <div class="col-md-6">
+                                <div class="card h-100 ${suggestedType === 'discovery' ? 'border-primary border-3' : 'border-2'}">
+                                    ${suggestedType === 'discovery' ? '<div class="position-absolute top-0 start-50 translate-middle"><span class="badge bg-primary">Recommended</span></div>' : ''}
+                                    <div class="card-body p-4">
+                                        <div class="text-center mb-4">
+                                            <i class="fas fa-users text-primary fa-3x mb-3"></i>
+                                            <h4 class="fw-bold">Player Discovery</h4>
+                                            <div class="display-5 text-primary fw-bold">$4.99</div>
+                                            <small class="text-muted">per month</small>
+                                        </div>
+                                        
+                                        <ul class="list-unstyled mb-4">
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Find and match with compatible players</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Chat with connected players</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Organize casual games</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>View detailed player profiles</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Location-based player search</li>
+                                        </ul>
+                                        
+                                        <button type="button" class="btn btn-primary w-100 btn-lg" onclick="startSubscription('discovery')">
+                                            <i class="fas fa-rocket me-2"></i>Start Free Trial
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tournament Access -->
+                            <div class="col-md-6">
+                                <div class="card h-100 ${suggestedType === 'tournament' ? 'border-warning border-3' : 'border-2'}">
+                                    ${suggestedType === 'tournament' ? '<div class="position-absolute top-0 start-50 translate-middle"><span class="badge bg-warning">Recommended</span></div>' : ''}
+                                    <div class="card-body p-4">
+                                        <div class="text-center mb-4">
+                                            <i class="fas fa-trophy text-warning fa-3x mb-3"></i>
+                                            <h4 class="fw-bold">Tournament Access</h4>
+                                            <div class="display-5 text-warning fw-bold">$9.99</div>
+                                            <small class="text-muted">per month</small>
+                                        </div>
+                                        
+                                        <ul class="list-unstyled mb-4">
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i><strong>Everything in Player Discovery</strong></li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Enter paid tournaments</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Compete for cash prizes</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Tournament brackets and standings</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Advanced player statistics</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Priority tournament registration</li>
+                                        </ul>
+                                        
+                                        <button type="button" class="btn btn-warning w-100 btn-lg" onclick="startSubscription('tournament')">
+                                            <i class="fas fa-crown me-2"></i>Start Free Trial
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="alert alert-info">
+                        <div class="alert alert-info mt-4">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Free Trial:</strong> Start your free trial today! We'll collect your payment information but won't charge you until your second month.
+                            <strong>Free Trial:</strong> Start your free trial today! We'll collect your payment information but won't charge you until your second month. Cancel anytime during your trial.
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Maybe Later</button>
-                        <button type="button" class="btn btn-primary btn-lg px-4" onclick="startSubscription('${type}')">
-                            <i class="fas fa-rocket me-2"></i>Start Free Trial
-                        </button>
                     </div>
                 </div>
             </div>
