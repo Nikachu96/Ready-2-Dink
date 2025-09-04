@@ -50,9 +50,14 @@
                 <h5 class="card-title mb-0">
                     <i class="fas fa-gamepad me-2"></i>My Matches
                 </h5>
-                <button onclick="findNewMatch({{ player.id }})" class="btn btn-sm btn-primary">
-                    <i class="fas fa-search me-1"></i>Find New Match
-                </button>
+                <div class="btn-group">
+                    <button onclick="findNewMatch({{ player.id }})" class="btn btn-sm btn-primary">
+                        <i class="fas fa-search me-1"></i>Find Match
+                    </button>
+                    <a href="{{ url_for('tournament_entry', player_id=player.id) }}" class="btn btn-sm btn-success">
+                        <i class="fas fa-trophy me-1"></i>Enter Tournament
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 {% if matches %}

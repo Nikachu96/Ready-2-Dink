@@ -141,35 +141,31 @@ def get_db_connection():
     return conn
 
 def get_tournament_levels():
-    """Get available tournament levels with pricing"""
+    """Get available tournament levels with pricing and player limits"""
     return {
         'Beginner': {
             'name': 'Beginner League',
             'description': 'Perfect for new players and casual competition',
-            'entry_fee': 5.00,
+            'entry_fee': 10.00,
             'prize_pool': 'Winner takes 60%',
-            'skill_requirements': 'Beginner level players'
+            'skill_requirements': 'Beginner level players',
+            'max_players': 16
         },
         'Intermediate': {
             'name': 'Intermediate Championship',
             'description': 'For players with solid fundamentals',
-            'entry_fee': 15.00,
+            'entry_fee': 20.00,
             'prize_pool': 'Winner takes 50%, Runner-up 30%',
-            'skill_requirements': 'Intermediate level players'
+            'skill_requirements': 'Intermediate level players',
+            'max_players': 32
         },
         'Advanced': {
             'name': 'Advanced Tournament',
             'description': 'High-level competitive play',
-            'entry_fee': 35.00,
+            'entry_fee': 40.00,
             'prize_pool': 'Winner takes 40%, Top 4 share prizes',
-            'skill_requirements': 'Advanced level players'
-        },
-        'Professional': {
-            'name': 'Pro Circuit',
-            'description': 'Elite competition for the best players',
-            'entry_fee': 75.00,
-            'prize_pool': 'Winner takes 35%, Top 8 share prizes',
-            'skill_requirements': 'Professional level players'
+            'skill_requirements': 'Advanced level players',
+            'max_players': 32
         }
     }
 
@@ -308,30 +304,48 @@ def register():
     
     return render_template('register.html')
 
-@app.route('/tournament', methods=['GET', 'POST'])
+@app.route('/tournament')
 def tournament():
-    """Tournament entry form with levels and fees"""
+    """Redirect to tournament entry for a specific player"""
+    return redirect(url_for('index'))
+
+@app.route('/tournament/<int:player_id>', methods=['GET', 'POST'])
+def tournament_entry(player_id):
+    """Tournament entry form with levels and fees for a specific player"""
+    # Get player info first
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    if not player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('index'))
+    
     if request.method == 'POST':
-        required_fields = ['player_id', 'tournament_level', 'sport']
+        required_fields = ['tournament_level', 'sport']
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
-                return redirect(url_for('tournament'))
+                return redirect(url_for('tournament_entry', player_id=player_id))
         
         try:
-            conn = get_db_connection()
-            
-            # Get player info to verify skill level match
-            player = conn.execute('SELECT * FROM players WHERE id = ?', (request.form['player_id'],)).fetchone()
             tournament_levels = get_tournament_levels()
             selected_level = request.form['tournament_level']
+            
+            # Check current tournament entries for this level to enforce player limits
+            current_entries = conn.execute('''
+                SELECT COUNT(*) as count FROM tournaments 
+                WHERE tournament_level = ? AND completed = 0
+            ''', (selected_level,)).fetchone()['count']
+            
+            max_players = tournament_levels[selected_level]['max_players']
+            if current_entries >= max_players:
+                flash(f'{selected_level} tournament is full ({max_players} players max). Try a different level.', 'warning')
+                return redirect(url_for('tournament_entry', player_id=player_id))
             
             # Check if player skill matches tournament level (with some flexibility)
             skill_mapping = {
                 'Beginner': ['Beginner'],
                 'Intermediate': ['Beginner', 'Intermediate'], 
-                'Advanced': ['Intermediate', 'Advanced'],
-                'Professional': ['Advanced', 'Professional']
+                'Advanced': ['Intermediate', 'Advanced']
             }
             
             if player['skill_level'] not in skill_mapping.get(selected_level, []):
@@ -344,7 +358,7 @@ def tournament():
             conn.execute('''
                 INSERT INTO tournaments (player_id, tournament_name, tournament_level, entry_fee, sport, entry_date, match_deadline, payment_status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (request.form['player_id'], 
+            ''', (player_id, 
                   tournament_levels[selected_level]['name'],
                   selected_level,
                   tournament_levels[selected_level]['entry_fee'],
@@ -356,20 +370,25 @@ def tournament():
             conn.commit()
             conn.close()
             
-            flash(f'Tournament entry successful! Entry fee: ${tournament_levels[selected_level]["entry_fee"]}', 'success')
-            return redirect(url_for('dashboard', player_id=request.form['player_id']))
+            flash(f'Tournament entry successful! Entry fee: ${tournament_levels[selected_level]["entry_fee"]:.0f}', 'success')
+            return redirect(url_for('dashboard', player_id=player_id))
             
         except Exception as e:
             flash(f'Tournament entry failed: {str(e)}', 'danger')
     
-    # Get all players for dropdown
-    conn = get_db_connection()
-    players = conn.execute('SELECT id, full_name, email, skill_level, COALESCE(preferred_sport, "Tennis") as preferred_sport FROM players ORDER BY full_name').fetchall()
+    # Get current tournament entries count for each level
+    tournament_levels = get_tournament_levels()
+    for level_key in tournament_levels:
+        count = conn.execute('''
+            SELECT COUNT(*) as count FROM tournaments 
+            WHERE tournament_level = ? AND completed = 0
+        ''', (level_key,)).fetchone()['count']
+        tournament_levels[level_key]['current_entries'] = count
+        tournament_levels[level_key]['spots_remaining'] = tournament_levels[level_key]['max_players'] - count
+    
     conn.close()
     
-    tournament_levels = get_tournament_levels()
-    
-    return render_template('tournament.html', players=players, tournament_levels=tournament_levels)
+    return render_template('tournament.html', player=player, tournament_levels=tournament_levels)
 
 @app.route('/dashboard/<int:player_id>')
 def dashboard(player_id):
