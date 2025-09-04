@@ -696,6 +696,91 @@ def players():
     
     return render_template('players.html', players=players)
 
+@app.route('/profile_settings')
+def profile_settings():
+    """Profile settings page - get current player"""
+    conn = get_db_connection()
+    players = conn.execute('SELECT * FROM players ORDER BY created_at DESC LIMIT 1').fetchall()
+    conn.close()
+    
+    if not players:
+        flash('Please register first', 'warning')
+        return redirect(url_for('register'))
+    
+    player = players[0]  # Get the most recent (current) player
+    return render_template('profile_settings.html', player=player)
+
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    """Update player profile information"""
+    conn = get_db_connection()
+    
+    # Get current player ID
+    players = conn.execute('SELECT id FROM players ORDER BY created_at DESC LIMIT 1').fetchall()
+    if not players:
+        flash('Player not found', 'danger')
+        return redirect(url_for('register'))
+    
+    player_id = players[0]['id']
+    
+    # Form validation
+    required_fields = ['full_name', 'address', 'dob', 'location1', 'preferred_court', 'skill_level', 'email']
+    for field in required_fields:
+        if not request.form.get(field):
+            flash(f'{field.replace("_", " ").title()} is required', 'danger')
+            return redirect(url_for('profile_settings'))
+    
+    # Handle file upload
+    selfie_filename = None
+    if 'selfie' in request.files:
+        file = request.files['selfie']
+        if file and file.filename and file.filename != '':
+            if allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                # Add timestamp to avoid filename conflicts
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+                selfie_filename = timestamp + filename
+                
+                # Ensure upload directory exists
+                upload_path = os.path.join(app.static_folder, 'uploads')
+                os.makedirs(upload_path, exist_ok=True)
+                
+                file.save(os.path.join(upload_path, selfie_filename))
+    
+    try:
+        # Update player information
+        if selfie_filename:
+            conn.execute('''
+                UPDATE players 
+                SET full_name = ?, address = ?, dob = ?, location1 = ?, location2 = ?, 
+                    preferred_court = ?, skill_level = ?, email = ?, selfie = ?
+                WHERE id = ?
+            ''', (request.form['full_name'], request.form['address'], request.form['dob'], 
+                  request.form['location1'], request.form.get('location2', ''), 
+                  request.form['preferred_court'], request.form['skill_level'], 
+                  request.form['email'], selfie_filename, player_id))
+        else:
+            conn.execute('''
+                UPDATE players 
+                SET full_name = ?, address = ?, dob = ?, location1 = ?, location2 = ?, 
+                    preferred_court = ?, skill_level = ?, email = ?
+                WHERE id = ?
+            ''', (request.form['full_name'], request.form['address'], request.form['dob'], 
+                  request.form['location1'], request.form.get('location2', ''), 
+                  request.form['preferred_court'], request.form['skill_level'], 
+                  request.form['email'], player_id))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('index'))
+        
+    except Exception as e:
+        conn.close()
+        flash(f'Error updating profile: {str(e)}', 'danger')
+        return redirect(url_for('profile_settings'))
+
 @app.route('/send_message', methods=['POST'])
 def send_message():
     """Send a message between connected players"""
