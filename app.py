@@ -5,12 +5,16 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.utils import secure_filename
 from functools import wraps
 import logging
+import stripe
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
+
+# Configure Stripe
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
 # Configuration
 UPLOAD_FOLDER = 'static/uploads'
@@ -82,6 +86,32 @@ def init_db():
         
     try:
         c.execute('ALTER TABLE players ADD COLUMN is_admin INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    # Add membership columns
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN membership_type TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN stripe_customer_id TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN subscription_status TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN subscription_end_date TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN trial_end_date TEXT DEFAULT NULL')
     except sqlite3.OperationalError:
         pass  # Column already exists
         
@@ -1221,6 +1251,134 @@ def update_settings():
     
     flash('Settings updated successfully!', 'success')
     return redirect(url_for('admin_settings'))
+
+# Stripe Subscription Routes
+@app.route('/create_subscription', methods=['POST'])
+def create_subscription():
+    """Create Stripe subscription with free trial"""
+    if 'player_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    data = request.get_json()
+    membership_type = data.get('membership_type')
+    player_id = data.get('player_id')
+    
+    if membership_type not in ['discovery', 'tournament']:
+        return jsonify({'error': 'Invalid membership type'}), 400
+    
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    
+    if not player:
+        conn.close()
+        return jsonify({'error': 'Player not found'}), 404
+    
+    try:
+        # Create or retrieve Stripe customer
+        if player['stripe_customer_id']:
+            customer = stripe.Customer.retrieve(player['stripe_customer_id'])
+        else:
+            customer = stripe.Customer.create(
+                email=player['email'],
+                name=player['full_name'],
+                metadata={'player_id': str(player_id)}
+            )
+            
+            # Update player with customer ID
+            conn.execute(
+                'UPDATE players SET stripe_customer_id = ? WHERE id = ?',
+                (customer.id, player_id)
+            )
+            conn.commit()
+        
+        # Define subscription prices (these should be created in Stripe Dashboard)
+        price_ids = {
+            'discovery': 'price_discovery_monthly',  # Replace with actual Stripe Price ID
+            'tournament': 'price_tournament_monthly'  # Replace with actual Stripe Price ID
+        }
+        
+        # Get domain for success/cancel URLs
+        domain = request.headers.get('Host', 'localhost:5000')
+        protocol = 'https' if 'replit' in domain else 'http'
+        
+        # Create Stripe Checkout Session with free trial
+        checkout_session = stripe.checkout.Session.create(
+            customer=customer.id,
+            line_items=[{
+                'price': price_ids[membership_type],
+                'quantity': 1,
+            }],
+            mode='subscription',
+            subscription_data={
+                'trial_period_days': 30,  # 30-day free trial
+                'metadata': {
+                    'membership_type': membership_type,
+                    'player_id': str(player_id)
+                }
+            },
+            success_url=f'{protocol}://{domain}/subscription_success?session_id={{CHECKOUT_SESSION_ID}}',
+            cancel_url=f'{protocol}://{domain}/subscription_cancel',
+            automatic_tax={'enabled': True},
+        )
+        
+        conn.close()
+        return jsonify({'checkout_url': checkout_session.url})
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/subscription_success')
+def subscription_success():
+    """Handle successful subscription"""
+    session_id = request.args.get('session_id')
+    
+    if not session_id:
+        flash('Invalid subscription session', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        # Retrieve the checkout session
+        checkout_session = stripe.checkout.Session.retrieve(session_id)
+        customer_id = checkout_session.customer
+        subscription_id = checkout_session.subscription
+        
+        # Get subscription details
+        subscription = stripe.Subscription.retrieve(str(subscription_id))
+        membership_type = subscription.metadata.get('membership_type')
+        player_id_str = subscription.metadata.get('player_id')
+        player_id = int(player_id_str) if player_id_str else None
+        
+        # Update player membership
+        conn = get_db_connection()
+        trial_end = datetime.fromtimestamp(subscription.trial_end) if hasattr(subscription, 'trial_end') and subscription.trial_end else None
+        
+        conn.execute('''
+            UPDATE players 
+            SET membership_type = ?, 
+                subscription_status = ?, 
+                trial_end_date = ?
+            WHERE id = ?
+        ''', (membership_type, subscription.status, trial_end.isoformat() if trial_end else None, player_id))
+        
+        conn.commit()
+        conn.close()
+        
+        flash(f'Welcome to {membership_type.replace("_", " ").title()} membership! Your free trial has started.', 'success')
+        return redirect(url_for('player_home', player_id=player_id))
+        
+    except Exception as e:
+        flash('Error processing subscription. Please contact support.', 'danger')
+        return redirect(url_for('index'))
+
+@app.route('/subscription_cancel')
+def subscription_cancel():
+    """Handle cancelled subscription"""
+    flash('Subscription cancelled. You can upgrade anytime from your dashboard.', 'info')
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
