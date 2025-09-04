@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Tournaments - Tournament Management System{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="card-title mb-0">
+            <i class="fas fa-cog me-2"></i>Tournament Management
+        </h4>
+        <div>
+            <a href="{{ url_for('tournament') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>New Tournament Entry
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if tournaments %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tournament</th>
+                            <th>Player</th>
+                            <th>Email</th>
+                            <th>Entry Date</th>
+                            <th>Deadline</th>
+                            <th>Status</th>
+                            <th>Result</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tournament in tournaments %}
+                        <tr>
+                            <td>{{ tournament.id }}</td>
+                            <td>{{ tournament.tournament_name }}</td>
+                            <td>
+                                <a href="{{ url_for('dashboard', player_id=tournament.player_id) }}" 
+                                   class="text-decoration-none">
+                                    {{ tournament.full_name }}
+                                </a>
+                            </td>
+                            <td>{{ tournament.email }}</td>
+                            <td>{{ tournament.entry_date }}</td>
+                            <td>{{ tournament.match_deadline }}</td>
+                            <td>
+                                {% if tournament.completed %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% else %}
+                                    {% set deadline_date = tournament.match_deadline %}
+                                    {% set today_date = moment().format('YYYY-MM-DD') %}
+                                    <span class="badge bg-warning">Active</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if tournament.match_result %}
+                                    <span class="badge bg-info">{{ tournament.match_result }}</span>
+                                {% else %}
+                                    <span class="text-muted">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not tournament.completed %}
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-success" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#completeModal{{ tournament.id }}">
+                                            <i class="fas fa-check me-1"></i>Complete
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Complete Tournament Modal -->
+                                    <div class="modal fade" id="completeModal{{ tournament.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form method="POST" action="{{ url_for('complete_tournament', tournament_id=tournament.id) }}">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Complete Tournament</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p><strong>Tournament:</strong> {{ tournament.tournament_name }}</p>
+                                                        <p><strong>Player:</strong> {{ tournament.full_name }}</p>
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="result{{ tournament.id }}" class="form-label">Match Result</label>
+                                                            <select class="form-select" name="result" id="result{{ tournament.id }}">
+                                                                <option value="Win">Win</option>
+                                                                <option value="Loss">Loss</option>
+                                                                <option value="Draw">Draw</option>
+                                                                <option value="No Show">No Show</option>
+                                                                <option value="Disqualified">Disqualified</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-success">
+                                                            <i class="fas fa-check me-1"></i>Mark Complete
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">
+                                        <i class="fas fa-check-circle me-1"></i>Completed
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Tournament Summary -->
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">Tournament Summary</h6>
+                            <div class="row text-center">
+                                <div class="col-md-2">
+                                    <div class="border rounded p-2 bg-white">
+                                        <h5 class="mb-1 text-primary">{{ tournaments|length }}</h5>
+                                        <small class="text-muted">Total</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="border rounded p-2 bg-white">
+                                        <h5 class="mb-1 text-warning">{{ tournaments|selectattr('completed', 'equalto', 0)|list|length }}</h5>
+                                        <small class="text-muted">Active</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="border rounded p-2 bg-white">
+                                        <h5 class="mb-1 text-success">{{ tournaments|selectattr('completed', 'equalto', 1)|list|length }}</h5>
+                                        <small class="text-muted">Completed</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="border rounded p-2 bg-white">
+                                        <h5 class="mb-1 text-info">{{ tournaments|selectattr('match_result', 'equalto', 'Win')|list|length }}</h5>
+                                        <small class="text-muted">Wins</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="border rounded p-2 bg-white">
+                                        <h5 class="mb-1 text-danger">{{ tournaments|selectattr('match_result', 'equalto', 'Loss')|list|length }}</h5>
+                                        <small class="text-muted">Losses</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="border rounded p-2 bg-white">
+                                        <h5 class="mb-1 text-secondary">{{ tournaments|selectattr('match_result', 'equalto', 'Draw')|list|length }}</h5>
+                                        <small class="text-muted">Draws</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-trophy fa-4x text-muted mb-4"></i>
+                <h4 class="text-muted">No Tournaments Found</h4>
+                <p class="text-muted">No tournament entries have been made yet.</p>
+                <div class="mt-4">
+                    <a href="{{ url_for('register') }}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-user-plus me-1"></i>Register Players
+                    </a>
+                    <a href="{{ url_for('tournament') }}" class="btn btn-primary">
+                        <i class="fas fa-trophy me-1"></i>Create First Tournament
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

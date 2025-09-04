@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Register Player - Tournament Management System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-user-plus me-2"></i>Player Registration
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="full_name" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Full Name *
+                                </label>
+                                <input type="text" class="form-control" id="full_name" name="full_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope me-1"></i>Email Address *
+                                </label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">
+                            <i class="fas fa-home me-1"></i>Address *
+                        </label>
+                        <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="dob" class="form-label">
+                                    <i class="fas fa-calendar me-1"></i>Date of Birth *
+                                </label>
+                                <input type="date" class="form-control" id="dob" name="dob" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="location1" class="form-label">
+                                    <i class="fas fa-map-marker-alt me-1"></i>Primary Location *
+                                </label>
+                                <input type="text" class="form-control" id="location1" name="location1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="location2" class="form-label">
+                                    <i class="fas fa-map-marker me-1"></i>Secondary Location
+                                </label>
+                                <input type="text" class="form-control" id="location2" name="location2">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="skill_level" class="form-label">
+                                    <i class="fas fa-star me-1"></i>Skill Level *
+                                </label>
+                                <select class="form-select" id="skill_level" name="skill_level" required>
+                                    <option value="">Select skill level</option>
+                                    <option value="Beginner">Beginner</option>
+                                    <option value="Intermediate">Intermediate</option>
+                                    <option value="Advanced">Advanced</option>
+                                    <option value="Professional">Professional</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="selfie" class="form-label">
+                                    <i class="fas fa-camera me-1"></i>Profile Photo
+                                </label>
+                                <input type="file" class="form-control" id="selfie" name="selfie" accept="image/*">
+                                <div class="form-text">Optional: Upload a profile photo (PNG, JPG, JPEG, GIF)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Register Player
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Set max date for date of birth to today
+document.getElementById('dob').max = new Date().toISOString().split('T')[0];
+
+// Preview uploaded image
+document.getElementById('selfie').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Create or update image preview
+            let preview = document.getElementById('image-preview');
+            if (!preview) {
+                preview = document.createElement('img');
+                preview.id = 'image-preview';
+                preview.className = 'img-thumbnail mt-2';
+                preview.style.maxWidth = '150px';
+                preview.style.maxHeight = '150px';
+                document.getElementById('selfie').parentNode.appendChild(preview);
+            }
+            preview.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}

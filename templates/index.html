@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Tournament Management System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="jumbotron bg-primary text-white p-5 rounded mb-4">
+            <h1 class="display-4">Tournament Management System</h1>
+            <p class="lead">Manage player registrations, tournament entries, and track match progress all in one place.</p>
+            <div class="row mt-4">
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <h3>{{ total_players }}</h3>
+                            <p class="mb-0">Registered Players</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body text-center">
+                            <i class="fas fa-clock fa-2x mb-2"></i>
+                            <h3>{{ active_tournaments }}</h3>
+                            <p class="mb-0">Active Tournaments</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <h3>{{ completed_tournaments }}</h3>
+                            <p class="mb-0">Completed Tournaments</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chart-line fa-2x mb-2"></i>
+                            <h3>{{ (total_players * 100) // (total_players + 1) if total_players > 0 else 0 }}%</h3>
+                            <p class="mb-0">Participation Rate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>Recent Tournament Entries
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_tournaments %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Tournament</th>
+                                    <th>Player</th>
+                                    <th>Entry Date</th>
+                                    <th>Deadline</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tournament in recent_tournaments %}
+                                <tr>
+                                    <td>{{ tournament.tournament_name }}</td>
+                                    <td>{{ tournament.full_name }}</td>
+                                    <td>{{ tournament.entry_date }}</td>
+                                    <td>{{ tournament.match_deadline }}</td>
+                                    <td>
+                                        {% if tournament.completed %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Active</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No tournaments yet</h5>
+                        <p class="text-muted">Get started by registering players and entering tournaments!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-rocket me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('register') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-plus me-2"></i>Register New Player
+                    </a>
+                    <a href="{{ url_for('tournament') }}" class="btn btn-outline-success">
+                        <i class="fas fa-trophy me-2"></i>Enter Tournament
+                    </a>
+                    <a href="{{ url_for('manage_tournaments') }}" class="btn btn-outline-info">
+                        <i class="fas fa-cog me-2"></i>Manage Tournaments
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>System Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li><i class="fas fa-calendar me-2"></i>Match deadline: 7 days from entry</li>
+                    <li><i class="fas fa-upload me-2"></i>Photo upload supported</li>
+                    <li><i class="fas fa-shield-alt me-2"></i>Secure data storage</li>
+                    <li><i class="fas fa-mobile-alt me-2"></i>Mobile-friendly interface</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

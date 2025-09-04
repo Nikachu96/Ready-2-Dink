@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}{{ player.full_name }} Dashboard - Tournament Management System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user me-2"></i>Player Profile
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if player.selfie %}
+                    <div class="text-center mb-3">
+                        <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                             class="img-thumbnail" style="max-width: 150px; max-height: 150px;" 
+                             alt="Player Photo">
+                    </div>
+                {% endif %}
+                
+                <h5>{{ player.full_name }}</h5>
+                <p class="text-muted mb-1">
+                    <i class="fas fa-envelope me-1"></i>{{ player.email }}
+                </p>
+                <p class="text-muted mb-1">
+                    <i class="fas fa-calendar me-1"></i>{{ player.dob }}
+                </p>
+                <p class="text-muted mb-1">
+                    <i class="fas fa-star me-1"></i>{{ player.skill_level }}
+                </p>
+                <p class="text-muted mb-1">
+                    <i class="fas fa-map-marker-alt me-1"></i>{{ player.location1 }}
+                    {% if player.location2 %}, {{ player.location2 }}{% endif %}
+                </p>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>Registered: {{ player.created_at }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-trophy me-2"></i>Tournament History
+                </h5>
+                <a href="{{ url_for('tournament') }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus me-1"></i>Enter New Tournament
+                </a>
+            </div>
+            <div class="card-body">
+                {% if tournaments %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Tournament</th>
+                                    <th>Entry Date</th>
+                                    <th>Deadline</th>
+                                    <th>Status</th>
+                                    <th>Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tournament in tournaments %}
+                                <tr>
+                                    <td>{{ tournament.tournament_name }}</td>
+                                    <td>{{ tournament.entry_date }}</td>
+                                    <td>{{ tournament.match_deadline }}</td>
+                                    <td>
+                                        {% if tournament.completed %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% else %}
+                                            {% set deadline = tournament.match_deadline %}
+                                            {% set today = moment().format('YYYY-MM-DD') %}
+                                            {% if deadline < today %}
+                                                <span class="badge bg-danger">Overdue</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Active</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if tournament.match_result %}
+                                            {{ tournament.match_result }}
+                                        {% else %}
+                                            <span class="text-muted">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="border rounded p-2">
+                                    <h5 class="mb-1">{{ tournaments|selectattr('completed', 'equalto', 0)|list|length }}</h5>
+                                    <small class="text-muted">Active</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-2">
+                                    <h5 class="mb-1">{{ tournaments|selectattr('completed', 'equalto', 1)|list|length }}</h5>
+                                    <small class="text-muted">Completed</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-2">
+                                    <h5 class="mb-1">{{ tournaments|length }}</h5>
+                                    <small class="text-muted">Total</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-2">
+                                    <h5 class="mb-1">{{ ((tournaments|selectattr('completed', 'equalto', 1)|list|length / tournaments|length * 100) if tournaments|length > 0 else 0)|round|int }}%</h5>
+                                    <small class="text-muted">Completion Rate</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Tournament Entries</h5>
+                        <p class="text-muted">This player hasn't entered any tournaments yet.</p>
+                        <a href="{{ url_for('tournament') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Enter First Tournament
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

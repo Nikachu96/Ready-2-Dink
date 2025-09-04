@@ -1,0 +1,2 @@
+# This file ensures the uploads directory is tracked in version control
+# even when it's empty. The directory is needed for player photo uploads.
