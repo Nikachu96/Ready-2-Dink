@@ -823,7 +823,8 @@ def update_profile():
                 selfie_filename = timestamp + filename
                 
                 # Ensure upload directory exists
-                upload_path = os.path.join(app.static_folder, 'uploads')
+                static_folder = app.static_folder or 'static'
+                upload_path = os.path.join(static_folder, 'uploads')
                 os.makedirs(upload_path, exist_ok=True)
                 
                 file.save(os.path.join(upload_path, selfie_filename))
@@ -1327,9 +1328,6 @@ def create_subscription():
     except Exception as e:
         conn.close()
         return jsonify({'error': str(e)}), 500
-    except Exception as e:
-        conn.close()
-        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/subscription_success')
 def subscription_success():
@@ -1367,7 +1365,8 @@ def subscription_success():
         conn.commit()
         conn.close()
         
-        flash(f'Welcome to {membership_type.replace("_", " ").title()} membership! Your free trial has started.', 'success')
+        membership_display = membership_type.replace("_", " ").title() if membership_type else "Premium"
+        flash(f'Welcome to {membership_display} membership! Your free trial has started.', 'success')
         return redirect(url_for('player_home', player_id=player_id))
         
     except Exception as e:
