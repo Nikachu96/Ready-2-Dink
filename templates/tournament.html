@@ -158,7 +158,11 @@
 {% block scripts %}
 <script>
 function selectTournament(tournamentId, cardElement) {
-    document.getElementById('tournament_' + tournamentId).checked = true;
+    // Check the radio button
+    const radioButton = document.getElementById('tournament_' + tournamentId);
+    if (radioButton) {
+        radioButton.checked = true;
+    }
     
     // Remove active class from all cards
     document.querySelectorAll('.tournament-card').forEach(card => {
@@ -166,7 +170,7 @@ function selectTournament(tournamentId, cardElement) {
     });
     
     // Add active class to selected card
-    if (cardElement) {
+    if (cardElement && cardElement.classList) {
         cardElement.classList.add('border-primary', 'bg-light');
     }
 }
@@ -187,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-});
 });
 
 // Add styling for interactive cards
