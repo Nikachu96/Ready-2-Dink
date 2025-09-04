@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Welcome {{ player.full_name }} - MatchSpark{% endblock %}
+{% block title %}Welcome {{ player.full_name.split()[0] }} - MatchSpark{% endblock %}
 
 {% block content %}
 <!-- Welcome Section -->
@@ -22,7 +22,7 @@
                         {% endif %}
                     </div>
                     <div class="col">
-                        <h2 class="mb-2 fw-bold">Welcome back, {{ player.full_name }}!</h2>
+                        <h2 class="mb-2 fw-bold">Welcome back, {{ player.full_name.split()[0] }}!</h2>
                         <p class="mb-0 opacity-90 fs-5">
                             <span class="badge bg-light text-dark me-2">
                                 <i class="fas fa-star me-1"></i>{{ player.skill_level }}
