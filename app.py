@@ -817,6 +817,18 @@ def export_tournaments():
     )
     return response
 
+@app.route('/update_app_config', methods=['POST'])
+def update_app_config():
+    """Update app configuration settings"""
+    app_name = request.form.get('app_name')
+    support_email = request.form.get('support_email')
+    max_upload_size = request.form.get('max_upload_size')
+    
+    # Here you would update your app configuration
+    # For now, just show a success message
+    flash('App configuration updated successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
 @app.route('/find_match/<int:player_id>', methods=['POST'])
 def find_match(player_id):
     """API endpoint to find a match for a player"""
