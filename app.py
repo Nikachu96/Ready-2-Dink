@@ -304,10 +304,41 @@ def register():
     
     return render_template('register.html')
 
-@app.route('/tournament')
-def tournament():
-    """Redirect to tournament entry for a specific player"""
-    return redirect(url_for('index'))
+@app.route('/tournaments')
+def tournaments_overview():
+    """Public tournament overview page"""
+    conn = get_db_connection()
+    
+    tournament_levels = get_tournament_levels()
+    
+    # Get current tournament entries count for each level
+    for level_key in tournament_levels:
+        count = conn.execute('''
+            SELECT COUNT(*) as count FROM tournaments 
+            WHERE tournament_level = ? AND completed = 0
+        ''', (level_key,)).fetchone()['count']
+        tournament_levels[level_key]['current_entries'] = count
+        tournament_levels[level_key]['spots_remaining'] = tournament_levels[level_key]['max_players'] - count
+    
+    # Get recent tournament entries
+    recent_entries = conn.execute('''
+        SELECT t.*, p.full_name, p.selfie
+        FROM tournaments t
+        JOIN players p ON t.player_id = p.id
+        WHERE t.tournament_level IS NOT NULL
+        ORDER BY t.created_at DESC
+        LIMIT 10
+    ''').fetchall()
+    
+    # Get all registered players for quick access
+    players = conn.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name').fetchall()
+    
+    conn.close()
+    
+    return render_template('tournaments_overview.html', 
+                         tournament_levels=tournament_levels, 
+                         recent_entries=recent_entries,
+                         players=players)
 
 @app.route('/tournament/<int:player_id>', methods=['GET', 'POST'])
 def tournament_entry(player_id):
