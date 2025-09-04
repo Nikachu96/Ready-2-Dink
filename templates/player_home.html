@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome {{ player.full_name }} - Tournament Management System{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        {% if player.selfie %}
+                            <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                 class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;" 
+                                 alt="Player Photo">
+                        {% else %}
+                            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 80px; height: 80px;">
+                                <i class="fas fa-user text-primary fa-2x"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col">
+                        <h2 class="mb-1">Welcome back, {{ player.full_name }}!</h2>
+                        <p class="mb-0 opacity-75">
+                            <i class="fas fa-star me-1"></i>{{ player.skill_level }} • 
+                            <i class="fas fa-futbol me-1"></i>{{ player.preferred_sport or 'Tennis' }}
+                        </p>
+                    </div>
+                    <div class="col-auto">
+                        <div class="btn-group">
+                            <button onclick="findNewMatch({{ player.id }})" class="btn btn-light">
+                                <i class="fas fa-search me-1"></i>Find Match
+                            </button>
+                            <a href="{{ url_for('tournament_entry', player_id=player.id) }}" class="btn btn-success">
+                                <i class="fas fa-trophy me-1"></i>Enter Tournament
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Connections -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>Connections
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if connections %}
+                    {% for connection in connections %}
+                    <div class="d-flex align-items-center mb-3">
+                        {% if connection.opponent_selfie %}
+                            <img src="{{ url_for('static', filename='uploads/' + connection.opponent_selfie) }}" 
+                                 class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" 
+                                 alt="Opponent">
+                        {% else %}
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-3" 
+                                 style="width: 50px; height: 50px;">
+                                <i class="fas fa-user text-white"></i>
+                            </div>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ connection.opponent_name }}</h6>
+                            <small class="text-muted">
+                                {{ connection.matches_played }} match{{ 'es' if connection.matches_played > 1 else '' }} played
+                            </small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="challengePlayer({{ connection.opponent_id }})">
+                            <i class="fas fa-gamepad me-1"></i>Challenge
+                        </button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-friends fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No Connections Yet</h6>
+                        <p class="text-muted small">Find matches to build your network!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_matches or tournaments %}
+                    <div class="timeline">
+                        {% for match in recent_matches %}
+                        <div class="timeline-item mb-3">
+                            <div class="d-flex">
+                                <div class="timeline-marker bg-primary rounded-circle me-3" style="width: 12px; height: 12px; margin-top: 6px;"></div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">
+                                                {% set opponent = match.player2_name if match.player1_id == player.id else match.player1_name %}
+                                                Match vs {{ opponent }}
+                                            </h6>
+                                            <small class="text-muted">{{ match.sport }} • {{ match.status|title }}</small>
+                                        </div>
+                                        <small class="text-muted">{{ match.created_at[:10] }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        {% for tournament in tournaments %}
+                        <div class="timeline-item mb-3">
+                            <div class="d-flex">
+                                <div class="timeline-marker bg-success rounded-circle me-3" style="width: 12px; height: 12px; margin-top: 6px;"></div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ tournament.tournament_name }}</h6>
+                                            <small class="text-muted">
+                                                {{ tournament.tournament_level }} • {{ tournament.tournament_type|title if tournament.tournament_type else 'Singles' }}
+                                            </small>
+                                        </div>
+                                        <small class="text-muted">{{ tournament.entry_date }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No Recent Activity</h6>
+                        <p class="text-muted small">Start playing to see your activity here!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ recent_matches|length + tournaments|length }}</h3>
+                <small class="text-muted">Total Games</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">{{ connections|length }}</h3>
+                <small class="text-muted">Connections</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-warning">{{ recent_matches|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
+                <small class="text-muted">Pending Matches</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-info">{{ tournaments|selectattr('completed', 'equalto', 0)|list|length }}</h3>
+                <small class="text-muted">Active Tournaments</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function findNewMatch(playerId) {
+    fetch(`/find_match/${playerId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'No matches found at the moment. Try again later!');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error finding match. Please try again.');
+    });
+}
+
+function challengePlayer(opponentId) {
+    // For now, just show a message. Later we can implement direct challenges
+    alert('Challenge feature coming soon! Use Find Match for now.');
+}
+</script>
+{% endblock %}

@@ -92,6 +92,7 @@ def init_db():
             player_id INTEGER NOT NULL,
             tournament_name TEXT NOT NULL,
             tournament_level TEXT,
+            tournament_type TEXT DEFAULT 'singles',
             entry_fee REAL,
             sport TEXT,
             entry_date TEXT NOT NULL,
@@ -128,6 +129,11 @@ def init_db():
         
     try:
         c.execute('ALTER TABLE tournaments ADD COLUMN bracket_position INTEGER')
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        c.execute('ALTER TABLE tournaments ADD COLUMN tournament_type TEXT DEFAULT "singles"')
     except sqlite3.OperationalError:
         pass
     
@@ -229,30 +235,79 @@ init_db()
 
 @app.route('/')
 def index():
-    """Home page showing overview of system"""
+    """Home page - redirect to player selection or show player home"""
+    # For now, show player selection. Later we can add login/session management
+    conn = get_db_connection()
+    players = conn.execute('SELECT id, full_name, selfie, skill_level FROM players ORDER BY full_name').fetchall()
+    conn.close()
+    
+    return render_template('player_select.html', players=players)
+
+@app.route('/home/<int:player_id>')
+def player_home(player_id):
+    """Personalized home page for a player"""
     conn = get_db_connection()
     
-    # Get statistics
-    total_players = conn.execute('SELECT COUNT(*) as count FROM players').fetchone()['count']
-    active_tournaments = conn.execute('SELECT COUNT(*) as count FROM tournaments WHERE completed = 0').fetchone()['count']
-    completed_tournaments = conn.execute('SELECT COUNT(*) as count FROM tournaments WHERE completed = 1').fetchone()['count']
+    # Get player info
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    if not player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('index'))
     
-    # Get recent tournament entries
-    recent_tournaments = conn.execute('''
-        SELECT t.tournament_name, p.full_name, t.entry_date, t.match_deadline, t.completed
-        FROM tournaments t
-        JOIN players p ON t.player_id = p.id
-        ORDER BY t.created_at DESC
+    # Get connections (players they've played against)
+    connections = conn.execute('''
+        SELECT DISTINCT 
+            CASE 
+                WHEN m.player1_id = ? THEN p2.id
+                ELSE p1.id 
+            END as opponent_id,
+            CASE 
+                WHEN m.player1_id = ? THEN p2.full_name
+                ELSE p1.full_name 
+            END as opponent_name,
+            CASE 
+                WHEN m.player1_id = ? THEN p2.selfie
+                ELSE p1.selfie 
+            END as opponent_selfie,
+            COUNT(*) as matches_played,
+            MAX(m.created_at) as last_played
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        WHERE m.player1_id = ? OR m.player2_id = ?
+        GROUP BY opponent_id, opponent_name, opponent_selfie
+        ORDER BY last_played DESC
+        LIMIT 10
+    ''', (player_id, player_id, player_id, player_id, player_id)).fetchall()
+    
+    # Get recent activity
+    recent_matches = conn.execute('''
+        SELECT m.*, 
+               p1.full_name as player1_name, p1.selfie as player1_selfie,
+               p2.full_name as player2_name, p2.selfie as player2_selfie
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        WHERE m.player1_id = ? OR m.player2_id = ?
+        ORDER BY m.created_at DESC
         LIMIT 5
-    ''').fetchall()
+    ''', (player_id, player_id)).fetchall()
+    
+    # Get player's tournaments
+    tournaments = conn.execute('''
+        SELECT * FROM tournaments 
+        WHERE player_id = ? 
+        ORDER BY created_at DESC
+        LIMIT 5
+    ''', (player_id,)).fetchall()
     
     conn.close()
     
-    return render_template('index.html', 
-                         total_players=total_players,
-                         active_tournaments=active_tournaments,
-                         completed_tournaments=completed_tournaments,
-                         recent_tournaments=recent_tournaments)
+    return render_template('player_home.html', 
+                         player=player, 
+                         connections=connections,
+                         recent_matches=recent_matches,
+                         tournaments=tournaments)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -295,7 +350,7 @@ def register():
             flash('Registration successful! Looking for matches...', 'success')
             # Try to find a match for the new player
             find_match_for_player(player_id)
-            return redirect(url_for('dashboard', player_id=player_id))
+            return redirect(url_for('player_home', player_id=player_id))
             
         except sqlite3.IntegrityError:
             flash('Email already exists. Please use a different email address.', 'danger')
@@ -351,7 +406,7 @@ def tournament_entry(player_id):
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        required_fields = ['tournament_level', 'sport']
+        required_fields = ['tournament_level', 'tournament_type', 'sport']
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
@@ -387,11 +442,12 @@ def tournament_entry(player_id):
             match_deadline = entry_date + timedelta(days=14)  # 2 weeks for tournaments
             
             conn.execute('''
-                INSERT INTO tournaments (player_id, tournament_name, tournament_level, entry_fee, sport, entry_date, match_deadline, payment_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tournaments (player_id, tournament_name, tournament_level, tournament_type, entry_fee, sport, entry_date, match_deadline, payment_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (player_id, 
                   tournament_levels[selected_level]['name'],
                   selected_level,
+                  request.form['tournament_type'],
                   tournament_levels[selected_level]['entry_fee'],
                   request.form['sport'],
                   entry_date.strftime('%Y-%m-%d'), 
