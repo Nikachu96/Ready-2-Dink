@@ -562,6 +562,19 @@ def tournaments_overview():
                          recent_entries=recent_entries,
                          players=players)
 
+@app.route('/tournament', methods=['GET', 'POST'])
+def tournament():
+    """Direct tournament entry for single-player app"""
+    # Get the current player (should be the only player in the system)
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players ORDER BY id LIMIT 1').fetchone()
+    if not player:
+        flash('No player profile found. Please register first.', 'danger')
+        return redirect(url_for('register'))
+    
+    # Redirect to the existing tournament_entry function with the player ID
+    return tournament_entry(player['id'])
+
 @app.route('/tournament/<int:player_id>', methods=['GET', 'POST'])
 def tournament_entry(player_id):
     """Tournament entry form with levels and fees for a specific player"""
