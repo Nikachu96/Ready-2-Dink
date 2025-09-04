@@ -276,7 +276,7 @@ def get_tournament_levels():
             'platform_revenue': total_fees * 0.30  # 30% platform revenue
         }
     
-    beginner_prizes = calculate_prizes(beginner_price, 16)
+    beginner_prizes = calculate_prizes(beginner_price, 32)
     intermediate_prizes = calculate_prizes(intermediate_price, 32)
     advanced_prizes = calculate_prizes(advanced_price, 32)
     
@@ -288,7 +288,7 @@ def get_tournament_levels():
             'prize_pool': f"1st: ${beginner_prizes['1st']:.0f} • 2nd: ${beginner_prizes['2nd']:.0f} • 3rd: ${beginner_prizes['3rd']:.0f} • 4th: ${beginner_prizes['4th']:.0f}",
             'prize_breakdown': beginner_prizes,
             'skill_requirements': 'Beginner level players',
-            'max_players': 16
+            'max_players': 32
         },
         'Intermediate': {
             'name': 'Intermediate Championship',
