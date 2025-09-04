@@ -69,6 +69,34 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label for="preferred_sport" class="form-label">
+                                    <i class="fas fa-futbol me-1"></i>Preferred Sport *
+                                </label>
+                                <select class="form-select" id="preferred_sport" name="preferred_sport" required>
+                                    <option value="">Select your sport</option>
+                                    <option value="Tennis">Tennis</option>
+                                    <option value="Basketball">Basketball</option>
+                                    <option value="Badminton">Badminton</option>
+                                    <option value="Table Tennis">Table Tennis</option>
+                                    <option value="Squash">Squash</option>
+                                    <option value="Pickleball">Pickleball</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="preferred_court" class="form-label">
+                                    <i class="fas fa-map-marker-alt me-1"></i>Preferred Court/Venue *
+                                </label>
+                                <input type="text" class="form-control" id="preferred_court" name="preferred_court" 
+                                       placeholder="e.g., Central Park Tennis Courts" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label for="skill_level" class="form-label">
                                     <i class="fas fa-star me-1"></i>Skill Level *
                                 </label>

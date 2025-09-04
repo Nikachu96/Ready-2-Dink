@@ -48,91 +48,157 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
-                    <i class="fas fa-trophy me-2"></i>Tournament History
+                    <i class="fas fa-gamepad me-2"></i>My Matches
                 </h5>
-                <a href="{{ url_for('tournament') }}" class="btn btn-sm btn-primary">
-                    <i class="fas fa-plus me-1"></i>Enter New Tournament
-                </a>
+                <button onclick="findNewMatch({{ player.id }})" class="btn btn-sm btn-primary">
+                    <i class="fas fa-search me-1"></i>Find New Match
+                </button>
             </div>
             <div class="card-body">
-                {% if tournaments %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Tournament</th>
-                                    <th>Entry Date</th>
-                                    <th>Deadline</th>
-                                    <th>Status</th>
-                                    <th>Result</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for tournament in tournaments %}
-                                <tr>
-                                    <td>{{ tournament.tournament_name }}</td>
-                                    <td>{{ tournament.entry_date }}</td>
-                                    <td>{{ tournament.match_deadline }}</td>
-                                    <td>
-                                        {% if tournament.completed %}
-                                            <span class="badge bg-success">Completed</span>
-                                        {% else %}
-                                            <span class="badge bg-warning">Active</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if tournament.match_result %}
-                                            {{ tournament.match_result }}
-                                        {% else %}
-                                            <span class="text-muted">Pending</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                {% if matches %}
+                    <div class="row">
+                        {% for match in matches %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card {% if match.status == 'pending' %}border-warning{% elif match.status == 'confirmed' %}border-info{% else %}border-success{% endif %}">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-4 text-center">
+                                            {% set opponent = match.player2_name if match.player1_id == player.id else match.player1_name %}
+                                            {% set opponent_photo = match.player2_selfie if match.player1_id == player.id else match.player1_selfie %}
+                                            {% if opponent_photo %}
+                                                <img src="{{ url_for('static', filename='uploads/' + opponent_photo) }}" 
+                                                     class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;" 
+                                                     alt="Opponent">
+                                            {% else %}
+                                                <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
+                                                     style="width: 60px; height: 60px;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div class="mt-1">
+                                                <small class="fw-bold">{{ opponent }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-8">
+                                            <h6 class="card-title mb-1">{{ match.sport }}</h6>
+                                            <p class="card-text small mb-1">
+                                                <i class="fas fa-map-marker-alt me-1"></i>{{ match.court_location }}
+                                            </p>
+                                            <p class="card-text small mb-2">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                {% if match.match_date %}
+                                                    {{ match.match_date }}
+                                                {% else %}
+                                                    Schedule pending
+                                                {% endif %}
+                                            </p>
+                                            <span class="badge {% if match.status == 'pending' %}bg-warning{% elif match.status == 'confirmed' %}bg-info{% else %}bg-success{% endif %}">
+                                                {{ match.status|title }}
+                                            </span>
+                                            {% if match.status == 'pending' %}
+                                                <button class="btn btn-sm btn-success ms-2" onclick="confirmMatch({{ match.id }})">
+                                                    Confirm
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                     
                     <div class="mt-3">
                         <div class="row text-center">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="border rounded p-2">
-                                    <h5 class="mb-1">{{ tournaments|selectattr('completed', 'equalto', 0)|list|length }}</h5>
-                                    <small class="text-muted">Active</small>
+                                    <h5 class="mb-1">{{ matches|selectattr('status', 'equalto', 'pending')|list|length }}</h5>
+                                    <small class="text-muted">Pending</small>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="border rounded p-2">
-                                    <h5 class="mb-1">{{ tournaments|selectattr('completed', 'equalto', 1)|list|length }}</h5>
+                                    <h5 class="mb-1">{{ matches|selectattr('status', 'equalto', 'confirmed')|list|length }}</h5>
+                                    <small class="text-muted">Confirmed</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="border rounded p-2">
+                                    <h5 class="mb-1">{{ matches|selectattr('status', 'equalto', 'completed')|list|length }}</h5>
                                     <small class="text-muted">Completed</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="border rounded p-2">
-                                    <h5 class="mb-1">{{ tournaments|length }}</h5>
-                                    <small class="text-muted">Total</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="border rounded p-2">
-                                    <h5 class="mb-1">{{ ((tournaments|selectattr('completed', 'equalto', 1)|list|length / tournaments|length * 100) if tournaments|length > 0 else 0)|round|int }}%</h5>
-                                    <small class="text-muted">Completion Rate</small>
                                 </div>
                             </div>
                         </div>
                     </div>
                 {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">No Tournament Entries</h5>
-                        <p class="text-muted">This player hasn't entered any tournaments yet.</p>
-                        <a href="{{ url_for('tournament') }}" class="btn btn-primary">
-                            <i class="fas fa-plus me-1"></i>Enter First Tournament
-                        </a>
-                    </div>
+                    {% if player.is_looking_for_match %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                            <h5 class="text-primary">Looking for Match...</h5>
+                            <p class="text-muted">We're searching for players with similar skill level and location preferences.</p>
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-gamepad fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Matches Yet</h5>
+                            <p class="text-muted">Ready to find your first opponent?</p>
+                            <button onclick="findNewMatch({{ player.id }})" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Find Match
+                            </button>
+                        </div>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function findNewMatch(playerId) {
+    fetch(`/find_match/${playerId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'No matches found at the moment. Try again later!');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error finding match. Please try again.');
+    });
+}
+
+function confirmMatch(matchId) {
+    fetch(`/confirm_match/${matchId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'Error confirming match');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error confirming match. Please try again.');
+    });
+}
+</script>
 {% endblock %}

@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.utils import secure_filename
 import logging
 
@@ -38,14 +38,38 @@ def init_db():
             dob TEXT NOT NULL,
             location1 TEXT NOT NULL,
             location2 TEXT,
+            preferred_sport TEXT NOT NULL,
+            preferred_court TEXT NOT NULL,
             skill_level TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             selfie TEXT,
+            is_looking_for_match INTEGER DEFAULT 1,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     
-    # Tournaments table
+    # Matches table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS matches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player1_id INTEGER NOT NULL,
+            player2_id INTEGER NOT NULL,
+            sport TEXT NOT NULL,
+            court_location TEXT NOT NULL,
+            match_date TEXT,
+            status TEXT DEFAULT 'pending',
+            player1_confirmed INTEGER DEFAULT 0,
+            player2_confirmed INTEGER DEFAULT 0,
+            winner_id INTEGER,
+            match_result TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(player1_id) REFERENCES players(id),
+            FOREIGN KEY(player2_id) REFERENCES players(id),
+            FOREIGN KEY(winner_id) REFERENCES players(id)
+        )
+    ''')
+    
+    # Keep tournaments table for backward compatibility
     c.execute('''
         CREATE TABLE IF NOT EXISTS tournaments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,6 +92,61 @@ def get_db_connection():
     conn = sqlite3.connect('app.db')
     conn.row_factory = sqlite3.Row
     return conn
+
+def find_match_for_player(player_id):
+    """Find and create a match for a player based on skill, sport, and location"""
+    conn = get_db_connection()
+    
+    # Get the player's preferences
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    if not player or not player['is_looking_for_match']:
+        conn.close()
+        return None
+    
+    # Find potential matches
+    potential_matches = conn.execute('''
+        SELECT * FROM players 
+        WHERE id != ? 
+        AND is_looking_for_match = 1
+        AND preferred_sport = ?
+        AND skill_level = ?
+        AND (preferred_court = ? OR location1 = ? OR location2 = ?)
+        AND id NOT IN (
+            SELECT CASE 
+                WHEN player1_id = ? THEN player2_id 
+                ELSE player1_id 
+            END 
+            FROM matches 
+            WHERE (player1_id = ? OR player2_id = ?) 
+            AND status IN ('pending', 'confirmed', 'completed')
+        )
+        ORDER BY created_at ASC
+        LIMIT 1
+    ''', (player_id, player['preferred_sport'], player['skill_level'], 
+          player['preferred_court'], player['location1'], player['location2'],
+          player_id, player_id, player_id)).fetchone()
+    
+    if potential_matches:
+        # Create a match
+        match_court = player['preferred_court'] if potential_matches['preferred_court'] == player['preferred_court'] else player['preferred_court']
+        
+        cursor = conn.execute('''
+            INSERT INTO matches (player1_id, player2_id, sport, court_location, status)
+            VALUES (?, ?, ?, ?, 'pending')
+        ''', (player_id, potential_matches['id'], player['preferred_sport'], match_court))
+        
+        match_id = cursor.lastrowid
+        
+        # Mark both players as no longer looking
+        conn.execute('UPDATE players SET is_looking_for_match = 0 WHERE id IN (?, ?)', 
+                    (player_id, potential_matches['id']))
+        
+        conn.commit()
+        conn.close()
+        return match_id
+    
+    conn.close()
+    return None
 
 # Initialize database
 init_db()
@@ -104,7 +183,7 @@ def register():
     """Player registration form"""
     if request.method == 'POST':
         # Form validation
-        required_fields = ['full_name', 'address', 'dob', 'location1', 'skill_level', 'email']
+        required_fields = ['full_name', 'address', 'dob', 'location1', 'preferred_sport', 'preferred_court', 'skill_level', 'email']
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
@@ -124,18 +203,23 @@ def register():
         
         try:
             conn = get_db_connection()
-            conn.execute('''
+            cursor = conn.execute('''
                 INSERT INTO players 
-                (full_name, address, dob, location1, location2, skill_level, email, selfie)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (full_name, address, dob, location1, location2, preferred_sport, preferred_court, skill_level, email, selfie)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['full_name'], request.form['address'], request.form['dob'], 
                   request.form['location1'], request.form.get('location2', ''), 
+                  request.form['preferred_sport'], request.form['preferred_court'],
                   request.form['skill_level'], request.form['email'], selfie_filename))
+            
+            player_id = cursor.lastrowid
             conn.commit()
             conn.close()
             
-            flash('Registration successful! You can now enter tournaments.', 'success')
-            return redirect(url_for('index'))
+            flash('Registration successful! Looking for matches...', 'success')
+            # Try to find a match for the new player
+            find_match_for_player(player_id)
+            return redirect(url_for('dashboard', player_id=player_id))
             
         except sqlite3.IntegrityError:
             flash('Email already exists. Please use a different email address.', 'danger')
@@ -180,7 +264,7 @@ def tournament():
 
 @app.route('/dashboard/<int:player_id>')
 def dashboard(player_id):
-    """Player dashboard showing their tournaments"""
+    """Player dashboard showing their matches"""
     conn = get_db_connection()
     
     # Get player info
@@ -189,7 +273,19 @@ def dashboard(player_id):
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
     
-    # Get player's tournaments
+    # Get player's matches
+    matches = conn.execute('''
+        SELECT m.*, 
+               p1.full_name as player1_name, p1.selfie as player1_selfie,
+               p2.full_name as player2_name, p2.selfie as player2_selfie
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        WHERE m.player1_id = ? OR m.player2_id = ?
+        ORDER BY m.created_at DESC
+    ''', (player_id, player_id)).fetchall()
+    
+    # Get player's tournaments (for backward compatibility)
     tournaments = conn.execute('''
         SELECT * FROM tournaments 
         WHERE player_id = ? 
@@ -198,7 +294,7 @@ def dashboard(player_id):
     
     conn.close()
     
-    return render_template('dashboard.html', player=player, tournaments=tournaments)
+    return render_template('dashboard.html', player=player, matches=matches, tournaments=tournaments)
 
 @app.route('/manage_tournaments')
 def manage_tournaments():
@@ -237,6 +333,41 @@ def complete_tournament(tournament_id):
         flash(f'Error updating tournament: {str(e)}', 'danger')
     
     return redirect(url_for('manage_tournaments'))
+
+@app.route('/find_match/<int:player_id>', methods=['POST'])
+def find_match(player_id):
+    """API endpoint to find a match for a player"""
+    try:
+        # Set player as looking for match
+        conn = get_db_connection()
+        conn.execute('UPDATE players SET is_looking_for_match = 1 WHERE id = ?', (player_id,))
+        conn.commit()
+        conn.close()
+        
+        # Try to find a match
+        match_id = find_match_for_player(player_id)
+        
+        if match_id:
+            return jsonify({'success': True, 'match_id': match_id, 'message': 'Match found!'})
+        else:
+            return jsonify({'success': False, 'message': 'No compatible players found. We\'ll keep looking!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+@app.route('/confirm_match/<int:match_id>', methods=['POST'])
+def confirm_match(match_id):
+    """API endpoint to confirm a match"""
+    try:
+        conn = get_db_connection()
+        
+        # Update match status to confirmed
+        conn.execute('UPDATE matches SET status = ? WHERE id = ?', ('confirmed', match_id))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Match confirmed!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
 
 @app.route('/players')
 def players():
