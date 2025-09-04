@@ -348,7 +348,7 @@ def register():
     """Player registration form"""
     if request.method == 'POST':
         # Form validation
-        required_fields = ['full_name', 'address', 'dob', 'location1', 'preferred_sport', 'preferred_court', 'skill_level', 'email']
+        required_fields = ['full_name', 'address', 'dob', 'location1', 'preferred_court', 'skill_level', 'email']
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
@@ -374,7 +374,7 @@ def register():
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['full_name'], request.form['address'], request.form['dob'], 
                   request.form['location1'], request.form.get('location2', ''), 
-                  request.form['preferred_sport'], request.form['preferred_court'],
+                  'Pickleball', request.form['preferred_court'],
                   request.form['skill_level'], request.form['email'], selfie_filename))
             
             player_id = cursor.lastrowid
