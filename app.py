@@ -264,12 +264,27 @@ def get_tournament_levels():
     intermediate_price = float(get_setting('intermediate_price', '20'))
     advanced_price = float(get_setting('advanced_price', '40'))
     
+    def calculate_prizes(entry_fee, max_players):
+        """Calculate prize breakdown for top 4 finishers"""
+        total_pool = entry_fee * max_players
+        return {
+            '1st': total_pool * 0.51,  # 51%
+            '2nd': total_pool * 0.25,  # 25%
+            '3rd': total_pool * 0.12,  # 12%
+            '4th': total_pool * 0.12   # 12%
+        }
+    
+    beginner_prizes = calculate_prizes(beginner_price, 16)
+    intermediate_prizes = calculate_prizes(intermediate_price, 32)
+    advanced_prizes = calculate_prizes(advanced_price, 32)
+    
     return {
         'Beginner': {
             'name': 'Beginner League',
             'description': 'Perfect for new players and casual competition',
             'entry_fee': beginner_price,
-            'prize_pool': 'Winner takes 60%',
+            'prize_pool': f"1st: ${beginner_prizes['1st']:.0f} • 2nd: ${beginner_prizes['2nd']:.0f} • 3rd: ${beginner_prizes['3rd']:.0f} • 4th: ${beginner_prizes['4th']:.0f}",
+            'prize_breakdown': beginner_prizes,
             'skill_requirements': 'Beginner level players',
             'max_players': 16
         },
@@ -277,7 +292,8 @@ def get_tournament_levels():
             'name': 'Intermediate Championship',
             'description': 'For players with solid fundamentals',
             'entry_fee': intermediate_price,
-            'prize_pool': 'Winner takes 50%, Runner-up 30%',
+            'prize_pool': f"1st: ${intermediate_prizes['1st']:.0f} • 2nd: ${intermediate_prizes['2nd']:.0f} • 3rd: ${intermediate_prizes['3rd']:.0f} • 4th: ${intermediate_prizes['4th']:.0f}",
+            'prize_breakdown': intermediate_prizes,
             'skill_requirements': 'Intermediate level players',
             'max_players': 32
         },
@@ -285,7 +301,8 @@ def get_tournament_levels():
             'name': 'Advanced Tournament',
             'description': 'High-level competitive play',
             'entry_fee': advanced_price,
-            'prize_pool': 'Winner takes 40%, Top 4 share prizes',
+            'prize_pool': f"1st: ${advanced_prizes['1st']:.0f} • 2nd: ${advanced_prizes['2nd']:.0f} • 3rd: ${advanced_prizes['3rd']:.0f} • 4th: ${advanced_prizes['4th']:.0f}",
+            'prize_breakdown': advanced_prizes,
             'skill_requirements': 'Advanced level players',
             'max_players': 32
         }
