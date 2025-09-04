@@ -54,7 +54,9 @@
                                 <label for="location1" class="form-label">
                                     <i class="fas fa-map-marker-alt me-1"></i>Primary Location *
                                 </label>
-                                <input type="text" class="form-control" id="location1" name="location1" required>
+                                <input type="text" class="form-control location-search" id="location1" name="location1" 
+                                       placeholder="Search city, state..." required>
+                                <div id="location1-map" class="map-container mt-2" style="height: 200px; display: none; border-radius: 8px;"></div>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -62,7 +64,9 @@
                                 <label for="location2" class="form-label">
                                     <i class="fas fa-map-marker me-1"></i>Secondary Location
                                 </label>
-                                <input type="text" class="form-control" id="location2" name="location2">
+                                <input type="text" class="form-control location-search" id="location2" name="location2"
+                                       placeholder="Optional second location...">
+                                <div id="location2-map" class="map-container mt-2" style="height: 200px; display: none; border-radius: 8px;"></div>
                             </div>
                         </div>
                     </div>
@@ -73,8 +77,13 @@
                                 <label for="preferred_court" class="form-label">
                                     <i class="fas fa-map-marker-alt me-1"></i>Preferred Pickleball Court/Venue *
                                 </label>
-                                <input type="text" class="form-control" id="preferred_court" name="preferred_court" 
-                                       placeholder="e.g., Central Park Pickleball Courts" required>
+                                <input type="text" class="form-control location-search" id="preferred_court" name="preferred_court" 
+                                       placeholder="Search for courts and venues..." required>
+                                <div id="preferred_court-map" class="map-container mt-2" style="height: 250px; display: none; border-radius: 8px;"></div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Type to search for pickleball courts, recreation centers, or sports venues
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -143,6 +152,122 @@ document.getElementById('selfie').addEventListener('change', function(e) {
         };
         reader.readAsDataURL(file);
     }
+});
+
+// Map functionality
+let maps = {};
+let markers = {};
+
+function initializeMap(containerId, inputId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Default to a general location (USA center)
+    const map = L.map(containerId).setView([39.8283, -98.5795], 4);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    maps[containerId] = map;
+    markers[containerId] = null;
+    
+    return map;
+}
+
+function searchLocation(query, mapId, inputId) {
+    if (!query || query.length < 3) return;
+    
+    // Use Nominatim (OpenStreetMap) geocoding service
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                const result = data[0];
+                const lat = parseFloat(result.lat);
+                const lon = parseFloat(result.lon);
+                
+                const map = maps[mapId];
+                if (map) {
+                    // Remove existing marker
+                    if (markers[mapId]) {
+                        map.removeLayer(markers[mapId]);
+                    }
+                    
+                    // Add new marker
+                    markers[mapId] = L.marker([lat, lon])
+                        .addTo(map)
+                        .bindPopup(`<strong>${result.display_name}</strong><br>
+                                   <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" 
+                                      target="_blank" class="btn btn-sm btn-primary mt-1">
+                                      <i class="fas fa-directions"></i> Get Directions
+                                   </a>`)
+                        .openPopup();
+                    
+                    // Center map on location
+                    map.setView([lat, lon], 13);
+                }
+            }
+        })
+        .catch(error => {
+            console.log('Geocoding error:', error);
+        });
+}
+
+// Initialize location search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const locationInputs = document.querySelectorAll('.location-search');
+    
+    locationInputs.forEach(input => {
+        const mapId = input.id + '-map';
+        let searchTimeout;
+        
+        input.addEventListener('input', function() {
+            const query = this.value.trim();
+            const mapContainer = document.getElementById(mapId);
+            
+            if (query.length >= 3) {
+                // Show map container
+                if (mapContainer) {
+                    mapContainer.style.display = 'block';
+                    
+                    // Initialize map if not already done
+                    if (!maps[mapId]) {
+                        setTimeout(() => {
+                            initializeMap(mapId, input.id);
+                        }, 100);
+                    }
+                    
+                    // Debounced search
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        searchLocation(query, mapId, input.id);
+                    }, 500);
+                }
+            } else {
+                // Hide map container if query is too short
+                if (mapContainer) {
+                    mapContainer.style.display = 'none';
+                }
+            }
+        });
+        
+        input.addEventListener('focus', function() {
+            if (this.value.length >= 3) {
+                const mapContainer = document.getElementById(mapId);
+                if (mapContainer) {
+                    mapContainer.style.display = 'block';
+                    
+                    // Refresh map size when shown
+                    setTimeout(() => {
+                        if (maps[mapId]) {
+                            maps[mapId].invalidateSize();
+                        }
+                    }, 100);
+                }
+            }
+        });
+    });
 });
 </script>
 {% endblock %}
