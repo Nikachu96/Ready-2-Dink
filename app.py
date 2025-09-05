@@ -717,8 +717,8 @@ init_db()
 def index():
     """Home page - check if user is logged in, otherwise show landing page"""
     # If user is already logged in, redirect to their dashboard
-    if 'player_id' in session:
-        return redirect(url_for('player_home', player_id=session['player_id']))
+    if 'current_player_id' in session:
+        return redirect(url_for('player_home', player_id=session['current_player_id']))
     
     # For new visitors, always show the landing/registration page
     return redirect(url_for('register'))
@@ -729,8 +729,9 @@ def player_home(player_id):
     """Personalized home page for a player"""
     conn = get_db_connection()
     
-    # Set session for admin access
+    # Set session for logged in user
     session['current_player_id'] = player_id
+    session['player_id'] = player_id  # For consistency
     
     # Get player info
     player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
