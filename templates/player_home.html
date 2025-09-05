@@ -220,6 +220,64 @@
 </div>
 {% endif %}
 
+<!-- Ambassador Program Call-to-Action -->
+<div class="row mb-4 animate-in">
+    <div class="col-12">
+        <div class="card text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; min-height: 180px;">
+            <div class="card-body text-center d-flex flex-column justify-content-center position-relative">
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(255,255,255,0.05); backdrop-filter: blur(1px);"></div>
+                
+                <div class="position-relative">
+                    <div class="mb-3">
+                        <i class="fas fa-globe-americas fa-3x mb-3" style="opacity: 0.9;"></i>
+                        <h4 class="fw-bold mb-2">🌟 Become a Ready 2 Dink Ambassador!</h4>
+                        <p class="fs-5 mb-3 opacity-90">Help grow pickleball in your state and earn <strong>lifetime tournament membership FREE!</strong></p>
+                    </div>
+                    
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+                            <div class="card text-dark mb-3" style="background: rgba(255,255,255,0.95);">
+                                <div class="card-body py-3">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <h5 class="text-primary mb-1">💼</h5>
+                                            <small class="fw-bold">Represent<br>Your State</small>
+                                        </div>
+                                        <div class="col-4 border-start border-end">
+                                            <h5 class="text-success mb-1">👥</h5>
+                                            <small class="fw-bold">Get 20 Tournament<br>Members</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <h5 class="text-warning mb-1">🎯</h5>
+                                            <small class="fw-bold">Earn Lifetime<br>Membership</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <a href="{{ url_for('become_ambassador') }}" class="btn btn-light btn-lg px-4 py-2 shadow-lg" style="border-radius: 50px; font-weight: 600;">
+                            <i class="fas fa-rocket me-2"></i>Apply Now
+                        </a>
+                        <a href="{{ url_for('ambassador_dashboard') }}" class="btn btn-outline-light btn-lg px-4 py-2" style="border-radius: 50px; font-weight: 600;">
+                            <i class="fas fa-chart-line me-2"></i>My Progress
+                        </a>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <small class="opacity-75">
+                            <i class="fas fa-dollar-sign me-1"></i>
+                            Worth $119.88/year • No tournament fees required • Help grow the R2D community!
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Player's Tournaments & Brackets -->
 {% if player_tournaments %}
 <div class="row mb-4 animate-in">

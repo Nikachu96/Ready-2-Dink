@@ -331,6 +331,40 @@ def init_db():
         )
     ''')
     
+    # Ambassador program table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS ambassadors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL UNIQUE,
+            referral_code TEXT UNIQUE NOT NULL,
+            status TEXT DEFAULT 'active',
+            referrals_count INTEGER DEFAULT 0,
+            qualified_referrals INTEGER DEFAULT 0,
+            lifetime_membership_granted INTEGER DEFAULT 0,
+            state_territory TEXT,
+            application_date TEXT DEFAULT CURRENT_TIMESTAMP,
+            qualification_date TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(player_id) REFERENCES players(id)
+        )
+    ''')
+    
+    # Ambassador referrals tracking table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS ambassador_referrals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ambassador_id INTEGER NOT NULL,
+            referred_player_id INTEGER NOT NULL,
+            referral_code TEXT NOT NULL,
+            membership_type TEXT,
+            qualified INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            qualified_at TEXT,
+            FOREIGN KEY(ambassador_id) REFERENCES ambassadors(id),
+            FOREIGN KEY(referred_player_id) REFERENCES players(id)
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -2398,6 +2432,9 @@ def subscription_success():
         conn.commit()
         conn.close()
         
+        # Track referral conversion if applicable
+        track_referral_conversion(player_id, membership_type)
+        
         membership_display = membership_type.replace("_", " ").title() if membership_type else "Premium"
         flash(f'Welcome to {membership_display} membership! Your free trial has started.', 'success')
         return redirect(url_for('player_home', player_id=player_id))
@@ -2411,6 +2448,174 @@ def subscription_cancel():
     """Handle cancelled subscription"""
     flash('Subscription cancelled. You can upgrade anytime from your dashboard.', 'info')
     return redirect(url_for('index'))
+
+# Ambassador Program Routes
+@app.route('/become_ambassador', methods=['GET', 'POST'])
+def become_ambassador():
+    """Apply to become an Ambassador"""
+    if 'player_id' not in session:
+        flash('Please log in to apply for the Ambassador program', 'warning')
+        return redirect(url_for('index'))
+    
+    player_id = session['player_id']
+    
+    if request.method == 'POST':
+        state_territory = request.form.get('state_territory', '').strip()
+        
+        if not state_territory:
+            flash('Please specify which state/territory you want to represent', 'danger')
+            return render_template('become_ambassador.html')
+        
+        # Generate unique referral code
+        import string
+        import random
+        referral_code = 'R2D' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        
+        # Check if already an ambassador
+        conn = get_db_connection()
+        existing = conn.execute('SELECT id FROM ambassadors WHERE player_id = ?', (player_id,)).fetchone()
+        
+        if existing:
+            flash('You are already registered as an Ambassador!', 'info')
+            conn.close()
+            return redirect(url_for('ambassador_dashboard'))
+        
+        # Create ambassador record
+        conn.execute('''
+            INSERT INTO ambassadors (player_id, referral_code, state_territory)
+            VALUES (?, ?, ?)
+        ''', (player_id, referral_code, state_territory))
+        
+        conn.commit()
+        conn.close()
+        
+        flash(f'Welcome to the R2D Ambassador Program! Your referral code is: {referral_code}', 'success')
+        return redirect(url_for('ambassador_dashboard'))
+    
+    return render_template('become_ambassador.html')
+
+@app.route('/ambassador_dashboard')
+def ambassador_dashboard():
+    """Ambassador dashboard showing referral progress"""
+    if 'player_id' not in session:
+        return redirect(url_for('index'))
+    
+    player_id = session['player_id']
+    
+    conn = get_db_connection()
+    
+    # Get ambassador info
+    ambassador = conn.execute('''
+        SELECT * FROM ambassadors WHERE player_id = ?
+    ''', (player_id,)).fetchone()
+    
+    if not ambassador:
+        flash('You are not registered as an Ambassador. Apply now!', 'info')
+        return redirect(url_for('become_ambassador'))
+    
+    # Get referral stats
+    referrals = conn.execute('''
+        SELECT ar.*, p.full_name, p.membership_type, p.created_at as signup_date
+        FROM ambassador_referrals ar
+        JOIN players p ON ar.referred_player_id = p.id
+        WHERE ar.ambassador_id = ?
+        ORDER BY ar.created_at DESC
+    ''', (ambassador['id'],)).fetchall()
+    
+    # Get qualified count
+    qualified_count = conn.execute('''
+        SELECT COUNT(*) as count FROM ambassador_referrals 
+        WHERE ambassador_id = ? AND qualified = 1
+    ''', (ambassador['id'],)).fetchone()['count']
+    
+    conn.close()
+    
+    progress_percentage = min((qualified_count / 20) * 100, 100)
+    
+    return render_template('ambassador_dashboard.html', 
+                         ambassador=ambassador,
+                         referrals=referrals, 
+                         qualified_count=qualified_count,
+                         progress_percentage=progress_percentage)
+
+@app.route('/referral/<referral_code>')
+def referral_signup(referral_code):
+    """Handle referral link sign-ups"""
+    conn = get_db_connection()
+    ambassador = conn.execute('''
+        SELECT * FROM ambassadors WHERE referral_code = ?
+    ''', (referral_code,)).fetchone()
+    conn.close()
+    
+    if not ambassador:
+        flash('Invalid referral code', 'danger')
+        return redirect(url_for('index'))
+    
+    # Store referral code in session for registration
+    session['referral_code'] = referral_code
+    session['ambassador_id'] = ambassador['id']
+    
+    flash(f'Welcome! You were referred by one of our Ambassadors. Complete registration to help them earn their lifetime membership!', 'info')
+    return redirect(url_for('register'))
+
+def track_referral_conversion(player_id, membership_type):
+    """Track when a referral gets tournament membership"""
+    if 'ambassador_id' not in session:
+        return
+    
+    ambassador_id = session['ambassador_id']
+    referral_code = session.get('referral_code', '')
+    
+    # Only count tournament membership as qualified referral
+    if membership_type != 'tournament':
+        return
+    
+    conn = get_db_connection()
+    
+    # Record the referral
+    conn.execute('''
+        INSERT INTO ambassador_referrals 
+        (ambassador_id, referred_player_id, referral_code, membership_type, qualified, qualified_at)
+        VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+    ''', (ambassador_id, player_id, referral_code, membership_type))
+    
+    # Update ambassador qualified count
+    conn.execute('''
+        UPDATE ambassadors 
+        SET qualified_referrals = qualified_referrals + 1,
+            referrals_count = referrals_count + 1
+        WHERE id = ?
+    ''', (ambassador_id,))
+    
+    # Check if ambassador reached 20 qualified referrals
+    ambassador = conn.execute('''
+        SELECT qualified_referrals, player_id FROM ambassadors WHERE id = ?
+    ''', (ambassador_id,)).fetchone()
+    
+    if ambassador['qualified_referrals'] >= 20:
+        # Grant lifetime tournament membership
+        conn.execute('''
+            UPDATE ambassadors SET lifetime_membership_granted = 1, qualification_date = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ''', (ambassador_id,))
+        
+        conn.execute('''
+            UPDATE players 
+            SET membership_type = 'tournament', subscription_status = 'ambassador_lifetime'
+            WHERE id = ?
+        ''', (ambassador['player_id']))
+        
+        # Send notification to ambassador
+        send_push_notification(ambassador['player_id'], 
+                             'Congratulations! You\'ve earned lifetime tournament membership by referring 20 members!',
+                             'Ambassador Achievement Unlocked!')
+    
+    conn.commit()
+    conn.close()
+    
+    # Clear session referral data
+    session.pop('ambassador_id', None)
+    session.pop('referral_code', None)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

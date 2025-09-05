@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Ambassador Dashboard - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<!-- Ambassador Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+            <div class="card-body py-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="fw-bold mb-2">
+                            <i class="fas fa-star me-2"></i>Ambassador Dashboard
+                        </h2>
+                        <p class="mb-2 fs-5">
+                            {{ ambassador.state_territory }} Representative
+                        </p>
+                        <div class="d-flex flex-wrap gap-3">
+                            <span class="badge bg-light text-dark px-3 py-2">
+                                Code: <strong>{{ ambassador.referral_code }}</strong>
+                            </span>
+                            {% if ambassador.lifetime_membership_granted %}
+                                <span class="badge bg-warning text-dark px-3 py-2">
+                                    <i class="fas fa-crown me-1"></i>Lifetime Member
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <button class="btn btn-light btn-lg" onclick="copyReferralLink()">
+                            <i class="fas fa-copy me-2"></i>Copy Referral Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Section -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Progress to Lifetime Membership
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold fs-5">{{ qualified_count }}/20 Qualified Referrals</span>
+                    <span class="text-muted">{{ (20 - qualified_count) }} remaining</span>
+                </div>
+                
+                <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: {{ progress_percentage }}%" 
+                         aria-valuenow="{{ progress_percentage }}" 
+                         aria-valuemin="0" aria-valuemax="100">
+                        {{ "%.0f"|format(progress_percentage) }}%
+                    </div>
+                </div>
+                
+                {% if qualified_count >= 20 %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-trophy me-2"></i>
+                        <strong>Congratulations!</strong> You've earned lifetime tournament membership!
+                    </div>
+                {% elif qualified_count >= 15 %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-fire me-2"></i>
+                        <strong>Almost there!</strong> Just {{ 20 - qualified_count }} more qualified referrals to go!
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-bullhorn me-2"></i>
+                        Share your referral link to get people to join with tournament membership!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-share-alt me-2"></i>Share Your Link
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label small">Your Referral URL:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control form-control-sm" 
+                               id="referralUrl" readonly
+                               value="{{ request.url_root }}referral/{{ ambassador.referral_code }}">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="copyReferralLink()">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url_root }}referral/{{ ambassador.referral_code }}" 
+                       target="_blank" class="btn btn-primary btn-sm">
+                        <i class="fab fa-facebook me-1"></i>Share on Facebook
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?url={{ request.url_root }}referral/{{ ambassador.referral_code }}&text=Join Ready 2 Dink - the ultimate pickleball matchmaking app!" 
+                       target="_blank" class="btn btn-info btn-sm">
+                        <i class="fab fa-twitter me-1"></i>Share on Twitter
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Referrals List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>Your Referrals ({{ referrals|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if referrals %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Membership</th>
+                                    <th>Status</th>
+                                    <th>Joined Date</th>
+                                    <th>Qualified Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for referral in referrals %}
+                                <tr>
+                                    <td class="fw-bold">{{ referral.full_name }}</td>
+                                    <td>
+                                        {% if referral.membership_type == 'tournament' %}
+                                            <span class="badge bg-success">Tournament</span>
+                                        {% elif referral.membership_type == 'discovery' %}
+                                            <span class="badge bg-info">Discovery</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Free</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if referral.qualified %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Qualified
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-clock me-1"></i>Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ referral.signup_date.split('T')[0] if referral.signup_date else 'N/A' }}</td>
+                                    <td>{{ referral.qualified_at.split('T')[0] if referral.qualified_at else '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
+                        <h5>No referrals yet</h5>
+                        <p class="text-muted">Start sharing your referral link to track your progress!</p>
+                        <button class="btn btn-success" onclick="copyReferralLink()">
+                            <i class="fas fa-copy me-2"></i>Copy Referral Link
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyReferralLink() {
+    const url = "{{ request.url_root }}referral/{{ ambassador.referral_code }}";
+    navigator.clipboard.writeText(url).then(function() {
+        // Show success message
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+        btn.classList.remove('btn-light', 'btn-outline-secondary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-light');
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}
