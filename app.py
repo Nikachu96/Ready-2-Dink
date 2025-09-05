@@ -713,9 +713,18 @@ def find_match_for_player(player_id):
 # Initialize database
 init_db()
 
+@app.route('/logout')
+def logout():
+    """Clear all session data and redirect to home"""
+    session.clear()
+    return redirect(url_for('index'))
+
 @app.route('/')
 def index():
     """Home page - check if user is logged in, otherwise show landing page"""
+    # Debug: Log session contents
+    logging.info(f"Session contents: {dict(session)}")
+    
     # If user is already logged in, redirect to their dashboard
     if 'current_player_id' in session:
         return redirect(url_for('player_home', player_id=session['current_player_id']))
