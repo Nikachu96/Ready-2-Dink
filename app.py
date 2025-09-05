@@ -29,6 +29,25 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def require_disclaimers_accepted(f):
+    """Decorator to ensure player has accepted disclaimers before accessing routes"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Extract player_id from URL parameters
+        player_id = kwargs.get('player_id') or request.form.get('player_id')
+        
+        if player_id:
+            conn = get_db_connection()
+            player = conn.execute('SELECT disclaimers_accepted FROM players WHERE id = ?', (player_id,)).fetchone()
+            conn.close()
+            
+            if player and not player['disclaimers_accepted']:
+                flash('Please accept our terms and disclaimers to continue using Ready 2 Dink', 'warning')
+                return redirect(url_for('show_disclaimers', player_id=player_id))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
 def init_db():
     """Initialize SQLite database with required tables"""
     conn = sqlite3.connect('app.db')
@@ -112,6 +131,11 @@ def init_db():
         
     try:
         c.execute('ALTER TABLE players ADD COLUMN trial_end_date TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN disclaimers_accepted INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
         pass  # Column already exists
         
@@ -414,6 +438,7 @@ def index():
     return render_template('player_select.html', players=players)
 
 @app.route('/home/<int:player_id>')
+@require_disclaimers_accepted
 def player_home(player_id):
     """Personalized home page for a player"""
     conn = get_db_connection()
@@ -560,10 +585,8 @@ def register():
             conn.commit()
             conn.close()
             
-            flash('Registration successful! Looking for matches...', 'success')
-            # Try to find a match for the new player
-            find_match_for_player(player_id)
-            return redirect(url_for('player_home', player_id=player_id))
+            flash('Registration successful! Please review and accept our terms and disclaimers to continue.', 'success')
+            return redirect(url_for('show_disclaimers', player_id=player_id))
             
         except sqlite3.IntegrityError:
             flash('Email already exists. Please use a different email address.', 'danger')
@@ -571,6 +594,49 @@ def register():
             flash(f'Registration failed: {str(e)}', 'danger')
     
     return render_template('register.html')
+
+@app.route('/disclaimers/<int:player_id>')
+def show_disclaimers(player_id):
+    """Show disclaimers page for a newly registered player"""
+    # Verify player exists and hasn't already accepted disclaimers
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    conn.close()
+    
+    if not player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('index'))
+    
+    if player['disclaimers_accepted']:
+        flash('You have already accepted the terms and disclaimers', 'info')
+        return redirect(url_for('player_home', player_id=player_id))
+    
+    return render_template('disclaimers.html', player_id=player_id)
+
+@app.route('/accept-disclaimers', methods=['POST'])
+def accept_disclaimers():
+    """Handle disclaimer acceptance"""
+    player_id = request.form.get('player_id')
+    accept_terms = request.form.get('accept_terms')
+    
+    if not player_id or not accept_terms:
+        flash('You must accept the terms and disclaimers to continue', 'danger')
+        return redirect(url_for('show_disclaimers', player_id=player_id))
+    
+    try:
+        conn = get_db_connection()
+        conn.execute('UPDATE players SET disclaimers_accepted = 1 WHERE id = ?', (player_id,))
+        conn.commit()
+        conn.close()
+        
+        flash('Thank you for accepting our terms! Welcome to Ready 2 Dink!', 'success')
+        # Try to find a match for the new player now that they've accepted terms
+        find_match_for_player(int(player_id))
+        return redirect(url_for('player_home', player_id=player_id))
+        
+    except Exception as e:
+        flash(f'Error accepting disclaimers: {str(e)}', 'danger')
+        return redirect(url_for('show_disclaimers', player_id=player_id))
 
 @app.route('/tournaments')
 def tournaments_overview():
@@ -622,6 +688,7 @@ def tournament():
     return tournament_entry(player['id'])
 
 @app.route('/tournament/<int:player_id>', methods=['GET', 'POST'])
+@require_disclaimers_accepted
 def tournament_entry(player_id):
     """Tournament entry form with levels and fees for a specific player"""
     # Get player info first
@@ -739,6 +806,7 @@ def tournament_entry(player_id):
     return render_template('tournament.html', player=player, tournaments_list=tournaments_list)
 
 @app.route('/dashboard/<int:player_id>')
+@require_disclaimers_accepted
 def dashboard(player_id):
     """Player dashboard showing their matches"""
     conn = get_db_connection()
@@ -937,6 +1005,7 @@ def update_app_config():
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/find_match/<int:player_id>', methods=['POST'])
+@require_disclaimers_accepted
 def find_match(player_id):
     """API endpoint to find a match for a player"""
     try:

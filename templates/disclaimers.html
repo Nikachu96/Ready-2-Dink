@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Terms & Disclaimers - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card">
+            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+                <div class="d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 40px; width: auto;" class="me-3">
+                    <div>
+                        <h4 class="card-title mb-0 fw-bold">Terms & Disclaimers</h4>
+                        <p class="mb-0 opacity-90">Please read and accept to continue</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body" style="max-height: 70vh; overflow-y: auto;">
+                <div class="disclaimer-content">
+                    <h5 class="text-primary mb-3">1. General Disclaimer / Liability Waiver</h5>
+                    <p class="mb-3">By using Ready 2 Dink, you acknowledge and agree that:</p>
+                    <ul class="mb-4">
+                        <li>R2D is a platform only that connects players for matches and tournaments.</li>
+                        <li>We are not responsible for injuries, accidents, or disputes that may occur before, during, or after a match.</li>
+                        <li>Participation is entirely at your own risk. You are responsible for your own safety, equipment, and conduct.</li>
+                        <li>You release R2D, its owners, and partners from any liability related to your use of the app.</li>
+                    </ul>
+
+                    <h5 class="text-primary mb-3">2. Terms of Service (ToS)</h5>
+                    <p class="mb-3">When creating an account, you agree to the following:</p>
+                    <ul class="mb-4">
+                        <li><strong>Eligibility:</strong> You must be 18+ or have parental consent to use Ready 2 Dink.</li>
+                        <li><strong>Account Info:</strong> You agree to provide accurate information, including name, DOB, selfie, and skill level.</li>
+                        <li><strong>Membership Fees:</strong> $4.99/month for partner matching, $9.99/month for tournament access + partner matching</li>
+                        <li><strong>Skill Level Integrity:</strong> Users must register at their true skill level. Repeated misrepresentation may result in suspension.</li>
+                        <li><strong>Match Completion:</strong> Tournament matches must be played within 7 days. Failure to complete it will result in a forfeit, no refund will be issued.</li>
+                        <li><strong>Conduct:</strong> Respectful behavior is required. Abusive, unsafe, or inappropriate conduct may result in account removal.</li>
+                        <li>Ready 2 Dink reserves the right to modify or update these Terms at any time.</li>
+                    </ul>
+
+                    <h5 class="text-primary mb-3">3. Privacy Policy</h5>
+                    <p class="mb-3">We respect your privacy. By using R2D, you agree that:</p>
+                    <ul class="mb-4">
+                        <li>We collect your name, DOB, address, email, selfie, skill level, and preferred play locations to provide matchmaking services.</li>
+                        <li>This information is used only within the app and will not be sold to third parties.</li>
+                        <li>Your data is protected with reasonable security measures, but no system is 100% secure.</li>
+                        <li>You may request deleting your account and personal data at any time.</li>
+                    </ul>
+
+                    <h5 class="text-primary mb-3">4. Payment & Refund Disclaimer</h5>
+                    <p class="mb-3">By subscribing or registering for tournaments, you agree that:</p>
+                    <ul class="mb-4">
+                        <li>Membership fees and tournament entry fees are non-refundable, except where required by law.</li>
+                        <li>Fees are billed monthly and may automatically renew unless canceled before the billing date.</li>
+                        <li>You are responsible for canceling your membership if you no longer wish to use Ready 2 Dink</li>
+                        <li>Tournament fees are paid at time of registration</li>
+                        <li>Players can register to multiple tournaments at the same time</li>
+                        <li>Prizes are paid via Zelle, Venmo or PayPal</li>
+                        <li><strong>NO CASH IS HANDED OUT</strong></li>
+                        <li><strong>IT IS THE PLAYER'S RESPONSIBILITY TO DECLARE THE WINNINGS TO THE TAX BUREAU.</strong></li>
+                    </ul>
+
+                    <h5 class="text-primary mb-3">5. Tournament Rules Disclaimer</h5>
+                    <p class="mb-3">By entering a tournament, you agree to:</p>
+                    <ul class="mb-4">
+                        <li>Complete your scheduled match within 7 days. If you cannot, the match will be forfeited.</li>
+                        <li>Submit match results honestly through the app.</li>
+                        <li>Provide fair feedback on opponent skill levels to maintain integrity of the platform.</li>
+                        <li>Accept that Ready 2 Dink reserves the right to make final decisions regarding disputes, forfeits, or rule enforcement.</li>
+                        <li>There are no referees during matches, fair play is required, in a doubt, replaying the point is better than arguing.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top">
+                <form method="POST" action="{{ url_for('accept_disclaimers') }}">
+                    <input type="hidden" name="player_id" value="{{ player_id }}">
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="accept_terms" name="accept_terms" required>
+                        <label class="form-check-label fw-bold" for="accept_terms">
+                            I have read, understand, and agree to all the Terms & Disclaimers above
+                        </label>
+                    </div>
+                    
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-success flex-fill" id="accept-btn" disabled>
+                            <i class="fas fa-check me-2"></i>Accept & Continue
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('accept_terms');
+    const acceptBtn = document.getElementById('accept-btn');
+    
+    checkbox.addEventListener('change', function() {
+        acceptBtn.disabled = !checkbox.checked;
+        if (checkbox.checked) {
+            acceptBtn.classList.remove('btn-outline-success');
+            acceptBtn.classList.add('btn-success');
+        } else {
+            acceptBtn.classList.remove('btn-success');
+            acceptBtn.classList.add('btn-outline-success');
+        }
+    });
+});
+</script>
+
+<style>
+.disclaimer-content {
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.disclaimer-content h5 {
+    border-bottom: 2px solid var(--bs-primary);
+    padding-bottom: 0.5rem;
+    margin-top: 2rem;
+}
+
+.disclaimer-content h5:first-child {
+    margin-top: 0;
+}
+
+.disclaimer-content ul {
+    padding-left: 1.5rem;
+}
+
+.disclaimer-content li {
+    margin-bottom: 0.5rem;
+}
+
+.card-footer {
+    background: rgba(var(--bs-dark-rgb), 0.1) !important;
+}
+</style>
+{% endblock %}
