@@ -1163,6 +1163,11 @@ def notification_settings():
     
     return render_template('notification_settings.html')
 
+@app.route('/ranking-info')
+def ranking_info():
+    """Ranking system information page"""
+    return render_template('ranking_info.html')
+
 @app.route('/tournaments')
 def tournaments_overview():
     """Public tournament overview page"""
