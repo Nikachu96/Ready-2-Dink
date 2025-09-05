@@ -715,23 +715,13 @@ init_db()
 
 @app.route('/')
 def index():
-    """Home page - single player app"""
-    conn = get_db_connection()
-    players = conn.execute('SELECT id, full_name, selfie, skill_level FROM players ORDER BY full_name').fetchall()
-    conn.close()
+    """Home page - check if user is logged in, otherwise show landing page"""
+    # If user is already logged in, redirect to their dashboard
+    if 'player_id' in session:
+        return redirect(url_for('player_home', player_id=session['player_id']))
     
-    # If no players exist, redirect to registration
-    if not players:
-        return redirect(url_for('register'))
-    
-    # If only one player, go directly to their home
-    if len(players) == 1:
-        # Set session for admin access
-        session['current_player_id'] = players[0]['id']
-        return redirect(url_for('player_home', player_id=players[0]['id']))
-    
-    # If multiple players exist (legacy), show selection
-    return render_template('player_select.html', players=players)
+    # For new visitors, always show the landing/registration page
+    return redirect(url_for('register'))
 
 @app.route('/home/<int:player_id>')
 @require_disclaimers_accepted
