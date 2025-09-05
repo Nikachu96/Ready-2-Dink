@@ -1247,7 +1247,7 @@ def tournament_entry(player_id):
         return redirect(url_for('show_tournament_rules', player_id=player_id))
     
     if request.method == 'POST':
-        required_fields = ['tournament_instance_id', 'tournament_type', 'sport']
+        required_fields = ['tournament_instance_id', 'tournament_type']
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
@@ -1309,7 +1309,7 @@ def tournament_entry(player_id):
                   tournament_instance['skill_level'],
                   request.form['tournament_type'],
                   tournament_instance['entry_fee'],
-                  request.form['sport'],
+                  'Pickleball',
                   entry_date.strftime('%Y-%m-%d'), 
                   match_deadline.strftime('%Y-%m-%d'),
                   'completed'))  # Skip payment for now

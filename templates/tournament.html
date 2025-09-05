@@ -29,7 +29,7 @@
                                 <h5 class="mb-1">{{ player.full_name }}</h5>
                                 <p class="text-muted mb-0">
                                     <i class="fas fa-star me-1"></i>{{ player.skill_level }} • 
-                                    <i class="fas fa-futbol me-1"></i>{{ player.preferred_sport or 'Tennis' }}
+                                    <i class="fas fa-table-tennis me-1"></i>Pickleball
                                 </p>
                             </div>
                         </div>
@@ -38,23 +38,7 @@
                     <form method="POST">
                         
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="sport" class="form-label">
-                                        <i class="fas fa-futbol me-1"></i>Sport *
-                                    </label>
-                                    <select class="form-select" id="sport" name="sport" required>
-                                        <option value="">Select sport</option>
-                                        <option value="Tennis" {% if player.preferred_sport == 'Tennis' %}selected{% endif %}>Tennis</option>
-                                        <option value="Basketball" {% if player.preferred_sport == 'Basketball' %}selected{% endif %}>Basketball</option>
-                                        <option value="Badminton" {% if player.preferred_sport == 'Badminton' %}selected{% endif %}>Badminton</option>
-                                        <option value="Table Tennis" {% if player.preferred_sport == 'Table Tennis' %}selected{% endif %}>Table Tennis</option>
-                                        <option value="Squash" {% if player.preferred_sport == 'Squash' %}selected{% endif %}>Squash</option>
-                                        <option value="Pickleball" {% if player.preferred_sport == 'Pickleball' %}selected{% endif %}>Pickleball</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <div class="mb-3">
                                     <label for="tournament_type" class="form-label">
                                         <i class="fas fa-users me-1"></i>Tournament Type *
