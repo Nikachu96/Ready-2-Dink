@@ -32,10 +32,24 @@
                             </span>
                             <span class="badge bg-warning text-dark">
                                 <i class="fas fa-trophy me-1"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
-                                {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                    {% for i in range(player.tournament_wins) %}⭐{% endfor %}
-                                {% endif %}
+                                
                             </span>
+                            <br>
+                            <span class="badge bg-success mt-1">
+                                <i class="fas fa-star me-1"></i>{{ player.ranking_points or 0 }} pts
+                            </span>
+                            {% if player_ranking %}
+                            <span class="badge bg-primary mt-1 ms-1">
+                                <i class="fas fa-medal me-1"></i>Rank #{{ player_ranking }}
+                            </span>
+                            {% endif %}
+                            {% if player.tournament_wins and player.tournament_wins > 0 %}
+                            <br>
+                            <small class="text-warning mt-1">
+                                {% for i in range(player.tournament_wins) %}⭐{% endfor %}
+                                Tournament Winner{{ 's' if player.tournament_wins > 1 else '' }}
+                            </small>
+                            {% endif %}
                         </p>
                     </div>
                     <div class="col-auto">
@@ -292,16 +306,21 @@
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="text-primary">{{ recent_matches|length + (player_tournaments|length if player_tournaments else 0) }}</h3>
-                <small class="text-muted">Total Games</small>
+                <h3 class="text-primary">{{ player.ranking_points or 0 }}</h3>
+                <small class="text-muted">Ranking Points</small>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="text-success">{{ connections|length }}</h3>
-                <small class="text-muted">Connections</small>
+                {% if player_ranking %}
+                    <h3 class="text-success">#{{ player_ranking }}</h3>
+                    <small class="text-muted">Current Rank</small>
+                {% else %}
+                    <h3 class="text-muted">Unranked</h3>
+                    <small class="text-muted">Play to get ranked!</small>
+                {% endif %}
             </div>
         </div>
     </div>

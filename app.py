@@ -144,6 +144,11 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN ranking_points INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     # Settings table for admin configuration
     c.execute('''
         CREATE TABLE IF NOT EXISTS settings (
@@ -329,6 +334,86 @@ def update_setting(key, value):
     ''', (key, value))
     conn.commit()
     conn.close()
+
+def award_points(player_id, points, reason):
+    """Award points to a player and log the reason"""
+    conn = get_db_connection()
+    
+    # Update player's points
+    conn.execute('''
+        UPDATE players 
+        SET ranking_points = ranking_points + ?
+        WHERE id = ?
+    ''', (points, player_id))
+    
+    conn.commit()
+    conn.close()
+    
+    # Log the point award for debugging
+    logging.info(f"Awarded {points} points to player {player_id} for {reason}")
+
+def get_tournament_points(result):
+    """Get points based on tournament result"""
+    points_map = {
+        'Winner (1st Place)': 400,
+        'Runner-up (2nd Place)': 200,
+        'Semi-finalist (3rd/4th Place)': 100,
+        'Quarter-finalist': 40
+    }
+    
+    # Handle variations in result strings
+    for key, points in points_map.items():
+        if key.lower() in result.lower():
+            return points
+    
+    # Handle specific result formats
+    if '1st' in result or 'winner' in result.lower() or 'won' in result.lower():
+        return 400
+    elif '2nd' in result or 'runner' in result.lower():
+        return 200
+    elif '3rd' in result or '4th' in result or 'semi' in result.lower():
+        return 100
+    elif 'quarter' in result.lower():
+        return 40
+    
+    return 0  # No points for early elimination
+
+def get_player_ranking(player_id):
+    """Get player's current ranking position"""
+    conn = get_db_connection()
+    
+    # Get all players ordered by points (descending), then by wins
+    players = conn.execute('''
+        SELECT id, ranking_points, wins
+        FROM players 
+        WHERE ranking_points > 0 OR wins > 0
+        ORDER BY ranking_points DESC, wins DESC
+    ''').fetchall()
+    
+    conn.close()
+    
+    # Find player's position
+    for rank, player in enumerate(players, 1):
+        if player['id'] == player_id:
+            return rank
+    
+    return None  # Player not ranked yet
+
+def get_leaderboard(limit=10):
+    """Get top players by ranking points"""
+    conn = get_db_connection()
+    
+    leaderboard = conn.execute('''
+        SELECT id, full_name, ranking_points, wins, losses, tournament_wins, selfie
+        FROM players 
+        WHERE ranking_points > 0 OR wins > 0
+        ORDER BY ranking_points DESC, wins DESC, losses ASC
+        LIMIT ?
+    ''', (limit,)).fetchall()
+    
+    conn.close()
+    
+    return leaderboard
 
 def get_tournament_levels():
     """Get available tournament levels with dynamic pricing from settings"""
@@ -579,13 +664,19 @@ def player_home(player_id):
     
     conn.close()
     
+    # Get player's ranking and leaderboard
+    player_ranking = get_player_ranking(player_id)
+    leaderboard = get_leaderboard(10)
+    
     return render_template('player_home.html', 
                          player=player, 
                          connections=connections,
                          recent_matches=recent_matches,
                          tournaments=tournaments,
                          player_tournaments=player_tournaments,
-                         available_tournaments=available_tournaments)
+                         available_tournaments=available_tournaments,
+                         player_ranking=player_ranking,
+                         leaderboard=leaderboard)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -848,6 +939,13 @@ def view_tournament_bracket(tournament_instance_id):
                          player_entry=player_entry,
                          current_player_id=current_player_id)
 
+@app.route('/leaderboard')
+def leaderboard():
+    """Display player leaderboard"""
+    leaderboard_players = get_leaderboard(50)  # Top 50 players
+    
+    return render_template('leaderboard.html', leaderboard=leaderboard_players)
+
 @app.route('/tournaments')
 def tournaments_overview():
     """Public tournament overview page"""
@@ -1106,6 +1204,11 @@ def complete_tournament(tournament_id):
             SET tournament_wins = tournament_wins + 1
             WHERE id = ?
         ''', (tournament['player_id'],))
+    
+    # Award tournament points based on result
+    tournament_points = get_tournament_points(result)
+    if tournament_points > 0:
+        award_points(tournament['player_id'], tournament_points, f'Tournament result: {result}')
     
     conn.commit()
     conn.close()
@@ -1482,6 +1585,9 @@ def submit_match_result():
     
     conn.commit()
     conn.close()
+    
+    # Award 10 points to the winner
+    award_points(winner_id, 10, 'Match victory')
     
     return jsonify({'success': True, 'message': 'Match result submitted successfully!'})
 

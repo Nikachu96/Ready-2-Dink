@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+                <div class="d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 40px; width: auto;" class="me-3">
+                    <div>
+                        <h4 class="card-title mb-0 fw-bold">
+                            <i class="fas fa-trophy me-2"></i>Player Rankings
+                        </h4>
+                        <p class="mb-0 opacity-90">Top competitive players by ranking points</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 80px;">Rank</th>
+                                <th>Player</th>
+                                <th class="text-center">Points</th>
+                                <th class="text-center">Match Record</th>
+                                <th class="text-center">Tournaments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for player in leaderboard %}
+                            <tr>
+                                <td class="text-center align-middle">
+                                    {% if loop.index == 1 %}
+                                        <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+                                            <i class="fas fa-crown me-1"></i>#{{ loop.index }}
+                                        </span>
+                                    {% elif loop.index == 2 %}
+                                        <span class="badge bg-secondary fs-6 px-3 py-2">
+                                            <i class="fas fa-medal me-1"></i>#{{ loop.index }}
+                                        </span>
+                                    {% elif loop.index == 3 %}
+                                        <span class="badge bg-warning fs-6 px-3 py-2" style="background: #cd7f32 !important;">
+                                            <i class="fas fa-award me-1"></i>#{{ loop.index }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-primary fs-6 px-2 py-1">
+                                            #{{ loop.index }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle">
+                                    <div class="d-flex align-items-center">
+                                        {% if player.selfie %}
+                                            <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                                 class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" 
+                                                 alt="Player">
+                                        {% else %}
+                                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-3" 
+                                                 style="width: 50px; height: 50px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <h6 class="mb-0">{{ player.full_name }}</h6>
+                                            {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                                <small class="text-warning">
+                                                    {% for i in range(player.tournament_wins) %}⭐{% endfor %}
+                                                    Tournament Winner{{ 's' if player.tournament_wins > 1 else '' }}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <span class="badge bg-success fs-6 px-3 py-2">
+                                        {{ player.ranking_points or 0 }} pts
+                                    </span>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <span class="badge bg-info">
+                                        {{ player.wins or 0 }}W-{{ player.losses or 0 }}L
+                                    </span>
+                                    {% if (player.wins or 0) + (player.losses or 0) > 0 %}
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ "%.1f"|format(((player.wins or 0) / ((player.wins or 0) + (player.losses or 0)) * 100)) }}% win rate
+                                        </small>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center align-middle">
+                                    {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-trophy me-1"></i>{{ player.tournament_wins }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="d-flex flex-column">
+                            <i class="fas fa-gamepad text-primary mb-2"></i>
+                            <small class="text-muted">Match Win: <strong>10 pts</strong></small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex flex-column">
+                            <i class="fas fa-medal text-warning mb-2"></i>
+                            <small class="text-muted">Quarter-final: <strong>40 pts</strong></small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex flex-column">
+                            <i class="fas fa-trophy text-info mb-2"></i>
+                            <small class="text-muted">Semi-final: <strong>100 pts</strong></small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex flex-column">
+                            <i class="fas fa-crown text-success mb-2"></i>
+                            <small class="text-muted">Tournament Win: <strong>400 pts</strong></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Rankings are updated automatically based on match wins and tournament performance
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <a href="{{ url_for('tournaments_overview') }}" class="btn btn-primary me-3">
+            <i class="fas fa-trophy me-2"></i>Join Tournament
+        </a>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+            <i class="fas fa-home me-2"></i>Back Home
+        </a>
+    </div>
+</div>
+{% endblock %}
