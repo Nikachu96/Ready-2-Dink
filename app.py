@@ -281,6 +281,29 @@ def init_db():
     except sqlite3.OperationalError:
         pass
     
+    # Tournament matches table for bracket management
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS tournament_matches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tournament_instance_id INTEGER NOT NULL,
+            round_number INTEGER NOT NULL,
+            match_number INTEGER NOT NULL,
+            player1_id INTEGER,
+            player2_id INTEGER,
+            winner_id INTEGER,
+            player1_score TEXT,
+            player2_score TEXT,
+            status TEXT DEFAULT 'pending',
+            scheduled_date TEXT,
+            completed_date TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(tournament_instance_id) REFERENCES tournament_instances(id),
+            FOREIGN KEY(player1_id) REFERENCES players(id),
+            FOREIGN KEY(player2_id) REFERENCES players(id),
+            FOREIGN KEY(winner_id) REFERENCES players(id)
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -543,6 +566,17 @@ def player_home(player_id):
             'prize_pool': f"1st: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.5:.0f} • 2nd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.3:.0f} • 3rd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.12:.0f} • 4th: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.08:.0f}"
         })
     
+    # Get player's tournaments with bracket info
+    player_tournaments = conn.execute('''
+        SELECT t.*, ti.name as tournament_instance_name, ti.status as tournament_status,
+               ti.id as tournament_instance_id
+        FROM tournaments t
+        JOIN tournament_instances ti ON t.tournament_instance_id = ti.id
+        WHERE t.player_id = ? 
+        ORDER BY t.created_at DESC
+        LIMIT 5
+    ''', (player_id,)).fetchall()
+    
     conn.close()
     
     return render_template('player_home.html', 
@@ -550,6 +584,7 @@ def player_home(player_id):
                          connections=connections,
                          recent_matches=recent_matches,
                          tournaments=tournaments,
+                         player_tournaments=player_tournaments,
                          available_tournaments=available_tournaments)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -688,6 +723,130 @@ def accept_tournament_rules():
     except Exception as e:
         flash(f'Error accepting tournament rules: {str(e)}', 'danger')
         return redirect(url_for('show_tournament_rules', player_id=player_id))
+
+def generate_tournament_bracket(tournament_instance_id):
+    """Generate bracket for a tournament instance"""
+    conn = get_db_connection()
+    
+    # Get all players in this tournament
+    players = conn.execute('''
+        SELECT t.*, p.full_name, p.selfie 
+        FROM tournaments t
+        JOIN players p ON t.player_id = p.id
+        WHERE t.tournament_instance_id = ?
+        ORDER BY t.created_at
+    ''', (tournament_instance_id,)).fetchall()
+    
+    if len(players) < 2:
+        conn.close()
+        return False
+    
+    # Assign bracket positions
+    for i, player in enumerate(players, 1):
+        conn.execute('UPDATE tournaments SET bracket_position = ? WHERE id = ?', 
+                    (i, player['id']))
+    
+    # Calculate number of rounds needed
+    num_players = len(players)
+    import math
+    max_rounds = math.ceil(math.log2(num_players)) if num_players > 1 else 1
+    
+    # Generate first round matches
+    matches_created = []
+    
+    # Pair players for first round
+    for i in range(0, len(players), 2):
+        player1 = players[i]
+        player2 = players[i + 1] if i + 1 < len(players) else None
+        
+        match_number = (i // 2) + 1
+        
+        cursor = conn.execute('''
+            INSERT INTO tournament_matches 
+            (tournament_instance_id, round_number, match_number, player1_id, player2_id, status)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (tournament_instance_id, 1, match_number, player1['player_id'], 
+              player2['player_id'] if player2 else None,
+              'pending' if player2 else 'bye'))
+        
+        matches_created.append(cursor.lastrowid)
+    
+    # Generate empty matches for subsequent rounds
+    current_matches = len(matches_created)
+    for round_num in range(2, max_rounds + 1):
+        matches_in_round = current_matches // 2
+        if matches_in_round == 0:
+            break
+            
+        for match_num in range(1, matches_in_round + 1):
+            cursor = conn.execute('''
+                INSERT INTO tournament_matches 
+                (tournament_instance_id, round_number, match_number, status)
+                VALUES (?, ?, ?, ?)
+            ''', (tournament_instance_id, round_num, match_num, 'pending'))
+            
+        current_matches = matches_in_round
+    
+    # Update tournament instance status
+    conn.execute('UPDATE tournament_instances SET status = ? WHERE id = ?', 
+                ('active', tournament_instance_id))
+    
+    conn.commit()
+    conn.close()
+    return True
+
+@app.route('/tournament-bracket/<int:tournament_instance_id>')
+def view_tournament_bracket(tournament_instance_id):
+    """View tournament bracket"""
+    conn = get_db_connection()
+    
+    # Get tournament instance
+    tournament = conn.execute('SELECT * FROM tournament_instances WHERE id = ?', 
+                             (tournament_instance_id,)).fetchone()
+    if not tournament:
+        flash('Tournament not found', 'danger')
+        return redirect(url_for('tournaments_overview'))
+    
+    # Check if current player is in this tournament
+    current_player_id = session.get('current_player_id')
+    player_entry = None
+    if current_player_id:
+        player_entry = conn.execute('''
+            SELECT * FROM tournaments 
+            WHERE player_id = ? AND tournament_instance_id = ?
+        ''', (current_player_id, tournament_instance_id)).fetchone()
+    
+    # Get tournament matches with player details
+    matches = conn.execute('''
+        SELECT tm.*,
+               p1.full_name as player1_name, p1.selfie as player1_selfie,
+               p2.full_name as player2_name, p2.selfie as player2_selfie
+        FROM tournament_matches tm
+        LEFT JOIN players p1 ON tm.player1_id = p1.id
+        LEFT JOIN players p2 ON tm.player2_id = p2.id
+        WHERE tm.tournament_instance_id = ?
+        ORDER BY tm.round_number, tm.match_number
+    ''', (tournament_instance_id,)).fetchall()
+    
+    # Group matches by round
+    matches_by_round = {}
+    max_rounds = 0
+    for match in matches:
+        round_num = match['round_number']
+        if round_num not in matches_by_round:
+            matches_by_round[round_num] = []
+        matches_by_round[round_num].append(match)
+        max_rounds = max(max_rounds, round_num)
+    
+    conn.close()
+    
+    return render_template('tournament_bracket.html',
+                         tournament=tournament,
+                         matches=matches,
+                         matches_by_round=matches_by_round,
+                         max_rounds=max_rounds,
+                         player_entry=player_entry,
+                         current_player_id=current_player_id)
 
 @app.route('/tournaments')
 def tournaments_overview():
@@ -885,11 +1044,14 @@ def dashboard(player_id):
         ORDER BY m.created_at DESC
     ''', (player_id, player_id)).fetchall()
     
-    # Get player's tournaments (for backward compatibility)
+    # Get player's tournaments with tournament instance info
     tournaments = conn.execute('''
-        SELECT * FROM tournaments 
-        WHERE player_id = ? 
-        ORDER BY created_at DESC
+        SELECT t.*, ti.name as tournament_instance_name, ti.status as tournament_status,
+               ti.id as tournament_instance_id
+        FROM tournaments t
+        JOIN tournament_instances ti ON t.tournament_instance_id = ti.id
+        WHERE t.player_id = ? 
+        ORDER BY t.created_at DESC
     ''', (player_id,)).fetchall()
     
     conn.close()

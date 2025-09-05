@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Tournament Bracket - {{ tournament.name }} - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 40px; width: auto;" class="me-3">
+                        <div>
+                            <h4 class="card-title mb-0 fw-bold">{{ tournament.name }}</h4>
+                            <p class="mb-0 opacity-90">Tournament Bracket - {{ tournament.skill_level }} Level</p>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-warning fs-6">${{ "%.0f"|format(tournament.entry_fee) }}</span>
+                        <br>
+                        <small class="opacity-75">{{ tournament.current_players }}/{{ tournament.max_players }} players</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if tournament.status == 'open' %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Tournament is still open for registration. Bracket will be generated when registration closes.
+                </div>
+                {% elif not matches %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-hourglass-half me-2"></i>
+                    Bracket is being generated. Please check back soon!
+                </div>
+                {% else %}
+                
+                <!-- Tournament Status -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <span class="badge bg-{{ 'success' if tournament.status == 'completed' else 'primary' }} fs-6">
+                            {% if tournament.status == 'completed' %}
+                                Completed
+                            {% elif tournament.status == 'active' %}
+                                In Progress
+                            {% else %}
+                                {{ tournament.status|title }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% if player_entry %}
+                    <div class="text-end">
+                        <strong class="text-primary">Your Position:</strong> 
+                        <span class="badge bg-primary">Seed #{{ player_entry.bracket_position or 'TBD' }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Bracket Visualization -->
+                <div class="bracket-container">
+                    {% for round_num, round_matches in matches_by_round.items() %}
+                    <div class="round-column">
+                        <h6 class="round-title text-center mb-3">
+                            {% if round_num == max_rounds %}
+                                Final
+                            {% elif round_num == max_rounds - 1 %}
+                                Semifinal
+                            {% elif round_num == max_rounds - 2 %}
+                                Quarterfinal
+                            {% else %}
+                                Round {{ round_num }}
+                            {% endif %}
+                        </h6>
+                        
+                        <div class="matches-column">
+                            {% for match in round_matches %}
+                            <div class="match-card mb-3 {% if player_entry and (match.player1_id == player_entry.player_id or match.player2_id == player_entry.player_id) %}player-match{% endif %}">
+                                <div class="card">
+                                    <div class="card-body p-2">
+                                        {% if match.player1_id %}
+                                        <div class="player-row d-flex justify-content-between align-items-center {% if match.winner_id == match.player1_id %}winner{% endif %}">
+                                            <div class="player-info">
+                                                {% if match.player1_selfie %}
+                                                <img src="{{ url_for('static', filename='uploads/' + match.player1_selfie) }}" alt="{{ match.player1_name }}" class="player-avatar me-2">
+                                                {% else %}
+                                                <div class="player-avatar-placeholder me-2">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                                {% endif %}
+                                                <span class="player-name">{{ match.player1_name }}</span>
+                                            </div>
+                                            <span class="match-score">{{ match.player1_score or '-' }}</span>
+                                        </div>
+                                        <hr class="my-1">
+                                        {% else %}
+                                        <div class="player-row d-flex justify-content-between align-items-center">
+                                            <div class="player-info text-muted">
+                                                <div class="player-avatar-placeholder me-2">
+                                                    <i class="fas fa-question"></i>
+                                                </div>
+                                                <span class="player-name">TBD</span>
+                                            </div>
+                                            <span class="match-score">-</span>
+                                        </div>
+                                        <hr class="my-1">
+                                        {% endif %}
+                                        
+                                        {% if match.player2_id %}
+                                        <div class="player-row d-flex justify-content-between align-items-center {% if match.winner_id == match.player2_id %}winner{% endif %}">
+                                            <div class="player-info">
+                                                {% if match.player2_selfie %}
+                                                <img src="{{ url_for('static', filename='uploads/' + match.player2_selfie) }}" alt="{{ match.player2_name }}" class="player-avatar me-2">
+                                                {% else %}
+                                                <div class="player-avatar-placeholder me-2">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                                {% endif %}
+                                                <span class="player-name">{{ match.player2_name }}</span>
+                                            </div>
+                                            <span class="match-score">{{ match.player2_score or '-' }}</span>
+                                        </div>
+                                        {% else %}
+                                        <div class="player-row d-flex justify-content-between align-items-center">
+                                            <div class="player-info text-muted">
+                                                <div class="player-avatar-placeholder me-2">
+                                                    <i class="fas fa-question"></i>
+                                                </div>
+                                                <span class="player-name">TBD</span>
+                                            </div>
+                                            <span class="match-score">-</span>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <div class="match-status text-center mt-2">
+                                            {% if match.status == 'completed' %}
+                                                <small class="text-success">
+                                                    <i class="fas fa-check-circle"></i> Complete
+                                                </small>
+                                            {% elif match.status == 'in_progress' %}
+                                                <small class="text-warning">
+                                                    <i class="fas fa-play-circle"></i> In Progress
+                                                </small>
+                                            {% else %}
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock"></i> Pending
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% endif %}
+                
+                <!-- Player's Tournament Status -->
+                {% if player_entry %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-user-circle me-2"></i>Your Tournament Status
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Entry Date:</strong> {{ player_entry.entry_date }}</p>
+                                <p><strong>Bracket Position:</strong> #{{ player_entry.bracket_position or 'TBD' }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Status:</strong> 
+                                    <span class="badge bg-{{ 'success' if player_entry.completed else 'primary' }}">
+                                        {{ player_entry.match_result if player_entry.completed else 'Active' }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Navigation -->
+                <div class="mt-4 text-center">
+                    <a href="{{ url_for('player_home', player_id=current_player_id) }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Back to Dashboard
+                    </a>
+                    <a href="{{ url_for('tournaments_overview') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-trophy me-2"></i>All Tournaments
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bracket-container {
+    display: flex;
+    gap: 2rem;
+    overflow-x: auto;
+    padding: 1rem 0;
+    min-height: 400px;
+}
+
+.round-column {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+}
+
+.round-title {
+    position: sticky;
+    top: 0;
+    background: rgba(var(--bs-dark-rgb), 0.9);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    z-index: 10;
+}
+
+.matches-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    flex-grow: 1;
+}
+
+.match-card {
+    transition: all 0.3s ease;
+}
+
+.match-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.player-match {
+    border: 2px solid var(--bs-warning);
+    border-radius: 0.5rem;
+    box-shadow: 0 0 10px rgba(var(--bs-warning-rgb), 0.3);
+}
+
+.player-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.player-avatar-placeholder {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--bs-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+.player-row.winner {
+    background: rgba(var(--bs-success-rgb), 0.1);
+    border-radius: 0.25rem;
+    padding: 0.25rem;
+    font-weight: bold;
+}
+
+.player-name {
+    font-size: 0.9rem;
+}
+
+.match-score {
+    font-weight: bold;
+    color: var(--bs-primary);
+}
+
+@media (max-width: 768px) {
+    .bracket-container {
+        gap: 1rem;
+    }
+    
+    .round-column {
+        min-width: 150px;
+    }
+    
+    .player-name {
+        font-size: 0.8rem;
+    }
+}
+</style>
+{% endblock %}

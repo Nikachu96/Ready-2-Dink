@@ -138,6 +138,73 @@
 </div>
 {% endif %}
 
+<!-- Player's Tournaments & Brackets -->
+{% if player_tournaments %}
+<div class="row mb-4 animate-in">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bracket-curly me-2"></i>My Tournament Brackets
+                    </h5>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for tournament in player_tournaments %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 {% if not tournament.completed %}border-primary{% else %}border-secondary{% endif %}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title">{{ tournament.tournament_instance_name or tournament.tournament_name }}</h6>
+                                    <div class="d-flex flex-column align-items-end">
+                                        <span class="badge bg-{{ 'success' if tournament.completed else 'primary' }} mb-1">
+                                            {% if tournament.completed %}
+                                                {{ tournament.match_result or 'Completed' }}
+                                            {% elif tournament.tournament_status == 'active' %}
+                                                Active
+                                            {% elif tournament.tournament_status == 'open' %}
+                                                Open
+                                            {% else %}
+                                                {{ tournament.tournament_status|title }}
+                                            {% endif %}
+                                        </span>
+                                        {% if tournament.bracket_position %}
+                                        <small class="text-muted">Seed #{{ tournament.bracket_position }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <p class="card-text small text-muted mb-2">
+                                    {{ tournament.tournament_level }} Level • ${{ "%.0f"|format(tournament.entry_fee) }}
+                                </p>
+                                
+                                <small class="text-muted d-block mb-3">
+                                    <i class="fas fa-calendar me-1"></i>Entered: {{ tournament.entry_date }}
+                                </small>
+                                
+                                {% if tournament.tournament_instance_id %}
+                                <a href="{{ url_for('view_tournament_bracket', tournament_instance_id=tournament.tournament_instance_id) }}" 
+                                   class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-bracket-curly me-1"></i>View Bracket
+                                </a>
+                                {% else %}
+                                <button class="btn btn-outline-secondary btn-sm w-100" disabled>
+                                    <i class="fas fa-hourglass me-1"></i>Bracket Pending
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="row">
     <!-- Connections -->
     <div class="col-md-6">
@@ -225,7 +292,7 @@
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="text-primary">{{ recent_matches|length + tournaments|length }}</h3>
+                <h3 class="text-primary">{{ recent_matches|length + (player_tournaments|length if player_tournaments else 0) }}</h3>
                 <small class="text-muted">Total Games</small>
             </div>
         </div>
@@ -249,7 +316,7 @@
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="text-info">{{ tournaments|selectattr('completed', 'equalto', 0)|list|length }}</h3>
+                <h3 class="text-info">{{ player_tournaments|selectattr('completed', 'equalto', 0)|list|length if player_tournaments else 0 }}</h3>
                 <small class="text-muted">Active Tournaments</small>
             </div>
         </div>
