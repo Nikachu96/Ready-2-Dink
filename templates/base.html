@@ -221,11 +221,24 @@
     
     <!-- Push Notification Support -->
     <script>
-        // Service Worker and Push Notifications
+        // Service Worker and Push Notifications - Force cache clear
         if ('serviceWorker' in navigator && 'PushManager' in window) {
-            navigator.serviceWorker.register('/service-worker.js')
+            // Clear all caches first
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    names.forEach(function(name) {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            navigator.serviceWorker.register('/static/sw.js?v=' + Date.now())
                 .then(function(registration) {
                     console.log('Service Worker registered successfully');
+                    // Force update if there's a waiting service worker
+                    if (registration.waiting) {
+                        registration.waiting.postMessage({type: 'SKIP_WAITING'});
+                    }
                     return registration;
                 })
                 .catch(function(error) {

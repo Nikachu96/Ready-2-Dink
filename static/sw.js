@@ -38,10 +38,28 @@ self.addEventListener('notificationclick', function(event) {
 
 self.addEventListener('install', function(event) {
     console.log('Service Worker installing.');
-    self.skipWaiting();
+    // Clear all caches on install
+    event.waitUntil(
+        caches.keys().then(function(cacheNames) {
+            return Promise.all(
+                cacheNames.map(function(cacheName) {
+                    return caches.delete(cacheName);
+                })
+            );
+        }).then(() => self.skipWaiting())
+    );
 });
 
 self.addEventListener('activate', function(event) {
     console.log('Service Worker activating.');
-    event.waitUntil(self.clients.claim());
+    // Clear all caches on activate and claim clients
+    event.waitUntil(
+        caches.keys().then(function(cacheNames) {
+            return Promise.all(
+                cacheNames.map(function(cacheName) {
+                    return caches.delete(cacheName);
+                })
+            );
+        }).then(() => self.clients.claim())
+    );
 });
