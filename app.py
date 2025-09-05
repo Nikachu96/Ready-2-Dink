@@ -535,14 +535,16 @@ def schedule_tournament_notifications():
 
 def get_tournament_levels():
     """Get available tournament levels with dynamic pricing from settings"""
-    beginner_price = float(get_setting('beginner_price', '10'))
-    intermediate_price = float(get_setting('intermediate_price', '20'))
-    advanced_price = float(get_setting('advanced_price', '40'))
+    beginner_price = float(get_setting('beginner_price', '20'))
+    intermediate_price = float(get_setting('intermediate_price', '25'))
+    advanced_price = float(get_setting('advanced_price', '30'))
+    championship_price = float(get_setting('championship_price', '30'))
     
     # Get max players from settings
     beginner_max = int(get_setting('beginner_max_players', '32'))
     intermediate_max = int(get_setting('intermediate_max_players', '32'))
     advanced_max = int(get_setting('advanced_max_players', '32'))
+    championship_max = int(get_setting('championship_max_players', '128'))
     
     def calculate_prizes(entry_fee, max_players):
         """Calculate prize breakdown for top 4 finishers"""
@@ -556,9 +558,22 @@ def get_tournament_levels():
             'platform_revenue': total_fees * 0.30  # 30% platform revenue
         }
     
+    def calculate_championship_prizes(entry_fee, max_players):
+        """Calculate detailed prize breakdown for championship tournament (top 20)"""
+        total_fees = entry_fee * max_players  # $30 * 128 = $3,840
+        prize_pool = total_fees * 0.70  # $2,688 prize pool
+        return {
+            '1st': 800, '2nd': 480, '3rd': 300, '4th': 200, '5th': 160,
+            '6th': 120, '7th': 100, '8th': 80, '9th': 72, '10th': 64,
+            '11th': 56, '12th': 48, '13th': 44, '14th': 40, '15th': 36,
+            '16th': 32, '17th': 32, '18th': 32, '19th': 16, '20th': 16,
+            'platform_revenue': total_fees * 0.30
+        }
+    
     beginner_prizes = calculate_prizes(beginner_price, beginner_max)
     intermediate_prizes = calculate_prizes(intermediate_price, intermediate_max)
     advanced_prizes = calculate_prizes(advanced_price, advanced_max)
+    championship_prizes = calculate_championship_prizes(championship_price, championship_max)
     
     return {
         'Beginner': {
@@ -587,6 +602,17 @@ def get_tournament_levels():
             'prize_breakdown': advanced_prizes,
             'skill_requirements': 'Advanced level players',
             'max_players': advanced_max
+        },
+        'Championship': {
+            'name': 'The Big Dink',
+            'subtitle': 'The Hill',
+            'description': 'Elite championship tournament for top players',
+            'entry_fee': championship_price,
+            'prize_pool': "Total Prize Pool: $2,688 • 1st Place: $800 • Top 20 Finishers Paid",
+            'prize_breakdown': championship_prizes,
+            'skill_requirements': 'All skill levels welcome',
+            'max_players': championship_max,
+            'special_notes': 'Championship tournament with detailed prize distribution for top 20 finishers'
         }
     }
 
