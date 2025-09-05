@@ -43,11 +43,37 @@
                                     <label for="tournament_type" class="form-label">
                                         <i class="fas fa-users me-1"></i>Tournament Type *
                                     </label>
-                                    <select class="form-select" id="tournament_type" name="tournament_type" required>
+                                    <select class="form-select" id="tournament_type" name="tournament_type" required onchange="togglePartnerSelection()">
                                         <option value="">Select type</option>
                                         <option value="singles">Singles (1v1)</option>
-                                        <option value="doubles">Doubles (2v2)</option>
+                                        <option value="doubles">Doubles (2v2) - Additional $10 fee</option>
                                     </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Partner Selection for Doubles -->
+                        <div class="row" id="partner-selection" style="display: none;">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="partner_id" class="form-label">
+                                        <i class="fas fa-user-friends me-1"></i>Select Your Doubles Partner *
+                                    </label>
+                                    <select class="form-select" id="partner_id" name="partner_id">
+                                        <option value="">Choose a partner...</option>
+                                        {% if connections %}
+                                            {% for connection in connections %}
+                                            <option value="{{ connection.opponent_id }}">
+                                                {{ connection.opponent_name }} 
+                                                <small>({{ connection.matches_played }} matches played)</small>
+                                            </option>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </select>
+                                    <div class="form-text text-white">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        You can only invite players you've previously played with. Your partner will receive an invitation to accept and pay their fee.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -69,7 +95,7 @@
                                                             {{ tournament.name }}
                                                         </label>
                                                     </div>
-                                                    <span class="badge bg-primary fs-6">${{ "%.0f"|format(tournament.entry_fee) }}</span>
+                                                    <span class="badge bg-primary fs-6 tournament-fee" data-base-fee="{{ tournament.entry_fee }}">${{ "%.0f"|format(tournament.entry_fee) }}</span>
                                                 </div>
                                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                                     <small class="text-muted">
@@ -176,6 +202,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Toggle partner selection based on tournament type
+function togglePartnerSelection() {
+    const tournamentType = document.getElementById('tournament_type').value;
+    const partnerSelection = document.getElementById('partner-selection');
+    const partnerSelect = document.getElementById('partner_id');
+    const tournamentCards = document.querySelectorAll('.tournament-card');
+    
+    if (tournamentType === 'doubles') {
+        partnerSelection.style.display = 'block';
+        partnerSelect.required = true;
+        
+        // Update tournament fees to show +$10 for doubles
+        tournamentCards.forEach(card => {
+            const feeElement = card.querySelector('.tournament-fee');
+            if (feeElement) {
+                const baseFee = parseFloat(feeElement.dataset.baseFee);
+                const doublesFee = baseFee + 10;
+                feeElement.textContent = '$' + doublesFee.toFixed(0);
+            }
+        });
+    } else {
+        partnerSelection.style.display = 'none';
+        partnerSelect.required = false;
+        
+        // Reset tournament fees to original amounts
+        tournamentCards.forEach(card => {
+            const feeElement = card.querySelector('.tournament-fee');
+            if (feeElement) {
+                const baseFee = parseFloat(feeElement.dataset.baseFee);
+                feeElement.textContent = '$' + baseFee.toFixed(0);
+            }
+        });
+    }
+}
 
 // Add styling for interactive cards
 document.addEventListener('DOMContentLoaded', function() {

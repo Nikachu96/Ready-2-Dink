@@ -1248,6 +1248,12 @@ def tournament_entry(player_id):
     
     if request.method == 'POST':
         required_fields = ['tournament_instance_id', 'tournament_type']
+        tournament_type = request.form.get('tournament_type')
+        
+        # Add partner_id to required fields if doubles
+        if tournament_type == 'doubles':
+            required_fields.append('partner_id')
+            
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
@@ -1284,6 +1290,33 @@ def tournament_entry(player_id):
                 flash('You are already registered for this tournament.', 'warning')
                 return redirect(url_for('tournament_entry', player_id=player_id))
             
+            # Calculate entry fee (add $10 for doubles)
+            base_fee = tournament_instance['entry_fee']
+            entry_fee = base_fee + 10 if tournament_type == 'doubles' else base_fee
+            
+            # Handle doubles partner invitation
+            partner_id = None
+            if tournament_type == 'doubles':
+                partner_id = request.form.get('partner_id')
+                
+                # Verify partner exists and has played with this player
+                partner = conn.execute('SELECT * FROM players WHERE id = ?', (partner_id,)).fetchone()
+                if not partner:
+                    flash('Selected partner not found.', 'danger')
+                    return redirect(url_for('tournament_entry', player_id=player_id))
+                
+                # Check if they've played together
+                connection = conn.execute('''
+                    SELECT 1 FROM matches 
+                    WHERE (player1_id = ? AND player2_id = ?) 
+                       OR (player1_id = ? AND player2_id = ?)
+                    LIMIT 1
+                ''', (player_id, partner_id, partner_id, player_id)).fetchone()
+                
+                if not connection:
+                    flash('You can only invite players you have played with before.', 'danger')
+                    return redirect(url_for('tournament_entry', player_id=player_id))
+
             # Check if player skill matches tournament level (with some flexibility)
             skill_mapping = {
                 'Beginner': ['Beginner'],
@@ -1307,17 +1340,39 @@ def tournament_entry(player_id):
                   tournament_instance_id,
                   tournament_instance['name'],
                   tournament_instance['skill_level'],
-                  request.form['tournament_type'],
-                  tournament_instance['entry_fee'],
+                  tournament_type,
+                  entry_fee,
                   'Pickleball',
                   entry_date.strftime('%Y-%m-%d'), 
                   match_deadline.strftime('%Y-%m-%d'),
-                  'completed'))  # Skip payment for now
+                  'pending_partner' if tournament_type == 'doubles' and partner_id else 'completed'))
             
+            # Get the tournament entry ID for partner invitation
+            tournament_entry_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+            
+            # Send partner invitation for doubles
+            if tournament_type == 'doubles' and partner_id:
+                # Create partner invitation record
+                conn.execute('''
+                    INSERT INTO partner_invitations 
+                    (tournament_entry_id, inviter_id, invitee_id, tournament_name, entry_fee, status, created_at)
+                    VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))
+                ''', (tournament_entry_id, player_id, partner_id, tournament_instance['name'], entry_fee))
+                
+                # Send notification to partner
+                partner = conn.execute('SELECT * FROM players WHERE id = ?', (partner_id,)).fetchone()
+                message = f"{player['full_name']} has invited you to play doubles in {tournament_instance['name']}! Entry fee: ${entry_fee} (your share: ${entry_fee}). Check your invitations to accept."
+                
+                # Send push notification
+                send_push_notification(partner_id, message, "Doubles Tournament Invitation")
+                
+                flash(f'Tournament entry submitted! Partner invitation sent to {partner["full_name"]}. They need to accept and pay their fee to confirm the doubles team.', 'success')
+            else:
+                flash('Successfully entered tournament! Good luck!', 'success')
+
             conn.commit()
             conn.close()
             
-            flash(f'Tournament entry successful! Entry fee: ${tournament_instance["entry_fee"]:.0f}', 'success')
             return redirect(url_for('dashboard', player_id=player_id))
             
         except Exception as e:
@@ -1349,9 +1404,31 @@ def tournament_entry(player_id):
             'prize_pool': f"1st: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.5:.0f} • 2nd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.3:.0f} • 3rd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.12:.0f} • 4th: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.08:.0f}"
         })
 
+    # Get player's connections for partner selection
+    connections = conn.execute('''
+        SELECT DISTINCT 
+            CASE 
+                WHEN m.player1_id = ? THEN p2.id
+                ELSE p1.id 
+            END as opponent_id,
+            CASE 
+                WHEN m.player1_id = ? THEN p2.full_name
+                ELSE p1.full_name 
+            END as opponent_name,
+            COUNT(*) as matches_played,
+            MAX(m.created_at) as last_played
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        WHERE m.player1_id = ? OR m.player2_id = ?
+        GROUP BY opponent_id, opponent_name
+        ORDER BY last_played DESC
+        LIMIT 10
+    ''', (player_id, player_id, player_id, player_id)).fetchall()
+
     conn.close()
     
-    return render_template('tournament.html', player=player, tournaments_list=tournaments_list)
+    return render_template('tournament.html', player=player, tournaments_list=tournaments_list, connections=connections)
 
 @app.route('/dashboard/<int:player_id>')
 @require_disclaimers_accepted
