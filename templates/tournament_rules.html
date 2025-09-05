@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Tournament Rules - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card">
+            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+                <div class="d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 40px; width: auto;" class="me-3">
+                    <div>
+                        <h4 class="card-title mb-0 fw-bold">Tournament Rules</h4>
+                        <p class="mb-0 opacity-90">Please read and accept before entering tournaments</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body" style="max-height: 70vh; overflow-y: auto;">
+                <div class="disclaimer-content">
+                    <h5 class="text-warning mb-3">
+                        <i class="fas fa-trophy me-2"></i>1. Eligibility
+                    </h5>
+                    <ul class="mb-4">
+                        <li>Players must have an active Tournament Membership ($9.99/month).</li>
+                        <li>Players must provide accurate information (name, DOB, selfie, skill level, email and address).</li>
+                    </ul>
+
+                    <h5 class="text-warning mb-3">
+                        <i class="fas fa-user-plus me-2"></i>2. Registration
+                    </h5>
+                    <ul class="mb-4">
+                        <li>Tournaments have entry fees in addition to membership.</li>
+                        <li>Registration closes once brackets are full.</li>
+                        <li>Players are placed in brackets randomly.</li>
+                    </ul>
+
+                    <h5 class="text-warning mb-3">
+                        <i class="fas fa-clock me-2"></i>3. Match Deadlines
+                    </h5>
+                    <ul class="mb-4">
+                        <li>Matches must be completed within 7 days of being scheduled.</li>
+                        <li><strong>Failure to complete a match on time results in a forfeit, and the entry fee not refunded.</strong></li>
+                        <li>Players who repeatedly miss deadlines may be suspended.</li>
+                    </ul>
+
+                    <h5 class="text-warning mb-3">
+                        <i class="fas fa-table-tennis me-2"></i>4. Match Format
+                    </h5>
+                    <ul class="mb-4">
+                        <li>Format: best of 3 games, all regular Pickleball rules apply</li>
+                        <li>Both players must submit scores in the app.</li>
+                        <li>In case of dispute, the loser will confirm whether the winner's skill level seemed accurate (to prevent sandbagging).</li>
+                    </ul>
+
+                    <h5 class="text-warning mb-3">
+                        <i class="fas fa-chart-line me-2"></i>5. Scoring & Verification
+                    </h5>
+                    <ul class="mb-4">
+                        <li>Scores must be reported immediately after the match.</li>
+                        <li>If results are not submitted, both players may be disqualified.</li>
+                        <li><strong>Repeated false reporting = account suspension.</strong></li>
+                    </ul>
+
+                    <h5 class="text-warning mb-3">
+                        <i class="fas fa-handshake me-2"></i>6. Code of Conduct
+                    </h5>
+                    <ul class="mb-4">
+                        <li>Players must respect opponents, facilities, and tournament rules.</li>
+                        <li>No referees present during matches, fair play and honesty must be used</li>
+                        <li>Unsportsmanlike conduct (abuse, cheating, no-shows) may lead to removal.</li>
+                        <li><strong>Decisions by Ready 2 Dink staff are final.</strong></li>
+                    </ul>
+
+                    <h5 class="text-warning mb-3">
+                        <i class="fas fa-gift me-2"></i>7. Prizes & Awards
+                    </h5>
+                    <ul class="mb-4">
+                        <li>Prizes are shown at registration</li>
+                        <li>Prizes will be transferred via Zelle, Venmo or PayPal</li>
+                        <li><strong>NO CASH HANDED OUT</strong></li>
+                        <li><strong>Players are responsible for declaring their winnings for tax purposes.</strong></li>
+                    </ul>
+
+                    <h5 class="text-warning mb-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>8. Liability Waiver
+                    </h5>
+                    <ul class="mb-4">
+                        <li>Participation is at your own risk.</li>
+                        <li>Ready 2 Dink is not responsible for injuries, accidents, or disputes during tournament play.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top">
+                <form method="POST" action="{{ url_for('accept_tournament_rules') }}">
+                    <input type="hidden" name="player_id" value="{{ player_id }}">
+                    <input type="hidden" name="redirect_to_tournament" value="1">
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="accept_tournament_rules" name="accept_tournament_rules" required>
+                        <label class="form-check-label fw-bold" for="accept_tournament_rules">
+                            I have read, understand, and agree to all the Tournament Rules above
+                        </label>
+                    </div>
+                    
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-warning flex-fill" id="accept-btn" disabled>
+                            <i class="fas fa-trophy me-2"></i>Accept Rules & Enter Tournament
+                        </button>
+                        <a href="{{ url_for('tournaments_overview') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('accept_tournament_rules');
+    const acceptBtn = document.getElementById('accept-btn');
+    
+    checkbox.addEventListener('change', function() {
+        acceptBtn.disabled = !checkbox.checked;
+        if (checkbox.checked) {
+            acceptBtn.classList.remove('btn-outline-warning');
+            acceptBtn.classList.add('btn-warning');
+        } else {
+            acceptBtn.classList.remove('btn-warning');
+            acceptBtn.classList.add('btn-outline-warning');
+        }
+    });
+});
+</script>
+
+<style>
+.disclaimer-content {
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.disclaimer-content h5 {
+    border-bottom: 2px solid var(--bs-warning);
+    padding-bottom: 0.5rem;
+    margin-top: 2rem;
+}
+
+.disclaimer-content h5:first-child {
+    margin-top: 0;
+}
+
+.disclaimer-content ul {
+    padding-left: 1.5rem;
+}
+
+.disclaimer-content li {
+    margin-bottom: 0.5rem;
+}
+
+.card-footer {
+    background: rgba(var(--bs-dark-rgb), 0.1) !important;
+}
+</style>
+{% endblock %}

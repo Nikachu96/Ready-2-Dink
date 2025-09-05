@@ -139,6 +139,11 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN tournament_rules_accepted INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     # Settings table for admin configuration
     c.execute('''
         CREATE TABLE IF NOT EXISTS settings (
@@ -638,6 +643,52 @@ def accept_disclaimers():
         flash(f'Error accepting disclaimers: {str(e)}', 'danger')
         return redirect(url_for('show_disclaimers', player_id=player_id))
 
+@app.route('/tournament-rules/<int:player_id>')
+def show_tournament_rules(player_id):
+    """Show tournament rules page before tournament entry"""
+    # Verify player exists
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    conn.close()
+    
+    if not player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('index'))
+    
+    if player['tournament_rules_accepted']:
+        flash('You have already accepted the tournament rules', 'info')
+        return redirect(url_for('tournament_entry', player_id=player_id))
+    
+    return render_template('tournament_rules.html', player_id=player_id)
+
+@app.route('/accept-tournament-rules', methods=['POST'])
+def accept_tournament_rules():
+    """Handle tournament rules acceptance"""
+    player_id = request.form.get('player_id')
+    accept_rules = request.form.get('accept_tournament_rules')
+    redirect_to_tournament = request.form.get('redirect_to_tournament')
+    
+    if not player_id or not accept_rules:
+        flash('You must accept the tournament rules to continue', 'danger')
+        return redirect(url_for('show_tournament_rules', player_id=player_id))
+    
+    try:
+        conn = get_db_connection()
+        conn.execute('UPDATE players SET tournament_rules_accepted = 1 WHERE id = ?', (player_id,))
+        conn.commit()
+        conn.close()
+        
+        flash('Tournament rules accepted! You can now enter tournaments.', 'success')
+        
+        if redirect_to_tournament:
+            return redirect(url_for('tournament_entry', player_id=player_id))
+        else:
+            return redirect(url_for('player_home', player_id=player_id))
+        
+    except Exception as e:
+        flash(f'Error accepting tournament rules: {str(e)}', 'danger')
+        return redirect(url_for('show_tournament_rules', player_id=player_id))
+
 @app.route('/tournaments')
 def tournaments_overview():
     """Public tournament overview page"""
@@ -697,6 +748,11 @@ def tournament_entry(player_id):
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
+    
+    # Check if player has accepted tournament rules
+    if not player['tournament_rules_accepted']:
+        flash('Please read and accept the tournament rules before entering tournaments', 'warning')
+        return redirect(url_for('show_tournament_rules', player_id=player_id))
     
     if request.method == 'POST':
         required_fields = ['tournament_instance_id', 'tournament_type', 'sport']
