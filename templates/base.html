@@ -221,9 +221,20 @@
     
     <!-- Push Notification Support -->
     <script>
-        // Service Worker and Push Notifications - Force cache clear
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-            // Clear all caches first
+        // Aggressive cache clearing and refresh
+        document.addEventListener('DOMContentLoaded', function() {
+            // Force hard refresh if cached content detected
+            const version = localStorage.getItem('app_version');
+            const currentVersion = Date.now().toString();
+            
+            if (!version || version !== currentVersion) {
+                localStorage.setItem('app_version', currentVersion);
+                // Force reload with cache bypass
+                window.location.reload(true);
+                return;
+            }
+            
+            // Clear all caches
             if ('caches' in window) {
                 caches.keys().then(function(names) {
                     names.forEach(function(name) {
@@ -232,19 +243,22 @@
                 });
             }
             
-            navigator.serviceWorker.register('/static/sw.js?v=' + Date.now())
-                .then(function(registration) {
-                    console.log('Service Worker registered successfully');
-                    // Force update if there's a waiting service worker
-                    if (registration.waiting) {
-                        registration.waiting.postMessage({type: 'SKIP_WAITING'});
-                    }
-                    return registration;
-                })
-                .catch(function(error) {
-                    console.log('Service Worker registration failed:', error);
-                });
-        }
+            // Service Worker registration with cache busting
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                navigator.serviceWorker.register('/static/sw.js?v=' + Date.now())
+                    .then(function(registration) {
+                        console.log('Service Worker registered successfully');
+                        // Force update if there's a waiting service worker
+                        if (registration.waiting) {
+                            registration.waiting.postMessage({type: 'SKIP_WAITING'});
+                        }
+                        return registration;
+                    })
+                    .catch(function(error) {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            }
+        });
 
         // Push notification functions
         async function requestNotificationPermission() {
