@@ -131,7 +131,7 @@ def init_db():
         ('intermediate_price', '20', 'Intermediate tournament entry fee'),
         ('advanced_price', '40', 'Advanced tournament entry fee'),
         ('match_deadline_days', '7', 'Days to complete a match before it expires'),
-        ('platform_name', 'MatchSpark', 'Platform display name'),
+        ('platform_name', 'Ready 2 Dink', 'Platform display name'),
         ('registration_enabled', '1', 'Allow new player registrations')
     ]
     

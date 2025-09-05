@@ -1,8 +1,8 @@
-# Tournament Management System
+# Ready 2 Dink
 
 ## Overview
 
-A Flask-based tournament management application designed to handle player registration, tournament entry, and match tracking. The system allows players to register with detailed profiles including personal information and selfie uploads, enter tournaments with automatic deadline management, and track tournament progress through completion. Built with a focus on community trust and accountability through profile verification features.
+A Flask-based pickleball matchmaking and tournament platform designed to connect players and facilitate competitive play. The system allows players to register with detailed profiles including personal information and selfie uploads, enter tournaments with automatic deadline management, and track tournament progress through completion. Built with a focus on community trust and accountability through profile verification features.
 
 ## User Preferences
 
