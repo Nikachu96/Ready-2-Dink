@@ -52,6 +52,143 @@
     </div>
 </div>
 
+<!-- Special Tournament Instances -->
+{% if tournament_instances %}
+<div class="row mb-4">
+    <div class="col-12">
+        {% for instance in tournament_instances %}
+        {% if instance.name == 'Ready 2 Dink Championship' %}
+        <div class="card border-warning mb-3">
+            <div class="card-header bg-warning text-dark">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-crown me-2"></i>{{ instance.name }}
+                    </h4>
+                    {% if instance.status == 'upcoming' %}
+                        <span class="badge bg-dark">Coming Soon</span>
+                    {% else %}
+                        <span class="badge bg-success">Registration Open</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 60px; width: auto;" class="me-3">
+                            <div>
+                                <h5 class="text-primary mb-1">The Ultimate Championship</h5>
+                                <p class="text-muted mb-0">The pinnacle of competitive pickleball</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded">
+                                    <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                                    <h5 class="mb-0">{{ instance.max_players }} Players</h5>
+                                    <small class="text-muted">Maximum Field</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded">
+                                    <i class="fas fa-dollar-sign fa-2x text-success mb-2"></i>
+                                    <h5 class="mb-0">${{ instance.entry_fee }}</h5>
+                                    <small class="text-muted">Entry Fee</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded">
+                                    <i class="fas fa-trophy fa-2x text-warning mb-2"></i>
+                                    <h5 class="mb-0">${{ (instance.entry_fee * instance.max_players * 0.7)|int }}</h5>
+                                    <small class="text-muted">Prize Pool</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if instance.status == 'upcoming' %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            <strong>Date:</strong> To be determined soon - stay tuned for announcements!
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-header bg-success text-white text-center">
+                                <h6 class="mb-0"><i class="fas fa-medal me-1"></i>Top 20 Prize Structure</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="prize-list" style="font-size: 0.85rem;">
+                                    <div class="d-flex justify-content-between border-bottom py-1">
+                                        <span><strong>1st:</strong></span><span class="text-success"><strong>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.25)|int }}</strong></span>
+                                    </div>
+                                    <div class="d-flex justify-content-between border-bottom py-1">
+                                        <span><strong>2nd:</strong></span><span class="text-info"><strong>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.15)|int }}</strong></span>
+                                    </div>
+                                    <div class="d-flex justify-content-between border-bottom py-1">
+                                        <span><strong>3rd:</strong></span><span class="text-warning"><strong>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.10)|int }}</strong></span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>4th:</span><span>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.08)|int }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>5th:</span><span>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.06)|int }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>6th:</span><span>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.05)|int }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>7th:</span><span>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.04)|int }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>8th:</span><span>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.03)|int }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>9th-12th (each):</span><span>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.025)|int }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>13th-16th (each):</span><span>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.02)|int }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span>17th-20th (each):</span><span>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.015)|int }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12 text-center">
+                        {% if instance.status == 'upcoming' %}
+                        <button class="btn btn-outline-warning btn-lg" disabled>
+                            <i class="fas fa-clock me-2"></i>Registration Opens Soon
+                        </button>
+                        <p class="text-muted mt-2 mb-0">
+                            <i class="fas fa-bell me-1"></i>
+                            Enable notifications to be alerted when registration opens!
+                        </p>
+                        {% else %}
+                        <a href="#" class="btn btn-warning btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Register Now
+                        </a>
+                        <p class="text-muted mt-2 mb-0">
+                            <i class="fas fa-users me-1"></i>
+                            {{ instance.current_players }}/{{ instance.max_players }} registered
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <div class="row">
     <div class="col-md-8">
         <div class="card">

@@ -1184,6 +1184,18 @@ def tournaments_overview():
         tournament_levels[level_key]['current_entries'] = count
         tournament_levels[level_key]['spots_remaining'] = tournament_levels[level_key]['max_players'] - count
     
+    # Get tournament instances (like upcoming championship)
+    tournament_instances = conn.execute('''
+        SELECT * FROM tournament_instances 
+        WHERE status IN ('open', 'upcoming')
+        ORDER BY 
+            CASE 
+                WHEN status = 'open' THEN 1 
+                WHEN status = 'upcoming' THEN 2 
+            END,
+            created_at DESC
+    ''').fetchall()
+    
     # Get recent tournament entries
     recent_entries = conn.execute('''
         SELECT t.*, p.full_name, p.selfie
@@ -1201,6 +1213,7 @@ def tournaments_overview():
     
     return render_template('tournaments_overview.html', 
                          tournament_levels=tournament_levels, 
+                         tournament_instances=tournament_instances,
                          recent_entries=recent_entries,
                          players=players)
 
