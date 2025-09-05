@@ -562,7 +562,7 @@ def get_tournament_levels():
     
     return {
         'Beginner': {
-            'name': 'Beginner League',
+            'name': 'The B League',
             'description': 'Perfect for new players and casual competition',
             'entry_fee': beginner_price,
             'prize_pool': f"1st: ${beginner_prizes['1st']:.0f} • 2nd: ${beginner_prizes['2nd']:.0f} • 3rd: ${beginner_prizes['3rd']:.0f} • 4th: ${beginner_prizes['4th']:.0f}",
@@ -571,7 +571,7 @@ def get_tournament_levels():
             'max_players': beginner_max
         },
         'Intermediate': {
-            'name': 'Intermediate Championship',
+            'name': 'The Inter League',
             'description': 'For players with solid fundamentals',
             'entry_fee': intermediate_price,
             'prize_pool': f"1st: ${intermediate_prizes['1st']:.0f} • 2nd: ${intermediate_prizes['2nd']:.0f} • 3rd: ${intermediate_prizes['3rd']:.0f} • 4th: ${intermediate_prizes['4th']:.0f}",
@@ -580,7 +580,7 @@ def get_tournament_levels():
             'max_players': intermediate_max
         },
         'Advanced': {
-            'name': 'Advanced Tournament',
+            'name': 'The Z League',
             'description': 'High-level competitive play',
             'entry_fee': advanced_price,
             'prize_pool': f"1st: ${advanced_prizes['1st']:.0f} • 2nd: ${advanced_prizes['2nd']:.0f} • 3rd: ${advanced_prizes['3rd']:.0f} • 4th: ${advanced_prizes['4th']:.0f}",
