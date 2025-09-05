@@ -113,6 +113,27 @@
             border-radius: 12px;
         }
         
+        .alert-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+            border: 2px solid #38ef7d !important;
+            color: white !important;
+            font-weight: 600;
+            font-size: 1.1rem;
+            box-shadow: 0 8px 25px rgba(17, 153, 142, 0.4);
+            animation: slideInSuccess 0.5s ease-out;
+        }
+        
+        @keyframes slideInSuccess {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         .nav-link {
             border-radius: 8px;
             transition: all 0.3s ease;
@@ -196,9 +217,18 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show d-flex align-items-center" role="alert">
+                        {% if category == 'success' %}
+                            <i class="fas fa-check-circle fa-2x me-3" style="color: white;"></i>
+                        {% elif category == 'error' or category == 'danger' %}
+                            <i class="fas fa-exclamation-triangle fa-2x me-3" style="color: #ff6b6b;"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle fa-2x me-3" style="color: #4ecdc4;"></i>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <strong>{{ message }}</strong>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white ms-3" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
             {% endif %}
