@@ -71,6 +71,19 @@
                                 </button>
                             {% endif %}
                         </div>
+                        <div class="mt-2">
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button class="btn btn-sm btn-success" id="enable-notifications-btn" onclick="subscribeToNotifications()" style="display: none;">
+                                    <i class="fas fa-bell me-1"></i>Enable Notifications
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" id="disable-notifications-btn" onclick="unsubscribeFromNotifications()" style="display: none;">
+                                    <i class="fas fa-bell-slash me-1"></i>Disable Notifications
+                                </button>
+                                <small class="align-self-center text-muted" id="notification-status-text">
+                                    <i class="fas fa-spinner fa-spin me-1"></i>Loading...
+                                </small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

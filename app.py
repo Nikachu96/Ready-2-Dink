@@ -1,5 +1,7 @@
 import os
 import sqlite3
+import json
+import requests
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, Response
 from werkzeug.utils import secure_filename
@@ -146,6 +148,26 @@ def init_db():
         
     try:
         c.execute('ALTER TABLE players ADD COLUMN ranking_points INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN push_subscription TEXT')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN notifications_enabled INTEGER DEFAULT 1')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE matches ADD COLUMN notification_sent INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE tournaments ADD COLUMN tournament_notification_sent INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
         pass  # Column already exists
         
@@ -414,6 +436,102 @@ def get_leaderboard(limit=10):
     conn.close()
     
     return leaderboard
+
+def send_push_notification(player_id, message, title="Ready 2 Dink"):
+    """Send push notification to a player"""
+    conn = get_db_connection()
+    
+    player = conn.execute('''
+        SELECT push_subscription, notifications_enabled, full_name
+        FROM players 
+        WHERE id = ? AND notifications_enabled = 1 AND push_subscription IS NOT NULL
+    ''', (player_id,)).fetchone()
+    
+    conn.close()
+    
+    if not player or not player['push_subscription']:
+        logging.info(f"No push subscription found for player {player_id}")
+        return False
+    
+    try:
+        subscription_info = json.loads(player['push_subscription'])
+        
+        # For demo purposes, we'll simulate sending a notification
+        # In production, you would use a service like Firebase Cloud Messaging
+        logging.info(f"Sending push notification to {player['full_name']}: {message}")
+        
+        # Here you would implement actual push notification sending
+        # using a service like Firebase, OneSignal, or Web Push Protocol
+        
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send push notification: {e}")
+        return False
+
+def schedule_match_notifications():
+    """Send notifications for upcoming matches"""
+    conn = get_db_connection()
+    
+    # Get matches happening in the next 2 hours
+    upcoming_time = datetime.now() + timedelta(hours=2)
+    
+    matches = conn.execute('''
+        SELECT m.*, p1.full_name as player1_name, p2.full_name as player2_name,
+               p1.id as player1_id, p2.id as player2_id
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        WHERE m.status = 'pending' 
+        AND m.match_date <= ? 
+        AND m.match_date >= ?
+        AND m.notification_sent != 1
+    ''', (upcoming_time.strftime('%Y-%m-%d %H:%M'), 
+          datetime.now().strftime('%Y-%m-%d %H:%M'))).fetchall()
+    
+    for match in matches:
+        # Send notification to both players
+        message1 = f"Your match with {match['player2_name']} is starting soon!"
+        message2 = f"Your match with {match['player1_name']} is starting soon!"
+        
+        send_push_notification(match['player1_id'], message1, "Match Reminder")
+        send_push_notification(match['player2_id'], message2, "Match Reminder")
+        
+        # Mark notification as sent
+        conn.execute('''
+            UPDATE matches SET notification_sent = 1 WHERE id = ?
+        ''', (match['id'],))
+    
+    conn.commit()
+    conn.close()
+
+def schedule_tournament_notifications():
+    """Send notifications for tournament updates"""
+    conn = get_db_connection()
+    
+    # Get tournaments that are starting soon
+    upcoming_time = datetime.now() + timedelta(hours=24)
+    
+    tournaments = conn.execute('''
+        SELECT t.*, p.full_name, p.id as player_id, ti.name as tournament_name
+        FROM tournaments t
+        JOIN players p ON t.player_id = p.id
+        JOIN tournament_instances ti ON t.tournament_instance_id = ti.id
+        WHERE t.completed = 0 
+        AND t.match_deadline <= ?
+        AND t.tournament_notification_sent != 1
+    ''', (upcoming_time.strftime('%Y-%m-%d'),)).fetchall()
+    
+    for tournament in tournaments:
+        message = f"Your {tournament['tournament_name']} tournament is starting tomorrow! Get ready to compete!"
+        send_push_notification(tournament['player_id'], message, "Tournament Starting")
+        
+        # Mark notification as sent
+        conn.execute('''
+            UPDATE tournaments SET tournament_notification_sent = 1 WHERE id = ?
+        ''', (tournament['id'],))
+    
+    conn.commit()
+    conn.close()
 
 def get_tournament_levels():
     """Get available tournament levels with dynamic pricing from settings"""
@@ -946,6 +1064,105 @@ def leaderboard():
     
     return render_template('leaderboard.html', leaderboard=leaderboard_players)
 
+@app.route('/subscribe-notifications', methods=['POST'])
+def subscribe_notifications():
+    """Handle push notification subscription"""
+    if 'player_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'})
+    
+    data = request.get_json()
+    subscription = data.get('subscription')
+    
+    if not subscription:
+        return jsonify({'success': False, 'message': 'No subscription data'})
+    
+    conn = get_db_connection()
+    conn.execute('''
+        UPDATE players 
+        SET push_subscription = ?, notifications_enabled = 1
+        WHERE id = ?
+    ''', (json.dumps(subscription), session['player_id']))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'Notifications enabled successfully!'})
+
+@app.route('/unsubscribe-notifications', methods=['POST'])
+def unsubscribe_notifications():
+    """Handle push notification unsubscription"""
+    if 'player_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'})
+    
+    conn = get_db_connection()
+    conn.execute('''
+        UPDATE players 
+        SET notifications_enabled = 0
+        WHERE id = ?
+    ''', (session['player_id'],))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'Notifications disabled successfully!'})
+
+@app.route('/notification-status')
+def notification_status():
+    """Get current notification status for player"""
+    if 'player_id' not in session:
+        return jsonify({'enabled': False, 'subscribed': False})
+    
+    conn = get_db_connection()
+    player = conn.execute('''
+        SELECT notifications_enabled, push_subscription
+        FROM players 
+        WHERE id = ?
+    ''', (session['player_id'],)).fetchone()
+    conn.close()
+    
+    if not player:
+        return jsonify({'enabled': False, 'subscribed': False})
+    
+    return jsonify({
+        'enabled': bool(player['notifications_enabled']),
+        'subscribed': bool(player['push_subscription'])
+    })
+
+@app.route('/send-test-notification', methods=['POST'])
+def send_test_notification():
+    """Send a test notification to the current player"""
+    if 'player_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'})
+    
+    success = send_push_notification(
+        session['player_id'], 
+        "This is a test notification from Ready 2 Dink! You're all set to receive match and tournament updates.",
+        "Test Notification"
+    )
+    
+    if success:
+        return jsonify({'success': True, 'message': 'Test notification sent!'})
+    else:
+        return jsonify({'success': False, 'message': 'Failed to send notification. Make sure notifications are enabled.'})
+
+@app.route('/trigger-notifications', methods=['POST'])
+def trigger_notifications():
+    """Manual trigger for notifications (admin/testing)"""
+    schedule_match_notifications()
+    schedule_tournament_notifications()
+    return jsonify({'success': True, 'message': 'Notifications triggered successfully'})
+
+@app.route('/service-worker.js')
+def service_worker():
+    """Serve the service worker file"""
+    return app.send_static_file('sw.js')
+
+@app.route('/notification-settings')
+def notification_settings():
+    """Notification settings page"""
+    if 'player_id' not in session:
+        return redirect(url_for('index'))
+    
+    return render_template('notification_settings.html')
+
 @app.route('/tournaments')
 def tournaments_overview():
     """Public tournament overview page"""
@@ -1209,6 +1426,11 @@ def complete_tournament(tournament_id):
     tournament_points = get_tournament_points(result)
     if tournament_points > 0:
         award_points(tournament['player_id'], tournament_points, f'Tournament result: {result}')
+    
+    # Send notification about tournament completion and points earned
+    if tournament_points > 0:
+        points_message = f"🏆 Tournament complete! You finished as {result.lower()} and earned {tournament_points} ranking points!"
+        send_push_notification(tournament['player_id'], points_message, "Tournament Results")
     
     conn.commit()
     conn.close()
@@ -1588,6 +1810,19 @@ def submit_match_result():
     
     # Award 10 points to the winner
     award_points(winner_id, 10, 'Match victory')
+    
+    # Send notification to winner about points earned
+    conn = get_db_connection()
+    winner = conn.execute('SELECT full_name FROM players WHERE id = ?', (winner_id,)).fetchone()
+    loser = conn.execute('SELECT full_name FROM players WHERE id = ?', (loser_id,)).fetchone()
+    conn.close()
+    
+    if winner and loser:
+        winner_message = f"🏆 Victory! You beat {loser['full_name']} and earned 10 ranking points!"
+        loser_message = f"Good game against {winner['full_name']}! Keep practicing and you'll get them next time!"
+        
+        send_push_notification(winner_id, winner_message, "Match Result")
+        send_push_notification(loser_id, loser_message, "Match Result")
     
     return jsonify({'success': True, 'message': 'Match result submitted successfully!'})
 

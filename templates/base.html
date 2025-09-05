@@ -172,6 +172,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('notification_settings') }}">
+                            <i class="fas fa-bell me-1"></i>Notifications
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('manage_tournaments') }}">
                             <i class="fas fa-cog me-1"></i>Manage Tournaments
                         </a>
@@ -213,6 +218,247 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Push Notification Support -->
+    <script>
+        // Service Worker and Push Notifications
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(function(registration) {
+                    console.log('Service Worker registered successfully');
+                    return registration;
+                })
+                .catch(function(error) {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
+
+        // Push notification functions
+        async function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                console.log('This browser does not support notifications');
+                return false;
+            }
+
+            if (Notification.permission === 'granted') {
+                return true;
+            }
+
+            if (Notification.permission !== 'denied') {
+                const permission = await Notification.requestPermission();
+                return permission === 'granted';
+            }
+
+            return false;
+        }
+
+        async function subscribeToNotifications() {
+            try {
+                const hasPermission = await requestNotificationPermission();
+                if (!hasPermission) {
+                    throw new Error('Notification permission denied');
+                }
+
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array('BP_PUBLIC_KEY_PLACEHOLDER') // You would replace this with actual key
+                });
+
+                // Send subscription to server
+                const response = await fetch('/subscribe-notifications', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subscription: subscription.toJSON()
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showNotificationBanner('success', '✅ Notifications enabled! You\'ll receive updates about your matches and tournaments.');
+                    updateNotificationUI();
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Failed to subscribe to notifications:', error);
+                showNotificationBanner('error', '❌ Failed to enable notifications: ' + error.message);
+            }
+        }
+
+        async function unsubscribeFromNotifications() {
+            try {
+                const response = await fetch('/unsubscribe-notifications', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showNotificationBanner('info', '🔕 Notifications disabled.');
+                    updateNotificationUI();
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Failed to unsubscribe from notifications:', error);
+                showNotificationBanner('error', '❌ Failed to disable notifications: ' + error.message);
+            }
+        }
+
+        async function updateNotificationUI() {
+            try {
+                const response = await fetch('/notification-status');
+                const status = await response.json();
+                
+                const enableBtn = document.getElementById('enable-notifications-btn');
+                const disableBtn = document.getElementById('disable-notifications-btn');
+                const statusText = document.getElementById('notification-status-text');
+                
+                if (enableBtn && disableBtn && statusText) {
+                    if (status.enabled && status.subscribed) {
+                        enableBtn.style.display = 'none';
+                        disableBtn.style.display = 'inline-block';
+                        statusText.innerHTML = '<i class="fas fa-bell text-success me-1"></i>Notifications enabled';
+                    } else {
+                        enableBtn.style.display = 'inline-block';
+                        disableBtn.style.display = 'none';
+                        statusText.innerHTML = '<i class="fas fa-bell-slash text-muted me-1"></i>Notifications disabled';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to update notification UI:', error);
+            }
+        }
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        function showNotificationBanner(type, message) {
+            const alertClass = type === 'error' ? 'alert-danger' : `alert-${type}`;
+            const banner = document.createElement('div');
+            banner.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+            banner.style.cssText = 'top: 80px; right: 20px; z-index: 9999; max-width: 400px;';
+            banner.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(banner);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                if (banner.parentNode) {
+                    banner.remove();
+                }
+            }, 5000);
+        }
+
+        // Check notification status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNotificationUI();
+            
+            // Show notification prompt for new users
+            if ('Notification' in window && Notification.permission === 'default') {
+                setTimeout(() => {
+                    if (!document.getElementById('notification-prompt')) {
+                        showNotificationPrompt();
+                    }
+                }, 3000);
+            }
+        });
+
+        function showNotificationPrompt() {
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div class="modal fade" id="notification-prompt" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-bell me-2"></i>Stay Updated!
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="text-center mb-3">
+                                    <i class="fas fa-mobile-alt fa-3x text-primary mb-3"></i>
+                                    <h6>Enable Push Notifications</h6>
+                                    <p class="text-muted">Get notified about upcoming matches, tournament updates, and important announcements.</p>
+                                    <div class="row text-start mt-3">
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <i class="fas fa-gamepad text-success me-2"></i>
+                                                <small>Match reminders and results</small>
+                                            </div>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <i class="fas fa-trophy text-warning me-2"></i>
+                                                <small>Tournament updates and brackets</small>
+                                            </div>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-star text-info me-2"></i>
+                                                <small>Ranking changes and achievements</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Not Now</button>
+                                <button type="button" class="btn btn-primary" onclick="enableNotificationsFromPrompt()">
+                                    <i class="fas fa-bell me-1"></i>Enable Notifications
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            new bootstrap.Modal(document.getElementById('notification-prompt')).show();
+        }
+
+        async function enableNotificationsFromPrompt() {
+            bootstrap.Modal.getInstance(document.getElementById('notification-prompt')).hide();
+            await subscribeToNotifications();
+        }
+
+        async function sendTestNotification() {
+            try {
+                const response = await fetch('/send-test-notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showNotificationBanner('success', '✅ Test notification sent!');
+                } else {
+                    showNotificationBanner('error', '❌ ' + result.message);
+                }
+            } catch (error) {
+                console.error('Failed to send test notification:', error);
+                showNotificationBanner('error', '❌ Failed to send test notification');
+            }
+        }
+    </script>
     
     <!-- Map Integration -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 

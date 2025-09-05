@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Settings - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-bell me-2"></i>Notification Settings
+                </h4>
+                <p class="mb-0 opacity-90">Manage how you receive updates about matches and tournaments</p>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <i class="fas fa-mobile-alt fa-3x text-primary mb-3"></i>
+                                <h5>Push Notifications</h5>
+                                <p class="text-muted small mb-3">Get instant notifications on your device for upcoming matches, tournament updates, and results.</p>
+                                
+                                <div class="mb-3" id="notification-status">
+                                    <div class="d-flex justify-content-center align-items-center">
+                                        <small class="text-muted" id="notification-status-text">
+                                            <i class="fas fa-spinner fa-spin me-1"></i>Checking status...
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-success" id="enable-notifications-btn" onclick="subscribeToNotifications()" style="display: none;">
+                                        <i class="fas fa-bell me-1"></i>Enable Notifications
+                                    </button>
+                                    <button class="btn btn-outline-secondary" id="disable-notifications-btn" onclick="unsubscribeFromNotifications()" style="display: none;">
+                                        <i class="fas fa-bell-slash me-1"></i>Disable Notifications
+                                    </button>
+                                    <button class="btn btn-outline-primary" id="test-notification-btn" onclick="sendTestNotification()" style="display: none;">
+                                        <i class="fas fa-paper-plane me-1"></i>Send Test Notification
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-info-circle text-primary me-1"></i>What you'll receive:
+                                </h6>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2">
+                                        <i class="fas fa-gamepad text-success me-2"></i>
+                                        <strong>Match Reminders:</strong> Get notified 2 hours before your scheduled matches
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-trophy text-warning me-2"></i>
+                                        <strong>Tournament Updates:</strong> Bracket releases, match schedules, and results
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-medal text-info me-2"></i>
+                                        <strong>Ranking Changes:</strong> When your ranking position changes significantly
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-clipboard-check text-primary me-2"></i>
+                                        <strong>Score Submissions:</strong> Reminders to submit match results
+                                    </li>
+                                </ul>
+                                
+                                <div class="alert alert-info small mt-3">
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    <strong>Privacy:</strong> We only send notifications about your own matches and tournaments. You can disable them anytime.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card bg-warning bg-opacity-10 border-warning">
+                            <div class="card-body text-center">
+                                <h6 class="text-warning">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Browser Support
+                                </h6>
+                                <p class="small mb-0">
+                                    Push notifications work on most modern browsers including Chrome, Firefox, Safari, and Edge. 
+                                    Make sure to allow notifications when prompted by your browser.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="text-center">
+                    <a href="{{ url_for('player_home', player_id=session['player_id']) }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    updateNotificationUI();
+    
+    // Show test button when notifications are enabled
+    const observer = new MutationObserver(function(mutations) {
+        const statusText = document.getElementById('notification-status-text');
+        const testBtn = document.getElementById('test-notification-btn');
+        
+        if (statusText && testBtn) {
+            if (statusText.innerHTML.includes('Notifications enabled')) {
+                testBtn.style.display = 'block';
+            } else {
+                testBtn.style.display = 'none';
+            }
+        }
+    });
+    
+    observer.observe(document.getElementById('notification-status-text'), {
+        childList: true,
+        subtree: true
+    });
+});
+</script>
+{% endblock %}
