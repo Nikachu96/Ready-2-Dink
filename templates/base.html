@@ -44,11 +44,11 @@
                 left: 0;
                 right: 0;
                 z-index: 1030;
-                min-height: 100px;
+                min-height: 120px;
             }
             
             body {
-                padding-top: 110px; /* Space for mobile navbar */
+                padding-top: 130px; /* Space for mobile navbar */
             }
         }
         
@@ -193,8 +193,8 @@
             
             <!-- Mobile Logo (Centered) -->
             <div class="d-lg-none w-100 text-center position-relative">
-                <a class="navbar-brand mx-auto" href="{{ url_for('index') }}" style="position: absolute; left: 50%; transform: translateX(-50%);">
-                    <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 100px; width: auto;">
+                <a class="navbar-brand mx-auto" href="{{ url_for('index') }}" style="position: absolute; left: 50%; transform: translateX(-50%); top: 10px;">
+                    <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 130px; width: auto;">
                 </a>
             </div>
             
