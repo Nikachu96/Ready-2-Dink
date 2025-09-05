@@ -8,79 +8,95 @@
     <div class="col-12">
         <div class="card text-white" style="background: var(--gradient-primary); border: none;">
             <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-auto">
-                        {% if player.selfie %}
-                            <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                 class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;" 
-                                 alt="Player Photo">
-                        {% else %}
-                            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" 
-                                 style="width: 80px; height: 80px;">
-                                <i class="fas fa-user text-primary fa-2x"></i>
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col">
-                        <h2 class="mb-2 fw-bold">Welcome back, {{ player.full_name.split()[0] }}!</h2>
-                        <p class="mb-0 opacity-90 fs-5">
-                            <span class="badge bg-light text-dark me-2">
-                                <i class="fas fa-star me-1"></i>{{ player.skill_level }}
-                            </span>
-                            <span class="badge bg-light text-dark me-2">
-                                <i class="fas fa-table-tennis-paddle-ball me-1"></i>Pickleball
-                            </span>
-                            <span class="badge bg-warning text-dark">
-                                <i class="fas fa-trophy me-1"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
-                                
-                            </span>
-                            <br>
-                            <div class="d-flex flex-wrap gap-1 mt-1">
-                                <span class="badge bg-success">
+                <!-- Mobile-First Layout -->
+                <div class="text-center text-md-start">
+                    <!-- Profile Photo and Welcome Text -->
+                    <div class="d-flex flex-column flex-md-row align-items-center mb-3">
+                        <div class="mb-3 mb-md-0 me-md-3">
+                            {% if player.selfie %}
+                                <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                     class="rounded-circle" style="width: 70px; height: 70px; object-fit: cover;" 
+                                     alt="Player Photo">
+                            {% else %}
+                                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" 
+                                     style="width: 70px; height: 70px;">
+                                    <i class="fas fa-user text-primary fa-2x"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h3 class="mb-2 fw-bold">Welcome back, {{ player.full_name.split()[0] }}!</h3>
+                            
+                            <!-- Main Stats Row -->
+                            <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-2 mb-2">
+                                <span class="badge bg-light text-dark px-2 py-1">
+                                    <i class="fas fa-star me-1"></i>{{ player.skill_level }}
+                                </span>
+                                <span class="badge bg-warning text-dark px-2 py-1">
+                                    <i class="fas fa-trophy me-1"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
+                                </span>
+                                <span class="badge bg-success px-2 py-1">
                                     <i class="fas fa-star me-1"></i>{{ player.ranking_points or 0 }} pts
                                 </span>
+                            </div>
+                            
+                            <!-- Ranking Info -->
+                            <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-2 align-items-center">
                                 {% if player_ranking %}
-                                <span class="badge bg-primary">
+                                <span class="badge bg-primary px-2 py-1">
                                     <i class="fas fa-medal me-1"></i>Rank #{{ player_ranking }}
                                 </span>
                                 {% else %}
-                                <span class="badge bg-secondary">
+                                <span class="badge bg-secondary px-2 py-1">
                                     <i class="fas fa-question me-1"></i>Unranked
                                 </span>
                                 {% endif %}
-                                <button class="btn btn-sm btn-outline-info p-0 px-1" onclick="showRankingInfo()" style="font-size: 0.7rem; line-height: 1;">
-                                    <i class="fas fa-info-circle"></i>
+                                <button class="btn btn-sm btn-outline-light opacity-75" onclick="showRankingInfo()" style="font-size: 0.8rem;">
+                                    <i class="fas fa-info-circle me-1"></i>Info
                                 </button>
                             </div>
+                            
                             {% if player.tournament_wins and player.tournament_wins > 0 %}
-                            <br>
-                            <small class="text-warning mt-1">
-                                {% for i in range(player.tournament_wins) %}⭐{% endfor %}
-                                Tournament Winner{{ 's' if player.tournament_wins > 1 else '' }}
-                            </small>
-                            {% endif %}
-                        </p>
-                    </div>
-                    <div class="col-auto">
-                        {% if not player.membership_type %}
-                            <div class="d-flex gap-2">
-                                <button onclick="showMembershipModal('discovery')" class="btn btn-success btn-lg px-3">
-                                    <i class="fas fa-star me-2"></i>Upgrade
-                                </button>
-                            </div>
-                        {% endif %}
-                        <div class="mt-2">
-                            <div class="d-flex gap-2 flex-wrap">
-                                <button class="btn btn-sm btn-success" id="enable-notifications-btn" onclick="subscribeToNotifications()" style="display: none;">
-                                    <i class="fas fa-bell me-1"></i>Enable Notifications
-                                </button>
-                                <button class="btn btn-sm btn-outline-secondary" id="disable-notifications-btn" onclick="unsubscribeFromNotifications()" style="display: none;">
-                                    <i class="fas fa-bell-slash me-1"></i>Disable Notifications
-                                </button>
-                                <small class="align-self-center text-muted" id="notification-status-text">
-                                    <i class="fas fa-spinner fa-spin me-1"></i>Loading...
+                            <div class="mt-2">
+                                <small class="text-warning">
+                                    {% for i in range(player.tournament_wins) %}⭐{% endfor %}
+                                    Tournament Winner{{ 's' if player.tournament_wins > 1 else '' }}
                                 </small>
                             </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Upgrade Button - Desktop Only -->
+                        {% if not player.membership_type %}
+                        <div class="d-none d-md-block ms-3">
+                            <button onclick="showMembershipModal('discovery')" class="btn btn-success btn-lg px-3">
+                                <i class="fas fa-star me-2"></i>Upgrade
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Mobile Upgrade Button -->
+                    {% if not player.membership_type %}
+                    <div class="d-md-none text-center mb-3">
+                        <button onclick="showMembershipModal('discovery')" class="btn btn-success px-4">
+                            <i class="fas fa-star me-2"></i>Upgrade to Premium
+                        </button>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Notification Controls - Compact -->
+                    <div class="text-center text-md-start">
+                        <div class="d-inline-flex align-items-center gap-2 flex-wrap">
+                            <button class="btn btn-sm btn-success" id="enable-notifications-btn" onclick="subscribeToNotifications()" style="display: none;">
+                                <i class="fas fa-bell me-1"></i><span class="d-none d-sm-inline">Enable </span>Notifications
+                            </button>
+                            <button class="btn btn-sm btn-outline-light" id="disable-notifications-btn" onclick="unsubscribeFromNotifications()" style="display: none;">
+                                <i class="fas fa-bell-slash me-1"></i><span class="d-none d-sm-inline">Disable </span>Notifications
+                            </button>
+                            <small class="text-light opacity-75" id="notification-status-text">
+                                <i class="fas fa-spinner fa-spin me-1"></i>Loading...
+                            </small>
                         </div>
                     </div>
                 </div>
