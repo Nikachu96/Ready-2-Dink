@@ -57,7 +57,7 @@
 <div class="row mb-4">
     <div class="col-12">
         {% for instance in tournament_instances %}
-        {% if instance.name == 'Ready 2 Dink Championship' %}
+        {% if instance.name == 'The Big Dink' %}
         <div class="card border-warning mb-3">
             <div class="card-header bg-warning text-dark">
                 <div class="d-flex justify-content-between align-items-center">
@@ -115,44 +115,44 @@
                     </div>
                     
                     <div class="col-lg-4">
-                        <div class="card text-white h-100" style="background-color: #2c3e50;">
+                        <div class="card h-100" style="background-color: #ffffff; color: #000000;">
                             <div class="card-header bg-success text-white text-center">
                                 <h6 class="mb-0"><i class="fas fa-medal me-1"></i>Top 20 Prize Structure</h6>
                             </div>
                             <div class="card-body p-2">
-                                <div class="prize-list" style="font-size: 0.9rem;">
-                                    <div class="d-flex justify-content-between border-bottom py-1" style="border-color: #495057 !important;">
-                                        <span class="text-white"><strong>1st:</strong></span><span class="text-success"><strong>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.25)|int }}</strong></span>
+                                <div class="prize-list" style="font-size: 0.95rem; font-weight: 500;">
+                                    <div class="d-flex justify-content-between border-bottom py-2" style="border-color: #dee2e6 !important;">
+                                        <span style="color: #000000;"><strong>1st:</strong></span><span class="text-success"><strong>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.25)|int }}</strong></span>
                                     </div>
-                                    <div class="d-flex justify-content-between border-bottom py-1" style="border-color: #495057 !important;">
-                                        <span class="text-white"><strong>2nd:</strong></span><span class="text-info"><strong>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.15)|int }}</strong></span>
+                                    <div class="d-flex justify-content-between border-bottom py-2" style="border-color: #dee2e6 !important;">
+                                        <span style="color: #000000;"><strong>2nd:</strong></span><span class="text-primary"><strong>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.15)|int }}</strong></span>
                                     </div>
-                                    <div class="d-flex justify-content-between border-bottom py-1" style="border-color: #495057 !important;">
-                                        <span class="text-white"><strong>3rd:</strong></span><span class="text-warning"><strong>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.10)|int }}</strong></span>
+                                    <div class="d-flex justify-content-between border-bottom py-2" style="border-color: #dee2e6 !important;">
+                                        <span style="color: #000000;"><strong>3rd:</strong></span><span style="color: #fd7e14;"><strong>${{ (instance.entry_fee * instance.max_players * 0.7 * 0.10)|int }}</strong></span>
                                     </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span class="text-white">4th:</span><span class="text-white">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.08)|int }}</span>
+                                    <div class="d-flex justify-content-between py-2">
+                                        <span style="color: #000000;">4th:</span><span style="color: #000000;">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.08)|int }}</span>
                                     </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span class="text-white">5th:</span><span class="text-white">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.06)|int }}</span>
+                                    <div class="d-flex justify-content-between py-2">
+                                        <span style="color: #000000;">5th:</span><span style="color: #000000;">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.06)|int }}</span>
                                     </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span class="text-white">6th:</span><span class="text-white">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.05)|int }}</span>
+                                    <div class="d-flex justify-content-between py-2">
+                                        <span style="color: #000000;">6th:</span><span style="color: #000000;">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.05)|int }}</span>
                                     </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span class="text-white">7th:</span><span class="text-white">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.04)|int }}</span>
+                                    <div class="d-flex justify-content-between py-2">
+                                        <span style="color: #000000;">7th:</span><span style="color: #000000;">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.04)|int }}</span>
                                     </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span class="text-white">8th:</span><span class="text-white">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.03)|int }}</span>
+                                    <div class="d-flex justify-content-between py-2">
+                                        <span style="color: #000000;">8th:</span><span style="color: #000000;">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.03)|int }}</span>
                                     </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span class="text-white">9th-12th (each):</span><span class="text-white">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.025)|int }}</span>
+                                    <div class="d-flex justify-content-between py-2">
+                                        <span style="color: #000000;">9th-12th (each):</span><span style="color: #000000;">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.025)|int }}</span>
                                     </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span class="text-white">13th-16th (each):</span><span class="text-white">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.02)|int }}</span>
+                                    <div class="d-flex justify-content-between py-2">
+                                        <span style="color: #000000;">13th-16th (each):</span><span style="color: #000000;">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.02)|int }}</span>
                                     </div>
-                                    <div class="d-flex justify-content-between py-1">
-                                        <span class="text-white">17th-20th (each):</span><span class="text-white">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.015)|int }}</span>
+                                    <div class="d-flex justify-content-between py-2">
+                                        <span style="color: #000000;">17th-20th (each):</span><span style="color: #000000;">${{ (instance.entry_fee * instance.max_players * 0.7 * 0.015)|int }}</span>
                                     </div>
                                 </div>
                             </div>
