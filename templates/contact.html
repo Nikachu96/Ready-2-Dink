@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <!-- Header Section -->
+        <div class="card text-white mb-4" style="background: var(--gradient-success); border: none;">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-comments fa-4x mb-3"></i>
+                <h1 class="fw-bold mb-3">Contact Ready 2 Dink</h1>
+                <p class="fs-5 opacity-90">We'd love to hear from you! Send us your questions, feedback, or suggestions.</p>
+            </div>
+        </div>
+
+        <!-- Contact Form -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-envelope me-2"></i>Send Us a Message
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label fw-bold">
+                                <i class="fas fa-user me-1"></i>Your Name *
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ request.form.get('name', '') }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label fw-bold">
+                                <i class="fas fa-envelope me-1"></i>Your Email *
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="{{ request.form.get('email', '') }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subject" class="form-label fw-bold">
+                            <i class="fas fa-tag me-1"></i>Subject *
+                        </label>
+                        <select class="form-select" id="subject" name="subject" required>
+                            <option value="">Select a subject...</option>
+                            <option value="General Question" {{ 'selected' if request.form.get('subject') == 'General Question' else '' }}>General Question</option>
+                            <option value="Technical Support" {{ 'selected' if request.form.get('subject') == 'Technical Support' else '' }}>Technical Support</option>
+                            <option value="Tournament Issue" {{ 'selected' if request.form.get('subject') == 'Tournament Issue' else '' }}>Tournament Issue</option>
+                            <option value="Membership/Billing" {{ 'selected' if request.form.get('subject') == 'Membership/Billing' else '' }}>Membership/Billing</option>
+                            <option value="Ambassador Program" {{ 'selected' if request.form.get('subject') == 'Ambassador Program' else '' }}>Ambassador Program</option>
+                            <option value="Bug Report" {{ 'selected' if request.form.get('subject') == 'Bug Report' else '' }}>Bug Report</option>
+                            <option value="Feature Request" {{ 'selected' if request.form.get('subject') == 'Feature Request' else '' }}>Feature Request</option>
+                            <option value="Partnership/Business" {{ 'selected' if request.form.get('subject') == 'Partnership/Business' else '' }}>Partnership/Business</option>
+                            <option value="Other" {{ 'selected' if request.form.get('subject') == 'Other' else '' }}>Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="message" class="form-label fw-bold">
+                            <i class="fas fa-comment me-1"></i>Your Message *
+                        </label>
+                        <textarea class="form-control" id="message" name="message" rows="6" 
+                                  placeholder="Tell us how we can help you..." required>{{ request.form.get('message', '') }}</textarea>
+                    </div>
+                    
+                    {% if session.player_id %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Account Information:</strong> Your player profile details will be automatically included to help us assist you better.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Send Message
+                        </button>
+                        <a href="{{ url_for('index') if not session.player_id else url_for('player_home', player_id=session.player_id) }}" 
+                           class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to {{ 'Home' if not session.player_id else 'Dashboard' }}
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Additional Contact Info -->
+        <div class="card mt-4">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-clock me-2"></i>Response Time
+                </h5>
+                <p class="card-text">
+                    We typically respond to messages within 24 hours during business days.
+                    For urgent tournament issues, we aim to respond within 4 hours.
+                </p>
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                        <h6>Secure</h6>
+                        <small class="text-muted">Your information is kept private and secure</small>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                        <h6>Community Driven</h6>
+                        <small class="text-muted">Built for players, by players</small>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-heart fa-2x text-danger mb-2"></i>
+                        <h6>Passionate Support</h6>
+                        <small class="text-muted">We love helping our pickleball community</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

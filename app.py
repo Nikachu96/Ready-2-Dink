@@ -162,6 +162,11 @@ def init_db():
         pass  # Column already exists
         
     try:
+        c.execute('ALTER TABLE players ADD COLUMN free_tournament_entries INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
         c.execute('ALTER TABLE matches ADD COLUMN notification_sent INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
         pass  # Column already exists
@@ -1354,6 +1359,15 @@ def tournament_entry(player_id):
             base_fee = tournament_instance['entry_fee']
             entry_fee = base_fee + 10 if tournament_type == 'doubles' else base_fee
             
+            # Check if Ambassador can use free entry (excluding The Hill)
+            free_entry_used = False
+            is_the_hill = 'The Hill' in tournament_instance.get('name', '') or 'Big Dink' in tournament_instance.get('name', '')
+            
+            if player['free_tournament_entries'] and player['free_tournament_entries'] > 0 and not is_the_hill:
+                # Ambassador has free entries available and this isn't The Hill
+                entry_fee = 10 if tournament_type == 'doubles' else 0  # Only partner fee for doubles
+                free_entry_used = True
+            
             # Handle doubles partner invitation
             partner_id = None
             if tournament_type == 'doubles':
@@ -1392,6 +1406,13 @@ def tournament_entry(player_id):
             entry_date = datetime.now()
             match_deadline = entry_date + timedelta(days=14)  # 2 weeks for tournaments
             
+            # Update free entries count if used
+            if free_entry_used:
+                conn.execute('''
+                    UPDATE players SET free_tournament_entries = free_tournament_entries - 1
+                    WHERE id = ?
+                ''', (player_id,))
+            
             # Insert tournament entry
             conn.execute('''
                 INSERT INTO tournaments (player_id, tournament_instance_id, tournament_name, tournament_level, tournament_type, entry_fee, sport, entry_date, match_deadline, payment_status)
@@ -1426,9 +1447,17 @@ def tournament_entry(player_id):
                 # Send push notification
                 send_push_notification(partner_id, message, "Doubles Tournament Invitation")
                 
-                flash(f'Tournament entry submitted! Partner invitation sent to {partner["full_name"]}. They need to accept and pay their fee to confirm the doubles team.', 'success')
+                if free_entry_used:
+                    remaining_entries = player['free_tournament_entries'] - 1
+                    flash(f'FREE Ambassador entry used! Partner invitation sent to {partner["full_name"]}. You have {remaining_entries} free entries remaining.', 'success')
+                else:
+                    flash(f'Tournament entry submitted! Partner invitation sent to {partner["full_name"]}. They need to accept and pay their fee to confirm the doubles team.', 'success')
             else:
-                flash('Successfully entered tournament! Good luck!', 'success')
+                if free_entry_used:
+                    remaining_entries = player['free_tournament_entries'] - 1
+                    flash(f'FREE Ambassador entry used! Successfully entered tournament! You have {remaining_entries} free entries remaining. Good luck!', 'success')
+                else:
+                    flash('Successfully entered tournament! Good luck!', 'success')
 
             conn.commit()
             conn.close()
@@ -2593,7 +2622,7 @@ def track_referral_conversion(player_id, membership_type):
     ''', (ambassador_id,)).fetchone()
     
     if ambassador['qualified_referrals'] >= 20:
-        # Grant lifetime tournament membership
+        # Grant lifetime tournament membership and 5 free tournament entries
         conn.execute('''
             UPDATE ambassadors SET lifetime_membership_granted = 1, qualification_date = CURRENT_TIMESTAMP
             WHERE id = ?
@@ -2601,13 +2630,15 @@ def track_referral_conversion(player_id, membership_type):
         
         conn.execute('''
             UPDATE players 
-            SET membership_type = 'tournament', subscription_status = 'ambassador_lifetime'
+            SET membership_type = 'tournament', 
+                subscription_status = 'ambassador_lifetime',
+                free_tournament_entries = 5
             WHERE id = ?
         ''', (ambassador['player_id']))
         
         # Send notification to ambassador
         send_push_notification(ambassador['player_id'], 
-                             'Congratulations! You\'ve earned lifetime tournament membership by referring 20 members!',
+                             'Congratulations! You\'ve earned lifetime tournament membership + 5 FREE tournament entries by referring 20 members!',
                              'Ambassador Achievement Unlocked!')
     
     conn.commit()
@@ -2616,6 +2647,45 @@ def track_referral_conversion(player_id, membership_type):
     # Clear session referral data
     session.pop('ambassador_id', None)
     session.pop('referral_code', None)
+
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    """Contact form for players to reach out"""
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        subject = request.form.get('subject', '').strip()
+        message = request.form.get('message', '').strip()
+        
+        # Basic validation
+        if not all([name, email, subject, message]):
+            flash('Please fill out all fields', 'danger')
+            return render_template('contact.html')
+        
+        # Get player info if logged in
+        player_info = ""
+        if 'player_id' in session:
+            conn = get_db_connection()
+            player = conn.execute('SELECT * FROM players WHERE id = ?', (session['player_id'],)).fetchone()
+            conn.close()
+            if player:
+                player_info = f"\n\nPlayer Details:\nID: {player['id']}\nName: {player['full_name']}\nEmail: {player['email']}\nMembership: {player.get('membership_type', 'Free')}\nLocation: {player['location1']}"
+        
+        try:
+            # For now, log the message (in production, send email)
+            logging.info(f"Contact Form Submission:\nFrom: {name} ({email})\nSubject: {subject}\nMessage: {message}{player_info}")
+            
+            # TODO: Send email via SendGrid when API key is configured
+            # send_contact_email(name, email, subject, message + player_info)
+            
+            flash('Thank you for your message! We\'ll get back to you soon.', 'success')
+            return redirect(url_for('contact'))
+            
+        except Exception as e:
+            logging.error(f"Contact form error: {e}")
+            flash('There was an issue sending your message. Please try again later.', 'danger')
+    
+    return render_template('contact.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
