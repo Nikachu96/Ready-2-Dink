@@ -25,32 +25,7 @@
                             {% endif %}
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="mb-1 fw-bold">Welcome back, {{ player.full_name.split()[0] }}!{% if player.tournament_wins and player.tournament_wins > 0 %} <i class="fas fa-table-tennis" style="color: #FFD700; text-shadow: 0 0 5px rgba(255,215,0,0.5);" title="Tournament Champion"></i><span class="badge bg-warning text-dark ms-1 px-2" style="font-size: 0.7rem;" title="Number of tournaments won">{{ player.tournament_wins }}</span>{% endif %}</h3>
-                            
-                            <!-- Main Stats Row -->
-                            <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-2 mb-1">
-                                <span class="badge bg-light text-dark px-2 py-1">
-                                    <i class="fas fa-star me-1"></i>{{ player.skill_level }}
-                                </span>
-                                <span class="badge bg-warning text-dark px-2 py-1">
-                                    <i class="fas fa-trophy me-1"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
-                                </span>
-                                <span class="badge bg-success px-2 py-1">
-                                    <i class="fas fa-star me-1"></i>{{ player.ranking_points or 0 }} pts
-                                </span>
-                                {% if player_ranking %}
-                                <span class="badge bg-primary px-2 py-1">
-                                    <i class="fas fa-medal me-1"></i>Rank #{{ player_ranking }}
-                                </span>
-                                {% else %}
-                                <span class="badge bg-secondary px-2 py-1">
-                                    <i class="fas fa-question me-1"></i>Unranked
-                                </span>
-                                {% endif %}
-                                <button class="btn btn-sm btn-outline-light opacity-75" onclick="showRankingInfo()" style="font-size: 0.7rem; padding: 2px 6px;">
-                                    <i class="fas fa-info-circle"></i>
-                                </button>
-                            </div>
+                            <h3 class="mb-1 fw-bold">Welcome back, {{ player.full_name.split()[0] }}!{% if player.tournament_wins and player.tournament_wins > 0 %} <span style="display: inline-block; width: 18px; height: 18px; background: linear-gradient(45deg, #FFD700, #FFA500); border-radius: 40% 60% 40% 60%; transform: rotate(45deg); box-shadow: 0 0 5px rgba(255,215,0,0.5); position: relative; top: -2px;" title="Tournament Champion"></span><span class="badge bg-warning text-dark ms-1 px-2" style="font-size: 0.7rem;" title="Number of tournaments won">{{ player.tournament_wins }}</span>{% endif %}</h3>
                         </div>
                         
                         <!-- Upgrade Section - Desktop -->
@@ -83,6 +58,31 @@
                         </div>
                     </div>
                     {% endif %}
+                    
+                    <!-- Stats Row - Centered -->
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
+                        <span class="badge bg-light text-dark px-2 py-1">
+                            <i class="fas fa-star me-1"></i>{{ player.skill_level }}
+                        </span>
+                        <span class="badge bg-warning text-dark px-2 py-1">
+                            <i class="fas fa-trophy me-1"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
+                        </span>
+                        <span class="badge bg-success px-2 py-1">
+                            <i class="fas fa-star me-1"></i>{{ player.ranking_points or 0 }} pts
+                        </span>
+                        {% if player_ranking %}
+                        <span class="badge bg-primary px-2 py-1">
+                            <i class="fas fa-medal me-1"></i>Rank #{{ player_ranking }}
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary px-2 py-1">
+                            <i class="fas fa-question me-1"></i>Unranked
+                        </span>
+                        {% endif %}
+                        <button class="btn btn-sm btn-outline-light opacity-75" onclick="showRankingInfo()" style="font-size: 0.7rem; padding: 2px 6px;">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
