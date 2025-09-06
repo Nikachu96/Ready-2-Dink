@@ -13,7 +13,7 @@
                 <p class="mb-0 opacity-90">Create your profile to start matching with pickleball players</p>
             </div>
             <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" enctype="multipart/form-data" action="{{ url_for('register') }}" onsubmit="console.log('Form submitting...'); return true;">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -214,8 +214,34 @@ function searchLocation(query, mapId, inputId) {
         });
 }
 
-// Initialize location search functionality
+// Add form submission debugging
 document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('Form submit event triggered');
+            console.log('Form action:', form.action);
+            console.log('Form method:', form.method);
+            
+            // Check required fields
+            const required = form.querySelectorAll('[required]');
+            let hasEmpty = false;
+            required.forEach(field => {
+                if (!field.value.trim()) {
+                    console.log('Empty required field:', field.name);
+                    hasEmpty = true;
+                }
+            });
+            
+            if (hasEmpty) {
+                console.log('Form has empty required fields');
+            } else {
+                console.log('All required fields filled, submitting...');
+            }
+        });
+    }
+
+    // Initialize location search functionality
     const locationInputs = document.querySelectorAll('.location-search');
     
     locationInputs.forEach(input => {
