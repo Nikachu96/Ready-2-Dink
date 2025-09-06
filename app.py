@@ -2545,6 +2545,36 @@ def set_player_session(player_id):
     session['current_player_id'] = player_id
     return redirect(url_for('player_home', player_id=player_id))
 
+@app.route('/setup_first_admin')
+def setup_first_admin():
+    """One-time setup to make first registered player an admin"""
+    conn = get_db_connection()
+    
+    # Check if any admin already exists
+    admin_exists = conn.execute('SELECT COUNT(*) as count FROM players WHERE is_admin = 1').fetchone()
+    
+    if admin_exists['count'] > 0:
+        flash('Admin already exists in system', 'warning')
+        return redirect(url_for('index'))
+    
+    # Get first registered player
+    first_player = conn.execute('SELECT * FROM players ORDER BY created_at ASC LIMIT 1').fetchone()
+    
+    if not first_player:
+        flash('No players registered yet. Register first, then visit this link.', 'info')
+        return redirect(url_for('register'))
+    
+    # Make first player an admin
+    conn.execute('UPDATE players SET is_admin = 1 WHERE id = ?', (first_player['id'],))
+    conn.commit()
+    conn.close()
+    
+    # Set them as current player
+    session['current_player_id'] = first_player['id']
+    
+    flash(f'Admin access granted to {first_player["full_name"]}! You can now access the admin panel.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
 
 @app.route('/admin/matches')
 @admin_required
