@@ -16,10 +16,10 @@
             </div>
             
             <div class="card-body p-4 position-relative">
-                <div class="row align-items-center">
-                    <!-- Profile Section -->
-                    <div class="col-md-8">
-                        <div class="d-flex align-items-center mb-3">
+                <!-- Top Row: Profile + Action Buttons -->
+                <div class="row align-items-center mb-4">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
                             <div class="me-3">
                                 {% if player.selfie %}
                                     <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
@@ -44,9 +44,30 @@
                                 <p class="text-white text-opacity-85 mb-0 fw-light" style="font-size: 1.1rem;">Ready to dominate the court?</p>
                             </div>
                         </div>
-                        
-                        <!-- Stats Pills -->
-                        <div class="d-flex flex-wrap gap-2">
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    {% if not player.membership_type %}
+                    <div class="col-md-6 text-end">
+                        <div class="d-flex flex-column flex-md-row gap-2 align-items-end align-items-md-center justify-content-md-end">
+                            <button onclick="showMembershipModal('discovery')" 
+                                    class="btn btn-light btn-lg px-4 py-2 rounded-pill fw-semibold shadow-lg">
+                                <i class="fas fa-rocket me-2 text-primary"></i>
+                                <span class="text-dark">Upgrade</span>
+                            </button>
+                            <button id="notificationBtn" onclick="toggleNotifications()" 
+                                    class="btn btn-outline-light px-3 py-2 rounded-pill">
+                                <i class="fas fa-bell me-2"></i>Notifications
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Bottom Row: Stats Pills -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-2">
                             <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.85rem;">
                                 <i class="fas fa-star text-warning me-2"></i>{{ player.skill_level }}
                             </div>
@@ -70,30 +91,6 @@
                             </button>
                         </div>
                     </div>
-                    
-                    <!-- Action Buttons -->
-                    {% if not player.membership_type %}
-                    <div class="col-md-4 text-end">
-                        <div class="d-flex flex-column gap-2 align-items-end">
-                            <button onclick="showMembershipModal('discovery')" 
-                                    class="btn btn-light btn-lg px-4 py-2 rounded-pill fw-semibold shadow-lg"
-                                    style="min-width: 160px;">
-                                <i class="fas fa-rocket me-2 text-primary"></i>
-                                <span class="text-dark">Upgrade</span>
-                            </button>
-                            <button id="notificationBtn" onclick="toggleNotifications()" 
-                                    class="btn btn-outline-light btn-sm px-3 py-2 rounded-pill"
-                                    style="min-width: 160px;">
-                                <i class="fas fa-bell me-2"></i>Enable Notifications
-                            </button>
-                            <button id="notificationBtnMobile" onclick="toggleNotifications()" 
-                                    class="btn btn-outline-light btn-sm px-3 py-2 rounded-pill d-md-none"
-                                    style="min-width: 160px;">
-                                <i class="fas fa-bell me-2"></i>Enable Notifications
-                            </button>
-                        </div>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
