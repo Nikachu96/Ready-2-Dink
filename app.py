@@ -374,9 +374,11 @@ def init_db():
     conn.close()
 
 def get_db_connection():
-    """Get database connection with row factory"""
-    conn = sqlite3.connect('app.db')
+    """Get database connection with row factory and timeout"""
+    conn = sqlite3.connect('app.db', timeout=20.0, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    # Enable WAL mode for better concurrent access
+    conn.execute('PRAGMA journal_mode=WAL')
     return conn
 
 def get_setting(key, default=None):
@@ -1164,6 +1166,13 @@ def register():
         except sqlite3.IntegrityError as e:
             logging.error(f"Registration failed - Email already exists: {request.form['email']} - {str(e)}")
             flash('Email already exists. Please use a different email address.', 'danger')
+        except sqlite3.OperationalError as e:
+            if 'database is locked' in str(e).lower():
+                logging.error(f"Database lock error during registration for {request.form['email']}: {str(e)}")
+                flash('Registration temporarily unavailable due to high traffic. Please try again in a moment.', 'warning')
+            else:
+                logging.error(f"Database operational error during registration: {str(e)}")
+                flash(f'Registration failed: Database error. Please try again.', 'danger')
         except Exception as e:
             logging.error(f"Registration failed for {request.form['full_name']}: {str(e)}")
             flash(f'Registration failed: {str(e)}', 'danger')
