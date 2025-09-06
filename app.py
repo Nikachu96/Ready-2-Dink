@@ -1101,6 +1101,9 @@ def player_home(player_id):
 def register():
     """Player registration form"""
     if request.method == 'POST':
+        logging.info(f"=== REGISTRATION POST REQUEST RECEIVED ===")
+        logging.info(f"Form data keys: {list(request.form.keys())}")
+        logging.info(f"Files: {list(request.files.keys())}")
         # Form validation
         required_fields = ['full_name', 'address', 'dob', 'location1', 'preferred_court', 'skill_level', 'email']
         for field in required_fields:
