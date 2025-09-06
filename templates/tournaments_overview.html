@@ -24,6 +24,7 @@
                                             <div class="d-flex flex-wrap gap-1 mt-1">
                                                 <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 0.65rem;">Best of 5</span>
                                                 <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 0.65rem;">Top 4 Payouts</span>
+                                                <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 0.65rem;">{{ level_info.spots_remaining }} spots available</span>
                                             </div>
                                         {% endif %}
                                     </div>
@@ -36,12 +37,14 @@
                                     <small class="text-muted">
                                         <i class="fas fa-users me-1"></i>{{ level_info.current_entries }}/{{ level_info.max_players }} players
                                     </small>
-                                    {% if level_info.spots_remaining <= 0 %}
-                                        <span class="badge" style="background-color: #E0563F; color: white;">Full</span>
-                                    {% elif level_info.spots_remaining <= 5 %}
-                                        <span class="badge" style="background-color: #D174D2; color: white;">{{ level_info.spots_remaining }} spots left</span>
-                                    {% else %}
-                                        <span class="badge" style="background-color: #3F567F; color: white;">{{ level_info.spots_remaining }} spots available</span>
+                                    {% if level_key != 'Invitational' %}
+                                        {% if level_info.spots_remaining <= 0 %}
+                                            <span class="badge" style="background-color: #E0563F; color: white;">Full</span>
+                                        {% elif level_info.spots_remaining <= 5 %}
+                                            <span class="badge" style="background-color: #D174D2; color: white;">{{ level_info.spots_remaining }} spots left</span>
+                                        {% else %}
+                                            <span class="badge" style="background-color: #3F567F; color: white;">{{ level_info.spots_remaining }} spots available</span>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                                 
