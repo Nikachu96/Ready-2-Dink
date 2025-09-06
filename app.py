@@ -1128,6 +1128,25 @@ def register():
             conn.commit()
             conn.close()
             
+            # Send email notification to admin about new registration
+            player_data = {
+                'full_name': request.form['full_name'],
+                'email': request.form['email'],
+                'skill_level': request.form['skill_level'],
+                'location1': request.form['location1'],
+                'location2': request.form.get('location2', ''),
+                'preferred_court': request.form['preferred_court'],
+                'address': request.form['address'],
+                'dob': request.form['dob']
+            }
+            
+            email_sent = send_new_registration_notification(player_data)
+            
+            if email_sent:
+                logging.info(f"New registration email notification sent successfully for {player_data['full_name']}")
+            else:
+                logging.warning(f"Failed to send email notification for new registration: {player_data['full_name']}")
+            
             flash('Registration successful! Please review and accept our terms and disclaimers to continue.', 'success')
             return redirect(url_for('show_disclaimers', player_id=player_id))
             
