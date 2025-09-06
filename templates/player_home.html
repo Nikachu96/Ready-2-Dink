@@ -60,14 +60,10 @@
                                 <button onclick="showMembershipModal('discovery')" class="btn btn-success mb-2">
                                     <i class="fas fa-star me-1"></i>Upgrade
                                 </button>
-                                <!-- Notification Toggle Switch - Desktop -->
-                                <div class="d-flex align-items-center justify-content-center" style="font-size: 0.8rem;">
-                                    <span class="text-light me-2">Notifications</span>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="notificationSwitch" onchange="toggleNotifications()">
-                                        <label class="form-check-label" for="notificationSwitch"></label>
-                                    </div>
-                                </div>
+                                <!-- Notification Button - Desktop -->
+                                <button id="notificationBtn" onclick="toggleNotifications()" class="btn btn-outline-light btn-sm">
+                                    <i class="fas fa-bell me-1"></i>Enable Notifications
+                                </button>
                             </div>
                         </div>
                         {% endif %}
@@ -79,14 +75,10 @@
                         <button onclick="showMembershipModal('discovery')" class="btn btn-success mb-2">
                             <i class="fas fa-star me-1"></i>Upgrade to Premium
                         </button>
-                        <!-- Notification Toggle Switch - Mobile -->
-                        <div class="d-flex align-items-center justify-content-center" style="font-size: 0.9rem;">
-                            <span class="text-light me-2">Notifications</span>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="notificationSwitchMobile" onchange="toggleNotifications()">
-                                <label class="form-check-label" for="notificationSwitchMobile"></label>
-                            </div>
-                        </div>
+                        <!-- Notification Button - Mobile -->
+                        <button id="notificationBtnMobile" onclick="toggleNotifications()" class="btn btn-outline-light">
+                            <i class="fas fa-bell me-1"></i>Enable Notifications
+                        </button>
                     </div>
                     {% endif %}
                 </div>
@@ -1246,76 +1238,73 @@ function shareOnSocial() {
 }
 
 function toggleNotifications() {
-    const desktopSwitch = document.getElementById('notificationSwitch');
-    const mobileSwitch = document.getElementById('notificationSwitchMobile');
+    const desktopBtn = document.getElementById('notificationBtn');
+    const mobileBtn = document.getElementById('notificationBtnMobile');
     
-    // Sync both switches
-    if (desktopSwitch && mobileSwitch) {
-        if (event.target === desktopSwitch) {
-            mobileSwitch.checked = desktopSwitch.checked;
-        } else {
-            desktopSwitch.checked = mobileSwitch.checked;
-        }
-    }
+    // Check current state based on button text
+    const isCurrentlyEnabled = desktopBtn && desktopBtn.innerHTML.includes('Disable');
     
-    const isEnabled = (desktopSwitch && desktopSwitch.checked) || (mobileSwitch && mobileSwitch.checked);
-    
-    if (isEnabled) {
-        enableNotifications();
-    } else {
+    if (isCurrentlyEnabled) {
         disableNotifications();
+    } else {
+        enableNotifications();
     }
 }
 
 function enableNotifications() {
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-        navigator.serviceWorker.ready.then(function(registration) {
-            return registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: 'BNxlXqNT8fIk8I8XlJ4L7A'
-            });
-        }).then(function(subscription) {
-            console.log('Notifications enabled');
-            // You can send subscription to your server here
-        }).catch(function(error) {
-            console.error('Error enabling notifications:', error);
-            // Reset switch on error
-            const switches = [document.getElementById('notificationSwitch'), document.getElementById('notificationSwitchMobile')];
-            switches.forEach(sw => {
-                if (sw) sw.checked = false;
-            });
-        });
+    // Check if notifications are supported
+    if (!('Notification' in window)) {
+        alert('This browser does not support notifications');
+        return;
     }
+    
+    // Request permission
+    Notification.requestPermission().then(function(permission) {
+        if (permission === 'granted') {
+            updateNotificationButtons(true);
+            console.log('Notifications enabled');
+        } else {
+            console.log('Notification permission denied');
+        }
+    });
 }
 
 function disableNotifications() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(function(registration) {
-            return registration.pushManager.getSubscription();
-        }).then(function(subscription) {
-            if (subscription) {
-                return subscription.unsubscribe();
-            }
-        }).then(function() {
-            console.log('Notifications disabled');
-        }).catch(function(error) {
-            console.error('Error disabling notifications:', error);
-        });
+    updateNotificationButtons(false);
+    console.log('Notifications disabled');
+}
+
+function updateNotificationButtons(enabled) {
+    const desktopBtn = document.getElementById('notificationBtn');
+    const mobileBtn = document.getElementById('notificationBtnMobile');
+    
+    const buttons = [desktopBtn, mobileBtn].filter(btn => btn);
+    
+    buttons.forEach(btn => {
+        if (enabled) {
+            btn.innerHTML = '<i class="fas fa-bell-slash me-1"></i>Disable Notifications';
+            btn.className = 'btn btn-success btn-sm';
+        } else {
+            btn.innerHTML = '<i class="fas fa-bell me-1"></i>Enable Notifications';
+            btn.className = 'btn btn-outline-light btn-sm';
+        }
+    });
+    
+    // Update mobile button class
+    if (mobileBtn) {
+        if (enabled) {
+            mobileBtn.className = 'btn btn-success';
+        } else {
+            mobileBtn.className = 'btn btn-outline-light';
+        }
     }
 }
 
 // Check notification status on page load
 document.addEventListener('DOMContentLoaded', function() {
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-        navigator.serviceWorker.ready.then(function(registration) {
-            return registration.pushManager.getSubscription();
-        }).then(function(subscription) {
-            const isEnabled = !!subscription;
-            const switches = [document.getElementById('notificationSwitch'), document.getElementById('notificationSwitchMobile')];
-            switches.forEach(sw => {
-                if (sw) sw.checked = isEnabled;
-            });
-        });
+    if ('Notification' in window) {
+        const isEnabled = Notification.permission === 'granted';
+        updateNotificationButtons(isEnabled);
     }
 });
 </script>
