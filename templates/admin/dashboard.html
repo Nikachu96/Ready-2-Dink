@@ -470,9 +470,9 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <button class="btn btn-outline-primary" onclick="viewAllUsers()">
+                        <a href="{{ url_for('admin_players') }}" class="btn btn-outline-primary">
                             <i class="fas fa-list me-2"></i>View All Players
-                        </button>
+                        </a>
                         <button class="btn btn-outline-warning" onclick="manageSubscriptions()">
                             <i class="fas fa-credit-card me-2"></i>Manage Subscriptions
                         </button>
