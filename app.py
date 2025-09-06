@@ -752,13 +752,13 @@ def get_tournament_levels():
         },
         'Invitational': {
             'name': 'The Championship',
-            'description': 'End of year tournament, invitation only, top 16 ranked players',
+            'description': 'End of year tournament, invitation only, top 16 ranked players - Best of 5 Sets',
             'entry_fee': 0,
             'prize_pool': 'Details to come',
             'prize_breakdown': {},
             'skill_requirements': 'Invitation only - Top 16 ranked players',
             'max_players': 16,
-            'special_notes': 'Invitation-only tournament for elite players'
+            'special_notes': 'Invitation-only tournament for elite players - Premium best of 5 sets format'
         }
     }
 
