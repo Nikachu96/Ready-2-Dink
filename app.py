@@ -820,6 +820,21 @@ def find_match_for_player(player_id):
 # Initialize database
 init_db()
 
+@app.context_processor
+def inject_user_context():
+    """Make current user admin status available to all templates"""
+    current_player_id = session.get('current_player_id')
+    is_admin = False
+    
+    if current_player_id:
+        conn = get_db_connection()
+        player = conn.execute('SELECT is_admin FROM players WHERE id = ?', (current_player_id,)).fetchone()
+        conn.close()
+        if player:
+            is_admin = bool(player['is_admin'])
+    
+    return dict(current_user_is_admin=is_admin, current_player_id=current_player_id)
+
 @app.route('/logout')
 def logout():
     """Clear all session data and redirect to home"""
