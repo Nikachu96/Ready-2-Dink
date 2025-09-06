@@ -831,6 +831,9 @@ def send_email_notification(to_email, subject, message_body, from_email=None):
         if not from_email:
             from_email = os.environ.get('FROM_EMAIL', 'noreply@ready2dink.com')
         
+        # For testing, use SendGrid's test from address if needed
+        # SendGrid allows testing with specific test addresses
+        
         api_key = os.environ.get('SENDGRID_API_KEY')
         if not api_key:
             logging.warning("SendGrid API key not configured. Email notification skipped.")
