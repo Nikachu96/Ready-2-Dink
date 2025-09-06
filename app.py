@@ -3141,11 +3141,16 @@ def contact():
                 player_info = f"\n\nPlayer Details:\nID: {player['id']}\nName: {player['full_name']}\nEmail: {player['email']}\nMembership: {player.get('membership_type', 'Free')}\nLocation: {player['location1']}"
         
         try:
-            # For now, log the message (in production, send email)
+            # Log the message
             logging.info(f"Contact Form Submission:\nFrom: {name} ({email})\nSubject: {subject}\nMessage: {message}{player_info}")
             
-            # TODO: Send email via SendGrid when API key is configured
-            # send_contact_email(name, email, subject, message + player_info)
+            # Send email notification to admin
+            email_sent = send_contact_form_notification(name, email, subject, message, player_info)
+            
+            if email_sent:
+                logging.info(f"Contact form email notification sent successfully for {name}")
+            else:
+                logging.warning(f"Failed to send email notification for contact form submission from {name}")
             
             flash('Thank you for your message! We\'ll get back to you soon.', 'success')
             return redirect(url_for('contact'))
