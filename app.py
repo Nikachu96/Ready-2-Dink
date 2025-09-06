@@ -820,6 +820,113 @@ def find_match_for_player(player_id):
 # Initialize database
 init_db()
 
+def send_email_notification(to_email, subject, message_body, from_email="noreply@ready2dink.com"):
+    """Send email notification using SendGrid"""
+    try:
+        import os
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        
+        api_key = os.environ.get('SENDGRID_API_KEY')
+        if not api_key:
+            logging.warning("SendGrid API key not configured. Email notification skipped.")
+            return False
+            
+        sg = SendGridAPIClient(api_key)
+        mail = Mail(
+            from_email=from_email,
+            to_emails=to_email,
+            subject=subject,
+            html_content=message_body
+        )
+        
+        response = sg.send(mail)
+        logging.info(f"Email sent successfully to {to_email}. Status: {response.status_code}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Failed to send email: {e}")
+        return False
+
+def send_admin_notification(subject, message_body):
+    """Send notification to admin email"""
+    # You can change this to your preferred admin email
+    admin_email = "admin@ready2dink.com"  # Update this to your actual email
+    return send_email_notification(admin_email, subject, message_body)
+
+def send_contact_form_notification(name, email, subject, message, player_info=""):
+    """Send notification when contact form is submitted"""
+    email_subject = f"📩 New Contact Form Submission: {subject}"
+    email_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); padding: 20px; text-align: center;">
+            <h2 style="color: white; margin: 0;">Ready 2 Dink Contact Form</h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">New message received</p>
+        </div>
+        
+        <div style="padding: 30px; background: white; border-left: 4px solid #3F567F;">
+            <h3 style="color: #3F567F; margin-top: 0;">Message Details</h3>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>From:</strong> {name}</p>
+                <p><strong>Email:</strong> <a href="mailto:{email}">{email}</a></p>
+                <p><strong>Subject:</strong> {subject}</p>
+            </div>
+            
+            <h4 style="color: #3F567F;">Message:</h4>
+            <div style="background: #ffffff; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+                <p style="white-space: pre-wrap;">{message}</p>
+            </div>
+            
+            {f'<h4 style="color: #3F567F;">Player Information:</h4><div style="background: #f0f8ff; border: 1px solid #3F567F; padding: 15px; border-radius: 8px;"><pre style="margin: 0; font-family: monospace;">{player_info}</pre></div>' if player_info else ''}
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="color: #666; font-size: 14px;">
+                    Reply directly to this email to respond to {name} at {email}
+                </p>
+            </div>
+        </div>
+    </div>
+    """
+    return send_admin_notification(email_subject, email_body)
+
+def send_new_registration_notification(player_data):
+    """Send notification when new player registers"""
+    email_subject = f"🎾 New Player Registration: {player_data['full_name']}"
+    email_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 20px; text-align: center;">
+            <h2 style="color: white; margin: 0;">Ready 2 Dink New Registration</h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">A new player has joined!</p>
+        </div>
+        
+        <div style="padding: 30px; background: white; border-left: 4px solid #10B981;">
+            <h3 style="color: #10B981; margin-top: 0;">Player Details</h3>
+            
+            <div style="background: #f0fdf4; border: 1px solid #10B981; padding: 20px; border-radius: 8px;">
+                <p><strong>Name:</strong> {player_data['full_name']}</p>
+                <p><strong>Email:</strong> <a href="mailto:{player_data['email']}">{player_data['email']}</a></p>
+                <p><strong>Skill Level:</strong> <span style="background: #10B981; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">{player_data['skill_level']}</span></p>
+                <p><strong>Location:</strong> {player_data['location1']}</p>
+                <p><strong>Preferred Court:</strong> {player_data['preferred_court']}</p>
+                <p><strong>Address:</strong> {player_data['address']}</p>
+                <p><strong>Date of Birth:</strong> {player_data['dob']}</p>
+                {f"<p><strong>Secondary Location:</strong> {player_data['location2']}</p>" if player_data.get('location2') else ''}
+            </div>
+            
+            <div style="margin-top: 30px; text-align: center;">
+                <p style="color: #666;">
+                    <strong>Total Players:</strong> Check your admin dashboard for the latest count
+                </p>
+                <a href="#" style="background: #10B981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin-top: 10px;">
+                    View Admin Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    """
+    return send_admin_notification(email_subject, email_body)
+
 @app.context_processor
 def inject_user_context():
     """Make current user admin status available to all templates"""
