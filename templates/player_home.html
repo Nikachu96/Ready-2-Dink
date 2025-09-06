@@ -3,10 +3,10 @@
 {% block title %}Welcome {{ player.full_name.split()[0] }} - Ready 2 Dink{% endblock %}
 
 {% block content %}
-<!-- Welcome Section - Clean & Simple -->
+<!-- Welcome Section - New Color Scheme -->
 <div class="row mb-4 animate-in">
     <div class="col-12">
-        <div class="card bg-dark text-white" style="border-radius: 12px; border: none; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);">
+        <div class="card text-white" style="border-radius: 12px; border: none; background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%);">
             <div class="card-body p-4">
                 <div class="row align-items-center">
                     <!-- Profile & Welcome -->
@@ -21,25 +21,25 @@
                                 {% else %}
                                     <div class="rounded-circle bg-white d-inline-flex align-items-center justify-content-center border border-3 border-white" 
                                          style="width: 70px; height: 70px;">
-                                        <i class="fas fa-user text-primary fa-2x"></i>
+                                        <i class="fas fa-user fa-2x" style="color: #3F567F;"></i>
                                     </div>
                                 {% endif %}
                             </div>
                             <div class="flex-grow-1">
-                                <h2 class="mb-2 fw-bold">
+                                <h2 class="mb-2 fw-bold text-white">
                                     Welcome back, {{ player.full_name.split()[0] }}!
                                     {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                    <i class="fas fa-crown ms-2 text-warning"></i>
+                                    <i class="fas fa-crown ms-2" style="color: #E0563F;"></i>
                                     {% endif %}
                                 </h2>
                                 <div class="d-flex flex-wrap gap-3">
-                                    <span class="badge bg-primary px-3 py-2">{{ player.skill_level }}</span>
-                                    <span class="badge bg-success px-3 py-2">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
-                                    <span class="badge bg-warning text-dark px-3 py-2">{{ player.ranking_points or 0 }} pts</span>
+                                    <span class="badge px-3 py-2" style="background-color: #E0563F; color: white;">{{ player.skill_level }}</span>
+                                    <span class="badge px-3 py-2" style="background-color: #3F567F; color: white;">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
+                                    <span class="badge px-3 py-2" style="background-color: #D174D2; color: white;">{{ player.ranking_points or 0 }} pts</span>
                                     {% if player_ranking %}
-                                    <span class="badge bg-info px-3 py-2">Rank #{{ player_ranking }}</span>
+                                    <span class="badge px-3 py-2" style="background-color: #FFFFFF; color: #3F567F;">Rank #{{ player_ranking }}</span>
                                     {% else %}
-                                    <span class="badge bg-secondary px-3 py-2">Unranked</span>
+                                    <span class="badge px-3 py-2 bg-secondary">Unranked</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -51,7 +51,8 @@
                     <div class="col-md-4 text-end">
                         <div class="d-grid gap-2">
                             <button onclick="showMembershipModal('discovery')" 
-                                    class="btn btn-warning btn-lg fw-semibold">
+                                    class="btn btn-lg fw-semibold text-white"
+                                    style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
                                 <i class="fas fa-star me-2"></i>Upgrade Now
                             </button>
                             <button id="notificationBtn" onclick="toggleNotifications()" 
@@ -70,7 +71,7 @@
 <!-- Prominent Find Match Section -->
 <div class="row mb-4 animate-in">
     <div class="col-12">
-        <div class="card text-white position-relative overflow-hidden" style="background: var(--gradient-success); border: none; min-height: 200px;">
+        <div class="card text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #E0563F 0%, #D174D2 100%); border: none; min-height: 200px;">
             <div class="card-body text-center d-flex flex-column justify-content-center">
                 <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(255,255,255,0.05); backdrop-filter: blur(1px);"></div>
                 <div class="position-relative">
@@ -81,12 +82,12 @@
                     </div>
                     
                     {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
-                        <button onclick="findNewMatch({{ player.id }})" class="btn btn-light btn-lg px-5 py-3 shadow-lg" style="font-size: 1.2rem; border-radius: 50px; font-weight: 600; letter-spacing: 0.5px; transform: scale(1); transition: all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <button onclick="findNewMatch({{ player.id }})" class="btn btn-lg px-5 py-3 shadow-lg text-white" style="background: linear-gradient(45deg, #3F567F, #D174D2); border: none;" style="font-size: 1.2rem; border-radius: 50px; font-weight: 600; letter-spacing: 0.5px; transform: scale(1); transition: all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <i class="fas fa-search me-3"></i>Find My Match
                             <div class="small mt-1 opacity-75">Connect with players near you</div>
                         </button>
                     {% else %}
-                        <button onclick="showMembershipModal('discovery')" class="btn btn-warning btn-lg px-5 py-3 shadow-lg" style="font-size: 1.2rem; border-radius: 50px; font-weight: 600; letter-spacing: 0.5px; transform: scale(1); transition: all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <button onclick="showMembershipModal('discovery')" class="btn btn-lg px-5 py-3 shadow-lg text-white" style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; font-size: 1.2rem; border-radius: 50px; font-weight: 600; letter-spacing: 0.5px; transform: scale(1); transition: all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <i class="fas fa-unlock me-3"></i>Unlock Matchmaking
                             <div class="small mt-1 opacity-75">Upgrade to find opponents</div>
                         </button>
@@ -112,8 +113,8 @@
 {% if available_tournaments %}
 <div class="row mb-4 animate-in">
     <div class="col-12">
-        <div class="card" style="border: 2px solid #38ef7d; background: linear-gradient(135deg, rgba(17, 153, 142, 0.1) 0%, rgba(56, 239, 125, 0.1) 100%);"
-            <div class="card-header text-white" style="background: var(--gradient-success); border: none;">
+        <div class="card" style="border: 2px solid #D174D2; background: linear-gradient(135deg, rgba(211, 116, 210, 0.1) 0%, rgba(224, 86, 63, 0.1) 100%);"
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); border: none;">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-trophy me-2"></i>Tournaments Open for Registration
@@ -127,11 +128,11 @@
                 <div class="row">
                     {% for tournament in available_tournaments %}
                     <div class="col-md-4 mb-3">
-                        <div class="card h-100 border-success">
+                        <div class="card h-100" style="border: 2px solid #E0563F;">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="card-title text-success">{{ tournament.name }}</h6>
-                                    <span class="badge bg-success">${{ "%.0f"|format(tournament.entry_fee) }}</span>
+                                    <h6 class="card-title" style="color: #3F567F;">{{ tournament.name }}</h6>
+                                    <span class="badge" style="background-color: #E0563F; color: white;">${{ "%.0f"|format(tournament.entry_fee) }}</span>
                                 </div>
                                 
                                 <p class="card-text small text-muted mb-2">{{ tournament.description }}</p>
@@ -141,9 +142,9 @@
                                         <i class="fas fa-users me-1"></i>{{ tournament.current_entries }}/{{ tournament.max_players }}
                                     </small>
                                     {% if tournament.spots_remaining <= 5 %}
-                                        <span class="badge bg-warning">{{ tournament.spots_remaining }} spots left!</span>
+                                        <span class="badge" style="background-color: #D174D2; color: white;">{{ tournament.spots_remaining }} spots left!</span>
                                     {% else %}
-                                        <span class="badge bg-success">{{ tournament.spots_remaining }} spots available</span>
+                                        <span class="badge" style="background-color: #3F567F; color: white;">{{ tournament.spots_remaining }} spots available</span>
                                     {% endif %}
                                 </div>
                                 
@@ -152,7 +153,7 @@
                                 </small>
                                 
                                 <a href="{{ url_for('tournament_entry', player_id=player.id) }}" 
-                                   class="btn btn-success btn-sm w-100">
+                                   class="btn btn-sm w-100 text-white" style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
                                     <i class="fas fa-bolt me-1"></i>Join Now
                                 </a>
                             </div>
