@@ -186,6 +186,20 @@
             color: #333 !important;
         }
         
+        /* Fix bg-light card text readability */
+        .card.bg-light .card-body *,
+        .bg-light .card-body *,
+        .bg-light * {
+            color: #333 !important;
+        }
+        
+        .card.bg-light h5,
+        .card.bg-light p,
+        .card.bg-light small,
+        .bg-light .text-muted {
+            color: #333 !important;
+        }
+        
         /* Exception for white text badges and buttons */
         .card .badge[style*="color: white"],
         .card .btn[style*="color: white"] {
