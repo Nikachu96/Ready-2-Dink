@@ -39,9 +39,26 @@
                                 <p class="card-text small text-muted mb-2">
                                     <i class="fas fa-trophy me-1"></i>{{ level_info.prize_pool }}
                                 </p>
-                                <p class="card-text small text-muted">
+                                <p class="card-text small text-muted mb-2">
                                     <i class="fas fa-star me-1"></i>{{ level_info.skill_requirements }}
                                 </p>
+                                
+                                <div class="mt-auto pt-2">
+                                    {% if level_key == 'Invitational' %}
+                                        <button class="btn btn-warning btn-sm w-100" disabled>
+                                            <i class="fas fa-envelope me-1"></i>Invitation Only
+                                        </button>
+                                    {% elif level_info.spots_remaining <= 0 %}
+                                        <button class="btn btn-secondary btn-sm w-100" disabled>
+                                            <i class="fas fa-users me-1"></i>Tournament Full
+                                        </button>
+                                    {% else %}
+                                        <a href="{{ url_for('tournament_entry', player_id=players[0].id if players else 1) }}?level={{ level_key }}" 
+                                           class="btn btn-primary btn-sm w-100">
+                                            <i class="fas fa-sign-in-alt me-1"></i>Enter Tournament
+                                        </a>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>

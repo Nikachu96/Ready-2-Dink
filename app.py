@@ -749,6 +749,16 @@ def get_tournament_levels():
             'skill_requirements': 'All skill levels welcome',
             'max_players': championship_max,
             'special_notes': 'Championship tournament with detailed prize distribution for top 20 finishers'
+        },
+        'Invitational': {
+            'name': 'The Championship',
+            'description': 'End of year tournament, invitation only, top 16 ranked players',
+            'entry_fee': 0,
+            'prize_pool': 'Details to come',
+            'prize_breakdown': {},
+            'skill_requirements': 'Invitation only - Top 16 ranked players',
+            'max_players': 16,
+            'special_notes': 'Invitation-only tournament for elite players'
         }
     }
 
