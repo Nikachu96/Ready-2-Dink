@@ -820,12 +820,16 @@ def find_match_for_player(player_id):
 # Initialize database
 init_db()
 
-def send_email_notification(to_email, subject, message_body, from_email="noreply@ready2dink.com"):
+def send_email_notification(to_email, subject, message_body, from_email=None):
     """Send email notification using SendGrid"""
     try:
         import os
         from sendgrid import SendGridAPIClient
         from sendgrid.helpers.mail import Mail
+        
+        # Use environment variable for from email, with fallback
+        if not from_email:
+            from_email = os.environ.get('FROM_EMAIL', 'noreply@ready2dink.com')
         
         api_key = os.environ.get('SENDGRID_API_KEY')
         if not api_key:
