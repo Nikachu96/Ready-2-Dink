@@ -332,26 +332,26 @@
                         <div class="card-body">
                             {% if existing_tournaments %}
                                 <div class="table-responsive">
-                                    <table class="table table-sm" style="color: var(--bs-body-color); --bs-table-hover-bg: rgba(255,255,255,0.075);">
+                                    <table class="table table-sm" style="color: #ffffff !important; --bs-table-hover-bg: rgba(255,255,255,0.075);">
                                         <thead>
-                                            <tr style="color: var(--bs-body-color);">
-                                                <th style="color: var(--bs-body-color); font-weight: 600;">Tournament Name</th>
-                                                <th style="color: var(--bs-body-color); font-weight: 600;">Skill Level</th>
-                                                <th style="color: var(--bs-body-color); font-weight: 600;">Entry Fee</th>
-                                                <th style="color: var(--bs-body-color); font-weight: 600;">Players</th>
-                                                <th style="color: var(--bs-body-color); font-weight: 600;">Status</th>
-                                                <th style="color: var(--bs-body-color); font-weight: 600;">Actions</th>
+                                            <tr>
+                                                <th style="color: #ffffff !important; font-weight: 600;">Tournament Name</th>
+                                                <th style="color: #ffffff !important; font-weight: 600;">Skill Level</th>
+                                                <th style="color: #ffffff !important; font-weight: 600;">Entry Fee</th>
+                                                <th style="color: #ffffff !important; font-weight: 600;">Players</th>
+                                                <th style="color: #ffffff !important; font-weight: 600;">Status</th>
+                                                <th style="color: #ffffff !important; font-weight: 600;">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {% for tournament in existing_tournaments %}
-                                            <tr style="color: var(--bs-body-color);">
-                                                <td style="color: var(--bs-body-color); font-weight: bold;">{{ tournament.name }}</td>
+                                            <tr>
+                                                <td style="color: #ffffff !important; font-weight: bold;">{{ tournament.name }}</td>
                                                 <td>
                                                     <span class="badge bg-secondary">{{ tournament.skill_level }}</span>
                                                 </td>
-                                                <td style="color: var(--bs-body-color); font-weight: bold; font-size: 1.1em;">${{ "%.0f"|format(tournament.entry_fee) }}</td>
-                                                <td style="color: var(--bs-body-color); font-weight: bold;">{{ tournament.current_players }}/{{ tournament.max_players }}</td>
+                                                <td style="color: #ffffff !important; font-weight: bold; font-size: 1.1em;">${{ "%.0f"|format(tournament.entry_fee) }}</td>
+                                                <td style="color: #ffffff !important; font-weight: bold;">{{ tournament.current_players }}/{{ tournament.max_players }}</td>
                                                 <td>
                                                     {% if tournament.status == 'open' %}
                                                         <span class="badge bg-success">Open</span>
