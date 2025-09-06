@@ -3,86 +3,97 @@
 {% block title %}Welcome {{ player.full_name.split()[0] }} - Ready 2 Dink{% endblock %}
 
 {% block content %}
-<!-- Welcome Section -->
+<!-- Welcome Section - Modern Design -->
 <div class="row mb-4 animate-in">
     <div class="col-12">
-        <div class="card text-white" style="background: var(--gradient-primary); border: none;">
-            <div class="card-body">
-                <!-- Mobile-First Layout -->
-                <div class="text-center text-md-start">
-                    <!-- Profile Photo and Welcome Text -->
-                    <div class="d-flex flex-column flex-md-row align-items-center mb-1">
-                        <div class="mb-2 mb-md-0 me-md-3">
-                            {% if player.selfie %}
-                                <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                     class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;" 
-                                     alt="Player Photo">
-                            {% else %}
-                                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" 
-                                     style="width: 60px; height: 60px;">
-                                    <i class="fas fa-user text-primary fa-lg"></i>
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="flex-grow-1">
-                            <h3 class="mb-1 fw-bold">Welcome back, {{ player.full_name.split()[0] }}!{% if player.tournament_wins and player.tournament_wins > 0 %} <span style="display: inline-block; width: 18px; height: 18px; background: linear-gradient(45deg, #FFD700, #FFA500); border-radius: 40% 60% 40% 60%; transform: rotate(45deg); box-shadow: 0 0 5px rgba(255,215,0,0.5); position: relative; top: -2px;" title="Tournament Champion"></span><span class="badge bg-warning text-dark ms-1 px-2" style="font-size: 0.7rem;" title="Number of tournaments won">{{ player.tournament_wins }}</span>{% endif %}</h3>
-                        </div>
-                        
-                        <!-- Upgrade Section - Desktop -->
-                        {% if not player.membership_type %}
-                        <div class="d-none d-md-block ms-2">
-                            <div class="d-flex flex-column gap-2">
-                                <button onclick="showMembershipModal('discovery')" class="btn btn-success">
-                                    <i class="fas fa-star me-1"></i>Upgrade
-                                </button>
-                                <!-- Notification Button - Desktop -->
-                                <button id="notificationBtn" onclick="toggleNotifications()" class="btn btn-success">
-                                    <i class="fas fa-bell me-1"></i>Enable Notifications
-                                </button>
+        <div class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
+            <!-- Decorative background elements -->
+            <div class="position-absolute top-0 end-0 opacity-10">
+                <div style="width: 200px; height: 200px; background: radial-gradient(circle, #fff 20%, transparent 70%); border-radius: 50%; transform: translate(50px, -50px);"></div>
+            </div>
+            <div class="position-absolute bottom-0 start-0 opacity-05">
+                <div style="width: 150px; height: 150px; background: radial-gradient(circle, #fff 20%, transparent 70%); border-radius: 50%; transform: translate(-50px, 50px);"></div>
+            </div>
+            
+            <div class="card-body p-4 position-relative">
+                <div class="row align-items-center">
+                    <!-- Profile Section -->
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="me-3">
+                                {% if player.selfie %}
+                                    <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                         class="rounded-3 border border-white border-3" 
+                                         style="width: 70px; height: 70px; object-fit: cover; box-shadow: 0 8px 25px rgba(0,0,0,0.2);" 
+                                         alt="Player Photo">
+                                {% else %}
+                                    <div class="rounded-3 bg-white bg-opacity-90 d-inline-flex align-items-center justify-content-center border border-white border-3" 
+                                         style="width: 70px; height: 70px; box-shadow: 0 8px 25px rgba(0,0,0,0.2);">
+                                        <i class="fas fa-user text-primary fa-2x"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <h2 class="text-white mb-1 fw-bold" style="font-size: 1.8rem;">
+                                    Hey {{ player.full_name.split()[0] }}!
+                                    {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                    <i class="fas fa-crown ms-2" style="color: #FFD700; font-size: 1.2rem;"></i>
+                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem;">{{ player.tournament_wins }} Wins</span>
+                                    {% endif %}
+                                </h2>
+                                <p class="text-white text-opacity-85 mb-0 fw-light" style="font-size: 1.1rem;">Ready to dominate the court?</p>
                             </div>
                         </div>
-                        {% endif %}
+                        
+                        <!-- Stats Pills -->
+                        <div class="d-flex flex-wrap gap-2">
+                            <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.85rem;">
+                                <i class="fas fa-star text-warning me-2"></i>{{ player.skill_level }}
+                            </div>
+                            <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.85rem;">
+                                <i class="fas fa-trophy text-success me-2"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
+                            </div>
+                            <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.85rem;">
+                                <i class="fas fa-fire text-danger me-2"></i>{{ player.ranking_points or 0 }} pts
+                            </div>
+                            {% if player_ranking %}
+                            <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.85rem;">
+                                <i class="fas fa-medal text-primary me-2"></i>Rank #{{ player_ranking }}
+                            </div>
+                            {% else %}
+                            <div class="badge bg-white bg-opacity-50 text-white px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.85rem;">
+                                <i class="fas fa-question me-2"></i>Unranked
+                            </div>
+                            {% endif %}
+                            <button class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="showRankingInfo()" style="font-size: 0.8rem;">
+                                <i class="fas fa-info-circle me-1"></i>Info
+                            </button>
+                        </div>
                     </div>
                     
-                    <!-- Mobile Section -->
+                    <!-- Action Buttons -->
                     {% if not player.membership_type %}
-                    <div class="d-md-none text-center">
-                        <div class="d-flex flex-column gap-2 align-items-center">
-                            <button onclick="showMembershipModal('discovery')" class="btn btn-success">
-                                <i class="fas fa-star me-1"></i>Upgrade to Premium
+                    <div class="col-md-4 text-end">
+                        <div class="d-flex flex-column gap-2 align-items-end">
+                            <button onclick="showMembershipModal('discovery')" 
+                                    class="btn btn-light btn-lg px-4 py-2 rounded-pill fw-semibold shadow-lg"
+                                    style="min-width: 160px;">
+                                <i class="fas fa-rocket me-2 text-primary"></i>
+                                <span class="text-dark">Upgrade</span>
                             </button>
-                            <!-- Notification Button - Mobile -->
-                            <button id="notificationBtnMobile" onclick="toggleNotifications()" class="btn btn-success">
-                                <i class="fas fa-bell me-1"></i>Enable Notifications
+                            <button id="notificationBtn" onclick="toggleNotifications()" 
+                                    class="btn btn-outline-light btn-sm px-3 py-2 rounded-pill"
+                                    style="min-width: 160px;">
+                                <i class="fas fa-bell me-2"></i>Enable Notifications
+                            </button>
+                            <button id="notificationBtnMobile" onclick="toggleNotifications()" 
+                                    class="btn btn-outline-light btn-sm px-3 py-2 rounded-pill d-md-none"
+                                    style="min-width: 160px;">
+                                <i class="fas fa-bell me-2"></i>Enable Notifications
                             </button>
                         </div>
                     </div>
                     {% endif %}
-                    
-                    <!-- Stats Row - Centered -->
-                    <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
-                        <span class="badge bg-light text-dark px-2 py-1">
-                            <i class="fas fa-star me-1"></i>{{ player.skill_level }}
-                        </span>
-                        <span class="badge bg-warning text-dark px-2 py-1">
-                            <i class="fas fa-trophy me-1"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
-                        </span>
-                        <span class="badge bg-success px-2 py-1">
-                            <i class="fas fa-star me-1"></i>{{ player.ranking_points or 0 }} pts
-                        </span>
-                        {% if player_ranking %}
-                        <span class="badge bg-primary px-2 py-1">
-                            <i class="fas fa-medal me-1"></i>Rank #{{ player_ranking }}
-                        </span>
-                        {% else %}
-                        <span class="badge bg-secondary px-2 py-1">
-                            <i class="fas fa-question me-1"></i>Unranked
-                        </span>
-                        {% endif %}
-                        <button class="btn btn-sm btn-outline-light opacity-75" onclick="showRankingInfo()" style="font-size: 0.7rem; padding: 2px 6px;">
-                            <i class="fas fa-info-circle"></i>
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
