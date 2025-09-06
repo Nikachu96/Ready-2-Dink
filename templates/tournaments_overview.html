@@ -3,12 +3,69 @@
 {% block title %}Tournaments - Tournament Management System{% endblock %}
 
 {% block content %}
+<!-- Create Custom Tournament Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-plus-circle fa-3x mb-3" style="opacity: 0.9;"></i>
+                    <h3 class="fw-bold mb-2">Create Your Own Tournament</h3>
+                    <p class="fs-5 mb-3 opacity-90">Organize your own tournaments and earn from entry fees!</p>
+                </div>
+                
+                <div class="row justify-content-center mb-3">
+                    <div class="col-md-8">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center mb-3">
+                                    <i class="fas fa-users fa-2x mb-2" style="color: #FFD700;"></i>
+                                    <p class="small mb-0">Set Player Count</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center mb-3">
+                                    <i class="fas fa-dollar-sign fa-2x mb-2" style="color: #FFD700;"></i>
+                                    <p class="small mb-0">Choose Entry Fee</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center mb-3">
+                                    <i class="fas fa-map-marker-alt fa-2x mb-2" style="color: #FFD700;"></i>
+                                    <p class="small mb-0">Pick Location</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center mb-3">
+                                    <i class="fas fa-percentage fa-2x mb-2" style="color: #FFD700;"></i>
+                                    <p class="small mb-0">70% Prize Pool</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="showCreateTournamentModal()" class="btn btn-light btn-lg px-5 py-2 shadow-lg" style="border-radius: 50px; font-weight: 600;">
+                    <i class="fas fa-plus me-2"></i>Create Tournament
+                </button>
+                
+                <div class="mt-3">
+                    <small class="opacity-75">
+                        <i class="fas fa-info-circle me-1"></i>
+                        You keep 70% of entry fees • We handle all payments and payouts
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-12">
         <div class="card mb-4">
             <div class="card-header">
                 <h4 class="card-title mb-0">
-                    <i class="fas fa-trophy me-2"></i>Tournament Levels
+                    <i class="fas fa-trophy me-2"></i>Official Tournament Levels
                 </h4>
             </div>
             <div class="card-body">
@@ -205,6 +262,106 @@
 </div>
 {% endif %}
 
+<!-- Custom Tournaments Section -->
+{% if custom_tournaments %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>Community Tournaments
+                </h4>
+                <small class="text-muted">Created by players, for players</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for tournament in custom_tournaments %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 border-info">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title text-info">{{ tournament.tournament_name }}</h6>
+                                    <span class="badge bg-info">${{ "%.0f"|format(tournament.entry_fee) }}</span>
+                                </div>
+                                
+                                <div class="d-flex align-items-center mb-2">
+                                    {% if tournament.organizer_selfie %}
+                                        <img src="{{ url_for('static', filename='uploads/' + tournament.organizer_selfie) }}" 
+                                             class="rounded-circle me-2" style="width: 24px; height: 24px; object-fit: cover;" 
+                                             alt="Organizer">
+                                    {% else %}
+                                        <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-2" 
+                                             style="width: 24px; height: 24px;">
+                                            <i class="fas fa-user text-white" style="font-size: 0.7rem;"></i>
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">by {{ tournament.organizer_name }}</small>
+                                </div>
+                                
+                                {% if tournament.description %}
+                                <p class="card-text small text-muted mb-2">{{ tournament.description }}</p>
+                                {% endif %}
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-users me-1"></i>{{ tournament.current_entries }}/{{ tournament.max_players }}
+                                    </small>
+                                    {% if tournament.current_entries >= tournament.max_players %}
+                                        <span class="badge bg-danger">Full</span>
+                                    {% elif (tournament.max_players - tournament.current_entries) <= 3 %}
+                                        <span class="badge bg-warning">{{ tournament.max_players - tournament.current_entries }} spots left!</span>
+                                    {% else %}
+                                        <span class="badge bg-success">{{ tournament.max_players - tournament.current_entries }} spots available</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="row text-center mb-2">
+                                    <div class="col-6">
+                                        <small class="text-muted">
+                                            <i class="fas fa-map-marker-alt me-1"></i>{{ tournament.location }}
+                                        </small>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">
+                                            <i class="fas fa-{{ 'user' if tournament.format == 'singles' else 'users' }} me-1"></i>{{ tournament.format|title }}
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <small class="text-muted d-block mb-3">
+                                    <i class="fas fa-gift me-1"></i>Prize Pool: ${{ "%.0f"|format(tournament.prize_pool) }}
+                                </small>
+                                
+                                {% if tournament.current_entries >= tournament.max_players %}
+                                    <button class="btn btn-secondary btn-sm w-100" disabled>
+                                        <i class="fas fa-users me-1"></i>Tournament Full
+                                    </button>
+                                {% else %}
+                                    <a href="{{ url_for('join_custom_tournament', tournament_id=tournament.id) }}" 
+                                       class="btn btn-info btn-sm w-100">
+                                        <i class="fas fa-bolt me-1"></i>Join Tournament
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if custom_tournaments|length >= 3 %}
+                <div class="text-center mt-3">
+                    <div class="alert alert-info d-inline-block mb-0">
+                        <i class="fas fa-fire me-2"></i>
+                        <strong>Community tournaments are heating up!</strong> Join the action or create your own.
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="row">
     <div class="col-md-8">
         <div class="card">
@@ -305,4 +462,202 @@
         </div>
     </div>
 </div>
+
+<!-- Create Tournament Modal -->
+<div class="modal fade" id="createTournamentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>Create Your Tournament
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createTournamentForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tournament Name</label>
+                            <input type="text" name="tournament_name" class="form-control" required 
+                                   placeholder="e.g. Summer Showdown 2024">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" name="location" class="form-control" required 
+                                   placeholder="e.g. Central Park Courts">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Max Players</label>
+                            <select name="max_players" class="form-control" required>
+                                <option value="">Select players</option>
+                                <option value="4">4 Players</option>
+                                <option value="8">8 Players</option>
+                                <option value="16">16 Players</option>
+                                <option value="32">32 Players</option>
+                                <option value="64">64 Players</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Entry Fee</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" name="entry_fee" class="form-control" required 
+                                       min="1" max="500" step="1" placeholder="25">
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Format</label>
+                            <select name="format" class="form-control" required>
+                                <option value="">Choose format</option>
+                                <option value="singles">Singles</option>
+                                <option value="doubles">Doubles</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description (Optional)</label>
+                        <textarea name="description" class="form-control" rows="3" 
+                                  placeholder="Tell players about your tournament..."></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="datetime-local" name="start_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Registration Deadline</label>
+                            <input type="datetime-local" name="registration_deadline" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-3">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-calculator me-2"></i>Payout Breakdown
+                        </h6>
+                        <div id="payoutCalculation">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <strong>Prize Pool (70%)</strong>
+                                    <br><span id="prizePool" class="text-success">$0</span>
+                                </div>
+                                <div class="col-4">
+                                    <strong>House Cut (30%)</strong>
+                                    <br><span id="houseCut" class="text-primary">$0</span>
+                                </div>
+                                <div class="col-4">
+                                    <strong>Total Collected</strong>
+                                    <br><span id="totalCollected" class="text-warning">$0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="createTournamentBtn">
+                        <i class="fas fa-plus me-2"></i>Create Tournament
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showCreateTournamentModal() {
+    const modal = new bootstrap.Modal(document.getElementById('createTournamentModal'));
+    modal.show();
+    
+    // Set default dates (start date = 1 week from now, deadline = 3 days from now)
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + 7);
+    const deadline = new Date();
+    deadline.setDate(deadline.getDate() + 3);
+    
+    document.querySelector('input[name="start_date"]').value = startDate.toISOString().slice(0, 16);
+    document.querySelector('input[name="registration_deadline"]').value = deadline.toISOString().slice(0, 16);
+    
+    updatePayoutCalculation();
+}
+
+function updatePayoutCalculation() {
+    const maxPlayers = parseInt(document.querySelector('select[name="max_players"]').value) || 0;
+    const entryFee = parseFloat(document.querySelector('input[name="entry_fee"]').value) || 0;
+    
+    const totalCollected = maxPlayers * entryFee;
+    const houseCut = totalCollected * 0.30;
+    const prizePool = totalCollected * 0.70;
+    
+    document.getElementById('totalCollected').textContent = '$' + totalCollected.toFixed(0);
+    document.getElementById('houseCut').textContent = '$' + houseCut.toFixed(0);  
+    document.getElementById('prizePool').textContent = '$' + prizePool.toFixed(0);
+}
+
+// Add event listeners for real-time calculation updates
+document.addEventListener('DOMContentLoaded', function() {
+    const maxPlayersSelect = document.querySelector('select[name="max_players"]');
+    const entryFeeInput = document.querySelector('input[name="entry_fee"]');
+    
+    if (maxPlayersSelect) {
+        maxPlayersSelect.addEventListener('change', updatePayoutCalculation);
+    }
+    if (entryFeeInput) {
+        entryFeeInput.addEventListener('input', updatePayoutCalculation);
+    }
+});
+
+// Handle form submission
+document.getElementById('createTournamentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = document.getElementById('createTournamentBtn');
+    
+    // Disable submit button and show loading
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+    
+    fetch('/create_custom_tournament', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createTournamentModal'));
+            modal.hide();
+            
+            // Show success alert
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show';
+            alert.innerHTML = `
+                <strong>Success!</strong> Your tournament "${data.tournament_name}" has been created.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container').prepend(alert);
+            
+            // Reload page to show new tournament
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            // Show error message
+            alert('Error: ' + (data.message || 'Failed to create tournament'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the tournament.');
+    })
+    .finally(() => {
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-plus me-2"></i>Create Tournament';
+    });
+});
+</script>
 {% endblock %}

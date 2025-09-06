@@ -1358,6 +1358,16 @@ def tournaments_overview():
             created_at DESC
     ''').fetchall()
     
+    # Get custom tournaments created by users
+    custom_tournaments = conn.execute('''
+        SELECT ct.*, p.full_name as organizer_name, p.selfie as organizer_selfie
+        FROM custom_tournaments ct
+        JOIN players p ON ct.organizer_id = p.id
+        WHERE ct.status = 'open' 
+        AND datetime(ct.registration_deadline) > datetime('now')
+        ORDER BY ct.created_at DESC
+    ''').fetchall()
+    
     # Get recent tournament entries
     recent_entries = conn.execute('''
         SELECT t.*, p.full_name, p.selfie
@@ -1376,6 +1386,7 @@ def tournaments_overview():
     return render_template('tournaments_overview.html', 
                          tournament_levels=tournament_levels, 
                          tournament_instances=tournament_instances,
+                         custom_tournaments=custom_tournaments,
                          recent_entries=recent_entries,
                          players=players)
 
@@ -2167,6 +2178,205 @@ def create_tournament():
     
     flash(f'Tournament "{name}" created successfully!', 'success')
     return redirect(url_for('admin_dashboard'))
+
+@app.route('/create_custom_tournament', methods=['POST'])
+def create_custom_tournament():
+    """Create a custom user tournament with Stripe integration"""
+    current_player_id = session.get('current_player_id')
+    if not current_player_id:
+        return jsonify({'success': False, 'message': 'Please log in to create tournaments'})
+    
+    try:
+        # Get form data
+        tournament_name = request.form.get('tournament_name')
+        description = request.form.get('description')
+        location = request.form.get('location')
+        max_players_str = request.form.get('max_players')
+        entry_fee_str = request.form.get('entry_fee')
+        format_type = request.form.get('format')
+        start_date = request.form.get('start_date')
+        registration_deadline = request.form.get('registration_deadline')
+        
+        # Convert and validate numeric fields
+        if not max_players_str or not entry_fee_str:
+            return jsonify({'success': False, 'message': 'Player count and entry fee are required'})
+        
+        max_players = int(max_players_str)
+        entry_fee = float(entry_fee_str)
+        
+        # Validate required fields
+        if not all([tournament_name, location, max_players, entry_fee, format_type, start_date, registration_deadline]):
+            return jsonify({'success': False, 'message': 'All fields are required'})
+        
+        # Create Stripe product and price for payments
+        import stripe
+        stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+        
+        # Create Stripe product
+        stripe_product = stripe.Product.create(
+            name=f"{tournament_name} - Entry Fee",
+            description=f"Entry fee for {tournament_name} tournament at {location}"
+        )
+        
+        # Create Stripe price (in cents)
+        stripe_price = stripe.Price.create(
+            unit_amount=int(entry_fee * 100),  # Convert to cents
+            currency='usd',
+            product=stripe_product.id,
+        )
+        
+        # Calculate prize pool (70% to winners, 30% house cut)
+        house_cut = 0.30
+        prize_pool = entry_fee * max_players * (1 - house_cut)
+        
+        # Insert tournament into database
+        conn = get_db_connection()
+        cursor = conn.execute('''
+            INSERT INTO custom_tournaments 
+            (organizer_id, tournament_name, description, location, max_players, 
+             entry_fee, format, house_cut, prize_pool, start_date, 
+             registration_deadline, stripe_product_id, stripe_price_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (current_player_id, tournament_name, description, location, max_players,
+              entry_fee, format_type, house_cut, prize_pool, start_date,
+              registration_deadline, stripe_product.id, stripe_price.id))
+        
+        tournament_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"Custom tournament created: {tournament_name} by player {current_player_id}")
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Tournament created successfully!',
+            'tournament_name': tournament_name,
+            'tournament_id': tournament_id
+        })
+        
+    except Exception as e:
+        logging.error(f"Error creating custom tournament: {e}")
+        return jsonify({'success': False, 'message': f'Error creating tournament: {str(e)}'})
+
+@app.route('/join_custom_tournament/<int:tournament_id>')
+def join_custom_tournament(tournament_id):
+    """Join a custom tournament with payment"""
+    current_player_id = session.get('current_player_id')
+    if not current_player_id:
+        flash('Please log in to join tournaments', 'danger')
+        return redirect(url_for('index'))
+    
+    conn = get_db_connection()
+    
+    # Get tournament details
+    tournament = conn.execute('''
+        SELECT ct.*, p.full_name as organizer_name
+        FROM custom_tournaments ct
+        JOIN players p ON ct.organizer_id = p.id
+        WHERE ct.id = ? AND ct.status = 'open'
+    ''', (tournament_id,)).fetchone()
+    
+    if not tournament:
+        flash('Tournament not found or no longer accepting registrations', 'danger')
+        return redirect(url_for('tournaments_overview'))
+    
+    # Check if tournament is full
+    if tournament['current_entries'] >= tournament['max_players']:
+        flash('This tournament is full', 'warning')
+        return redirect(url_for('tournaments_overview'))
+    
+    # Check if player already joined
+    existing_entry = conn.execute('''
+        SELECT * FROM custom_tournament_entries 
+        WHERE tournament_id = ? AND player_id = ?
+    ''', (tournament_id, current_player_id)).fetchone()
+    
+    if existing_entry:
+        flash('You are already registered for this tournament', 'info')
+        return redirect(url_for('tournaments_overview'))
+    
+    conn.close()
+    
+    # Create Stripe checkout session
+    try:
+        import stripe
+        stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+        
+        YOUR_DOMAIN = os.environ.get('REPLIT_DEV_DOMAIN') if os.environ.get('REPLIT_DEPLOYMENT') != '' else (os.environ.get('REPLIT_DOMAINS', '').split(',')[0] if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000')
+        
+        checkout_session = stripe.checkout.Session.create(
+            line_items=[{
+                'price': tournament['stripe_price_id'],
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=f'https://{YOUR_DOMAIN}/tournament_payment_success/{tournament_id}?session_id={{CHECKOUT_SESSION_ID}}',
+            cancel_url=f'https://{YOUR_DOMAIN}/tournaments',
+            metadata={
+                'tournament_id': tournament_id,
+                'player_id': current_player_id,
+                'tournament_type': 'custom'
+            }
+        )
+        
+        if checkout_session.url:
+            return redirect(checkout_session.url, code=303)
+        else:
+            flash('Error creating payment session. Please try again.', 'danger')
+            return redirect(url_for('tournaments_overview'))
+        
+    except Exception as e:
+        logging.error(f"Error creating checkout session: {e}")
+        flash('Error processing payment. Please try again.', 'danger')
+        return redirect(url_for('tournaments_overview'))
+
+@app.route('/tournament_payment_success/<int:tournament_id>')
+def tournament_payment_success(tournament_id):
+    """Handle successful tournament payment"""
+    session_id = request.args.get('session_id')
+    current_player_id = session.get('current_player_id')
+    
+    if not session_id or not current_player_id:
+        flash('Invalid payment session', 'danger')
+        return redirect(url_for('tournaments_overview'))
+    
+    try:
+        import stripe
+        stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+        
+        # Retrieve the checkout session
+        checkout_session = stripe.checkout.Session.retrieve(session_id)
+        
+        if checkout_session.payment_status == 'paid':
+            conn = get_db_connection()
+            
+            # Add player to tournament
+            conn.execute('''
+                INSERT INTO custom_tournament_entries 
+                (tournament_id, player_id, payment_status, stripe_payment_id)
+                VALUES (?, ?, 'paid', ?)
+            ''', (tournament_id, current_player_id, checkout_session.payment_intent))
+            
+            # Update tournament current entries count
+            conn.execute('''
+                UPDATE custom_tournaments 
+                SET current_entries = current_entries + 1
+                WHERE id = ?
+            ''', (tournament_id,))
+            
+            conn.commit()
+            conn.close()
+            
+            flash('Successfully joined the tournament!', 'success')
+            
+        else:
+            flash('Payment was not completed', 'warning')
+            
+    except Exception as e:
+        logging.error(f"Error processing tournament payment success: {e}")
+        flash('Error confirming payment. Please contact support.', 'danger')
+    
+    return redirect(url_for('tournaments_overview'))
 
 @app.route('/admin')
 @admin_required
