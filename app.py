@@ -3161,7 +3161,8 @@ def contact():
             player = conn.execute('SELECT * FROM players WHERE id = ?', (session['player_id'],)).fetchone()
             conn.close()
             if player:
-                player_info = f"\n\nPlayer Details:\nID: {player['id']}\nName: {player['full_name']}\nEmail: {player['email']}\nMembership: {player.get('membership_type', 'Free')}\nLocation: {player['location1']}"
+                membership_type = player['membership_type'] if 'membership_type' in player.keys() else 'Free'
+                player_info = f"\n\nPlayer Details:\nID: {player['id']}\nName: {player['full_name']}\nEmail: {player['email']}\nMembership: {membership_type}\nLocation: {player['location1']}"
         
         try:
             # Log the message
