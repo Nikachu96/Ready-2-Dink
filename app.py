@@ -836,8 +836,8 @@ def index():
     if 'current_player_id' in session:
         return redirect(url_for('player_home', player_id=session['current_player_id']))
     
-    # For new visitors, always show the landing/registration page
-    return redirect(url_for('register'))
+    # For new visitors, show the landing page (not redirect to register)
+    return render_template('landing.html')
 
 @app.route('/home/<int:player_id>')
 @require_disclaimers_accepted
