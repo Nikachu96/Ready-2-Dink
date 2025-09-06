@@ -25,7 +25,7 @@
                             {% endif %}
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="mb-2 fw-bold">Welcome back, {{ player.full_name.split()[0] }}!</h3>
+                            <h3 class="mb-2 fw-bold">Welcome back, {{ player.full_name.split()[0] }}!{% if player.tournament_wins and player.tournament_wins > 0 %} <i class="fas fa-table-tennis" style="color: #FFD700; text-shadow: 0 0 5px rgba(255,215,0,0.5);"></i><span class="badge bg-warning text-dark ms-1 px-2" style="font-size: 0.7rem;">{{ player.tournament_wins }}</span>{% endif %}</h3>
                             
                             <!-- Main Stats Row -->
                             <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-2 mb-2">
@@ -56,14 +56,6 @@
                                 </button>
                             </div>
                             
-                            {% if player.tournament_wins and player.tournament_wins > 0 %}
-                            <div class="mt-2">
-                                <small class="text-warning">
-                                    {% for i in range(player.tournament_wins) %}⭐{% endfor %}
-                                    Tournament Winner{{ 's' if player.tournament_wins > 1 else '' }}
-                                </small>
-                            </div>
-                            {% endif %}
                         </div>
                         
                         <!-- Upgrade Button - Desktop Only -->
@@ -421,12 +413,9 @@
                         {% endif %}
                         <div class="flex-grow-1">
                             <h6 class="mb-1">
-                                {{ connection.opponent_name }}
+                                {{ connection.opponent_name }}{% if connection.opponent_tournament_wins and connection.opponent_tournament_wins > 0 %} <i class="fas fa-table-tennis" style="color: #FFD700; text-shadow: 0 0 5px rgba(255,215,0,0.5);"></i><span class="badge bg-warning text-dark px-1" style="font-size: 0.6rem;">{{ connection.opponent_tournament_wins }}</span>{% endif %}
                                 <span class="badge bg-secondary ms-2">
                                     {{ connection.opponent_wins or 0 }}W-{{ connection.opponent_losses or 0 }}L
-                                    {% if connection.opponent_tournament_wins and connection.opponent_tournament_wins > 0 %}
-                                        {% for i in range(connection.opponent_tournament_wins) %}⭐{% endfor %}
-                                    {% endif %}
                                 </span>
                             </h6>
                             <small class="text-muted">

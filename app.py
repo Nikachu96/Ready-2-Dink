@@ -476,6 +476,103 @@ def get_leaderboard(limit=10):
     
     return leaderboard
 
+def perform_annual_points_reset():
+    """Perform annual ranking points reset while maintaining lifetime rankings"""
+    from datetime import datetime
+    conn = get_db_connection()
+    
+    # First, update lifetime rankings based on current performance
+    update_lifetime_rankings()
+    
+    # Reset all ranking points to 0
+    conn.execute('UPDATE players SET ranking_points = 0')
+    
+    # Update reset timestamp for all players
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    conn.execute('UPDATE players SET last_points_reset = ?', (current_time,))
+    
+    conn.commit()
+    conn.close()
+    
+    logging.info("Annual ranking points reset completed")
+    return True
+
+def update_lifetime_rankings():
+    """Update lifetime rankings based on current achievements"""
+    conn = get_db_connection()
+    
+    # Get all players ordered by current performance
+    players = conn.execute('''
+        SELECT id, ranking_points, wins, tournament_wins, career_high_points
+        FROM players 
+        ORDER BY ranking_points DESC, tournament_wins DESC, wins DESC
+    ''').fetchall()
+    
+    # Update lifetime rankings and career high points
+    for rank, player in enumerate(players, 1):
+        current_points = player['ranking_points'] or 0
+        career_high = player['career_high_points'] or 0
+        
+        # Update career high if current points are higher
+        new_career_high = max(current_points, career_high)
+        
+        conn.execute('''
+            UPDATE players 
+            SET lifetime_ranking = ?, career_high_points = ?
+            WHERE id = ?
+        ''', (rank, new_career_high, player['id']))
+    
+    conn.commit()
+    conn.close()
+    
+    logging.info("Lifetime rankings updated")
+
+def check_annual_reset_needed():
+    """Check if annual reset is needed (call this periodically)"""
+    from datetime import datetime
+    conn = get_db_connection()
+    
+    # Check if we're in January and no reset has happened this year
+    current_year = datetime.now().year
+    
+    # Get the most recent reset date
+    last_reset = conn.execute('''
+        SELECT last_points_reset FROM players 
+        WHERE last_points_reset IS NOT NULL 
+        ORDER BY last_points_reset DESC 
+        LIMIT 1
+    ''').fetchone()
+    
+    conn.close()
+    
+    if last_reset:
+        last_reset_year = datetime.strptime(last_reset['last_points_reset'], '%Y-%m-%d %H:%M:%S').year
+        if current_year > last_reset_year and datetime.now().month == 1:
+            return True
+    elif datetime.now().month == 1:  # No reset has ever happened and it's January
+        return True
+    
+    return False
+
+def get_player_ranking_with_lifetime(player_id):
+    """Get both current and lifetime ranking for a player"""
+    current_ranking = get_player_ranking(player_id)
+    
+    conn = get_db_connection()
+    player = conn.execute('''
+        SELECT lifetime_ranking, career_high_points, last_points_reset
+        FROM players 
+        WHERE id = ?
+    ''', (player_id,)).fetchone()
+    conn.close()
+    
+    return {
+        'current_ranking': current_ranking,
+        'lifetime_ranking': player['lifetime_ranking'] if player else None,
+        'career_high_points': player['career_high_points'] if player else 0,
+        'last_reset': player['last_points_reset'] if player else None
+    }
+
 def send_push_notification(player_id, message, title="Ready 2 Dink"):
     """Send push notification to a player"""
     conn = get_db_connection()
