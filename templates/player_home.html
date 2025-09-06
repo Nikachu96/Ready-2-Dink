@@ -11,7 +11,7 @@
                 <!-- Mobile-First Layout -->
                 <div class="text-center text-md-start">
                     <!-- Profile Photo and Welcome Text -->
-                    <div class="d-flex flex-column flex-md-row align-items-center mb-2">
+                    <div class="d-flex flex-column flex-md-row align-items-center mb-1">
                         <div class="mb-2 mb-md-0 me-md-3">
                             {% if player.selfie %}
                                 <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
@@ -56,12 +56,12 @@
                         <!-- Upgrade Section - Desktop -->
                         {% if not player.membership_type %}
                         <div class="d-none d-md-block ms-2">
-                            <div class="text-center">
-                                <button onclick="showMembershipModal('discovery')" class="btn btn-success mb-2">
+                            <div class="d-flex flex-column gap-2">
+                                <button onclick="showMembershipModal('discovery')" class="btn btn-success">
                                     <i class="fas fa-star me-1"></i>Upgrade
                                 </button>
                                 <!-- Notification Button - Desktop -->
-                                <button id="notificationBtn" onclick="toggleNotifications()" class="btn btn-outline-light btn-sm">
+                                <button id="notificationBtn" onclick="toggleNotifications()" class="btn btn-success">
                                     <i class="fas fa-bell me-1"></i>Enable Notifications
                                 </button>
                             </div>
@@ -71,14 +71,16 @@
                     
                     <!-- Mobile Section -->
                     {% if not player.membership_type %}
-                    <div class="d-md-none text-center mb-2">
-                        <button onclick="showMembershipModal('discovery')" class="btn btn-success mb-2">
-                            <i class="fas fa-star me-1"></i>Upgrade to Premium
-                        </button>
-                        <!-- Notification Button - Mobile -->
-                        <button id="notificationBtnMobile" onclick="toggleNotifications()" class="btn btn-outline-light">
-                            <i class="fas fa-bell me-1"></i>Enable Notifications
-                        </button>
+                    <div class="d-md-none text-center">
+                        <div class="d-flex flex-column gap-2 align-items-center">
+                            <button onclick="showMembershipModal('discovery')" class="btn btn-success">
+                                <i class="fas fa-star me-1"></i>Upgrade to Premium
+                            </button>
+                            <!-- Notification Button - Mobile -->
+                            <button id="notificationBtnMobile" onclick="toggleNotifications()" class="btn btn-success">
+                                <i class="fas fa-bell me-1"></i>Enable Notifications
+                            </button>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -1283,21 +1285,12 @@ function updateNotificationButtons(enabled) {
     buttons.forEach(btn => {
         if (enabled) {
             btn.innerHTML = '<i class="fas fa-bell-slash me-1"></i>Disable Notifications';
-            btn.className = 'btn btn-success btn-sm';
+            btn.className = 'btn btn-warning';
         } else {
             btn.innerHTML = '<i class="fas fa-bell me-1"></i>Enable Notifications';
-            btn.className = 'btn btn-outline-light btn-sm';
+            btn.className = 'btn btn-success';
         }
     });
-    
-    // Update mobile button class
-    if (mobileBtn) {
-        if (enabled) {
-            mobileBtn.className = 'btn btn-success';
-        } else {
-            mobileBtn.className = 'btn btn-outline-light';
-        }
-    }
 }
 
 // Check notification status on page load
