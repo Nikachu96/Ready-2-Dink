@@ -3,95 +3,95 @@
 {% block title %}Welcome {{ player.full_name.split()[0] }} - Ready 2 Dink{% endblock %}
 
 {% block content %}
-<!-- Welcome Section - Modern Design -->
+<!-- Welcome Section - Professional Design -->
 <div class="row mb-4 animate-in">
     <div class="col-12">
-        <div class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
-            <!-- Decorative background elements -->
-            <div class="position-absolute top-0 end-0 opacity-10">
-                <div style="width: 200px; height: 200px; background: radial-gradient(circle, #fff 20%, transparent 70%); border-radius: 50%; transform: translate(50px, -50px);"></div>
-            </div>
-            <div class="position-absolute bottom-0 start-0 opacity-05">
-                <div style="width: 150px; height: 150px; background: radial-gradient(circle, #fff 20%, transparent 70%); border-radius: 50%; transform: translate(-50px, 50px);"></div>
-            </div>
+        <div class="position-relative overflow-hidden bg-white" style="border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05);">
+            <!-- Curved decorative element -->
+            <div class="position-absolute top-0 end-0 h-100" style="width: 40%; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%); clip-path: ellipse(120% 100% at 100% 50%);"></div>
             
-            <div class="card-body p-4 position-relative">
+            <div class="position-relative" style="padding: 40px;">
                 <div class="row align-items-center">
-                    <!-- Profile Section - Left -->
+                    <!-- Profile Photo -->
                     <div class="col-md-3">
-                        <div class="text-center">
-                            <div class="mb-3">
-                                {% if player.selfie %}
-                                    <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                         class="rounded-3 border border-white border-3" 
-                                         style="width: 80px; height: 80px; object-fit: cover; box-shadow: 0 8px 25px rgba(0,0,0,0.2);" 
-                                         alt="Player Photo">
-                                {% else %}
-                                    <div class="rounded-3 bg-white bg-opacity-90 d-inline-flex align-items-center justify-content-center border border-white border-3" 
-                                         style="width: 80px; height: 80px; box-shadow: 0 8px 25px rgba(0,0,0,0.2);">
-                                        <i class="fas fa-user text-primary fa-2x"></i>
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <h2 class="text-white mb-1 fw-bold" style="font-size: 1.5rem;">
-                                Hey {{ player.full_name.split()[0] }}!
-                                {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                <br><i class="fas fa-crown" style="color: #FFD700; font-size: 1.2rem;"></i>
-                                <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem;">{{ player.tournament_wins }} Wins</span>
-                                {% endif %}
-                            </h2>
-                            <p class="text-white text-opacity-85 mb-0 fw-light">Ready to dominate?</p>
+                        <div class="position-relative">
+                            {% if player.selfie %}
+                                <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                     class="img-fluid rounded-4" 
+                                     style="width: 180px; height: 180px; object-fit: cover; box-shadow: 0 15px 35px rgba(0,0,0,0.15);" 
+                                     alt="Player Photo">
+                            {% else %}
+                                <div class="bg-light d-inline-flex align-items-center justify-content-center rounded-4" 
+                                     style="width: 180px; height: 180px; box-shadow: 0 15px 35px rgba(0,0,0,0.15);">
+                                    <i class="fas fa-user text-primary" style="font-size: 4rem;"></i>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                     
-                    <!-- Stats Section - Middle -->
+                    <!-- Main Content -->
                     <div class="col-md-6">
-                        <div class="text-center">
-                            <h5 class="text-white mb-3 fw-semibold">Your Stats</h5>
-                            <div class="d-flex flex-wrap justify-content-center gap-2">
-                                <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.9rem;">
-                                    <i class="fas fa-star text-warning me-2"></i>{{ player.skill_level }}
-                                </div>
-                                <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.9rem;">
-                                    <i class="fas fa-trophy text-success me-2"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
-                                </div>
-                                <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.9rem;">
-                                    <i class="fas fa-fire text-danger me-2"></i>{{ player.ranking_points or 0 }} pts
-                                </div>
-                                {% if player_ranking %}
-                                <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.9rem;">
-                                    <i class="fas fa-medal text-primary me-2"></i>Rank #{{ player_ranking }}
-                                </div>
-                                {% else %}
-                                <div class="badge bg-white bg-opacity-50 text-white px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.9rem;">
-                                    <i class="fas fa-question me-2"></i>Unranked
-                                </div>
+                        <div class="ps-md-4">
+                            <h1 class="fw-bold mb-2" style="color: #1a1a1a; font-size: 2.5rem; line-height: 1.2;">
+                                Welcome back,<br>
+                                <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">{{ player.full_name.split()[0] }}</span>
+                                {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                <i class="fas fa-crown ms-2" style="color: #fbbf24; font-size: 1.5rem;"></i>
                                 {% endif %}
-                                <button class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="showRankingInfo()" style="font-size: 0.8rem;">
-                                    <i class="fas fa-info-circle me-1"></i>Info
-                                </button>
+                            </h1>
+                            <p class="text-muted mb-4" style="font-size: 1.1rem; font-weight: 400;">
+                                Ready to dominate the pickleball courts?
+                            </p>
+                            
+                            <!-- Stats Row -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-6 col-lg-3">
+                                    <div class="text-center p-3 bg-light rounded-3">
+                                        <div class="fw-bold h5 mb-1" style="color: #6366f1;">{{ player.skill_level }}</div>
+                                        <div class="small text-muted">Skill Level</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-lg-3">
+                                    <div class="text-center p-3 bg-light rounded-3">
+                                        <div class="fw-bold h5 mb-1" style="color: #10b981;">{{ player.wins or 0 }}-{{ player.losses or 0 }}</div>
+                                        <div class="small text-muted">W-L Record</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-lg-3">
+                                    <div class="text-center p-3 bg-light rounded-3">
+                                        <div class="fw-bold h5 mb-1" style="color: #f59e0b;">{{ player.ranking_points or 0 }}</div>
+                                        <div class="small text-muted">Points</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-lg-3">
+                                    <div class="text-center p-3 bg-light rounded-3">
+                                        <div class="fw-bold h5 mb-1" style="color: #8b5cf6;">
+                                            {% if player_ranking %}#{{ player_ranking }}{% else %}--{% endif %}
+                                        </div>
+                                        <div class="small text-muted">Rank</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Action Buttons - Right -->
+                    <!-- Action Buttons -->
                     {% if not player.membership_type %}
                     <div class="col-md-3">
                         <div class="text-center">
-                            <h5 class="text-white mb-3 fw-semibold">Get Started</h5>
-                            <div class="d-flex flex-column gap-2 align-items-center">
-                                <button onclick="showMembershipModal('discovery')" 
-                                        class="btn btn-warning btn-lg px-4 py-2 rounded-pill fw-semibold shadow-lg"
-                                        style="background: linear-gradient(45deg, #ffd700, #ffa500); border: none; color: #000; min-width: 140px;">
-                                    <i class="fas fa-rocket me-2"></i>
-                                    <span>Upgrade</span>
-                                </button>
-                                <button id="notificationBtn" onclick="toggleNotifications()" 
-                                        class="btn btn-outline-light px-3 py-2 rounded-pill"
-                                        style="min-width: 140px;">
-                                    <i class="fas fa-bell me-2"></i>Notifications
-                                </button>
-                            </div>
+                            <button onclick="showMembershipModal('discovery')" 
+                                    class="btn btn-lg fw-semibold mb-3 position-relative z-1" 
+                                    style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; color: white; padding: 15px 30px; border-radius: 12px; box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3); transform: translateY(0); transition: all 0.3s ease; width: 100%;"
+                                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 35px rgba(99, 102, 241, 0.4)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(99, 102, 241, 0.3)'">
+                                <i class="fas fa-star me-2"></i>
+                                Upgrade Now
+                            </button>
+                            <button id="notificationBtn" onclick="toggleNotifications()" 
+                                    class="btn btn-outline-secondary fw-semibold position-relative z-1"
+                                    style="padding: 10px 25px; border-radius: 10px; width: 100%;">
+                                <i class="fas fa-bell me-2"></i>Notifications
+                            </button>
                         </div>
                     </div>
                     {% endif %}
