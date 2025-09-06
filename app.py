@@ -850,8 +850,8 @@ def send_email_notification(to_email, subject, message_body, from_email="noreply
 
 def send_admin_notification(subject, message_body):
     """Send notification to admin email"""
-    # You can change this to your preferred admin email
-    admin_email = "admin@ready2dink.com"  # Update this to your actual email
+    # Get admin email from environment or use default
+    admin_email = os.environ.get('ADMIN_EMAIL', 'admin@ready2dink.com')
     return send_email_notification(admin_email, subject, message_body)
 
 def send_contact_form_notification(name, email, subject, message, player_info=""):
