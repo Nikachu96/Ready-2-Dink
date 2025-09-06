@@ -330,6 +330,13 @@
                         </a>
                     </li>
                     {% endif %}
+                    {% if current_player_id %}
+                    <li class="nav-item">
+                        <a class="nav-link text-warning" href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt me-1"></i>Sign Out
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
