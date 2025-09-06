@@ -18,7 +18,12 @@
                         <div class="card h-100" style="border: 2px solid #E0563F;">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title">{{ level_info.name }}</h5>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <h5 class="card-title mb-0">{{ level_info.name }}</h5>
+                                        {% if level_key == 'Invitational' %}
+                                            <span class="badge" style="background-color: #3F567F; color: white;">Best of 5 Sets</span>
+                                        {% endif %}
+                                    </div>
                                     <span class="badge fs-6" style="background-color: #3F567F; color: white;">${{ "%.0f"|format(level_info.entry_fee) }}</span>
                                 </div>
                                 
