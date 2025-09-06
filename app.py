@@ -1121,6 +1121,7 @@ def register():
                 selfie_filename = filename
         
         try:
+            logging.info(f"Attempting registration for: {request.form['full_name']} ({request.form['email']})")
             conn = get_db_connection()
             cursor = conn.execute('''
                 INSERT INTO players 
@@ -1157,9 +1158,11 @@ def register():
             flash('Registration successful! Please review and accept our terms and disclaimers to continue.', 'success')
             return redirect(url_for('show_disclaimers', player_id=player_id))
             
-        except sqlite3.IntegrityError:
+        except sqlite3.IntegrityError as e:
+            logging.error(f"Registration failed - Email already exists: {request.form['email']} - {str(e)}")
             flash('Email already exists. Please use a different email address.', 'danger')
         except Exception as e:
+            logging.error(f"Registration failed for {request.form['full_name']}: {str(e)}")
             flash(f'Registration failed: {str(e)}', 'danger')
     
     return render_template('register.html')
