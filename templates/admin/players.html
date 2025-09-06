@@ -24,22 +24,23 @@
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover" style="color: var(--bs-body-color); --bs-table-hover-bg: rgba(255,255,255,0.075);">
                         <thead>
-                            <tr>
-                                <th>Player</th>
-                                <th>Contact</th>
-                                <th>Stats</th>
-                                <th>Skill Level</th>
-                                <th>Joined</th>
-                                <th>Admin</th>
-                                <th>Actions</th>
+                            <tr style="color: var(--bs-body-color);">
+                                <th style="color: var(--bs-body-color); font-weight: 600;">Player</th>
+                                <th style="color: var(--bs-body-color); font-weight: 600;">Contact</th>
+                                <th style="color: var(--bs-body-color); font-weight: 600;">Subscription</th>
+                                <th style="color: var(--bs-body-color); font-weight: 600;">Stats</th>
+                                <th style="color: var(--bs-body-color); font-weight: 600;">Skill Level</th>
+                                <th style="color: var(--bs-body-color); font-weight: 600;">Joined</th>
+                                <th style="color: var(--bs-body-color); font-weight: 600;">Admin</th>
+                                <th style="color: var(--bs-body-color); font-weight: 600;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for player in players %}
-                            <tr>
-                                <td>
+                            <tr style="color: var(--bs-body-color);">
+                                <td style="color: var(--bs-body-color);">
                                     <div class="d-flex align-items-center">
                                         {% if player.selfie %}
                                             <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
@@ -52,15 +53,50 @@
                                             </div>
                                         {% endif %}
                                         <div>
-                                            <h6 class="mb-1">{{ player.full_name }}</h6>
-                                            <small class="text-muted">ID: {{ player.id }}</small>
+                                            <h6 class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ player.full_name }}</h6>
+                                            <small style="color: var(--bs-body-color); opacity: 0.7;">ID: {{ player.id }}</small>
                                         </div>
+                                    </div>
+                                </td>
+                                <td style="color: var(--bs-body-color);">
+                                    <div>
+                                        <div class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ player.email }}</div>
+                                        <small style="color: var(--bs-body-color); opacity: 0.7;">{{ player.location1 }}</small>
                                     </div>
                                 </td>
                                 <td>
                                     <div>
-                                        <div class="mb-1">{{ player.email }}</div>
-                                        <small class="text-muted">{{ player.location1 }}</small>
+                                        {% if player.membership_type == 'tournament' %}
+                                            {% if player.subscription_status == 'ambassador_lifetime' %}
+                                                <span class="badge" style="background: linear-gradient(45deg, #FFD700, #FFA500); color: #000; font-weight: bold;">
+                                                    <i class="fas fa-crown me-1"></i>Ambassador
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-trophy me-1"></i>Tournament
+                                                </span>
+                                            {% endif %}
+                                        {% elif player.membership_type == 'discovery' %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-compass me-1"></i>Discover
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-user me-1"></i>Free
+                                            </span>
+                                        {% endif %}
+                                        
+                                        {% if player.trial_end_date and player.subscription_status != 'ambassador_lifetime' %}
+                                            <small class="d-block mt-1" style="color: var(--bs-body-color); opacity: 0.7;">
+                                                <i class="fas fa-clock me-1"></i>Trial
+                                            </small>
+                                        {% endif %}
+                                        
+                                        {% if player.free_tournament_entries and player.free_tournament_entries > 0 %}
+                                            <small class="d-block mt-1" style="color: var(--bs-success);">
+                                                <i class="fas fa-gift me-1"></i>{{ player.free_tournament_entries }} free
+                                            </small>
+                                        {% endif %}
                                     </div>
                                 </td>
                                 <td>
@@ -75,7 +111,7 @@
                                     <span class="badge bg-primary">{{ player.skill_level }}</span>
                                 </td>
                                 <td>
-                                    <small class="text-muted">{{ player.created_at[:10] if player.created_at else 'N/A' }}</small>
+                                    <small style="color: var(--bs-body-color); opacity: 0.7;">{{ player.created_at[:10] if player.created_at else 'N/A' }}</small>
                                 </td>
                                 <td>
                                     {% if player.is_admin %}
