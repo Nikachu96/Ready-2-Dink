@@ -16,82 +16,85 @@
             </div>
             
             <div class="card-body p-4 position-relative">
-                <!-- Top Row: Profile + Action Buttons -->
-                <div class="row align-items-center mb-4">
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
+                <div class="row align-items-center">
+                    <!-- Profile Section - Left -->
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="mb-3">
                                 {% if player.selfie %}
                                     <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
                                          class="rounded-3 border border-white border-3" 
-                                         style="width: 70px; height: 70px; object-fit: cover; box-shadow: 0 8px 25px rgba(0,0,0,0.2);" 
+                                         style="width: 80px; height: 80px; object-fit: cover; box-shadow: 0 8px 25px rgba(0,0,0,0.2);" 
                                          alt="Player Photo">
                                 {% else %}
                                     <div class="rounded-3 bg-white bg-opacity-90 d-inline-flex align-items-center justify-content-center border border-white border-3" 
-                                         style="width: 70px; height: 70px; box-shadow: 0 8px 25px rgba(0,0,0,0.2);">
+                                         style="width: 80px; height: 80px; box-shadow: 0 8px 25px rgba(0,0,0,0.2);">
                                         <i class="fas fa-user text-primary fa-2x"></i>
                                     </div>
                                 {% endif %}
                             </div>
-                            <div>
-                                <h2 class="text-white mb-1 fw-bold" style="font-size: 1.8rem;">
-                                    Hey {{ player.full_name.split()[0] }}!
-                                    {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                    <i class="fas fa-crown ms-2" style="color: #FFD700; font-size: 1.2rem;"></i>
-                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem;">{{ player.tournament_wins }} Wins</span>
-                                    {% endif %}
-                                </h2>
-                                <p class="text-white text-opacity-85 mb-0 fw-light" style="font-size: 1.1rem;">Ready to dominate the court?</p>
+                            <h2 class="text-white mb-1 fw-bold" style="font-size: 1.5rem;">
+                                Hey {{ player.full_name.split()[0] }}!
+                                {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                <br><i class="fas fa-crown" style="color: #FFD700; font-size: 1.2rem;"></i>
+                                <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem;">{{ player.tournament_wins }} Wins</span>
+                                {% endif %}
+                            </h2>
+                            <p class="text-white text-opacity-85 mb-0 fw-light">Ready to dominate?</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Section - Middle -->
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <h5 class="text-white mb-3 fw-semibold">Your Stats</h5>
+                            <div class="d-flex flex-wrap justify-content-center gap-2">
+                                <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.9rem;">
+                                    <i class="fas fa-star text-warning me-2"></i>{{ player.skill_level }}
+                                </div>
+                                <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.9rem;">
+                                    <i class="fas fa-trophy text-success me-2"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
+                                </div>
+                                <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.9rem;">
+                                    <i class="fas fa-fire text-danger me-2"></i>{{ player.ranking_points or 0 }} pts
+                                </div>
+                                {% if player_ranking %}
+                                <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.9rem;">
+                                    <i class="fas fa-medal text-primary me-2"></i>Rank #{{ player_ranking }}
+                                </div>
+                                {% else %}
+                                <div class="badge bg-white bg-opacity-50 text-white px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.9rem;">
+                                    <i class="fas fa-question me-2"></i>Unranked
+                                </div>
+                                {% endif %}
+                                <button class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="showRankingInfo()" style="font-size: 0.8rem;">
+                                    <i class="fas fa-info-circle me-1"></i>Info
+                                </button>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Action Buttons -->
+                    <!-- Action Buttons - Right -->
                     {% if not player.membership_type %}
-                    <div class="col-md-6 text-end">
-                        <div class="d-flex flex-column flex-md-row gap-2 align-items-end align-items-md-center justify-content-md-end">
-                            <button onclick="showMembershipModal('discovery')" 
-                                    class="btn btn-warning btn-lg px-4 py-2 rounded-pill fw-semibold shadow-lg"
-                                    style="background: linear-gradient(45deg, #ffd700, #ffa500); border: none; color: #000;">
-                                <i class="fas fa-rocket me-2"></i>
-                                <span>Upgrade</span>
-                            </button>
-                            <button id="notificationBtn" onclick="toggleNotifications()" 
-                                    class="btn btn-outline-light px-3 py-2 rounded-pill">
-                                <i class="fas fa-bell me-2"></i>Notifications
-                            </button>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 class="text-white mb-3 fw-semibold">Get Started</h5>
+                            <div class="d-flex flex-column gap-2 align-items-center">
+                                <button onclick="showMembershipModal('discovery')" 
+                                        class="btn btn-warning btn-lg px-4 py-2 rounded-pill fw-semibold shadow-lg"
+                                        style="background: linear-gradient(45deg, #ffd700, #ffa500); border: none; color: #000; min-width: 140px;">
+                                    <i class="fas fa-rocket me-2"></i>
+                                    <span>Upgrade</span>
+                                </button>
+                                <button id="notificationBtn" onclick="toggleNotifications()" 
+                                        class="btn btn-outline-light px-3 py-2 rounded-pill"
+                                        style="min-width: 140px;">
+                                    <i class="fas fa-bell me-2"></i>Notifications
+                                </button>
+                            </div>
                         </div>
                     </div>
                     {% endif %}
-                </div>
-                
-                <!-- Bottom Row: Stats Pills -->
-                <div class="row">
-                    <div class="col-12">
-                        <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-2">
-                            <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.85rem;">
-                                <i class="fas fa-star text-warning me-2"></i>{{ player.skill_level }}
-                            </div>
-                            <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.85rem;">
-                                <i class="fas fa-trophy text-success me-2"></i>{{ player.wins or 0 }}W-{{ player.losses or 0 }}L
-                            </div>
-                            <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.85rem;">
-                                <i class="fas fa-fire text-danger me-2"></i>{{ player.ranking_points or 0 }} pts
-                            </div>
-                            {% if player_ranking %}
-                            <div class="badge bg-white bg-opacity-90 text-dark px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.85rem;">
-                                <i class="fas fa-medal text-primary me-2"></i>Rank #{{ player_ranking }}
-                            </div>
-                            {% else %}
-                            <div class="badge bg-white bg-opacity-50 text-white px-3 py-2 rounded-pill fw-semibold" style="font-size: 0.85rem;">
-                                <i class="fas fa-question me-2"></i>Unranked
-                            </div>
-                            {% endif %}
-                            <button class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="showRankingInfo()" style="font-size: 0.8rem;">
-                                <i class="fas fa-info-circle me-1"></i>Info
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
