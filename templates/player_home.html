@@ -11,24 +11,24 @@
                 <!-- Mobile-First Layout -->
                 <div class="text-center text-md-start">
                     <!-- Profile Photo and Welcome Text -->
-                    <div class="d-flex flex-column flex-md-row align-items-center mb-3">
-                        <div class="mb-3 mb-md-0 me-md-3">
+                    <div class="d-flex flex-column flex-md-row align-items-center mb-2">
+                        <div class="mb-2 mb-md-0 me-md-3">
                             {% if player.selfie %}
                                 <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                     class="rounded-circle" style="width: 70px; height: 70px; object-fit: cover;" 
+                                     class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;" 
                                      alt="Player Photo">
                             {% else %}
                                 <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" 
-                                     style="width: 70px; height: 70px;">
-                                    <i class="fas fa-user text-primary fa-2x"></i>
+                                     style="width: 60px; height: 60px;">
+                                    <i class="fas fa-user text-primary fa-lg"></i>
                                 </div>
                             {% endif %}
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="mb-2 fw-bold">Welcome back, {{ player.full_name.split()[0] }}!{% if player.tournament_wins and player.tournament_wins > 0 %} <i class="fas fa-table-tennis" style="color: #FFD700; text-shadow: 0 0 5px rgba(255,215,0,0.5);" title="Tournament Champion"></i><span class="badge bg-warning text-dark ms-1 px-2" style="font-size: 0.7rem;" title="Number of tournaments won">{{ player.tournament_wins }}</span>{% endif %}</h3>
+                            <h3 class="mb-1 fw-bold">Welcome back, {{ player.full_name.split()[0] }}!{% if player.tournament_wins and player.tournament_wins > 0 %} <i class="fas fa-table-tennis" style="color: #FFD700; text-shadow: 0 0 5px rgba(255,215,0,0.5);" title="Tournament Champion"></i><span class="badge bg-warning text-dark ms-1 px-2" style="font-size: 0.7rem;" title="Number of tournaments won">{{ player.tournament_wins }}</span>{% endif %}</h3>
                             
                             <!-- Main Stats Row -->
-                            <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-2 mb-2">
+                            <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-2 mb-1">
                                 <span class="badge bg-light text-dark px-2 py-1">
                                     <i class="fas fa-star me-1"></i>{{ player.skill_level }}
                                 </span>
@@ -38,10 +38,6 @@
                                 <span class="badge bg-success px-2 py-1">
                                     <i class="fas fa-star me-1"></i>{{ player.ranking_points or 0 }} pts
                                 </span>
-                            </div>
-                            
-                            <!-- Ranking Info -->
-                            <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-2 align-items-center">
                                 {% if player_ranking %}
                                 <span class="badge bg-primary px-2 py-1">
                                     <i class="fas fa-medal me-1"></i>Rank #{{ player_ranking }}
@@ -51,46 +47,48 @@
                                     <i class="fas fa-question me-1"></i>Unranked
                                 </span>
                                 {% endif %}
-                                <button class="btn btn-sm btn-outline-light opacity-75" onclick="showRankingInfo()" style="font-size: 0.8rem;">
-                                    <i class="fas fa-info-circle me-1"></i>Info
+                                <button class="btn btn-sm btn-outline-light opacity-75" onclick="showRankingInfo()" style="font-size: 0.7rem; padding: 2px 6px;">
+                                    <i class="fas fa-info-circle"></i>
                                 </button>
                             </div>
-                            
                         </div>
                         
-                        <!-- Upgrade Button - Desktop Only -->
+                        <!-- Upgrade Section - Desktop -->
                         {% if not player.membership_type %}
-                        <div class="d-none d-md-block ms-3">
-                            <button onclick="showMembershipModal('discovery')" class="btn btn-success btn-lg px-3">
-                                <i class="fas fa-star me-2"></i>Upgrade
-                            </button>
+                        <div class="d-none d-md-block ms-2">
+                            <div class="text-center">
+                                <button onclick="showMembershipModal('discovery')" class="btn btn-success mb-2">
+                                    <i class="fas fa-star me-1"></i>Upgrade
+                                </button>
+                                <!-- Notification Toggle Switch - Desktop -->
+                                <div class="d-flex align-items-center justify-content-center" style="font-size: 0.8rem;">
+                                    <span class="text-light me-2">Notifications</span>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="notificationSwitch" onchange="toggleNotifications()">
+                                        <label class="form-check-label" for="notificationSwitch"></label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         {% endif %}
                     </div>
                     
-                    <!-- Mobile Upgrade Button -->
+                    <!-- Mobile Section -->
                     {% if not player.membership_type %}
-                    <div class="d-md-none text-center mb-3">
-                        <button onclick="showMembershipModal('discovery')" class="btn btn-success px-4">
-                            <i class="fas fa-star me-2"></i>Upgrade to Premium
+                    <div class="d-md-none text-center mb-2">
+                        <button onclick="showMembershipModal('discovery')" class="btn btn-success mb-2">
+                            <i class="fas fa-star me-1"></i>Upgrade to Premium
                         </button>
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Notification Controls - Compact -->
-                    <div class="text-center text-md-start">
-                        <div class="d-inline-flex align-items-center gap-2 flex-wrap">
-                            <button class="btn btn-sm btn-success" id="enable-notifications-btn" onclick="subscribeToNotifications()" style="display: none;">
-                                <i class="fas fa-bell me-1"></i><span class="d-none d-sm-inline">Enable </span>Notifications
-                            </button>
-                            <button class="btn btn-sm btn-outline-light" id="disable-notifications-btn" onclick="unsubscribeFromNotifications()" style="display: none;">
-                                <i class="fas fa-bell-slash me-1"></i><span class="d-none d-sm-inline">Disable </span>Notifications
-                            </button>
-                            <small class="text-light opacity-75" id="notification-status-text">
-                                <i class="fas fa-spinner fa-spin me-1"></i>Loading...
-                            </small>
+                        <!-- Notification Toggle Switch - Mobile -->
+                        <div class="d-flex align-items-center justify-content-center" style="font-size: 0.9rem;">
+                            <span class="text-light me-2">Notifications</span>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="notificationSwitchMobile" onchange="toggleNotifications()">
+                                <label class="form-check-label" for="notificationSwitchMobile"></label>
+                            </div>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -1246,6 +1244,80 @@ function shareOnSocial() {
         });
     }
 }
+
+function toggleNotifications() {
+    const desktopSwitch = document.getElementById('notificationSwitch');
+    const mobileSwitch = document.getElementById('notificationSwitchMobile');
+    
+    // Sync both switches
+    if (desktopSwitch && mobileSwitch) {
+        if (event.target === desktopSwitch) {
+            mobileSwitch.checked = desktopSwitch.checked;
+        } else {
+            desktopSwitch.checked = mobileSwitch.checked;
+        }
+    }
+    
+    const isEnabled = (desktopSwitch && desktopSwitch.checked) || (mobileSwitch && mobileSwitch.checked);
+    
+    if (isEnabled) {
+        enableNotifications();
+    } else {
+        disableNotifications();
+    }
+}
+
+function enableNotifications() {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        navigator.serviceWorker.ready.then(function(registration) {
+            return registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: 'BNxlXqNT8fIk8I8XlJ4L7A'
+            });
+        }).then(function(subscription) {
+            console.log('Notifications enabled');
+            // You can send subscription to your server here
+        }).catch(function(error) {
+            console.error('Error enabling notifications:', error);
+            // Reset switch on error
+            const switches = [document.getElementById('notificationSwitch'), document.getElementById('notificationSwitchMobile')];
+            switches.forEach(sw => {
+                if (sw) sw.checked = false;
+            });
+        });
+    }
+}
+
+function disableNotifications() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(function(registration) {
+            return registration.pushManager.getSubscription();
+        }).then(function(subscription) {
+            if (subscription) {
+                return subscription.unsubscribe();
+            }
+        }).then(function() {
+            console.log('Notifications disabled');
+        }).catch(function(error) {
+            console.error('Error disabling notifications:', error);
+        });
+    }
+}
+
+// Check notification status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        navigator.serviceWorker.ready.then(function(registration) {
+            return registration.pushManager.getSubscription();
+        }).then(function(subscription) {
+            const isEnabled = !!subscription;
+            const switches = [document.getElementById('notificationSwitch'), document.getElementById('notificationSwitchMobile')];
+            switches.forEach(sw => {
+                if (sw) sw.checked = isEnabled;
+            });
+        });
+    }
+});
 </script>
 
 <style>
