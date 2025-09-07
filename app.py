@@ -2537,16 +2537,21 @@ def players():
 
 @app.route('/profile_settings')
 def profile_settings():
-    """Profile settings page - get current player"""
+    """Profile settings page - get current logged-in player"""
+    current_player_id = session.get('current_player_id')
+    
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
+    
     conn = get_db_connection()
-    players = conn.execute('SELECT * FROM players ORDER BY created_at DESC LIMIT 1').fetchall()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (current_player_id,)).fetchone()
     conn.close()
     
-    if not players:
-        flash('Please register first', 'warning')
-        return redirect(url_for('register'))
+    if not player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('player_login'))
     
-    player = players[0]  # Get the most recent (current) player
     return render_template('profile_settings.html', player=player)
 
 @app.route('/update-availability/<int:player_id>', methods=['POST'])
