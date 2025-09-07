@@ -1269,6 +1269,59 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
+@app.route('/login')
+def player_login():
+    """Display player login page"""
+    return render_template('player_login.html')
+
+@app.route('/login', methods=['POST'])
+def player_login_post():
+    """Handle player login form submission"""
+    from werkzeug.security import check_password_hash
+    
+    username = request.form.get('username')
+    password = request.form.get('password')
+    
+    if not username or not password:
+        flash('Username and password are required', 'danger')
+        return redirect(url_for('player_login'))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Find player by username
+        player = conn.execute('''
+            SELECT id, full_name, username, password_hash, is_admin
+            FROM players 
+            WHERE username = ?
+        ''', (username,)).fetchone()
+        
+        if not player:
+            flash('Invalid username or password', 'danger')
+            return redirect(url_for('player_login'))
+        
+        # Check password
+        if not player['password_hash'] or not check_password_hash(player['password_hash'], password):
+            flash('Invalid username or password', 'danger')
+            return redirect(url_for('player_login'))
+        
+        # Login successful - set session
+        session['current_player_id'] = player['id']
+        
+        flash(f'Welcome back, {player["full_name"]}!', 'success')
+        
+        # Redirect to appropriate dashboard
+        if player['is_admin']:
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return redirect(url_for('player_home', player_id=player['id']))
+        
+    except Exception as e:
+        flash(f'Login error: {str(e)}', 'danger')
+        return redirect(url_for('player_login'))
+    finally:
+        conn.close()
+
 @app.route('/')
 def index():
     """Home page - check if user is logged in, otherwise show landing page"""
