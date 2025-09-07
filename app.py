@@ -3647,8 +3647,10 @@ def process_quick_tournament_payment():
             payment_status = 'completed'
         elif payment_method == 'credits' and remaining_payment > 0:
             payment_status = 'pending_payment'
+        elif quick_join_data['free_entry_used'] and entry_fee == 0:
+            payment_status = 'completed'  # Free Ambassador entry
         else:
-            payment_status = 'completed'
+            payment_status = 'pending_payment'  # Requires actual payment processing
         
         # Insert tournament entry
         conn.execute('''
