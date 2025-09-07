@@ -1878,7 +1878,12 @@ def ranking_info():
 
 @app.route('/tournaments')
 def tournaments_overview():
-    """Public tournament overview page"""
+    """Tournament overview page - requires login"""
+    # Check if user is logged in
+    current_player_id = session.get('current_player_id')
+    if not current_player_id:
+        flash('Please log in to view tournaments', 'warning')
+        return redirect(url_for('player_login'))
     conn = get_db_connection()
     
     tournament_levels = get_tournament_levels()
