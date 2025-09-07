@@ -3503,16 +3503,7 @@ def quick_join_tournament(player_id):
             conn.close()
             return redirect(url_for('tournaments_overview'))
         
-        # Check if player already entered this tournament
-        existing_entry = conn.execute('''
-            SELECT COUNT(*) as count FROM tournaments 
-            WHERE player_id = ? AND tournament_instance_id = ?
-        ''', (player_id, tournament_instance['id'])).fetchone()['count']
-        
-        if existing_entry > 0:
-            flash('You are already registered for this tournament.', 'warning')
-            conn.close()
-            return redirect(url_for('tournaments_overview'))
+        # No restrictions - players can enter the same tournament multiple times
         
         # Calculate entry fee
         base_fee = tournament_instance['entry_fee']
