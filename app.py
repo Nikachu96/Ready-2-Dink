@@ -3677,11 +3677,26 @@ def process_quick_tournament_payment():
             conn.close()
             return redirect(url_for('dashboard', player_id=player_id))
         else:
-            # Payment required - redirect to payment processing
+            # Payment required - redirect to actual payment processing
             flash(f'Tournament reserved! Payment of ${entry_fee:.2f} is required to complete your entry.', 'warning')
             conn.close()
-            # Redirect to Stripe payment or payment processing interface
-            return redirect(url_for('tournaments_overview'))  # Temporarily redirect here until Stripe is set up
+            
+            # Get payment type from form
+            payment_type = request.form.get('payment_type', 'stripe')
+            
+            # Store payment info in session for Stripe checkout
+            session['payment_data'] = {
+                'amount': int(entry_fee * 100),  # Stripe uses cents
+                'description': f'Tournament Entry: {tournament_instance["name"]} ({quick_join_data["tournament_type"]})',
+                'success_url': url_for('payment_success', _external=True),
+                'cancel_url': url_for('payment_cancel', _external=True),
+                'tournament_instance_id': quick_join_data['tournament_instance_id'],
+                'player_id': player_id,
+                'payment_type': payment_type
+            }
+            
+            # Redirect to Stripe checkout
+            return redirect(url_for('create_stripe_checkout'))
         
     except Exception as e:
         conn.rollback()
@@ -3701,6 +3716,107 @@ def update_settings():
     
     flash('Settings updated successfully!', 'success')
     return redirect(url_for('admin_settings'))
+
+# Tournament Payment Processing Routes
+@app.route('/create_stripe_checkout')
+def create_stripe_checkout():
+    """Create Stripe checkout session for tournament payment"""
+    import stripe
+    
+    payment_data = session.get('payment_data')
+    if not payment_data:
+        flash('Payment session expired. Please try again.', 'warning')
+        return redirect(url_for('tournaments_overview'))
+    
+    stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+    
+    try:
+        # Create Stripe checkout session
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': 'Tournament Entry',
+                        'description': payment_data['description'],
+                    },
+                    'unit_amount': payment_data['amount'],
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=payment_data['success_url'],
+            cancel_url=payment_data['cancel_url'],
+            metadata={
+                'player_id': payment_data['player_id'],
+                'tournament_instance_id': payment_data['tournament_instance_id'],
+                'payment_type': payment_data['payment_type']
+            }
+        )
+        
+        if checkout_session.url:
+            return redirect(checkout_session.url, code=303)
+        else:
+            flash('Error creating checkout session. Please try again.', 'danger')
+            return redirect(url_for('tournaments_overview'))
+        
+    except Exception as e:
+        flash(f'Error creating payment session: {str(e)}', 'danger')
+        return redirect(url_for('tournaments_overview'))
+
+@app.route('/payment_success')
+def payment_success():
+    """Handle successful payment"""
+    payment_data = session.get('payment_data')
+    if payment_data:
+        # Update tournament payment status to completed
+        conn = get_db_connection()
+        try:
+            # Find the pending tournament entry
+            tournament_entry = conn.execute('''
+                SELECT * FROM tournaments 
+                WHERE player_id = ? AND tournament_instance_id = ? AND payment_status = 'pending_payment'
+                ORDER BY entry_date DESC LIMIT 1
+            ''', (payment_data['player_id'], payment_data['tournament_instance_id'])).fetchone()
+            
+            if tournament_entry:
+                # Update payment status to completed
+                conn.execute('''
+                    UPDATE tournaments SET payment_status = 'completed'
+                    WHERE id = ?
+                ''', (tournament_entry['id'],))
+                conn.commit()
+                
+                flash('🎉 Payment successful! You are now entered in the tournament. Good luck!', 'success')
+            else:
+                flash('Tournament entry not found. Please contact support.', 'warning')
+                
+        except Exception as e:
+            flash(f'Error updating payment status: {str(e)}', 'danger')
+        finally:
+            conn.close()
+        
+        # Clear payment session data
+        session.pop('payment_data', None)
+        
+        return redirect(url_for('dashboard', player_id=payment_data['player_id']))
+    else:
+        flash('Payment session not found.', 'warning')
+        return redirect(url_for('tournaments_overview'))
+
+@app.route('/payment_cancel')
+def payment_cancel():
+    """Handle cancelled payment"""
+    payment_data = session.get('payment_data')
+    if payment_data:
+        # Optionally remove the pending tournament entry or leave it for retry
+        flash('Payment cancelled. Your tournament spot is still reserved. You can complete payment anytime.', 'info')
+        session.pop('payment_data', None)
+        return redirect(url_for('dashboard', player_id=payment_data['player_id']))
+    else:
+        flash('Payment session not found.', 'warning')
+        return redirect(url_for('tournaments_overview'))
 
 # Stripe Subscription Routes
 def create_membership_prices():
