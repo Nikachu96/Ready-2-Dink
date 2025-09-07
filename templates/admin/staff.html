@@ -153,21 +153,21 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover" style="color: var(--bs-body-color); --bs-table-hover-bg: rgba(255,255,255,0.075);">
+                    <table class="table table-hover" style="color: #ffffff; --bs-table-hover-bg: rgba(255,255,255,0.075);">
                         <thead>
-                            <tr style="color: var(--bs-body-color);">
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Staff Member</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Login Details</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Role</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Access Level</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Added</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Actions</th>
+                            <tr style="color: #ffffff;">
+                                <th style="color: #ffffff; font-weight: 600;">Staff Member</th>
+                                <th style="color: #ffffff; font-weight: 600;">Login Details</th>
+                                <th style="color: #ffffff; font-weight: 600;">Role</th>
+                                <th style="color: #ffffff; font-weight: 600;">Access Level</th>
+                                <th style="color: #ffffff; font-weight: 600;">Added</th>
+                                <th style="color: #ffffff; font-weight: 600;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for admin in admin_staff %}
-                            <tr style="color: var(--bs-body-color);">
-                                <td style="color: var(--bs-body-color);">
+                            <tr style="color: #ffffff;">
+                                <td style="color: #ffffff;">
                                     <div class="d-flex align-items-center">
                                         {% if admin.selfie %}
                                             <img src="{{ url_for('static', filename='uploads/' + admin.selfie) }}" 
@@ -180,15 +180,15 @@
                                             </div>
                                         {% endif %}
                                         <div>
-                                            <h6 class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ admin.full_name }}</h6>
-                                            <small style="color: var(--bs-body-color); opacity: 0.7;">
+                                            <h6 class="mb-1" style="color: #ffffff; font-weight: bold;">{{ admin.full_name }}</h6>
+                                            <small style="color: #cccccc;">
                                                 ID: {{ admin.id }}
                                                 {% if admin.job_title %}| {{ admin.job_title }}{% endif %}
                                             </small>
                                         </div>
                                     </div>
                                 </td>
-                                <td style="color: var(--bs-body-color);">
+                                <td style="color: #ffffff;">
                                     <div>
                                         {% if admin.username %}
                                             <div class="mb-1">
@@ -196,9 +196,9 @@
                                                     <i class="fas fa-user me-1"></i>{{ admin.username }}
                                                 </span>
                                             </div>
-                                            <small style="color: var(--bs-body-color); opacity: 0.7;">{{ admin.email }}</small>
+                                            <small style="color: #cccccc;">{{ admin.email }}</small>
                                         {% else %}
-                                            <div class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ admin.email }}</div>
+                                            <div class="mb-1" style="color: #ffffff; font-weight: bold;">{{ admin.email }}</div>
                                             <small class="text-warning">
                                                 <i class="fas fa-exclamation-triangle me-1"></i>No login setup
                                             </small>
@@ -220,7 +220,7 @@
                                     <span class="badge bg-success">Full Access</span>
                                 </td>
                                 <td>
-                                    <small style="color: var(--bs-body-color); opacity: 0.7;">{{ admin.created_at[:10] if admin.created_at else 'N/A' }}</small>
+                                    <small style="color: #cccccc;">{{ admin.created_at[:10] if admin.created_at else 'N/A' }}</small>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
