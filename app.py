@@ -3391,6 +3391,101 @@ def admin_players():
     
     return render_template('admin/players.html', players=players)
 
+@app.route('/admin/players/<int:player_id>/edit')
+@admin_required
+def admin_edit_player(player_id):
+    """Admin edit specific player profile"""
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    conn.close()
+    
+    if not player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('admin_players'))
+    
+    return render_template('admin/edit_player.html', player=player)
+
+@app.route('/admin/players/<int:player_id>/edit', methods=['POST'])
+@admin_required
+def admin_update_player(player_id):
+    """Handle admin player profile update"""
+    from werkzeug.security import generate_password_hash
+    
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    
+    if not player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('admin_players'))
+    
+    # Form validation
+    required_fields = ['full_name', 'email', 'skill_level']
+    for field in required_fields:
+        if not request.form.get(field):
+            flash(f'{field.replace("_", " ").title()} is required', 'danger')
+            return redirect(url_for('admin_edit_player', player_id=player_id))
+    
+    # Handle file upload
+    selfie_filename = player['selfie']  # Keep existing if no new upload
+    if 'selfie' in request.files:
+        file = request.files['selfie']
+        if file and file.filename and file.filename != '':
+            if allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+                selfie_filename = timestamp + filename
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], selfie_filename))
+    
+    try:
+        # Update player information
+        update_data = {
+            'full_name': request.form['full_name'],
+            'email': request.form['email'],
+            'skill_level': request.form['skill_level'],
+            'address': request.form.get('address', ''),
+            'zip_code': request.form.get('zip_code', ''),
+            'city': request.form.get('city', ''),
+            'state': request.form.get('state', ''),
+            'dob': request.form.get('dob', ''),
+            'location1': request.form.get('location1', ''),
+            'location2': request.form.get('location2', ''),
+            'preferred_court_1': request.form.get('preferred_court_1', ''),
+            'preferred_court_2': request.form.get('preferred_court_2', ''),
+            'selfie': selfie_filename
+        }
+        
+        # Handle username and password updates
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        if username:
+            # Check if username is already taken by another player
+            existing = conn.execute('SELECT id FROM players WHERE username = ? AND id != ?', 
+                                  (username, player_id)).fetchone()
+            if existing:
+                flash('Username already taken by another player', 'danger')
+                return redirect(url_for('admin_edit_player', player_id=player_id))
+            update_data['username'] = username
+        
+        if password:
+            update_data['password_hash'] = generate_password_hash(password)
+        
+        # Build dynamic update query
+        set_clause = ', '.join([f"{key} = ?" for key in update_data.keys()])
+        values = list(update_data.values()) + [player_id]
+        
+        conn.execute(f'UPDATE players SET {set_clause} WHERE id = ?', values)
+        conn.commit()
+        conn.close()
+        
+        flash(f'Player {request.form["full_name"]} updated successfully!', 'success')
+        return redirect(url_for('admin_players'))
+        
+    except Exception as e:
+        logging.error(f"Error updating player {player_id}: {str(e)}")
+        flash(f'Error updating player: {str(e)}', 'danger')
+        return redirect(url_for('admin_edit_player', player_id=player_id))
+
 @app.route('/update_tournament_instance', methods=['POST'])
 @admin_required
 def update_tournament_instance():

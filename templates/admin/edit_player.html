@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Player - {{ player.full_name }} - Admin{% endblock %}
+
+{% block content %}
+<style>
+/* Ensure all text is visible in admin edit form */
+.admin-edit-form label {
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+.admin-edit-form .form-control {
+    background-color: rgba(255,255,255,0.1) !important;
+    border-color: rgba(255,255,255,0.3) !important;
+    color: white !important;
+}
+
+.admin-edit-form .form-control:focus {
+    background-color: rgba(255,255,255,0.15) !important;
+    border-color: #10B981 !important;
+    color: white !important;
+    box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25) !important;
+}
+
+.admin-edit-form .form-control::placeholder {
+    color: rgba(255,255,255,0.6) !important;
+}
+
+.admin-edit-form .text-muted {
+    color: rgba(255,255,255,0.7) !important;
+}
+
+.admin-edit-form h1, .admin-edit-form h2, .admin-edit-form h3 {
+    color: white !important;
+}
+
+.admin-edit-form .card-body {
+    background-color: rgba(0,0,0,0.2) !important;
+}
+</style>
+
+<div class="row animate-in admin-edit-form">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">
+                    <i class="fas fa-user-edit me-2"></i>Edit Player Profile
+                </h2>
+                <p class="text-muted mb-0">Update {{ player.full_name }}'s profile information</p>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('admin_players') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Players
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<form method="POST" enctype="multipart/form-data">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-user me-2"></i>Personal Information
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="full_name" class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" id="full_name" name="full_name" 
+                                       value="{{ player.full_name }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ player.email }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dob" class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" id="dob" name="dob" 
+                                       value="{{ player.dob }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="skill_level" class="form-label">Skill Level *</label>
+                                <select class="form-control" id="skill_level" name="skill_level" required>
+                                    <option value="Beginner" {{ 'selected' if player.skill_level == 'Beginner' else '' }}>Beginner</option>
+                                    <option value="Intermediate" {{ 'selected' if player.skill_level == 'Intermediate' else '' }}>Intermediate</option>
+                                    <option value="Advanced" {{ 'selected' if player.skill_level == 'Advanced' else '' }}>Advanced</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address</label>
+                        <input type="text" class="form-control" id="address" name="address" 
+                               value="{{ player.address }}">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="city" class="form-label">City</label>
+                                <input type="text" class="form-control" id="city" name="city" 
+                                       value="{{ player.city }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="state" class="form-label">State</label>
+                                <input type="text" class="form-control" id="state" name="state" 
+                                       value="{{ player.state }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="zip_code" class="form-label">Zip Code</label>
+                                <input type="text" class="form-control" id="zip_code" name="zip_code" 
+                                       value="{{ player.zip_code }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="location1" class="form-label">Primary Location</label>
+                                <input type="text" class="form-control" id="location1" name="location1" 
+                                       value="{{ player.location1 }}" placeholder="e.g., Miami, FL">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="location2" class="form-label">Secondary Location</label>
+                                <input type="text" class="form-control" id="location2" name="location2" 
+                                       value="{{ player.location2 }}" placeholder="Optional">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="preferred_court_1" class="form-label">Preferred Court 1</label>
+                                <input type="text" class="form-control" id="preferred_court_1" name="preferred_court_1" 
+                                       value="{{ player.preferred_court_1 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="preferred_court_2" class="form-label">Preferred Court 2</label>
+                                <input type="text" class="form-control" id="preferred_court_2" name="preferred_court_2" 
+                                       value="{{ player.preferred_court_2 }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-camera me-2"></i>Profile Photo
+                    </h5>
+                    
+                    {% if player.selfie %}
+                        <div class="text-center mb-3">
+                            <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                 class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover;" 
+                                 alt="Current Profile Photo">
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="selfie" class="form-label">Upload New Photo</label>
+                        <input type="file" class="form-control" id="selfie" name="selfie" 
+                               accept="image/*">
+                        <small class="form-text text-muted">
+                            Leave empty to keep current photo
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-key me-2"></i>Login Credentials
+                    </h5>
+                    
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               value="{{ player.username }}" placeholder="Leave empty to keep current">
+                        <small class="form-text text-muted">
+                            Current: {{ player.username if player.username else 'Not set' }}
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               placeholder="Leave empty to keep current">
+                        <small class="form-text text-muted">
+                            Only enter if you want to change the password
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('admin_players') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i>Update Player Profile
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
