@@ -152,8 +152,23 @@
                 </h5>
             </div>
             <div class="card-body">
+                <style>
+                    /* Override base.html card color rules for admin tables */
+                    .admin-staff-table,
+                    .admin-staff-table *,
+                    .admin-staff-table td,
+                    .admin-staff-table th,
+                    .admin-staff-table h6,
+                    .admin-staff-table small,
+                    .admin-staff-table div {
+                        color: #ffffff !important;
+                    }
+                    .admin-staff-table small.text-secondary {
+                        color: #cccccc !important;
+                    }
+                </style>
                 <div class="table-responsive">
-                    <table class="table table-hover" style="color: #ffffff; --bs-table-hover-bg: rgba(255,255,255,0.075);">
+                    <table class="table table-hover admin-staff-table" style="color: #ffffff; --bs-table-hover-bg: rgba(255,255,255,0.075);">
                         <thead>
                             <tr style="color: #ffffff;">
                                 <th style="color: #ffffff; font-weight: 600;">Staff Member</th>
