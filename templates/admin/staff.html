@@ -153,18 +153,30 @@
             </div>
             <div class="card-body">
                 <style>
-                    /* Override base.html card color rules for admin tables */
-                    .admin-staff-table,
-                    .admin-staff-table *,
-                    .admin-staff-table td,
-                    .admin-staff-table th,
-                    .admin-staff-table h6,
-                    .admin-staff-table small,
-                    .admin-staff-table div {
+                    /* Force white text for admin staff table - override all base styles */
+                    .card .admin-staff-table * {
                         color: #ffffff !important;
                     }
-                    .admin-staff-table small.text-secondary {
+                    .card .admin-staff-table td * {
+                        color: #ffffff !important;
+                    }
+                    .card .admin-staff-table th * {
+                        color: #ffffff !important;
+                    }
+                    .card .admin-staff-table h6 {
+                        color: #ffffff !important;
+                    }
+                    .card .admin-staff-table small {
                         color: #cccccc !important;
+                    }
+                    .card .admin-staff-table div {
+                        color: #ffffff !important;
+                    }
+                    .card .admin-staff-table p {
+                        color: #ffffff !important;
+                    }
+                    .card .admin-staff-table span:not(.badge) {
+                        color: #ffffff !important;
                     }
                 </style>
                 <div class="table-responsive">
