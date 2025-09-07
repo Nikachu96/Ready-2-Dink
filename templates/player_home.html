@@ -183,6 +183,159 @@
 </div>
 {% endif %}
 
+<!-- Player Availability Settings -->
+<div class="row mb-4 animate-in">
+    <div class="col-12">
+        <div class="card" style="border: none; border-radius: 12px; overflow: hidden;">
+            <div class="card-header text-white d-flex justify-content-between align-items-center" 
+                 style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); border: none; padding: 1.5rem;">
+                <div>
+                    <h5 class="card-title mb-1 fw-bold">
+                        <i class="fas fa-calendar-alt me-2"></i>My Availability
+                    </h5>
+                    <p class="mb-0 opacity-90">Set your preferred playing times to help other players find you</p>
+                </div>
+                <button class="btn btn-outline-light" data-bs-toggle="collapse" data-bs-target="#availabilityForm" aria-expanded="false">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </button>
+            </div>
+            
+            <!-- Current Availability Display -->
+            <div class="card-body p-4">
+                {% if player.availability_schedule %}
+                    {% set availability = player.availability_schedule | from_json %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="text-muted mb-0">Current Schedule:</h6>
+                                <span class="badge px-3 py-2" style="background-color: #3F567F; color: white;">
+                                    <i class="fas fa-clock me-1"></i>{{ player.time_preference or 'Flexible' }}
+                                </span>
+                            </div>
+                            <div class="row">
+                                {% for day, day_data in availability.items() %}
+                                    <div class="col-lg-3 col-md-4 col-6 mb-3">
+                                        <div class="text-center p-3 rounded" style="background: {% if day_data.available %}linear-gradient(135deg, #10B981, #059669){% else %}#f8f9fa{% endif %}; color: {% if day_data.available %}white{% else %}#6c757d{% endif %};">
+                                            <div class="fw-bold mb-1">{{ day.title() }}</div>
+                                            {% if day_data.available and day_data.time_slots %}
+                                                <small>
+                                                    {% for time in day_data.time_slots %}
+                                                        {{ time }}{% if not loop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                </small>
+                                            {% elif day_data.available %}
+                                                <small>Available</small>
+                                            {% else %}
+                                                <small>Not Available</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-plus fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No availability set</h5>
+                        <p class="text-muted">Let other players know when you're available to play!</p>
+                    </div>
+                {% endif %}
+                
+                <!-- Availability Form -->
+                <div class="collapse" id="availabilityForm">
+                    <hr class="my-4">
+                    <form method="POST" action="{{ url_for('update_availability', player_id=player.id) }}">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="time_preference" class="form-label fw-semibold">
+                                    <i class="fas fa-clock me-1" style="color: #3F567F;"></i>Time Preference
+                                </label>
+                                <select class="form-select" id="time_preference" name="time_preference">
+                                    <option value="Flexible" {% if player.time_preference == 'Flexible' %}selected{% endif %}>Flexible</option>
+                                    <option value="Mornings" {% if player.time_preference == 'Mornings' %}selected{% endif %}>Prefer Mornings</option>
+                                    <option value="Afternoons" {% if player.time_preference == 'Afternoons' %}selected{% endif %}>Prefer Afternoons</option>
+                                    <option value="Evenings" {% if player.time_preference == 'Evenings' %}selected{% endif %}>Prefer Evenings</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            {% set days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] %}
+                            {% set day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                            {% for day in days %}
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card h-100" style="border: 1px solid #e9ecef;">
+                                        <div class="card-body">
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       id="{{ day }}" name="{{ day }}" 
+                                                       {% if player.availability_schedule %}
+                                                           {% set availability = player.availability_schedule | from_json %}
+                                                           {% if availability[day] and availability[day].available %}checked{% endif %}
+                                                       {% endif %}>
+                                                <label class="form-check-label fw-semibold" for="{{ day }}">
+                                                    {{ day_names[loop.index0] }}
+                                                </label>
+                                            </div>
+                                            
+                                            <div class="time-slots" id="{{ day }}_times">
+                                                <label class="form-label small text-muted">Available times:</label>
+                                                <div class="row">
+                                                    <div class="col-6 mb-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" 
+                                                                   name="{{ day }}_time" value="Morning (6am-12pm)" 
+                                                                   id="{{ day }}_morning">
+                                                            <label class="form-check-label small" for="{{ day }}_morning">
+                                                                Morning (6am-12pm)
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-6 mb-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" 
+                                                                   name="{{ day }}_time" value="Afternoon (12pm-6pm)" 
+                                                                   id="{{ day }}_afternoon">
+                                                            <label class="form-check-label small" for="{{ day }}_afternoon">
+                                                                Afternoon (12pm-6pm)
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12 mb-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" 
+                                                                   name="{{ day }}_time" value="Evening (6pm-10pm)" 
+                                                                   id="{{ day }}_evening">
+                                                            <label class="form-check-label small" for="{{ day }}_evening">
+                                                                Evening (6pm-10pm)
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#availabilityForm">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn text-white" 
+                                    style="background: linear-gradient(45deg, #3F567F, #D174D2);">
+                                <i class="fas fa-save me-1"></i>Save Availability
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Share Ready 2 Dink -->
 <div class="row mb-4 animate-in">
     <div class="col-12">

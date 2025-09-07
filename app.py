@@ -15,6 +15,16 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 
+# Add custom Jinja filter for JSON parsing
+def from_json_filter(value):
+    """Custom Jinja filter to parse JSON strings"""
+    try:
+        return json.loads(value) if value else {}
+    except:
+        return {}
+
+app.jinja_env.filters['from_json'] = from_json_filter
+
 # Configure Stripe
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
