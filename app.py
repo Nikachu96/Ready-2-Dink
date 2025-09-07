@@ -2367,15 +2367,21 @@ def get_unread_count(player_id):
 
 @app.route('/submit_match_result', methods=['POST'])
 def submit_match_result():
-    """Submit match result with scores"""
+    """Submit match result with pickleball set-based scores"""
     data = request.get_json()
     match_id = data.get('match_id')
-    player1_score = int(data.get('player1_score', 0))
-    player2_score = int(data.get('player2_score', 0))
+    match_score = data.get('match_score')  # Format: "11-5 6-11 11-9"
+    player1_sets_won = int(data.get('player1_sets_won', 0))
+    player2_sets_won = int(data.get('player2_sets_won', 0))
     submitter_id = data.get('submitter_id')
     
-    if player1_score == player2_score:
-        return jsonify({'success': False, 'message': 'Scores cannot be tied. Please enter the correct scores.'})
+    # Validate input
+    if not match_score or player1_sets_won == player2_sets_won:
+        return jsonify({'success': False, 'message': 'Invalid match result. Sets cannot be tied.'})
+    
+    # Validate best of 3 format
+    if (player1_sets_won + player2_sets_won) < 2 or (player1_sets_won + player2_sets_won) > 3:
+        return jsonify({'success': False, 'message': 'Invalid pickleball match format.'})
     
     conn = get_db_connection()
     
@@ -2393,19 +2399,19 @@ def submit_match_result():
         conn.close()
         return jsonify({'success': False, 'message': 'You are not part of this match'})
     
-    # Determine winner
-    winner_id = match['player1_id'] if player1_score > player2_score else match['player2_id']
-    loser_id = match['player2_id'] if player1_score > player2_score else match['player1_id']
+    # Determine winner based on sets won
+    winner_id = match['player1_id'] if player1_sets_won > player2_sets_won else match['player2_id']
+    loser_id = match['player2_id'] if player1_sets_won > player2_sets_won else match['player1_id']
     
-    # Update match with results
+    # Update match with results (store sets won in score fields for backward compatibility)
     conn.execute('''
         UPDATE matches 
         SET player1_score = ?, player2_score = ?, winner_id = ?, 
             status = 'completed', result_submitted_by = ?,
             match_result = ?
         WHERE id = ?
-    ''', (player1_score, player2_score, winner_id, submitter_id, 
-          f"{player1_score}-{player2_score}", match_id))
+    ''', (player1_sets_won, player2_sets_won, winner_id, submitter_id, 
+          match_score, match_id))
     
     # Update player win/loss records
     conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (winner_id,))
@@ -2414,23 +2420,28 @@ def submit_match_result():
     conn.commit()
     conn.close()
     
-    # Award 10 points to the winner
-    award_points(winner_id, 10, 'Match victory')
+    # Award points based on match type
+    points_awarded = 15 if (player1_sets_won + player2_sets_won) == 3 else 10  # Bonus for 3-set matches
+    award_points(winner_id, points_awarded, 'Match victory')
     
-    # Send notification to winner about points earned
+    # Send notifications
     conn = get_db_connection()
     winner = conn.execute('SELECT full_name FROM players WHERE id = ?', (winner_id,)).fetchone()
     loser = conn.execute('SELECT full_name FROM players WHERE id = ?', (loser_id,)).fetchone()
     conn.close()
     
     if winner and loser:
-        winner_message = f"🏆 Victory! You beat {loser['full_name']} and earned 10 ranking points!"
-        loser_message = f"Good game against {winner['full_name']}! Keep practicing and you'll get them next time!"
+        sets_result = f"{player1_sets_won}-{player2_sets_won}" if winner_id == match['player1_id'] else f"{player2_sets_won}-{player1_sets_won}"
+        winner_message = f"🏆 Victory! You beat {loser['full_name']} ({sets_result}) and earned {points_awarded} ranking points!"
+        loser_message = f"Good match against {winner['full_name']} ({match_score})! Keep practicing and you'll get them next time!"
         
         send_push_notification(winner_id, winner_message, "Match Result")
         send_push_notification(loser_id, loser_message, "Match Result")
     
-    return jsonify({'success': True, 'message': 'Match result submitted successfully!'})
+    return jsonify({
+        'success': True, 
+        'message': f'Match result submitted successfully! Final score: {match_score}'
+    })
 
 @app.route('/get_pending_matches/<int:player_id>')
 def get_pending_matches(player_id):

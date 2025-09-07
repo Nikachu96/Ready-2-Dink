@@ -735,30 +735,91 @@
 
 <!-- Score Submission Modal -->
 <div class="modal fade" id="scoreModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fas fa-trophy me-2"></i>Submit Match Score
+                    <i class="fas fa-trophy me-2"></i>Submit Match Score - Best of 3 Sets
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div id="match-details" class="mb-3"></div>
-                <div class="row">
-                    <div class="col-6">
-                        <label class="form-label" id="player1-label">Your Score</label>
-                        <input type="number" id="player1-score" class="form-control" min="0" max="50">
+                
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Pickleball Scoring:</strong> Each set is played to 11 points (must win by 2). Best of 3 sets wins the match.
+                </div>
+                
+                <!-- Set 1 -->
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="fas fa-circle me-2"></i>Set 1 (Required)</h6>
                     </div>
-                    <div class="col-6">
-                        <label class="form-label" id="player2-label">Opponent Score</label>
-                        <input type="number" id="player2-score" class="form-control" min="0" max="50">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label fw-bold" id="player1-set1-label">Your Score</label>
+                                <input type="number" id="player1-set1" class="form-control" min="0" max="30" placeholder="0">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold" id="player2-set1-label">Opponent Score</label>
+                                <input type="number" id="player2-set1" class="form-control" min="0" max="30" placeholder="0">
+                            </div>
+                        </div>
                     </div>
+                </div>
+                
+                <!-- Set 2 -->
+                <div class="card mb-3">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0"><i class="fas fa-circle me-2"></i>Set 2 (Required)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label fw-bold" id="player1-set2-label">Your Score</label>
+                                <input type="number" id="player1-set2" class="form-control" min="0" max="30" placeholder="0">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold" id="player2-set2-label">Opponent Score</label>
+                                <input type="number" id="player2-set2" class="form-control" min="0" max="30" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Set 3 -->
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="fas fa-circle me-2"></i>Set 3 (If Needed)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label fw-bold" id="player1-set3-label">Your Score</label>
+                                <input type="number" id="player1-set3" class="form-control" min="0" max="30" placeholder="Leave blank if not played">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold" id="player2-set3-label">Opponent Score</label>
+                                <input type="number" id="player2-set3" class="form-control" min="0" max="30" placeholder="Leave blank if not played">
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-lightbulb me-1"></i>Only fill in Set 3 if the match went to a third set
+                        </small>
+                    </div>
+                </div>
+                
+                <div id="score-preview" class="alert alert-warning" style="display: none;">
+                    <strong>Match Result:</strong> <span id="formatted-score"></span>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitScore()">Submit Score</button>
+                <button type="button" class="btn btn-primary" onclick="submitScore()">
+                    <i class="fas fa-check me-1"></i>Submit Match Result
+                </button>
             </div>
         </div>
     </div>
@@ -992,29 +1053,141 @@ function openScoreModal(matchId, opponentName, player1Id, player2Id) {
         </div>
     `;
     
-    document.getElementById('player1-label').textContent = isPlayer1 ? 'Your Score' : opponentName + "'s Score";
-    document.getElementById('player2-label').textContent = isPlayer1 ? opponentName + "'s Score" : 'Your Score';
+    // Update all labels based on perspective
+    const yourLabel = 'Your Score';
+    const opponentLabel = opponentName + "'s Score";
     
-    document.getElementById('player1-score').value = '';
-    document.getElementById('player2-score').value = '';
+    document.getElementById('player1-set1-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
+    document.getElementById('player2-set1-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
+    document.getElementById('player1-set2-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
+    document.getElementById('player2-set2-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
+    document.getElementById('player1-set3-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
+    document.getElementById('player2-set3-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
+    
+    // Clear all input fields
+    document.getElementById('player1-set1').value = '';
+    document.getElementById('player2-set1').value = '';
+    document.getElementById('player1-set2').value = '';
+    document.getElementById('player2-set2').value = '';
+    document.getElementById('player1-set3').value = '';
+    document.getElementById('player2-set3').value = '';
+    
+    // Hide score preview
+    document.getElementById('score-preview').style.display = 'none';
+    
+    // Add real-time validation
+    ['player1-set1', 'player2-set1', 'player1-set2', 'player2-set2', 'player1-set3', 'player2-set3'].forEach(id => {
+        const input = document.getElementById(id);
+        input.addEventListener('input', updateScorePreview);
+    });
     
     new bootstrap.Modal(document.getElementById('scoreModal')).show();
 }
 
+function updateScorePreview() {
+    const set1P1 = document.getElementById('player1-set1').value;
+    const set1P2 = document.getElementById('player2-set1').value;
+    const set2P1 = document.getElementById('player1-set2').value;
+    const set2P2 = document.getElementById('player2-set2').value;
+    const set3P1 = document.getElementById('player1-set3').value;
+    const set3P2 = document.getElementById('player2-set3').value;
+    
+    if (set1P1 && set1P2 && set2P1 && set2P2) {
+        let scoreText = `${set1P1}-${set1P2} ${set2P1}-${set2P2}`;
+        if (set3P1 && set3P2) {
+            scoreText += ` ${set3P1}-${set3P2}`;
+        }
+        
+        document.getElementById('formatted-score').textContent = scoreText;
+        document.getElementById('score-preview').style.display = 'block';
+    } else {
+        document.getElementById('score-preview').style.display = 'none';
+    }
+}
+
 function submitScore() {
-    const player1Score = parseInt(document.getElementById('player1-score').value);
-    const player2Score = parseInt(document.getElementById('player2-score').value);
+    // Get all set scores
+    const set1P1 = parseInt(document.getElementById('player1-set1').value);
+    const set1P2 = parseInt(document.getElementById('player2-set1').value);
+    const set2P1 = parseInt(document.getElementById('player1-set2').value);
+    const set2P2 = parseInt(document.getElementById('player2-set2').value);
+    const set3P1 = parseInt(document.getElementById('player1-set3').value) || null;
+    const set3P2 = parseInt(document.getElementById('player2-set3').value) || null;
     
-    if (isNaN(player1Score) || isNaN(player2Score)) {
-        alert('Please enter valid scores for both players');
+    // Validate required sets
+    if (isNaN(set1P1) || isNaN(set1P2) || isNaN(set2P1) || isNaN(set2P2)) {
+        alert('Please enter scores for both Set 1 and Set 2');
         return;
     }
     
-    if (player1Score === player2Score) {
-        alert('Scores cannot be tied. Please enter the correct scores.');
+    // Validate set 3 consistency (either both filled or both empty)
+    if ((set3P1 === null) !== (set3P2 === null)) {
+        alert('If Set 3 was played, please enter scores for both players');
         return;
     }
     
+    // Validate pickleball scoring rules
+    const sets = [
+        {p1: set1P1, p2: set1P2, name: 'Set 1'},
+        {p1: set2P1, p2: set2P2, name: 'Set 2'}
+    ];
+    
+    if (set3P1 !== null && set3P2 !== null) {
+        sets.push({p1: set3P1, p2: set3P2, name: 'Set 3'});
+    }
+    
+    // Validate each set
+    for (let set of sets) {
+        if (set.p1 === set.p2) {
+            alert(`${set.name} cannot be tied. Please enter the correct scores.`);
+            return;
+        }
+        
+        // Check win by 2 rule for scores >= 11
+        const winner = Math.max(set.p1, set.p2);
+        const loser = Math.min(set.p1, set.p2);
+        
+        if (winner >= 11) {
+            if (winner - loser < 2) {
+                alert(`${set.name}: Must win by 2 points when score is 11 or higher`);
+                return;
+            }
+        } else {
+            alert(`${set.name}: Sets must be played to at least 11 points`);
+            return;
+        }
+    }
+    
+    // Determine match winner (best of 3)
+    let player1SetsWon = 0;
+    let player2SetsWon = 0;
+    
+    sets.forEach(set => {
+        if (set.p1 > set.p2) {
+            player1SetsWon++;
+        } else {
+            player2SetsWon++;
+        }
+    });
+    
+    // Check if match result makes sense
+    if (sets.length === 2 && Math.abs(player1SetsWon - player2SetsWon) !== 2) {
+        alert('2-set match must be won 2-0. If it went to a third set, please enter Set 3 scores.');
+        return;
+    }
+    
+    if (sets.length === 3 && Math.abs(player1SetsWon - player2SetsWon) !== 1) {
+        alert('3-set match must be won 2-1');
+        return;
+    }
+    
+    // Format the score string
+    let formattedScore = `${set1P1}-${set1P2} ${set2P1}-${set2P2}`;
+    if (set3P1 !== null && set3P2 !== null) {
+        formattedScore += ` ${set3P1}-${set3P2}`;
+    }
+    
+    // Submit the score
     fetch('/submit_match_result', {
         method: 'POST',
         headers: {
@@ -1022,8 +1195,9 @@ function submitScore() {
         },
         body: JSON.stringify({
             match_id: currentMatchId,
-            player1_score: player1Score,
-            player2_score: player2Score,
+            match_score: formattedScore,
+            player1_sets_won: player1SetsWon,
+            player2_sets_won: player2SetsWon,
             submitter_id: {{ player.id }}
         })
     })
@@ -1031,8 +1205,8 @@ function submitScore() {
     .then(data => {
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('scoreModal')).hide();
-            loadPendingMatches();
-            // Refresh the page to update wins/losses
+            alert(data.message || 'Match result submitted successfully!');
+            loadPendingMatches(); // Refresh the pending matches list
             setTimeout(() => location.reload(), 1000);
         } else {
             alert(data.message || 'Failed to submit score');
