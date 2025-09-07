@@ -408,7 +408,7 @@
                             <div class="mb-4">
                                 <!-- QR Code -->
                                 <div class="bg-white p-3 rounded-3 mx-auto" style="max-width: 200px;">
-                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ready2dink.com" 
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ready2dink.com&v=2" 
                                          alt="Ready 2 Dink QR Code" 
                                          class="img-fluid"
                                          style="width: 100%; height: auto;">
@@ -1736,7 +1736,7 @@ function showRankingInfo() {
 
 // QR Code Sharing Functions
 function copyShareLink() {
-    const shareUrl = 'https://Ready2Dink.replit.app';
+    const shareUrl = 'https://ready2dink.com';
     navigator.clipboard.writeText(shareUrl).then(function() {
         // Show success feedback
         const btn = event.target.closest('button');
@@ -1774,7 +1774,7 @@ function copyShareLink() {
 }
 
 function shareOnSocial() {
-    const shareUrl = 'https://Ready2Dink.replit.app';
+    const shareUrl = 'https://ready2dink.com';
     const shareText = 'Join Ready 2 Dink - the best pickleball matchmaking community! 🏓';
     
     if (navigator.share) {
