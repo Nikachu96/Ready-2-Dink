@@ -335,6 +335,30 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize payment method section and fee calculations
     updateTournamentSelection();
     updatePaymentMethod();
+    
+    // Add event listeners to tournament radio buttons
+    document.querySelectorAll('input[name="tournament_instance_id"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            updateTournamentSelection();
+            
+            // Update card styling
+            document.querySelectorAll('.tournament-card').forEach(card => {
+                card.classList.remove('border-primary', 'bg-light');
+            });
+            
+            if (this.checked) {
+                const card = this.closest('.tournament-card');
+                if (card) {
+                    card.classList.add('border-primary', 'bg-light');
+                }
+            }
+        });
+    });
+    
+    // Add event listeners to payment method radio buttons
+    document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
+        radio.addEventListener('change', updatePaymentMethod);
+    });
 });
 
 // Credit management and payment calculation functions
@@ -459,6 +483,5 @@ function togglePartnerSelection() {
     // Update payment calculations
     updatePaymentMethod();
 }
-});
 </script>
 {% endblock %}
