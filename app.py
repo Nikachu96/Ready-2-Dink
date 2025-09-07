@@ -467,6 +467,30 @@ def init_db():
         )
     ''')
     
+    # Create default tournament instances if none exist
+    existing_tournaments = c.execute('SELECT COUNT(*) as count FROM tournament_instances').fetchone()[0]
+    
+    if existing_tournaments == 0:
+        # Create tournament instances for each level
+        tournaments_to_create = [
+            ('The B League Weekly', 'Beginner', 20, 32),
+            ('Rookie Rumble', 'Beginner', 20, 32),
+            ('Intermediate Challenge', 'Intermediate', 25, 32),
+            ('Mid-Level Mashup', 'Intermediate', 25, 32),
+            ('Advanced Showdown', 'Advanced', 30, 32),
+            ('Elite Competition', 'Advanced', 30, 32),
+            ('Big Dink Championship', 'Championship', 30, 128),
+            ('The Hill Premium', 'Championship', 50, 64)
+        ]
+        
+        for name, skill_level, entry_fee, max_players in tournaments_to_create:
+            c.execute('''
+                INSERT INTO tournament_instances (name, skill_level, entry_fee, max_players, status)
+                VALUES (?, ?, ?, ?, 'open')
+            ''', (name, skill_level, entry_fee, max_players))
+        
+        print(f"Created {len(tournaments_to_create)} default tournament instances")
+    
     conn.commit()
     conn.close()
 
