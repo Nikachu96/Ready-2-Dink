@@ -295,6 +295,28 @@ def init_db():
         )
     ''')
     
+    # Tournament payouts table for managing prize winnings
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS tournament_payouts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            tournament_instance_id INTEGER NOT NULL,
+            tournament_name TEXT NOT NULL,
+            placement TEXT NOT NULL,
+            prize_amount DECIMAL(10,2) NOT NULL,
+            payout_method TEXT,
+            payout_account TEXT,
+            status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'paid', 'failed')),
+            admin_notes TEXT,
+            paid_by INTEGER,
+            paid_at TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES players(id),
+            FOREIGN KEY (tournament_instance_id) REFERENCES tournament_instances(id),
+            FOREIGN KEY (paid_by) REFERENCES players(id)
+        )
+    ''')
+    
     # Matches table
     c.execute('''
         CREATE TABLE IF NOT EXISTS matches (
@@ -2077,6 +2099,40 @@ def manage_tournaments():
     
     return render_template('manage_tournaments.html', tournaments=tournaments)
 
+def create_tournament_payout(conn, player_id, tournament_instance_id, tournament_name, placement, prize_amount):
+    """Create a payout record for tournament winnings"""
+    try:
+        # Get player's payout information
+        player = conn.execute('''
+            SELECT payout_preference, paypal_email, venmo_username, zelle_info, full_name
+            FROM players WHERE id = ?
+        ''', (player_id,)).fetchone()
+        
+        if not player:
+            return False
+            
+        # Determine payout account based on preference
+        payout_account = ""
+        if player['payout_preference'] == 'PayPal' and player['paypal_email']:
+            payout_account = player['paypal_email']
+        elif player['payout_preference'] == 'Venmo' and player['venmo_username']:
+            payout_account = player['venmo_username']
+        elif player['payout_preference'] == 'Zelle' and player['zelle_info']:
+            payout_account = player['zelle_info']
+        
+        # Create payout record
+        conn.execute('''
+            INSERT INTO tournament_payouts 
+            (player_id, tournament_instance_id, tournament_name, placement, prize_amount, payout_method, payout_account)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (player_id, tournament_instance_id, tournament_name, placement, prize_amount, 
+              player['payout_preference'], payout_account))
+        
+        return True
+    except Exception as e:
+        print(f"Error creating payout record: {e}")
+        return False
+
 @app.route('/complete_tournament/<int:tournament_id>', methods=['POST'])
 def complete_tournament(tournament_id):
     """Complete a tournament with results"""
@@ -2101,13 +2157,35 @@ def complete_tournament(tournament_id):
         WHERE id = ?
     ''', (result, tournament_id))
     
-    # If they won (1st place), add tournament win star
+    # If they won (1st place), add tournament win star and create payout record
     if 'Won - 1st Place' in result:
         conn.execute('''
             UPDATE players 
             SET tournament_wins = tournament_wins + 1
             WHERE id = ?
         ''', (tournament['player_id'],))
+        
+        # Calculate prize money and create payout record
+        tournament_level = tournament['tournament_level']
+        if tournament_level in ['Beginner', 'Intermediate', 'Advanced']:
+            # Get tournament level settings
+            levels = get_tournament_levels()
+            if tournament_level in levels:
+                entry_fee = levels[tournament_level]['entry_fee']
+                max_players = levels[tournament_level]['max_players']
+                prizes = levels[tournament_level]['prizes']
+                
+                # Create payout record for 1st place winner
+                first_place_prize = prizes.get('1st', 0)
+                if first_place_prize > 0:
+                    create_tournament_payout(
+                        conn, 
+                        tournament['player_id'], 
+                        tournament.get('tournament_instance_id', tournament_id),
+                        tournament['tournament_name'] or f"{tournament_level} Tournament",
+                        "1st Place",
+                        first_place_prize
+                    )
     
     # Award tournament points based on result
     tournament_points = get_tournament_points(result)
@@ -3331,6 +3409,111 @@ def admin_settings():
     conn.close()
     
     return render_template('admin/settings.html', settings=settings)
+
+@app.route('/admin/payouts')
+@admin_required
+def admin_payouts():
+    """Admin payout management interface"""
+    conn = get_db_connection()
+    
+    # Get all pending payouts
+    pending_payouts = conn.execute('''
+        SELECT tp.*, p.full_name, p.email, p.player_id
+        FROM tournament_payouts tp
+        JOIN players p ON tp.player_id = p.id
+        WHERE tp.status = 'pending'
+        ORDER BY tp.created_at ASC
+    ''').fetchall()
+    
+    # Get processing payouts
+    processing_payouts = conn.execute('''
+        SELECT tp.*, p.full_name, p.email, p.player_id
+        FROM tournament_payouts tp
+        JOIN players p ON tp.player_id = p.id
+        WHERE tp.status = 'processing'
+        ORDER BY tp.created_at ASC
+    ''').fetchall()
+    
+    # Get recent completed payouts
+    completed_payouts = conn.execute('''
+        SELECT tp.*, p.full_name, p.email, p.player_id, admin.full_name as paid_by_name
+        FROM tournament_payouts tp
+        JOIN players p ON tp.player_id = p.id
+        LEFT JOIN players admin ON tp.paid_by = admin.id
+        WHERE tp.status = 'paid'
+        ORDER BY tp.paid_at DESC
+        LIMIT 20
+    ''').fetchall()
+    
+    # Calculate totals
+    total_pending = sum(float(payout['prize_amount']) for payout in pending_payouts)
+    total_processing = sum(float(payout['prize_amount']) for payout in processing_payouts)
+    total_paid_this_month = conn.execute('''
+        SELECT COALESCE(SUM(prize_amount), 0) as total
+        FROM tournament_payouts 
+        WHERE status = 'paid' 
+        AND date(paid_at) >= date('now', 'start of month')
+    ''').fetchone()['total']
+    
+    conn.close()
+    
+    return render_template('admin/payouts.html', 
+                         pending_payouts=pending_payouts,
+                         processing_payouts=processing_payouts,
+                         completed_payouts=completed_payouts,
+                         total_pending=total_pending,
+                         total_processing=total_processing,
+                         total_paid_this_month=total_paid_this_month)
+
+@app.route('/admin/update_payout_status/<int:payout_id>', methods=['POST'])
+@admin_required
+def update_payout_status(payout_id):
+    """Update payout status"""
+    new_status = request.form.get('status')
+    admin_notes = request.form.get('admin_notes', '')
+    admin_id = session.get('current_player_id')
+    
+    if new_status not in ['pending', 'processing', 'paid', 'failed']:
+        flash('Invalid status', 'danger')
+        return redirect(url_for('admin_payouts'))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Update payout status
+        if new_status == 'paid':
+            conn.execute('''
+                UPDATE tournament_payouts 
+                SET status = ?, admin_notes = ?, paid_by = ?, paid_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            ''', (new_status, admin_notes, admin_id, payout_id))
+        else:
+            conn.execute('''
+                UPDATE tournament_payouts 
+                SET status = ?, admin_notes = ?
+                WHERE id = ?
+            ''', (new_status, admin_notes, payout_id))
+        
+        conn.commit()
+        
+        # Get payout info for flash message
+        payout = conn.execute('''
+            SELECT tp.*, p.full_name 
+            FROM tournament_payouts tp
+            JOIN players p ON tp.player_id = p.id
+            WHERE tp.id = ?
+        ''', (payout_id,)).fetchone()
+        
+        if payout:
+            flash(f'Payout status updated to "{new_status}" for {payout["full_name"]} - ${payout["prize_amount"]:.2f}', 'success')
+        
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error updating payout: {str(e)}', 'danger')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('admin_payouts'))
 
 @app.route('/issue_tournament_credit', methods=['POST'])
 @admin_required

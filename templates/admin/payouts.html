@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Payout Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-money-bill-wave me-2"></i>Tournament Payout Management
+                </h2>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Admin Dashboard
+                </a>
+            </div>
+            
+            <!-- Payout Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">
+                                <i class="fas fa-clock"></i> Pending Payouts
+                            </h5>
+                            <h3>${{ "%.2f"|format(total_pending) }}</h3>
+                            <p class="mb-0">{{ pending_payouts|length }} players</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">
+                                <i class="fas fa-spinner"></i> Processing
+                            </h5>
+                            <h3>${{ "%.2f"|format(total_processing) }}</h3>
+                            <p class="mb-0">{{ processing_payouts|length }} payments</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">
+                                <i class="fas fa-check"></i> Paid This Month
+                            </h5>
+                            <h3>${{ "%.2f"|format(total_paid_this_month) }}</h3>
+                            <p class="mb-0">Completed</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">
+                                <i class="fas fa-calculator"></i> Total Outstanding
+                            </h5>
+                            <h3>${{ "%.2f"|format(total_pending + total_processing) }}</h3>
+                            <p class="mb-0">Needs Action</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pending Payouts -->
+            {% if pending_payouts %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Pending Payouts ({{ pending_payouts|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Tournament</th>
+                                    <th>Placement</th>
+                                    <th>Prize Amount</th>
+                                    <th>Payout Method</th>
+                                    <th>Account Info</th>
+                                    <th>Date Won</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payout in pending_payouts %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ payout.full_name }}</strong><br>
+                                        <small class="text-muted">{{ payout.email }}</small><br>
+                                        <small class="text-muted">ID: {{ payout.player_id }}</small>
+                                    </td>
+                                    <td>{{ payout.tournament_name }}</td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ payout.placement }}</span>
+                                    </td>
+                                    <td>
+                                        <strong class="text-success">${{ "%.2f"|format(payout.prize_amount) }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if payout.payout_method %}
+                                            <span class="badge bg-info">{{ payout.payout_method }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Not Set</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if payout.payout_account %}
+                                            <code>{{ payout.payout_account }}</code>
+                                        {% else %}
+                                            <span class="text-muted">No account info</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ payout.created_at }}</small>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#payoutModal"
+                                                data-payout-id="{{ payout.id }}"
+                                                data-player-name="{{ payout.full_name }}"
+                                                data-amount="{{ payout.prize_amount }}"
+                                                data-current-status="{{ payout.status }}"
+                                                data-current-notes="{{ payout.admin_notes or '' }}">
+                                            <i class="fas fa-edit"></i> Update
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Processing Payouts -->
+            {% if processing_payouts %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-spinner text-info me-2"></i>
+                        Processing Payouts ({{ processing_payouts|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Tournament</th>
+                                    <th>Prize Amount</th>
+                                    <th>Payout Method</th>
+                                    <th>Account Info</th>
+                                    <th>Admin Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payout in processing_payouts %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ payout.full_name }}</strong><br>
+                                        <small class="text-muted">{{ payout.email }}</small>
+                                    </td>
+                                    <td>{{ payout.tournament_name }}</td>
+                                    <td>
+                                        <strong class="text-success">${{ "%.2f"|format(payout.prize_amount) }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ payout.payout_method or 'Not Set' }}</span>
+                                    </td>
+                                    <td>
+                                        {% if payout.payout_account %}
+                                            <code>{{ payout.payout_account }}</code>
+                                        {% else %}
+                                            <span class="text-muted">No account info</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ payout.admin_notes or 'None' }}</small>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-success" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#payoutModal"
+                                                data-payout-id="{{ payout.id }}"
+                                                data-player-name="{{ payout.full_name }}"
+                                                data-amount="{{ payout.prize_amount }}"
+                                                data-current-status="{{ payout.status }}"
+                                                data-current-notes="{{ payout.admin_notes or '' }}">
+                                            <i class="fas fa-check"></i> Mark as Paid
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Recent Completed Payouts -->
+            {% if completed_payouts %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Recent Completed Payouts (Last 20)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Tournament</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Paid By</th>
+                                    <th>Date Paid</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payout in completed_payouts %}
+                                <tr>
+                                    <td>{{ payout.full_name }}</td>
+                                    <td>{{ payout.tournament_name }}</td>
+                                    <td><strong>${{ "%.2f"|format(payout.prize_amount) }}</strong></td>
+                                    <td>{{ payout.payout_method or 'N/A' }}</td>
+                                    <td>{{ payout.paid_by_name or 'System' }}</td>
+                                    <td>
+                                        <small>{{ payout.paid_at }}</small>
+                                    </td>
+                                    <td>
+                                        <small>{{ payout.admin_notes or 'None' }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if not pending_payouts and not processing_payouts and not completed_payouts %}
+            <div class="text-center py-5">
+                <i class="fas fa-money-bill-wave fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No Tournament Payouts Yet</h4>
+                <p class="text-muted">Payouts will appear here when tournaments are completed.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Payout Status Update Modal -->
+<div class="modal fade" id="payoutModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Update Payout Status
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="payoutForm">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>Player:</strong> <span id="modalPlayerName"></span><br>
+                        <strong>Amount:</strong> $<span id="modalAmount"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="pending">Pending - Not yet processed</option>
+                            <option value="processing">Processing - Payment in progress</option>
+                            <option value="paid">Paid - Payment completed</option>
+                            <option value="failed">Failed - Payment failed, needs attention</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="admin_notes" class="form-label">Admin Notes</label>
+                        <textarea class="form-control" id="admin_notes" name="admin_notes" rows="3" 
+                                  placeholder="Add notes about this payout (transaction ID, issues, etc.)"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Update Status
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle payout modal
+document.getElementById('payoutModal').addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    const payoutId = button.getAttribute('data-payout-id');
+    const playerName = button.getAttribute('data-player-name');
+    const amount = button.getAttribute('data-amount');
+    const currentStatus = button.getAttribute('data-current-status');
+    const currentNotes = button.getAttribute('data-current-notes');
+    
+    // Update modal content
+    document.getElementById('modalPlayerName').textContent = playerName;
+    document.getElementById('modalAmount').textContent = amount;
+    document.getElementById('status').value = currentStatus;
+    document.getElementById('admin_notes').value = currentNotes;
+    
+    // Update form action
+    document.getElementById('payoutForm').action = `/admin/update_payout_status/${payoutId}`;
+});
+</script>
+{% endblock %}
