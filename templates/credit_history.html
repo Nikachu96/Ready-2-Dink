@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Credit Transaction History - {{ player.full_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="card-title mb-0 fw-bold">
+                            <i class="fas fa-wallet me-2"></i>Credit Transaction History
+                        </h4>
+                        <p class="mb-0 opacity-90">{{ player.full_name }}'s tournament credit activity</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="fs-4 fw-bold">
+                            ${{ "%.2f"|format(player.tournament_credits or 0) }}
+                        </div>
+                        <small class="opacity-90">Current Balance</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Player Info Summary -->
+                <div class="row mb-4">
+                    <div class="col-auto">
+                        {% if player.selfie %}
+                            <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                 class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;" 
+                                 alt="Player Photo">
+                        {% else %}
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 60px; height: 60px;">
+                                <i class="fas fa-user text-white fa-lg"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col">
+                        <h5 class="mb-1">{{ player.full_name }}</h5>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <span class="badge bg-primary">{{ player.skill_level }}</span>
+                            {% if player.player_id %}
+                            <span class="badge" style="background-color: #E0563F;">ID: {{ player.player_id }}</span>
+                            {% endif %}
+                            <span class="badge bg-success">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
+                        </div>
+                        <small class="text-muted">{{ player.email }}</small>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Transaction History -->
+                {% if transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><i class="fas fa-calendar me-1"></i>Date</th>
+                                    <th><i class="fas fa-tag me-1"></i>Type</th>
+                                    <th><i class="fas fa-dollar-sign me-1"></i>Amount</th>
+                                    <th><i class="fas fa-info-circle me-1"></i>Description</th>
+                                    <th><i class="fas fa-user-shield me-1"></i>Processed By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in transactions %}
+                                <tr>
+                                    <td>
+                                        <div class="small">
+                                            {{ transaction.created_at[:10] }}
+                                            <br><span class="text-muted">{{ transaction.created_at[11:16] }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if transaction.transaction_type == 'credit_issued' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-plus me-1"></i>Credit Issued
+                                            </span>
+                                        {% elif transaction.transaction_type == 'credit_used' %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-minus me-1"></i>Credit Used
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                {{ transaction.transaction_type.replace('_', ' ').title() }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if transaction.transaction_type == 'credit_issued' %}
+                                            <span class="text-success fw-bold">+${{ "%.2f"|format(transaction.amount) }}</span>
+                                        {% else %}
+                                            <span class="text-warning fw-bold">-${{ "%.2f"|format(transaction.amount) }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="small">{{ transaction.description }}</div>
+                                    </td>
+                                    <td>
+                                        {% if transaction.admin_name %}
+                                            <span class="text-muted">{{ transaction.admin_name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">System</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Credit Transactions</h5>
+                        <p class="text-muted">No credit transactions have been recorded for this account yet.</p>
+                        <p class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Tournament credits are typically issued for refunds due to medical emergencies or other valid reasons.
+                        </p>
+                    </div>
+                {% endif %}
+
+                <!-- Actions -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex gap-2 justify-content-between">
+                            <a href="{{ url_for('profile_settings', player_id=player.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Profile
+                            </a>
+                            <div>
+                                {% if player.tournament_credits and player.tournament_credits > 0 %}
+                                <a href="{{ url_for('tournament_entry', player_id=player.id) }}" class="btn btn-success">
+                                    <i class="fas fa-trophy me-1"></i>Use Credits in Tournament
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Credit Usage Information -->
+                <div class="alert alert-info mt-4">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-info-circle me-2"></i>About Tournament Credits
+                    </h6>
+                    <p class="mb-2">Tournament credits are issued in the following situations:</p>
+                    <ul class="mb-2">
+                        <li><strong>Medical Emergency:</strong> When you can't participate due to a documented medical issue</li>
+                        <li><strong>Tournament Cancellation:</strong> When a tournament is cancelled by the organizers</li>
+                        <li><strong>Technical Issues:</strong> When technical problems prevent fair play</li>
+                        <li><strong>Admin Discretion:</strong> Special circumstances reviewed by administrators</li>
+                    </ul>
+                    <p class="mb-0">
+                        <strong>Note:</strong> Credits can be used for future tournament entries and never expire. 
+                        They cannot be converted back to cash.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

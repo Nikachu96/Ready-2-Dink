@@ -3401,6 +3401,41 @@ def api_recent_credit_transactions():
     
     return jsonify({'transactions': transactions_list})
 
+@app.route('/credit_transaction_history/<int:player_id>')
+def credit_transaction_history(player_id):
+    """Display credit transaction history for a player"""
+    current_player_id = session.get('current_player_id')
+    
+    # Verify the player can view this history (must be their own or admin)
+    if current_player_id != player_id:
+        conn = get_db_connection()
+        current_player = conn.execute('SELECT is_admin FROM players WHERE id = ?', (current_player_id,)).fetchone()
+        if not current_player or not current_player['is_admin']:
+            flash('You can only view your own credit history', 'danger')
+            return redirect(url_for('dashboard', player_id=current_player_id))
+        conn.close()
+    
+    conn = get_db_connection()
+    
+    # Get player information
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    if not player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get all credit transactions for this player
+    transactions = conn.execute('''
+        SELECT ct.*, a.full_name as admin_name
+        FROM credit_transactions ct
+        LEFT JOIN players a ON ct.admin_id = a.id
+        WHERE ct.player_id = ?
+        ORDER BY ct.created_at DESC
+    ''', (player_id,)).fetchall()
+    
+    conn.close()
+    
+    return render_template('credit_history.html', player=player, transactions=transactions)
+
 @app.route('/admin/update_settings', methods=['POST'])
 @admin_required
 def update_settings():
