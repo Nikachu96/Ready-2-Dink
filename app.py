@@ -1788,9 +1788,9 @@ def tournament_entry(player_id):
                 flash('You are already registered for this tournament.', 'warning')
                 return redirect(url_for('tournament_entry', player_id=player_id))
             
-            # Calculate entry fee (add $10 for doubles)
+            # Calculate entry fee (same price for singles and doubles)
             base_fee = tournament_instance['entry_fee']
-            entry_fee = base_fee + 10 if tournament_type == 'doubles' else base_fee
+            entry_fee = base_fee  # Same price for singles and doubles
             
             # Check if Ambassador can use free entry (excluding The Hill)
             free_entry_used = False
@@ -1798,7 +1798,7 @@ def tournament_entry(player_id):
             
             if player['free_tournament_entries'] and player['free_tournament_entries'] > 0 and not is_the_hill:
                 # Ambassador has free entries available and this isn't The Hill
-                entry_fee = 10 if tournament_type == 'doubles' else 0  # Only partner fee for doubles
+                entry_fee = 0  # FREE for both singles and doubles with Ambassador benefits
                 free_entry_used = True
             
             # Handle credit payment method
@@ -3464,9 +3464,8 @@ def credit_transaction_history(player_id):
 
 @app.route('/quick_join_tournament/<int:player_id>')
 def quick_join_tournament(player_id):
-    """Quick tournament join - bypass form and go direct to payment"""
+    """Quick tournament join - show format selection page first"""
     level = request.args.get('level')
-    tournament_type = request.args.get('type', 'singles')  # Default to singles
     
     conn = get_db_connection()
     player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
@@ -3505,9 +3504,37 @@ def quick_join_tournament(player_id):
             conn.close()
             return redirect(url_for('tournaments_overview'))
         
-        # Calculate entry fee
+        conn.close()
+        return render_template('tournament_format_selection.html', 
+                             tournament_instance=tournament_instance, 
+                             player=player)
+        
+    except Exception as e:
+        conn.close()
+        flash(f'Error loading tournament: {str(e)}', 'danger')
+        return redirect(url_for('tournaments_overview'))
+
+@app.route('/process_format_selection', methods=['POST'])
+def process_format_selection():
+    """Process tournament format selection and proceed to payment"""
+    tournament_instance_id = request.form.get('tournament_instance_id')
+    player_id = request.form.get('player_id')
+    tournament_format = request.form.get('tournament_format', 'singles')
+    
+    conn = get_db_connection()
+    
+    try:
+        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+        tournament_instance = conn.execute('SELECT * FROM tournament_instances WHERE id = ?', (tournament_instance_id,)).fetchone()
+        
+        if not player or not tournament_instance:
+            flash('Invalid player or tournament', 'danger')
+            conn.close()
+            return redirect(url_for('tournaments_overview'))
+        
+        # Calculate entry fee (NO EXTRA FEE FOR DOUBLES!)
         base_fee = tournament_instance['entry_fee']
-        entry_fee = base_fee + 10 if tournament_type == 'doubles' else base_fee
+        entry_fee = base_fee  # Same price for singles and doubles
         
         # Check for free Ambassador entries (5 total)
         free_entry_used = False
@@ -3515,51 +3542,27 @@ def quick_join_tournament(player_id):
         
         # Ambassador gets 5 free entries (excluding The Hill/Big Dink championships)
         if player['free_tournament_entries'] and player['free_tournament_entries'] > 0 and not is_the_hill:
-            entry_fee = 10 if tournament_type == 'doubles' else 0  # Free for singles, $10 for doubles
+            entry_fee = 0  # FREE for both singles and doubles with Ambassador benefits
             free_entry_used = True
         
-        # If free entry for singles, process immediately
-        if tournament_type == 'singles' and entry_fee == 0 and free_entry_used:
-            # Free Ambassador entry - process immediately
-            entry_date = datetime.now()
-            match_deadline = entry_date + timedelta(days=14)
-            
-            # Update free entries count
-            conn.execute('UPDATE players SET free_tournament_entries = free_tournament_entries - 1 WHERE id = ?', (player_id,))
-            
-            # Insert tournament entry
-            conn.execute('''
-                INSERT INTO tournaments (player_id, tournament_instance_id, tournament_name, tournament_level, tournament_type, entry_fee, sport, entry_date, match_deadline, payment_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')
-            ''', (player_id, tournament_instance['id'], tournament_instance['name'], tournament_instance['skill_level'], tournament_type, entry_fee, 'Pickleball', entry_date.strftime('%Y-%m-%d'), match_deadline.strftime('%Y-%m-%d')))
-            
-            # Update tournament instance current players count
-            conn.execute('UPDATE tournament_instances SET current_players = current_players + 1 WHERE id = ?', (tournament_instance['id'],))
-            
-            conn.commit()
-            conn.close()
-            
-            remaining_entries = (player['free_tournament_entries'] or 0) - 1
-            flash(f'FREE Ambassador entry used! Successfully entered tournament! You have {remaining_entries} free entries remaining. Good luck!', 'success')
-            return redirect(url_for('dashboard', player_id=player_id))
-        
-        # Store tournament selection in session for payment
+        # Store tournament joining data in session
         session['quick_join_data'] = {
-            'tournament_instance_id': tournament_instance['id'],
-            'tournament_type': tournament_type,
-            'player_id': player_id,
+            'player_id': int(player_id),
+            'tournament_instance_id': int(tournament_instance_id),
+            'tournament_type': tournament_format,
             'entry_fee': entry_fee,
             'free_entry_used': free_entry_used
         }
         
-        conn.close()
+        # Store player ID in session
+        session['player_id'] = int(player_id)
         
-        # Redirect to payment selection
+        conn.close()
         return redirect(url_for('quick_tournament_payment', player_id=player_id))
         
     except Exception as e:
         conn.close()
-        flash(f'Error joining tournament: {str(e)}', 'danger')
+        flash(f'Error processing tournament selection: {str(e)}', 'danger')
         return redirect(url_for('tournaments_overview'))
 
 @app.route('/quick_tournament_payment/<int:player_id>')
