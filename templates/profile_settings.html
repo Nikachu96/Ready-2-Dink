@@ -120,7 +120,20 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="player_id" class="form-label">
+                                    <i class="fas fa-id-card me-1"></i>Player ID *
+                                </label>
+                                <input type="text" class="form-control" id="player_id" name="player_id" 
+                                       value="{{ player.player_id or '' }}" placeholder="1234" maxlength="4" required>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Choose a unique 4-digit number (1000-9999)
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="skill_level" class="form-label">
                                     <i class="fas fa-star me-1"></i>Skill Level *
@@ -366,6 +379,40 @@ document.getElementById('dob').addEventListener('input', function(e) {
         e.target.classList.add('is-invalid');
     } else {
         // Reset validation state for incomplete dates
+        e.target.setCustomValidity('');
+        e.target.classList.remove('is-valid', 'is-invalid');
+    }
+});
+
+// Player ID validation and formatting
+document.getElementById('player_id').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    
+    // Limit to 4 digits
+    if (value.length > 4) {
+        value = value.substring(0, 4);
+    }
+    
+    e.target.value = value;
+    
+    // Validate 4-digit number (1000-9999)
+    if (value.length === 4) {
+        const playerIdNum = parseInt(value);
+        if (playerIdNum >= 1000 && playerIdNum <= 9999) {
+            e.target.setCustomValidity('');
+            e.target.classList.remove('is-invalid');
+            e.target.classList.add('is-valid');
+        } else {
+            e.target.setCustomValidity('Player ID must be between 1000-9999');
+            e.target.classList.remove('is-valid');
+            e.target.classList.add('is-invalid');
+        }
+    } else if (value.length > 0) {
+        e.target.setCustomValidity('Player ID must be exactly 4 digits');
+        e.target.classList.remove('is-valid');
+        e.target.classList.add('is-invalid');
+    } else {
+        // Reset validation state for empty input
         e.target.setCustomValidity('');
         e.target.classList.remove('is-valid', 'is-invalid');
     }
