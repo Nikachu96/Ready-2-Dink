@@ -203,32 +203,34 @@ document.getElementById('dob').addEventListener('input', function(e) {
     
     e.target.value = value;
     
-    // Validate date format and check if it's a valid date
-    const datePattern = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])-(19|20)\d\d$/;
+    // Validate date format - simplified validation
+    const datePattern = /^\d{2}-\d{2}-\d{4}$/;
     if (datePattern.test(value)) {
         const [month, day, year] = value.split('-').map(Number);
-        const date = new Date(year, month - 1, day);
-        const today = new Date();
         
-        if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
-            if (date <= today) {
-                e.target.setCustomValidity('');
-                e.target.classList.remove('is-invalid');
-                e.target.classList.add('is-valid');
-            } else {
-                e.target.setCustomValidity('Date of birth cannot be in the future');
-                e.target.classList.remove('is-valid');
-                e.target.classList.add('is-invalid');
-            }
+        // Basic validation: month 1-12, day 1-31, year 1900-current year
+        const currentYear = new Date().getFullYear();
+        if (month >= 1 && month <= 12 && 
+            day >= 1 && day <= 31 && 
+            year >= 1900 && year <= currentYear) {
+            
+            // Clear any validation errors
+            e.target.setCustomValidity('');
+            e.target.classList.remove('is-invalid');
+            e.target.classList.add('is-valid');
         } else {
             e.target.setCustomValidity('Please enter a valid date');
             e.target.classList.remove('is-valid');
             e.target.classList.add('is-invalid');
         }
     } else if (value.length === 10) {
-        e.target.setCustomValidity('Please use MM-DD-YYYY format (e.g., 08-05-1976)');
+        e.target.setCustomValidity('Please use MM-DD-YYYY format');
         e.target.classList.remove('is-valid');
         e.target.classList.add('is-invalid');
+    } else {
+        // Reset validation state for incomplete dates
+        e.target.setCustomValidity('');
+        e.target.classList.remove('is-valid', 'is-invalid');
     }
 });
 
