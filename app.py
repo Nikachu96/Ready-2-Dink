@@ -2469,6 +2469,150 @@ def submit_match_result():
         'message': f'Match result submitted successfully! Final score: {match_score}'
     })
 
+@app.route('/validate_match_result', methods=['POST'])
+def validate_match_result():
+    """Validate match result with two-step validation process"""
+    data = request.get_json()
+    match_id = data.get('match_id')
+    match_score = data.get('match_score')  # Format: "11-5 6-11 11-9"
+    player1_sets_won = int(data.get('player1_sets_won', 0))
+    player2_sets_won = int(data.get('player2_sets_won', 0))
+    validator_id = data.get('validator_id')
+    opponent_skill_feedback = data.get('opponent_skill_feedback')
+    
+    # Validate input
+    if not match_score or player1_sets_won == player2_sets_won:
+        return jsonify({'success': False, 'message': 'Invalid match result. Sets cannot be tied.'})
+    
+    conn = get_db_connection()
+    
+    # Get match details
+    match = conn.execute('''
+        SELECT * FROM matches WHERE id = ?
+    ''', (match_id,)).fetchone()
+    
+    if not match:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Match not found'})
+    
+    # Check if validator is part of this match
+    if validator_id not in [match['player1_id'], match['player2_id']]:
+        conn.close()
+        return jsonify({'success': False, 'message': 'You are not part of this match'})
+    
+    # Determine which player is validating
+    is_player1 = validator_id == match['player1_id']
+    
+    # Update validation status for the validating player
+    if is_player1:
+        # Check if player1 already validated
+        if match.get('player1_validated', 0) == 1:
+            conn.close()
+            return jsonify({'success': False, 'message': 'You have already validated this match'})
+        
+        conn.execute('''
+            UPDATE matches 
+            SET player1_validated = 1, 
+                player1_skill_feedback = ?,
+                match_result = ?,
+                player1_score = ?,
+                player2_score = ?
+            WHERE id = ?
+        ''', (opponent_skill_feedback, match_score, player1_sets_won, player2_sets_won, match_id))
+    else:
+        # Check if player2 already validated
+        if match.get('player2_validated', 0) == 1:
+            conn.close()
+            return jsonify({'success': False, 'message': 'You have already validated this match'})
+        
+        conn.execute('''
+            UPDATE matches 
+            SET player2_validated = 1,
+                player2_skill_feedback = ?,
+                match_result = ?,
+                player1_score = ?,
+                player2_score = ?
+            WHERE id = ?
+        ''', (opponent_skill_feedback, match_score, player1_sets_won, player2_sets_won, match_id))
+    
+    # Check if both players have now validated
+    updated_match = conn.execute('SELECT * FROM matches WHERE id = ?', (match_id,)).fetchone()
+    
+    both_validated = (updated_match.get('player1_validated', 0) == 1 and 
+                     updated_match.get('player2_validated', 0) == 1)
+    
+    if both_validated:
+        # Determine winner based on sets won
+        winner_id = match['player1_id'] if player1_sets_won > player2_sets_won else match['player2_id']
+        loser_id = match['player2_id'] if player1_sets_won > player2_sets_won else match['player1_id']
+        
+        # Complete the match
+        conn.execute('''
+            UPDATE matches 
+            SET status = 'completed', 
+                winner_id = ?,
+                validation_status = 'completed'
+            WHERE id = ?
+        ''', (winner_id, match_id))
+        
+        # Update player win/loss records
+        conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (winner_id,))
+        conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (loser_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        # Award points based on match type
+        points_awarded = 15 if (player1_sets_won + player2_sets_won) == 3 else 10
+        award_points(winner_id, points_awarded, 'Match victory')
+        
+        # Send notifications
+        conn = get_db_connection()
+        winner = conn.execute('SELECT full_name FROM players WHERE id = ?', (winner_id,)).fetchone()
+        loser = conn.execute('SELECT full_name FROM players WHERE id = ?', (loser_id,)).fetchone()
+        conn.close()
+        
+        if winner and loser:
+            sets_result = f"{player1_sets_won}-{player2_sets_won}" if winner_id == match['player1_id'] else f"{player2_sets_won}-{player1_sets_won}"
+            winner_message = f"🏆 Match completed! You beat {loser['full_name']} ({sets_result}) and earned {points_awarded} ranking points!"
+            loser_message = f"Match completed against {winner['full_name']} ({match_score}). Keep practicing!"
+            
+            send_push_notification(winner_id, winner_message, "Match Completed")
+            send_push_notification(loser_id, loser_message, "Match Completed")
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Match completed! Both players validated. Final score: {match_score}',
+            'match_completed': True
+        })
+    else:
+        # Update validation status but don't complete match yet
+        conn.execute('''
+            UPDATE matches 
+            SET validation_status = 'partial'
+            WHERE id = ?
+        ''', (match_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        # Notify opponent that validation is needed
+        opponent_id = match['player2_id'] if is_player1 else match['player1_id']
+        conn = get_db_connection()
+        validator_name = conn.execute('SELECT full_name FROM players WHERE id = ?', (validator_id,)).fetchone()['full_name']
+        conn.close()
+        
+        opponent_message = f"⚠️ {validator_name} has submitted and validated your match result. Please validate the score to complete the match."
+        send_push_notification(opponent_id, opponent_message, "Score Validation Needed")
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Your validation recorded! Waiting for opponent to validate the score.',
+            'match_completed': False
+        })
+    
+    conn.close()
+
 @app.route('/get_pending_matches/<int:player_id>')
 def get_pending_matches(player_id):
     """Get matches that need score submission"""
