@@ -214,6 +214,12 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    # Add tournament credits for refunds
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN tournament_credits DECIMAL(10,2) DEFAULT 0.00')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     try:
         c.execute('ALTER TABLE matches ADD COLUMN notification_sent INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
@@ -249,6 +255,23 @@ def init_db():
             INSERT OR IGNORE INTO settings (key, value, description)
             VALUES (?, ?, ?)
         ''', (key, value, description))
+    
+    # Credit transactions table for tournament refunds
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS credit_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            transaction_type TEXT NOT NULL CHECK (transaction_type IN ('credit_issued', 'credit_used')),
+            amount DECIMAL(10,2) NOT NULL,
+            description TEXT NOT NULL,
+            tournament_id INTEGER,
+            admin_id INTEGER,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES players(id),
+            FOREIGN KEY (tournament_id) REFERENCES tournaments(id),
+            FOREIGN KEY (admin_id) REFERENCES players(id)
+        )
+    ''')
     
     # Matches table
     c.execute('''
