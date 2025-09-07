@@ -1889,8 +1889,10 @@ def tournament_entry(player_id):
                 payment_status = 'pending_payment'  # Partial credit payment, remaining balance due
             elif tournament_type == 'doubles' and partner_id:
                 payment_status = 'pending_partner'  # Waiting for partner acceptance
+            elif free_entry_used and entry_fee == 0:
+                payment_status = 'completed'  # Free Ambassador entry
             else:
-                payment_status = 'completed'  # Regular cash payment or free entry
+                payment_status = 'pending_payment'  # Requires payment processing
             
             # Insert tournament entry
             conn.execute('''
