@@ -3,6 +3,32 @@
 {% block title %}Welcome {{ player.full_name.split()[0] }} - Ready 2 Dink{% endblock %}
 
 {% block content %}
+<!-- Birthday Message -->
+{% if is_birthday %}
+<div class="row mb-4 animate-in">
+    <div class="col-12">
+        <div class="alert alert-dismissible fade show" 
+             style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); border: none; border-radius: 12px;">
+            <div class="text-center py-3">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <i class="fas fa-birthday-cake fa-3x me-3" style="color: #8B4513;"></i>
+                    <div>
+                        <h2 class="fw-bold mb-0" style="color: #8B4513;">🎉 Happy Birthday, {{ player.full_name.split()[0] }}! 🎉</h2>
+                        <p class="mb-0 fs-5" style="color: #A0522D;">
+                            Hope you have a fantastic day filled with amazing matches and great serves! 
+                            <br>Ready to celebrate with some pickleball? 🏓
+                        </p>
+                    </div>
+                    <i class="fas fa-gift fa-3x ms-3" style="color: #8B4513;"></i>
+                </div>
+                <button type="button" class="btn-close position-absolute top-0 end-0 m-3" 
+                        data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Welcome Section - New Color Scheme -->
 <div class="row mb-4 animate-in">
     <div class="col-12">
@@ -72,7 +98,7 @@
 <div class="row mb-4 animate-in">
     <div class="col-12">
         <div class="d-flex gap-3 justify-content-center">
-            <a href="{{ url_for('register_tournament') }}" class="btn btn-outline-primary px-4 py-3 rounded-pill text-decoration-none">
+            <a href="{{ url_for('tournament_entry', player_id=player.id) }}" class="btn btn-outline-primary px-4 py-3 rounded-pill text-decoration-none">
                 <div class="text-center">
                     <i class="fas fa-trophy fa-2x mb-2" style="color: #E0563F;"></i>
                     <div class="fw-semibold">Join Tournament</div>

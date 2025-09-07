@@ -520,6 +520,28 @@ def get_leaderboard(limit=10):
     
     return leaderboard
 
+def is_player_birthday(player_dob):
+    """Check if it's the player's birthday today"""
+    if not player_dob:
+        return False
+    
+    try:
+        # Parse the date in MM-DD-YYYY format
+        from datetime import datetime
+        today = datetime.now()
+        
+        # Try to parse the date in MM-DD-YYYY format first
+        try:
+            birthday = datetime.strptime(player_dob, '%m-%d-%Y')
+        except ValueError:
+            # Fallback to YYYY-MM-DD format if that's how it's stored
+            birthday = datetime.strptime(player_dob, '%Y-%m-%d')
+        
+        # Check if month and day match today
+        return today.month == birthday.month and today.day == birthday.day
+    except Exception:
+        return False
+
 def perform_annual_points_reset():
     """Perform annual ranking points reset while maintaining lifetime rankings"""
     from datetime import datetime
@@ -1131,6 +1153,9 @@ def player_home(player_id):
     player_ranking = get_player_ranking(player_id)
     leaderboard = get_leaderboard(10)
     
+    # Check if it's the player's birthday
+    is_birthday = is_player_birthday(player['dob'])
+    
     return render_template('player_home.html', 
                          player=player, 
                          connections=connections,
@@ -1139,7 +1164,8 @@ def player_home(player_id):
                          player_tournaments=player_tournaments,
                          available_tournaments=available_tournaments,
                          player_ranking=player_ranking,
-                         leaderboard=leaderboard)
+                         leaderboard=leaderboard,
+                         is_birthday=is_birthday)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
