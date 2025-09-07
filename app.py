@@ -2082,6 +2082,69 @@ def profile_settings():
     player = players[0]  # Get the most recent (current) player
     return render_template('profile_settings.html', player=player)
 
+@app.route('/update-availability/<int:player_id>', methods=['POST'])
+def update_availability(player_id):
+    """Update player availability schedule"""
+    if 'player_id' not in session or session['player_id'] != player_id:
+        flash('Unauthorized access', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        # Get form data
+        availability_data = {
+            'monday': {
+                'available': 'monday' in request.form,
+                'time_slots': request.form.getlist('monday_time')
+            },
+            'tuesday': {
+                'available': 'tuesday' in request.form,
+                'time_slots': request.form.getlist('tuesday_time')
+            },
+            'wednesday': {
+                'available': 'wednesday' in request.form,
+                'time_slots': request.form.getlist('wednesday_time')
+            },
+            'thursday': {
+                'available': 'thursday' in request.form,
+                'time_slots': request.form.getlist('thursday_time')
+            },
+            'friday': {
+                'available': 'friday' in request.form,
+                'time_slots': request.form.getlist('friday_time')
+            },
+            'saturday': {
+                'available': 'saturday' in request.form,
+                'time_slots': request.form.getlist('saturday_time')
+            },
+            'sunday': {
+                'available': 'sunday' in request.form,
+                'time_slots': request.form.getlist('sunday_time')
+            }
+        }
+        
+        time_preference = request.form.get('time_preference', 'Flexible')
+        
+        # Convert to JSON string for database storage
+        availability_json = json.dumps(availability_data)
+        
+        # Update database
+        conn = get_db_connection()
+        conn.execute('''
+            UPDATE players 
+            SET availability_schedule = ?, time_preference = ? 
+            WHERE id = ?
+        ''', (availability_json, time_preference, player_id))
+        conn.commit()
+        conn.close()
+        
+        flash('Availability schedule updated successfully!', 'success')
+        
+    except Exception as e:
+        logging.error(f"Error updating availability for player {player_id}: {str(e)}")
+        flash('Error updating availability. Please try again.', 'danger')
+    
+    return redirect(url_for('player_home', player_id=player_id))
+
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
     """Update player profile information"""
