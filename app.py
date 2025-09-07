@@ -176,6 +176,16 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN job_title TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN admin_level TEXT DEFAULT "staff"')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     # Add availability columns
     try:
         c.execute('ALTER TABLE players ADD COLUMN availability_schedule TEXT DEFAULT NULL')
@@ -3689,6 +3699,104 @@ def save_bank_settings():
         conn.close()
     
     return redirect(url_for('admin_bank_settings'))
+
+@app.route('/admin/staff')
+@admin_required
+def admin_staff():
+    """Display admin staff management page"""
+    conn = get_db_connection()
+    
+    # Get all admin users
+    admin_staff = conn.execute('''
+        SELECT * FROM players 
+        WHERE is_admin = 1 
+        ORDER BY created_at DESC
+    ''').fetchall()
+    
+    conn.close()
+    
+    return render_template('admin/staff.html', admin_staff=admin_staff)
+
+@app.route('/admin/create_admin_staff', methods=['POST'])
+@admin_required
+def create_admin_staff():
+    """Create a new admin staff member"""
+    from datetime import datetime
+    
+    # Get form data
+    full_name = request.form.get('full_name')
+    email = request.form.get('email')
+    job_title = request.form.get('job_title')
+    location1 = request.form.get('location1')
+    dob = request.form.get('dob')
+    admin_level = request.form.get('admin_level', 'staff')
+    address = request.form.get('address')
+    
+    # Validate required fields
+    if not all([full_name, email, location1, dob, address]):
+        flash('All required fields must be filled', 'danger')
+        return redirect(url_for('admin_staff'))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Check if email already exists
+        existing = conn.execute('SELECT id FROM players WHERE email = ?', (email,)).fetchone()
+        if existing:
+            flash('Email already exists in the system', 'danger')
+            return redirect(url_for('admin_staff'))
+        
+        # Create admin staff account
+        conn.execute('''
+            INSERT INTO players (
+                full_name, email, location1, dob, address, job_title,
+                admin_level, is_admin, skill_level, membership_type,
+                subscription_status, tournament_credits, wins, losses, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            full_name, email, location1, dob, address, job_title,
+            admin_level, True, 'Admin', 'tournament',
+            'active', 10, 0, 0, datetime.now().isoformat()
+        ))
+        
+        conn.commit()
+        flash(f'Admin staff member "{full_name}" created successfully!', 'success')
+        
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error creating admin staff: {str(e)}', 'danger')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('admin_staff'))
+
+@app.route('/admin/remove_admin_staff/<int:player_id>', methods=['POST'])
+@admin_required
+def remove_admin_staff(player_id):
+    """Remove admin access from a staff member"""
+    conn = get_db_connection()
+    
+    try:
+        # Get player info before removing admin access
+        player = conn.execute('SELECT full_name FROM players WHERE id = ?', (player_id,)).fetchone()
+        
+        if not player:
+            flash('Staff member not found', 'danger')
+            return redirect(url_for('admin_staff'))
+        
+        # Remove admin access
+        conn.execute('UPDATE players SET is_admin = 0 WHERE id = ?', (player_id,))
+        conn.commit()
+        
+        flash(f'Admin access removed from {player["full_name"]}', 'success')
+        
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error removing admin access: {str(e)}', 'danger')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('admin_staff'))
 
 @app.route('/issue_tournament_credit', methods=['POST'])
 @admin_required
