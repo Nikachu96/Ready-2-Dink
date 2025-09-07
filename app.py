@@ -1141,9 +1141,9 @@ def send_email_notification(to_email, subject, message_body, from_email=None):
         from sendgrid import SendGridAPIClient
         from sendgrid.helpers.mail import Mail
         
-        # Use environment variable for from email, with fallback
+        # Use environment variable for from email, with fallback to verified sender
         if not from_email:
-            from_email = os.environ.get('FROM_EMAIL', 'noreply@ready2dink.com')
+            from_email = os.environ.get('FROM_EMAIL', 'lucien255@gmail.com')
         
         # If domain isn't verified yet, use a test approach
         # We'll temporarily use a verified test pattern
