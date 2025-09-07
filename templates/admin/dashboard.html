@@ -19,6 +19,9 @@
                 <button class="btn btn-outline-primary" onclick="toggleSection('users')">
                     <i class="fas fa-users me-1"></i>Users
                 </button>
+                <button class="btn btn-outline-secondary" onclick="toggleSection('credits')">
+                    <i class="fas fa-credit-card me-1"></i>Credits
+                </button>
                 <button class="btn btn-outline-danger" onclick="toggleSection('analytics')">
                     <i class="fas fa-chart-bar me-1"></i>Analytics
                 </button>
@@ -508,6 +511,126 @@
                         <button class="btn btn-outline-info" onclick="tournamentPrizes()">
                             <i class="fas fa-trophy me-2"></i>Tournament Prizes
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Credits Management Section -->
+<div id="credits-section" class="admin-section" style="display: none;">
+    <div class="row mb-4">
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-credit-card me-2"></i>Issue Tournament Credits
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('issue_tournament_credit') }}" method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="player_search" class="form-label">Find Player</label>
+                                    <input type="text" class="form-control" id="player_search" placeholder="Search by name, email, or Player ID..." onkeyup="searchPlayers()">
+                                    <div id="player_results" class="list-group mt-2" style="display: none;"></div>
+                                    <input type="hidden" id="selected_player_id" name="player_id" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="credit_amount" class="form-label">Credit Amount ($)</label>
+                                    <input type="number" class="form-control" id="credit_amount" name="amount" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="credit_reason" class="form-label">Reason for Credit</label>
+                            <select class="form-select" id="credit_reason" name="reason" required>
+                                <option value="">Select reason...</option>
+                                <option value="medical_emergency">Medical Emergency</option>
+                                <option value="family_emergency">Family Emergency</option>
+                                <option value="tournament_cancelled">Tournament Cancelled</option>
+                                <option value="technical_issues">Technical Issues</option>
+                                <option value="administrative_error">Administrative Error</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="credit_description" class="form-label">Additional Details</label>
+                            <textarea class="form-control" id="credit_description" name="description" rows="3" placeholder="Enter additional details about why this credit is being issued..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus me-1"></i>Issue Credit
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Credit Guidelines
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>When to Issue Credits:</h6>
+                    <ul class="small">
+                        <li>Medical emergencies preventing tournament play</li>
+                        <li>Family emergencies requiring immediate attention</li>
+                        <li>Tournament cancellations due to venue issues</li>
+                        <li>Technical problems preventing participation</li>
+                        <li>Administrative errors on platform</li>
+                    </ul>
+                    <hr>
+                    <h6>Credit Usage:</h6>
+                    <ul class="small">
+                        <li>Credits can be used for future tournament entries</li>
+                        <li>Credits never expire</li>
+                        <li>Credits are non-transferable</li>
+                        <li>Credits cannot be converted to cash</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Credit Transactions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Credit Transactions
+                    </h5>
+                    <button class="btn btn-outline-light btn-sm" onclick="exportCreditHistory()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Player</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Reason</th>
+                                    <th>Admin</th>
+                                </tr>
+                            </thead>
+                            <tbody id="credit_transactions_table">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>No credit transactions yet
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1134,6 +1257,90 @@ function startTournament(id) {
                 location.reload();
             });
     }
+}
+
+// Credit Management Functions
+function searchPlayers() {
+    const query = document.getElementById('player_search').value;
+    const resultsDiv = document.getElementById('player_results');
+    
+    if (query.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+    
+    fetch(`/api/search_players?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.players && data.players.length > 0) {
+                let html = '';
+                data.players.forEach(player => {
+                    html += `
+                        <a href="#" class="list-group-item list-group-item-action" onclick="selectPlayer(${player.id}, '${player.full_name}', '${player.email}', '${player.player_id || ''}')">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${player.full_name}</strong>
+                                    <br><small class="text-muted">${player.email}</small>
+                                </div>
+                                <div class="text-end">
+                                    ${player.player_id ? `<span class="badge bg-primary">ID: ${player.player_id}</span><br>` : ''}
+                                    <small class="text-muted">Credits: $${(player.tournament_credits || 0).toFixed(2)}</small>
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                });
+                resultsDiv.innerHTML = html;
+                resultsDiv.style.display = 'block';
+            } else {
+                resultsDiv.innerHTML = '<div class="list-group-item text-muted">No players found</div>';
+                resultsDiv.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error searching players:', error);
+            resultsDiv.style.display = 'none';
+        });
+}
+
+function selectPlayer(playerId, playerName, playerEmail, playerIdNum) {
+    document.getElementById('selected_player_id').value = playerId;
+    document.getElementById('player_search').value = `${playerName} (${playerEmail}${playerIdNum ? `, ID: ${playerIdNum}` : ''})`;
+    document.getElementById('player_results').style.display = 'none';
+}
+
+function exportCreditHistory() {
+    window.location.href = '/admin/export_credit_history';
+}
+
+// Load recent credit transactions when credits section is shown
+function loadCreditTransactions() {
+    fetch('/api/recent_credit_transactions')
+        .then(response => response.json())
+        .then(data => {
+            const tableBody = document.getElementById('credit_transactions_table');
+            if (data.transactions && data.transactions.length > 0) {
+                let html = '';
+                data.transactions.forEach(tx => {
+                    const date = new Date(tx.created_at).toLocaleDateString();
+                    const badgeClass = tx.transaction_type === 'credit_issued' ? 'success' : 'warning';
+                    html += `
+                        <tr>
+                            <td>${date}</td>
+                            <td>${tx.player_name} ${tx.player_id ? `(ID: ${tx.player_id})` : ''}</td>
+                            <td><span class="badge bg-${badgeClass}">${tx.transaction_type.replace('_', ' ').toUpperCase()}</span></td>
+                            <td>$${parseFloat(tx.amount).toFixed(2)}</td>
+                            <td>${tx.description}</td>
+                            <td>${tx.admin_name || 'System'}</td>
+                        </tr>
+                    `;
+                });
+                tableBody.innerHTML = html;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading credit transactions:', error);
+        });
 }
 
 </script>

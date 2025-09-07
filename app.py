@@ -3231,6 +3231,129 @@ def admin_settings():
     
     return render_template('admin/settings.html', settings=settings)
 
+@app.route('/issue_tournament_credit', methods=['POST'])
+@admin_required
+def issue_tournament_credit():
+    """Issue tournament credit to a player"""
+    player_id = request.form.get('player_id')
+    amount_str = request.form.get('amount')
+    reason = request.form.get('reason')
+    description = request.form.get('description', '')
+    
+    # Get current admin ID
+    admin_id = session.get('current_player_id')
+    
+    # Validate required fields
+    if not player_id or not amount_str or not reason:
+        flash('All fields are required', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    
+    try:
+        amount = float(amount_str)
+        if amount <= 0:
+            flash('Credit amount must be greater than 0', 'danger')
+            return redirect(url_for('admin_dashboard'))
+    except (ValueError, TypeError):
+        flash('Invalid credit amount', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Verify player exists
+        player = conn.execute('SELECT full_name, tournament_credits FROM players WHERE id = ?', (player_id,)).fetchone()
+        if not player:
+            flash('Player not found', 'danger')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Update player's credit balance
+        new_balance = (player['tournament_credits'] or 0) + amount
+        conn.execute('UPDATE players SET tournament_credits = ? WHERE id = ?', (new_balance, player_id))
+        
+        # Record the transaction
+        full_description = f"{reason.replace('_', ' ').title()}: {description}" if description else reason.replace('_', ' ').title()
+        conn.execute('''
+            INSERT INTO credit_transactions (player_id, transaction_type, amount, description, admin_id)
+            VALUES (?, 'credit_issued', ?, ?, ?)
+        ''', (player_id, amount, full_description, admin_id))
+        
+        conn.commit()
+        
+        flash(f'Successfully issued ${amount:.2f} credit to {player["full_name"]}. New balance: ${new_balance:.2f}', 'success')
+        
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error issuing credit: {str(e)}', 'danger')
+        
+    finally:
+        conn.close()
+    
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/api/search_players')
+def api_search_players():
+    """API endpoint to search for players"""
+    query = request.args.get('q', '').strip()
+    
+    if len(query) < 2:
+        return jsonify({'players': []})
+    
+    conn = get_db_connection()
+    
+    # Search by name, email, or player ID
+    players = conn.execute('''
+        SELECT id, full_name, email, player_id, tournament_credits
+        FROM players 
+        WHERE full_name LIKE ? OR email LIKE ? OR player_id LIKE ?
+        ORDER BY full_name
+        LIMIT 10
+    ''', (f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
+    
+    conn.close()
+    
+    players_list = []
+    for player in players:
+        players_list.append({
+            'id': player['id'],
+            'full_name': player['full_name'],
+            'email': player['email'],
+            'player_id': player['player_id'],
+            'tournament_credits': float(player['tournament_credits'] or 0)
+        })
+    
+    return jsonify({'players': players_list})
+
+@app.route('/api/recent_credit_transactions')
+def api_recent_credit_transactions():
+    """API endpoint to get recent credit transactions"""
+    conn = get_db_connection()
+    
+    transactions = conn.execute('''
+        SELECT ct.*, p.full_name as player_name, p.player_id, a.full_name as admin_name
+        FROM credit_transactions ct
+        JOIN players p ON ct.player_id = p.id
+        LEFT JOIN players a ON ct.admin_id = a.id
+        ORDER BY ct.created_at DESC
+        LIMIT 20
+    ''').fetchall()
+    
+    conn.close()
+    
+    transactions_list = []
+    for tx in transactions:
+        transactions_list.append({
+            'id': tx['id'],
+            'player_name': tx['player_name'],
+            'player_id': tx['player_id'],
+            'transaction_type': tx['transaction_type'],
+            'amount': float(tx['amount']),
+            'description': tx['description'],
+            'admin_name': tx['admin_name'],
+            'created_at': tx['created_at']
+        })
+    
+    return jsonify({'transactions': transactions_list})
+
 @app.route('/admin/update_settings', methods=['POST'])
 @admin_required
 def update_settings():
