@@ -187,6 +187,27 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    # Add preferred court columns (replacing location fields)
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN preferred_court_1 TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN preferred_court_2 TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN court1_coordinates TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN court2_coordinates TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     try:
         c.execute('ALTER TABLE matches ADD COLUMN notification_sent INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
