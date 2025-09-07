@@ -208,6 +208,12 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    # Add unique 4-digit player ID
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN player_id TEXT UNIQUE DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     try:
         c.execute('ALTER TABLE matches ADD COLUMN notification_sent INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
