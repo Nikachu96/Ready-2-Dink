@@ -220,6 +220,12 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    # Add payout preference for tournament winnings
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN payout_preference TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     try:
         c.execute('ALTER TABLE matches ADD COLUMN notification_sent INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
@@ -2397,26 +2403,28 @@ def update_profile():
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?, 
                     dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
-                    skill_level = ?, email = ?, selfie = ?, player_id = ?
+                    skill_level = ?, email = ?, selfie = ?, player_id = ?, payout_preference = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
                   request.form['dob'], request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
                   request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
-                  request.form['skill_level'], request.form['email'], selfie_filename, player_id_input, player_id))
+                  request.form['skill_level'], request.form['email'], selfie_filename, player_id_input, 
+                  request.form.get('payout_preference', ''), player_id))
         else:
             conn.execute('''
                 UPDATE players 
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?,
                     dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
-                    skill_level = ?, email = ?, player_id = ?
+                    skill_level = ?, email = ?, player_id = ?, payout_preference = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
                   request.form['dob'], request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
                   request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
-                  request.form['skill_level'], request.form['email'], player_id_input, player_id))
+                  request.form['skill_level'], request.form['email'], player_id_input, 
+                  request.form.get('payout_preference', ''), player_id))
         
         conn.commit()
         conn.close()

@@ -232,6 +232,22 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label for="payout_preference" class="form-label">
+                            <i class="fas fa-money-bill me-1"></i>Payout Preference for Tournament Winnings
+                        </label>
+                        <select class="form-select" id="payout_preference" name="payout_preference">
+                            <option value="">Select payout method...</option>
+                            <option value="PayPal" {{ 'selected' if player.payout_preference == 'PayPal' }}>PayPal</option>
+                            <option value="Venmo" {{ 'selected' if player.payout_preference == 'Venmo' }}>Venmo</option>
+                            <option value="Zelle" {{ 'selected' if player.payout_preference == 'Zelle' }}>Zelle</option>
+                        </select>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Choose how you'd prefer to receive tournament winnings
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label for="selfie" class="form-label">
                             <i class="fas fa-camera me-1"></i>Update Profile Photo
                         </label>
