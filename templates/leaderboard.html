@@ -34,7 +34,7 @@
                             <tr>
                                 <td class="text-center align-middle">
                                     {% if loop.index == 1 %}
-                                        <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+                                        <span class="badge bg-warning text-white fs-6 px-3 py-2">
                                             <i class="fas fa-crown me-1"></i>#{{ loop.index }}
                                         </span>
                                     {% elif loop.index == 2 %}
@@ -92,7 +92,7 @@
                                 </td>
                                 <td class="text-center align-middle">
                                     {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                        <span class="badge bg-warning text-dark">
+                                        <span class="badge bg-warning text-white">
                                             <i class="fas fa-trophy me-1"></i>{{ player.tournament_wins }}
                                         </span>
                                     {% else %}
