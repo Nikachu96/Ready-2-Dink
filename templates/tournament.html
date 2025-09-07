@@ -131,6 +131,83 @@
                             {% endif %}
                         </div>
                         
+                        <!-- Payment Method Selection -->
+                        <div class="card mb-4" id="payment-method-section" style="display: none;">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-credit-card me-2"></i>Payment Method
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Display Credit Balance -->
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <div class="alert alert-info d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i class="fas fa-wallet me-2"></i>
+                                                <strong>Available Tournament Credits: ${{ "%.2f"|format(player.tournament_credits or 0) }}</strong>
+                                            </div>
+                                            {% if player.tournament_credits and player.tournament_credits > 0 %}
+                                                <span class="badge bg-success">Available</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">No Credits</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Payment Method Options -->
+                                <div class="row">
+                                    <div class="col-12">
+                                        <label class="form-label">Choose Payment Method:</label>
+                                        
+                                        {% if player.tournament_credits and player.tournament_credits > 0 %}
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="radio" name="payment_method" id="payment_credits" value="credits" checked onchange="updatePaymentMethod()">
+                                                <label class="form-check-label" for="payment_credits">
+                                                    <i class="fas fa-coins me-2 text-success"></i>
+                                                    <strong>Use Tournament Credits</strong>
+                                                    <br><small class="text-muted">Pay with your available credits (Refunds from previous tournaments)</small>
+                                                </label>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="payment_method" id="payment_cash" value="cash" 
+                                                   {% if not player.tournament_credits or player.tournament_credits <= 0 %}checked{% endif %} onchange="updatePaymentMethod()">
+                                            <label class="form-check-label" for="payment_cash">
+                                                <i class="fas fa-dollar-sign me-2 text-primary"></i>
+                                                <strong>Pay Entry Fee</strong>
+                                                <br><small class="text-muted">Standard tournament entry payment</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Credit Usage Info -->
+                                <div id="credit-usage-info" class="mt-3" style="display: none;">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <small class="text-muted">Entry Fee:</small>
+                                                    <div class="fw-bold" id="entry-fee-display">$0</div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">After Payment:</small>
+                                                    <div class="fw-bold" id="remaining-credits">${{ "%.2f"|format(player.tournament_credits or 0) }}</div>
+                                                </div>
+                                            </div>
+                                            <div id="insufficient-credits-warning" class="alert alert-warning mt-2" style="display: none;">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                <strong>Insufficient Credits!</strong> You need additional payment to cover the full entry fee.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="alert text-white" style="background-color: #2c3e50; border-color: #34495e;">
                             <i class="fas fa-info-circle me-2 text-white"></i>
                             <strong class="text-white">Tournament Rules:</strong> 
@@ -144,7 +221,7 @@
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="{{ url_for('dashboard', player_id=player.id) }}" class="btn btn-secondary me-md-2">Back to Dashboard</a>
-                            <button type="submit" class="btn btn-success">
+                            <button type="submit" class="btn btn-success" id="submit-button">
                                 <i class="fas fa-credit-card me-1"></i>Enter Tournament
                             </button>
                         </div>
@@ -254,6 +331,134 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.remove('border-secondary');
         });
     });
+    
+    // Initialize payment method section and fee calculations
+    updateTournamentSelection();
+    updatePaymentMethod();
+});
+
+// Credit management and payment calculation functions
+const playerCredits = {{ player.tournament_credits or 0 }};
+
+function updateTournamentSelection() {
+    const selectedTournament = document.querySelector('input[name="tournament_instance_id"]:checked');
+    const paymentSection = document.getElementById('payment-method-section');
+    
+    if (selectedTournament) {
+        paymentSection.style.display = 'block';
+        updatePaymentMethod();
+    } else {
+        paymentSection.style.display = 'none';
+    }
+}
+
+function updatePaymentMethod() {
+    const selectedTournament = document.querySelector('input[name="tournament_instance_id"]:checked');
+    const tournamentType = document.getElementById('tournament_type').value;
+    const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+    const creditUsageInfo = document.getElementById('credit-usage-info');
+    const entryFeeDisplay = document.getElementById('entry-fee-display');
+    const remainingCreditsDisplay = document.getElementById('remaining-credits');
+    const insufficientWarning = document.getElementById('insufficient-credits-warning');
+    const submitButton = document.getElementById('submit-button');
+    
+    if (!selectedTournament) {
+        creditUsageInfo.style.display = 'none';
+        return;
+    }
+    
+    // Calculate entry fee
+    const baseFee = parseFloat(selectedTournament.closest('.tournament-card').querySelector('.tournament-fee').dataset.baseFee);
+    const entryFee = baseFee + (tournamentType === 'doubles' ? 10 : 0);
+    
+    entryFeeDisplay.textContent = '$' + entryFee.toFixed(2);
+    
+    // Show credit usage info if credits payment method is selected
+    if (paymentMethod && paymentMethod.value === 'credits') {
+        creditUsageInfo.style.display = 'block';
+        
+        const remainingCredits = Math.max(0, playerCredits - entryFee);
+        remainingCreditsDisplay.textContent = '$' + remainingCredits.toFixed(2);
+        
+        // Check if credits are sufficient
+        if (playerCredits < entryFee) {
+            insufficientWarning.style.display = 'block';
+            const shortfall = entryFee - playerCredits;
+            insufficientWarning.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Insufficient Credits!</strong> You need an additional $${shortfall.toFixed(2)} to cover the full entry fee.
+                Credit will be partially used and you'll need to pay the remaining amount.
+            `;
+            submitButton.innerHTML = '<i class="fas fa-credit-card me-1"></i>Continue with Partial Credit + Payment';
+        } else {
+            insufficientWarning.style.display = 'none';
+            submitButton.innerHTML = '<i class="fas fa-coins me-1"></i>Enter Tournament with Credits';
+        }
+    } else {
+        creditUsageInfo.style.display = 'none';
+        submitButton.innerHTML = '<i class="fas fa-credit-card me-1"></i>Enter Tournament';
+    }
+}
+
+// Enhanced selectTournament function to handle payment method updates
+function selectTournament(tournamentId, cardElement) {
+    // Check the radio button
+    const radioButton = document.getElementById('tournament_' + tournamentId);
+    if (radioButton) {
+        radioButton.checked = true;
+    }
+    
+    // Remove active class from all cards
+    document.querySelectorAll('.tournament-card').forEach(card => {
+        card.classList.remove('border-primary', 'bg-light');
+    });
+    
+    // Add active class to selected card
+    if (cardElement && cardElement.classList) {
+        cardElement.classList.add('border-primary', 'bg-light');
+    }
+    
+    // Update payment method section
+    updateTournamentSelection();
+}
+
+// Enhanced togglePartnerSelection to handle payment updates
+function togglePartnerSelection() {
+    const tournamentType = document.getElementById('tournament_type').value;
+    const partnerSelection = document.getElementById('partner-selection');
+    const partnerSelect = document.getElementById('partner_id');
+    const tournamentCards = document.querySelectorAll('.tournament-card');
+    
+    if (tournamentType === 'doubles') {
+        partnerSelection.style.display = 'block';
+        partnerSelect.required = true;
+        
+        // Update tournament fees to show +$10 for doubles
+        tournamentCards.forEach(card => {
+            const feeElement = card.querySelector('.tournament-fee');
+            if (feeElement) {
+                const baseFee = parseFloat(feeElement.dataset.baseFee);
+                const doublesFee = baseFee + 10;
+                feeElement.textContent = '$' + doublesFee.toFixed(0);
+            }
+        });
+    } else {
+        partnerSelection.style.display = 'none';
+        partnerSelect.required = false;
+        
+        // Reset tournament fees to original amounts
+        tournamentCards.forEach(card => {
+            const feeElement = card.querySelector('.tournament-fee');
+            if (feeElement) {
+                const baseFee = parseFloat(feeElement.dataset.baseFee);
+                feeElement.textContent = '$' + baseFee.toFixed(0);
+            }
+        });
+    }
+    
+    // Update payment calculations
+    updatePaymentMethod();
+}
 });
 </script>
 {% endblock %}

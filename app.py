@@ -1722,6 +1722,7 @@ def tournament_entry(player_id):
     if request.method == 'POST':
         required_fields = ['tournament_instance_id', 'tournament_type']
         tournament_type = request.form.get('tournament_type')
+        payment_method = request.form.get('payment_method', 'cash')
         
         # Add partner_id to required fields if doubles
         if tournament_type == 'doubles':
@@ -1776,6 +1777,42 @@ def tournament_entry(player_id):
                 entry_fee = 10 if tournament_type == 'doubles' else 0  # Only partner fee for doubles
                 free_entry_used = True
             
+            # Handle credit payment method
+            credits_used = 0
+            remaining_payment = entry_fee
+            
+            if payment_method == 'credits' and entry_fee > 0:
+                player_credits = player['tournament_credits'] or 0
+                
+                if player_credits <= 0:
+                    flash('You have no tournament credits available. Please choose cash payment.', 'danger')
+                    return redirect(url_for('tournament_entry', player_id=player_id))
+                
+                # Use available credits (partial or full payment)
+                credits_used = min(player_credits, entry_fee)
+                remaining_payment = max(0, entry_fee - credits_used)
+                
+                # Update player's credit balance
+                new_credit_balance = player_credits - credits_used
+                conn.execute('UPDATE players SET tournament_credits = ? WHERE id = ?', (new_credit_balance, player_id))
+                
+                # Record credit transaction
+                credit_description = f"Tournament entry payment: {tournament_instance['name']} ({tournament_type})"
+                if remaining_payment > 0:
+                    credit_description += f" - Partial payment (${credits_used:.2f} of ${entry_fee:.2f})"
+                
+                conn.execute('''
+                    INSERT INTO credit_transactions (player_id, transaction_type, amount, description)
+                    VALUES (?, 'credit_used', ?, ?)
+                ''', (player_id, credits_used, credit_description))
+                
+                if remaining_payment > 0:
+                    flash(f'${credits_used:.2f} in credits applied! You have a remaining balance of ${remaining_payment:.2f} to pay.', 'warning')
+                    # For now, we'll proceed with the entry and mark as 'pending_payment'
+                    # In a full implementation, you'd integrate with Stripe here for the remaining amount
+                else:
+                    flash(f'Tournament entry paid with ${credits_used:.2f} in credits! New credit balance: ${new_credit_balance:.2f}', 'success')
+            
             # Handle doubles partner invitation
             partner_id = None
             if tournament_type == 'doubles':
@@ -1821,6 +1858,16 @@ def tournament_entry(player_id):
                     WHERE id = ?
                 ''', (player_id,))
             
+            # Determine payment status based on credits used and remaining payment
+            if payment_method == 'credits' and remaining_payment == 0:
+                payment_status = 'completed'  # Fully paid with credits
+            elif payment_method == 'credits' and remaining_payment > 0:
+                payment_status = 'pending_payment'  # Partial credit payment, remaining balance due
+            elif tournament_type == 'doubles' and partner_id:
+                payment_status = 'pending_partner'  # Waiting for partner acceptance
+            else:
+                payment_status = 'completed'  # Regular cash payment or free entry
+            
             # Insert tournament entry
             conn.execute('''
                 INSERT INTO tournaments (player_id, tournament_instance_id, tournament_name, tournament_level, tournament_type, entry_fee, sport, entry_date, match_deadline, payment_status)
@@ -1834,7 +1881,7 @@ def tournament_entry(player_id):
                   'Pickleball',
                   entry_date.strftime('%Y-%m-%d'), 
                   match_deadline.strftime('%Y-%m-%d'),
-                  'pending_partner' if tournament_type == 'doubles' and partner_id else 'completed'))
+                  payment_status))
             
             # Get the tournament entry ID for partner invitation
             tournament_entry_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
