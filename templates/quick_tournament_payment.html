@@ -136,6 +136,111 @@
                                     <br><small class="text-muted">Standard tournament entry payment</small>
                                 </label>
                             </div>
+                            
+                            <!-- Payment Options Dropdown -->
+                            <div id="payment-options" class="mt-3" style="display: none;">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-credit-card me-2"></i>Select Payment Method
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <!-- Credit/Debit Card -->
+                                            <div class="col-md-6 mb-3">
+                                                <div class="form-check payment-option-card p-3 border rounded">
+                                                    <input class="form-check-input" type="radio" name="payment_type" id="payment_stripe" value="stripe" checked>
+                                                    <label class="form-check-label w-100" for="payment_stripe">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <strong>Credit/Debit Card</strong>
+                                                                <br><small class="text-muted">Visa, Mastercard, Amex</small>
+                                                            </div>
+                                                            <div class="text-end">
+                                                                <i class="fab fa-cc-visa fa-lg me-1"></i>
+                                                                <i class="fab fa-cc-mastercard fa-lg me-1"></i>
+                                                                <i class="fab fa-cc-amex fa-lg"></i>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- PayPal -->
+                                            <div class="col-md-6 mb-3">
+                                                <div class="form-check payment-option-card p-3 border rounded">
+                                                    <input class="form-check-input" type="radio" name="payment_type" id="payment_paypal" value="paypal">
+                                                    <label class="form-check-label w-100" for="payment_paypal">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <strong>PayPal</strong>
+                                                                <br><small class="text-muted">Pay with your PayPal account</small>
+                                                            </div>
+                                                            <div class="text-end">
+                                                                <i class="fab fa-paypal fa-2x" style="color: #003087;"></i>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Apple Pay -->
+                                            <div class="col-md-6 mb-3">
+                                                <div class="form-check payment-option-card p-3 border rounded">
+                                                    <input class="form-check-input" type="radio" name="payment_type" id="payment_apple" value="apple_pay">
+                                                    <label class="form-check-label w-100" for="payment_apple">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <strong>Apple Pay</strong>
+                                                                <br><small class="text-muted">Quick & secure payment</small>
+                                                            </div>
+                                                            <div class="text-end">
+                                                                <i class="fab fa-apple-pay fa-2x"></i>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Google Pay -->
+                                            <div class="col-md-6 mb-3">
+                                                <div class="form-check payment-option-card p-3 border rounded">
+                                                    <input class="form-check-input" type="radio" name="payment_type" id="payment_google" value="google_pay">
+                                                    <label class="form-check-label w-100" for="payment_google">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <strong>Google Pay</strong>
+                                                                <br><small class="text-muted">Pay with Google</small>
+                                                            </div>
+                                                            <div class="text-end">
+                                                                <i class="fab fa-google-pay fa-2x"></i>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Payment Summary -->
+                                        <div class="alert alert-info mt-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>Payment Amount:</strong>
+                                                </div>
+                                                <div class="fw-bold fs-5" style="color: #E0563F;">
+                                                    ${{ "%.2f"|format(quick_join_data.entry_fee) }}
+                                                </div>
+                                            </div>
+                                            <hr class="my-2">
+                                            <small class="text-muted">
+                                                <i class="fas fa-shield-alt me-1"></i>
+                                                Secure payment processing by Stripe. Your payment information is encrypted and never stored.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -176,10 +281,12 @@
 function updatePaymentDisplay() {
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
     const creditUsageInfo = document.getElementById('credit-usage-info');
+    const paymentOptions = document.getElementById('payment-options');
     const submitButton = document.getElementById('submit-button');
     
     if (paymentMethod && paymentMethod.value === 'credits') {
         creditUsageInfo.style.display = 'block';
+        paymentOptions.style.display = 'none';
         
         const playerCredits = {{ player.tournament_credits or 0 }};
         const entryFee = {{ quick_join_data.entry_fee }};
@@ -189,8 +296,13 @@ function updatePaymentDisplay() {
         } else {
             submitButton.innerHTML = '<i class="fas fa-coins me-1"></i>Complete Entry with Credits';
         }
+    } else if (paymentMethod && paymentMethod.value === 'cash') {
+        creditUsageInfo.style.display = 'none';
+        paymentOptions.style.display = 'block';
+        submitButton.innerHTML = '<i class="fas fa-credit-card me-1"></i>Proceed to Payment';
     } else {
         creditUsageInfo.style.display = 'none';
+        paymentOptions.style.display = 'none';
         submitButton.innerHTML = '<i class="fas fa-credit-card me-1"></i>Complete Entry';
     }
 }
@@ -200,4 +312,45 @@ document.addEventListener('DOMContentLoaded', function() {
     updatePaymentDisplay();
 });
 </script>
+
+<!-- Custom CSS for Payment Options -->
+<style>
+.payment-option-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-color: #dee2e6 !important;
+}
+
+.payment-option-card:hover {
+    border-color: #007bff !important;
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.payment-option-card input[type="radio"]:checked + .form-check-label {
+    background-color: #e3f2fd;
+    border-color: #007bff !important;
+}
+
+.payment-option-card .form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.animate-in {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
 {% endblock %}
