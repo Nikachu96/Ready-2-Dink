@@ -1570,29 +1570,14 @@ function showMembershipModal(suggestedType = 'discovery') {
 }
 
 function startSubscription(membershipType) {
-    // Redirect to Stripe checkout
-    fetch('/create_subscription', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            membership_type: membershipType,
-            player_id: {{ player.id }}
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.checkout_url) {
-            window.location.href = data.checkout_url;
-        } else {
-            alert('Error creating subscription. Please try again.');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error creating subscription. Please try again.');
-    });
+    // Close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('membershipModal'));
+    if (modal) {
+        modal.hide();
+    }
+    
+    // Redirect to membership payment page
+    window.location.href = `/membership_payment/${membershipType}`;
 }
 
 function showRankingInfo() {

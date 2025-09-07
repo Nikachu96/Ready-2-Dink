@@ -3915,25 +3915,57 @@ def create_membership_prices():
     
     return price_ids
 
-@app.route('/create_subscription', methods=['POST'])
-def create_subscription():
-    """Create Stripe subscription with free trial"""
+@app.route('/membership_payment/<membership_type>')
+def membership_payment_page(membership_type):
+    """Display membership payment page"""
+    if 'player_id' not in session:
+        flash('Please log in to access memberships.', 'warning')
+        return redirect(url_for('login'))
+    
+    if membership_type not in ['discovery', 'tournament']:
+        flash('Invalid membership type.', 'warning')
+        return redirect(url_for('dashboard', player_id=session['player_id']))
+    
+    # Store membership data in session
+    session['membership_data'] = {
+        'membership_type': membership_type,
+        'player_id': session['player_id']
+    }
+    
+    # Create Stripe checkout URL
+    stripe_checkout_url = url_for('create_subscription_checkout')
+    
+    return render_template('membership_payment_page.html', 
+                         membership_type=membership_type,
+                         stripe_checkout_url=stripe_checkout_url)
+
+@app.route('/create_subscription_checkout')
+def create_subscription_checkout():
+    """Create Stripe subscription checkout session"""
     if 'player_id' not in session:
         return jsonify({'error': 'Not logged in'}), 401
     
-    data = request.get_json()
-    membership_type = data.get('membership_type')
-    player_id = data.get('player_id')
+    membership_data = session.get('membership_data')
+    if not membership_data:
+        flash('Membership session expired. Please try again.', 'warning')
+        return redirect(url_for('dashboard', player_id=session['player_id']))
+    
+    membership_type = membership_data['membership_type']
+    player_id = membership_data['player_id']
     
     if membership_type not in ['discovery', 'tournament']:
         return jsonify({'error': 'Invalid membership type'}), 400
+    
+    import stripe
+    stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
     
     conn = get_db_connection()
     player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
     
     if not player:
         conn.close()
-        return jsonify({'error': 'Player not found'}), 404
+        flash('Player not found.', 'danger')
+        return redirect(url_for('dashboard', player_id=player_id))
     
     try:
         # Create or retrieve Stripe customer
@@ -3960,7 +3992,7 @@ def create_subscription():
         domain = request.headers.get('Host', 'localhost:5000')
         protocol = 'https' if 'replit' in domain else 'http'
         
-        # Create Stripe Checkout Session with free trial
+        # Create Stripe Checkout Session with free trial (removed automatic_tax)
         checkout_session = stripe.checkout.Session.create(
             customer=customer.id,
             line_items=[{
@@ -3977,15 +4009,20 @@ def create_subscription():
             },
             success_url=f'{protocol}://{domain}/subscription_success?session_id={{CHECKOUT_SESSION_ID}}',
             cancel_url=f'{protocol}://{domain}/subscription_cancel',
-            automatic_tax={'enabled': True},
         )
         
         conn.close()
-        return jsonify({'checkout_url': checkout_session.url})
+        
+        if checkout_session.url:
+            return redirect(checkout_session.url, code=303)
+        else:
+            flash('Error creating subscription. Please try again.', 'danger')
+            return redirect(url_for('dashboard', player_id=player_id))
         
     except Exception as e:
         conn.close()
-        return jsonify({'error': str(e)}), 500
+        flash(f'Error creating subscription: {str(e)}', 'danger')
+        return redirect(url_for('dashboard', player_id=player_id))
 
 @app.route('/subscription_success')
 def subscription_success():

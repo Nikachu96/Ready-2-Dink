@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Membership Payment - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+                <h4 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-star me-2"></i>Start Your Membership
+                </h4>
+                <p class="mb-0 opacity-90">30-day free trial included</p>
+            </div>
+            <div class="card-body">
+                <!-- Membership Plan Summary -->
+                <div class="alert alert-info text-center mb-4">
+                    {% if membership_type == 'discovery' %}
+                        <i class="fas fa-users fa-3x text-primary mb-2"></i>
+                        <h3 class="mb-1 text-primary">Player Discovery</h3>
+                        <h4 class="mb-1" style="color: #E0563F;">$4.99<small class="text-muted">/month</small></h4>
+                        <p class="mb-0">Find and match with compatible players</p>
+                    {% else %}
+                        <i class="fas fa-trophy fa-3x text-warning mb-2"></i>
+                        <h3 class="mb-1 text-warning">Tournament Access</h3>
+                        <h4 class="mb-1" style="color: #E0563F;">$9.99<small class="text-muted">/month</small></h4>
+                        <p class="mb-0">Full access including tournaments and competitive features</p>
+                    {% endif %}
+                </div>
+
+                <!-- Free Trial Notice -->
+                <div class="alert alert-success text-center mb-4">
+                    <h5><i class="fas fa-gift me-2"></i>30-Day FREE Trial!</h5>
+                    <p class="mb-0">Try it free for 30 days. Cancel anytime. No charges until trial ends.</p>
+                </div>
+
+                <!-- Payment Options -->
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-shield-alt me-2"></i>Choose Payment Method
+                    </h6>
+                    
+                    <!-- Stripe Checkout Button -->
+                    <div class="d-grid gap-2 mb-3">
+                        <a href="{{ stripe_checkout_url }}" class="btn btn-primary btn-lg" target="_blank">
+                            <i class="fab fa-cc-stripe me-2"></i>
+                            Start Free Trial with Stripe
+                            <br><small class="opacity-75">Secure subscription setup in new window</small>
+                        </a>
+                    </div>
+
+                    <!-- Alternative Payment Methods -->
+                    <div class="row">
+                        <div class="col-6">
+                            <button class="btn btn-outline-primary w-100" onclick="alert('PayPal subscriptions coming soon!')">
+                                <i class="fab fa-paypal me-2"></i>PayPal
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-outline-primary w-100" onclick="alert('Apple Pay subscriptions coming soon!')">
+                                <i class="fab fa-apple-pay me-2"></i>Apple Pay
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Membership Benefits -->
+                <div class="alert alert-light">
+                    <h6 class="fw-bold">
+                        <i class="fas fa-check-circle me-2"></i>What's Included
+                    </h6>
+                    <ul class="mb-0 small">
+                        {% if membership_type == 'discovery' %}
+                            <li>Find and match with compatible players</li>
+                            <li>Chat with connected players</li>
+                            <li>Organize casual games</li>
+                            <li>View detailed player profiles</li>
+                            <li>Location-based player search</li>
+                        {% else %}
+                            <li><strong>Everything in Player Discovery</strong></li>
+                            <li>Enter paid tournaments</li>
+                            <li>Compete for cash prizes</li>
+                            <li>Tournament brackets and standings</li>
+                            <li>Advanced player statistics</li>
+                            <li>Priority tournament registration</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Instructions -->
+                <div class="alert alert-light">
+                    <h6 class="fw-bold">
+                        <i class="fas fa-info-circle me-2"></i>Subscription Instructions
+                    </h6>
+                    <ol class="mb-0 small">
+                        <li>Click "Start Free Trial with Stripe" above</li>
+                        <li>Complete subscription setup in the secure window</li>
+                        <li>Enjoy 30 days completely FREE</li>
+                        <li>Cancel anytime during trial - no charges!</li>
+                    </ol>
+                </div>
+
+                <!-- Security Notice -->
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <i class="fas fa-lock me-1"></i>
+                        Secured by Stripe • Your payment information is encrypted and never stored
+                    </small>
+                </div>
+
+                <!-- Back Button -->
+                <div class="d-grid mt-4">
+                    <button onclick="history.back()" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.animate-in {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
