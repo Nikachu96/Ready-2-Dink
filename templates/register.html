@@ -51,22 +51,30 @@
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="location1" class="form-label">
-                                    <i class="fas fa-map-marker-alt me-1"></i>Primary Location *
+                                <label for="preferred_court_1" class="form-label">
+                                    <i class="fas fa-map-marker-alt me-1"></i>Preferred Court #1 *
                                 </label>
-                                <input type="text" class="form-control location-search" id="location1" name="location1" 
-                                       placeholder="Search city, state..." required>
-                                <div id="location1-map" class="map-container mt-2" style="height: 200px; display: none; border-radius: 8px;"></div>
+                                <input type="text" class="form-control court-search" id="preferred_court_1" name="preferred_court_1" 
+                                       placeholder="Search for pickleball courts..." required>
+                                <div id="preferred_court_1-map" class="map-container mt-2" style="height: 200px; display: none; border-radius: 8px;"></div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Your primary pickleball court or venue
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="location2" class="form-label">
-                                    <i class="fas fa-map-marker me-1"></i>Secondary Location
+                                <label for="preferred_court_2" class="form-label">
+                                    <i class="fas fa-map-marker me-1"></i>Preferred Court #2
                                 </label>
-                                <input type="text" class="form-control location-search" id="location2" name="location2"
-                                       placeholder="Optional second location...">
-                                <div id="location2-map" class="map-container mt-2" style="height: 200px; display: none; border-radius: 8px;"></div>
+                                <input type="text" class="form-control court-search" id="preferred_court_2" name="preferred_court_2"
+                                       placeholder="Optional second court...">
+                                <div id="preferred_court_2-map" class="map-container mt-2" style="height: 200px; display: none; border-radius: 8px;"></div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Alternative court location
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -175,17 +183,30 @@ function initializeMap(containerId, inputId) {
     return map;
 }
 
-function searchLocation(query, mapId, inputId) {
+function searchCourt(query, mapId, inputId) {
     if (!query || query.length < 3) return;
     
-    // Use Nominatim (OpenStreetMap) geocoding service
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+    // Enhanced search for pickleball courts and venues
+    const searchQuery = `pickleball court ${query}`;
+    
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=8&addressdetails=1`)
         .then(response => response.json())
         .then(data => {
             if (data && data.length > 0) {
                 const result = data[0];
                 const lat = parseFloat(result.lat);
                 const lon = parseFloat(result.lon);
+                
+                // Store coordinates for database (create hidden input)
+                let coordinatesInput = document.getElementById(inputId + '_coordinates');
+                if (!coordinatesInput) {
+                    coordinatesInput = document.createElement('input');
+                    coordinatesInput.type = 'hidden';
+                    coordinatesInput.id = inputId + '_coordinates';
+                    coordinatesInput.name = inputId + '_coordinates';
+                    document.getElementById(inputId).parentNode.appendChild(coordinatesInput);
+                }
+                coordinatesInput.value = JSON.stringify({lat: lat, lng: lon, address: result.display_name});
                 
                 const map = maps[mapId];
                 if (map) {
@@ -194,23 +215,90 @@ function searchLocation(query, mapId, inputId) {
                         map.removeLayer(markers[mapId]);
                     }
                     
-                    // Add new marker
+                    // Add new marker with enhanced popup for exact directions
+                    const popupContent = `
+                        <div class="text-center" style="min-width: 200px;">
+                            <strong style="color: #3F567F;">${result.display_name}</strong><br>
+                            <small class="text-muted">Lat: ${lat.toFixed(6)}, Lng: ${lon.toFixed(6)}</small><br>
+                            <div class="mt-2">
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" 
+                                   target="_blank" class="btn btn-sm btn-primary me-1">
+                                   <i class="fas fa-directions"></i> Get Directions
+                                </a>
+                                <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" 
+                                   target="_blank" class="btn btn-sm btn-outline-secondary">
+                                   <i class="fas fa-map"></i> View on Map
+                                </a>
+                            </div>
+                            <div class="mt-1">
+                                <small class="text-success">
+                                    <i class="fas fa-map-pin"></i> Exact location saved
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                    
                     markers[mapId] = L.marker([lat, lon])
                         .addTo(map)
-                        .bindPopup(`<strong>${result.display_name}</strong><br>
-                                   <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" 
-                                      target="_blank" class="btn btn-sm btn-primary mt-1">
-                                      <i class="fas fa-directions"></i> Get Directions
-                                   </a>`)
+                        .bindPopup(popupContent)
                         .openPopup();
                     
-                    // Center map on location
-                    map.setView([lat, lon], 13);
+                    // Center map on court with higher zoom for precision
+                    map.setView([lat, lon], 16);
                 }
+            } else {
+                // Fallback: try general search if no courts found
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`)
+                    .then(response => response.json())
+                    .then(generalData => {
+                        if (generalData && generalData.length > 0) {
+                            const result = generalData[0];
+                            const lat = parseFloat(result.lat);
+                            const lon = parseFloat(result.lon);
+                            
+                            // Store coordinates
+                            let coordinatesInput = document.getElementById(inputId + '_coordinates');
+                            if (!coordinatesInput) {
+                                coordinatesInput = document.createElement('input');
+                                coordinatesInput.type = 'hidden';
+                                coordinatesInput.id = inputId + '_coordinates';
+                                coordinatesInput.name = inputId + '_coordinates';
+                                document.getElementById(inputId).parentNode.appendChild(coordinatesInput);
+                            }
+                            coordinatesInput.value = JSON.stringify({lat: lat, lng: lon, address: result.display_name});
+                            
+                            const map = maps[mapId];
+                            if (map) {
+                                if (markers[mapId]) {
+                                    map.removeLayer(markers[mapId]);
+                                }
+                                
+                                const popupContent = `
+                                    <div class="text-center">
+                                        <strong style="color: #E0563F;">${result.display_name}</strong><br>
+                                        <small class="text-muted">General location - please verify court details</small><br>
+                                        <div class="mt-2">
+                                            <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" 
+                                               target="_blank" class="btn btn-sm btn-primary">
+                                               <i class="fas fa-directions"></i> Get Directions
+                                            </a>
+                                        </div>
+                                    </div>
+                                `;
+                                
+                                markers[mapId] = L.marker([lat, lon])
+                                    .addTo(map)
+                                    .bindPopup(popupContent)
+                                    .openPopup();
+                                
+                                map.setView([lat, lon], 14);
+                            }
+                        }
+                    });
             }
         })
         .catch(error => {
-            console.log('Geocoding error:', error);
+            console.log('Court search error:', error);
         });
 }
 
@@ -241,10 +329,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Initialize location search functionality
-    const locationInputs = document.querySelectorAll('.location-search');
+    // Initialize court search functionality
+    const courtInputs = document.querySelectorAll('.court-search');
     
-    locationInputs.forEach(input => {
+    courtInputs.forEach(input => {
         const mapId = input.id + '-map';
         let searchTimeout;
         
@@ -267,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Debounced search
                     clearTimeout(searchTimeout);
                     searchTimeout = setTimeout(() => {
-                        searchLocation(query, mapId, input.id);
+                        searchCourt(query, mapId, input.id);
                     }, 500);
                 }
             } else {
