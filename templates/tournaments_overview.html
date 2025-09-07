@@ -369,10 +369,10 @@
 {% endif %}
 
 <div class="row">
-    <div class="col-md-8">
+    <div class="col-md-10 col-lg-8 mx-auto">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">
+                <h5 class="card-title mb-0 text-center">
                     <i class="fas fa-clock me-2"></i>Recent Tournament Entries
                 </h5>
             </div>
@@ -437,36 +437,6 @@
         </div>
     </div>
     
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-user-plus me-2"></i>Join Tournament
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if players %}
-                    {% set player = players[0] %}
-                    <div class="text-center">
-                        <i class="fas fa-trophy fa-3x text-primary mb-3"></i>
-                        <h5 class="mb-2">Ready to compete?</h5>
-                        <p class="text-muted mb-4">Enter a tournament and start your pickleball journey!</p>
-                        <a href="{{ url_for('tournament_entry', player_id=player.id) }}" class="btn btn-success btn-lg">
-                            <i class="fas fa-sign-in-alt me-2"></i>Enter Tournament
-                        </a>
-                    </div>
-                {% else %}
-                    <div class="text-center">
-                        <i class="fas fa-user-slash fa-2x text-muted mb-3"></i>
-                        <p class="text-muted mb-3">Please complete your registration first.</p>
-                        <a href="{{ url_for('index') }}" class="btn btn-primary">
-                            <i class="fas fa-home me-1"></i>Go to Home
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Create Tournament Modal -->
