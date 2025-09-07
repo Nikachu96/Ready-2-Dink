@@ -226,6 +226,22 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    # Add payout account information columns
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN paypal_email TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN venmo_username TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN zelle_info TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     try:
         c.execute('ALTER TABLE matches ADD COLUMN notification_sent INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
@@ -2403,28 +2419,32 @@ def update_profile():
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?, 
                     dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
-                    skill_level = ?, email = ?, selfie = ?, player_id = ?, payout_preference = ?
+                    skill_level = ?, email = ?, selfie = ?, player_id = ?, payout_preference = ?,
+                    paypal_email = ?, venmo_username = ?, zelle_info = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
                   request.form['dob'], request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
                   request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
                   request.form['skill_level'], request.form['email'], selfie_filename, player_id_input, 
-                  request.form.get('payout_preference', ''), player_id))
+                  request.form.get('payout_preference', ''), request.form.get('paypal_email', ''),
+                  request.form.get('venmo_username', ''), request.form.get('zelle_info', ''), player_id))
         else:
             conn.execute('''
                 UPDATE players 
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?,
                     dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
-                    skill_level = ?, email = ?, player_id = ?, payout_preference = ?
+                    skill_level = ?, email = ?, player_id = ?, payout_preference = ?,
+                    paypal_email = ?, venmo_username = ?, zelle_info = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
                   request.form['dob'], request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
                   request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
                   request.form['skill_level'], request.form['email'], player_id_input, 
-                  request.form.get('payout_preference', ''), player_id))
+                  request.form.get('payout_preference', ''), request.form.get('paypal_email', ''),
+                  request.form.get('venmo_username', ''), request.form.get('zelle_info', ''), player_id))
         
         conn.commit()
         conn.close()

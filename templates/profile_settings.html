@@ -247,6 +247,45 @@
                         </div>
                     </div>
                     
+                    <!-- PayPal Account Info -->
+                    <div class="mb-3" id="paypal_section" style="display: none;">
+                        <label for="paypal_email" class="form-label">
+                            <i class="fab fa-paypal me-1"></i>PayPal Email Address
+                        </label>
+                        <input type="email" class="form-control" id="paypal_email" name="paypal_email" 
+                               value="{{ player.paypal_email or '' }}" placeholder="your.email@example.com">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Enter the email address associated with your PayPal account
+                        </div>
+                    </div>
+                    
+                    <!-- Venmo Account Info -->
+                    <div class="mb-3" id="venmo_section" style="display: none;">
+                        <label for="venmo_username" class="form-label">
+                            <i class="fas fa-user me-1"></i>Venmo Username
+                        </label>
+                        <input type="text" class="form-control" id="venmo_username" name="venmo_username" 
+                               value="{{ player.venmo_username or '' }}" placeholder="@your-venmo-username">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Enter your Venmo username (with or without the @ symbol)
+                        </div>
+                    </div>
+                    
+                    <!-- Zelle Account Info -->
+                    <div class="mb-3" id="zelle_section" style="display: none;">
+                        <label for="zelle_info" class="form-label">
+                            <i class="fas fa-mobile-alt me-1"></i>Zelle Email or Phone Number
+                        </label>
+                        <input type="text" class="form-control" id="zelle_info" name="zelle_info" 
+                               value="{{ player.zelle_info or '' }}" placeholder="email@example.com or (555) 123-4567">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Enter the email or phone number linked to your Zelle account
+                        </div>
+                    </div>
+                    
                     <div class="mb-3">
                         <label for="selfie" class="form-label">
                             <i class="fas fa-camera me-1"></i>Update Profile Photo
@@ -407,6 +446,36 @@
 
 {% block scripts %}
 <script>
+// Payout preference field management
+function togglePayoutFields() {
+    const selectedMethod = document.getElementById('payout_preference').value;
+    const paypalSection = document.getElementById('paypal_section');
+    const venmoSection = document.getElementById('venmo_section');
+    const zelleSection = document.getElementById('zelle_section');
+    
+    // Hide all sections first
+    paypalSection.style.display = 'none';
+    venmoSection.style.display = 'none';
+    zelleSection.style.display = 'none';
+    
+    // Show the relevant section
+    if (selectedMethod === 'PayPal') {
+        paypalSection.style.display = 'block';
+    } else if (selectedMethod === 'Venmo') {
+        venmoSection.style.display = 'block';
+    } else if (selectedMethod === 'Zelle') {
+        zelleSection.style.display = 'block';
+    }
+}
+
+// Initialize payout fields on page load
+document.addEventListener('DOMContentLoaded', function() {
+    togglePayoutFields();
+});
+
+// Add event listener for payout preference changes
+document.getElementById('payout_preference').addEventListener('change', togglePayoutFields);
+
 // Date of birth validation and formatting
 document.getElementById('dob').addEventListener('input', function(e) {
     let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
