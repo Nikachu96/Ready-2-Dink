@@ -3503,22 +3503,56 @@ def quick_join_tournament(player_id):
             conn.close()
             return redirect(url_for('tournaments_overview'))
         
-        # Calculate entry fee - payment ALWAYS required for ALL tournaments
+        # Calculate entry fee
         base_fee = tournament_instance['entry_fee']
         entry_fee = base_fee + 10 if tournament_type == 'doubles' else base_fee
         
-        # Store tournament selection in session for payment - NO FREE ENTRIES
+        # Check for free Ambassador entries (5 total)
+        free_entry_used = False
+        is_the_hill = 'The Hill' in (tournament_instance['name'] or '') or 'Big Dink' in (tournament_instance['name'] or '')
+        
+        # Ambassador gets 5 free entries (excluding The Hill/Big Dink championships)
+        if player['free_tournament_entries'] and player['free_tournament_entries'] > 0 and not is_the_hill:
+            entry_fee = 10 if tournament_type == 'doubles' else 0  # Free for singles, $10 for doubles
+            free_entry_used = True
+        
+        # If free entry for singles, process immediately
+        if tournament_type == 'singles' and entry_fee == 0 and free_entry_used:
+            # Free Ambassador entry - process immediately
+            entry_date = datetime.now()
+            match_deadline = entry_date + timedelta(days=14)
+            
+            # Update free entries count
+            conn.execute('UPDATE players SET free_tournament_entries = free_tournament_entries - 1 WHERE id = ?', (player_id,))
+            
+            # Insert tournament entry
+            conn.execute('''
+                INSERT INTO tournaments (player_id, tournament_instance_id, tournament_name, tournament_level, tournament_type, entry_fee, sport, entry_date, match_deadline, payment_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')
+            ''', (player_id, tournament_instance['id'], tournament_instance['name'], tournament_instance['skill_level'], tournament_type, entry_fee, 'Pickleball', entry_date.strftime('%Y-%m-%d'), match_deadline.strftime('%Y-%m-%d')))
+            
+            # Update tournament instance current players count
+            conn.execute('UPDATE tournament_instances SET current_players = current_players + 1 WHERE id = ?', (tournament_instance['id'],))
+            
+            conn.commit()
+            conn.close()
+            
+            remaining_entries = (player['free_tournament_entries'] or 0) - 1
+            flash(f'FREE Ambassador entry used! Successfully entered tournament! You have {remaining_entries} free entries remaining. Good luck!', 'success')
+            return redirect(url_for('dashboard', player_id=player_id))
+        
+        # Store tournament selection in session for payment
         session['quick_join_data'] = {
             'tournament_instance_id': tournament_instance['id'],
             'tournament_type': tournament_type,
             'player_id': player_id,
             'entry_fee': entry_fee,
-            'free_entry_used': False
+            'free_entry_used': free_entry_used
         }
         
         conn.close()
         
-        # ALWAYS redirect to payment - no exceptions
+        # Redirect to payment selection
         return redirect(url_for('quick_tournament_payment', player_id=player_id))
         
     except Exception as e:
