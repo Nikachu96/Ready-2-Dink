@@ -2252,11 +2252,28 @@ def update_profile():
     player_id = players[0]['id']
     
     # Form validation
-    required_fields = ['full_name', 'address', 'zip_code', 'city', 'state', 'dob', 'preferred_court_1', 'skill_level', 'email']
+    required_fields = ['full_name', 'address', 'zip_code', 'city', 'state', 'dob', 'preferred_court_1', 'skill_level', 'email', 'player_id']
     for field in required_fields:
         if not request.form.get(field):
             flash(f'{field.replace("_", " ").title()} is required', 'danger')
             return redirect(url_for('profile_settings'))
+    
+    # Validate player_id format (4 digits, 1000-9999)
+    player_id_input = request.form.get('player_id', '').strip()
+    if not player_id_input.isdigit() or len(player_id_input) != 4:
+        flash('Player ID must be exactly 4 digits', 'danger')
+        return redirect(url_for('profile_settings'))
+    
+    player_id_num = int(player_id_input)
+    if player_id_num < 1000 or player_id_num > 9999:
+        flash('Player ID must be between 1000 and 9999', 'danger')
+        return redirect(url_for('profile_settings'))
+    
+    # Check if player_id is already taken by another player
+    existing_player = conn.execute('SELECT id FROM players WHERE player_id = ? AND id != ?', (player_id_input, player_id)).fetchone()
+    if existing_player:
+        flash('This Player ID is already taken. Please choose a different number.', 'danger')
+        return redirect(url_for('profile_settings'))
     
     # Handle file upload
     selfie_filename = None
@@ -2284,26 +2301,26 @@ def update_profile():
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?, 
                     dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
-                    skill_level = ?, email = ?, selfie = ?
+                    skill_level = ?, email = ?, selfie = ?, player_id = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
                   request.form['dob'], request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
                   request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
-                  request.form['skill_level'], request.form['email'], selfie_filename, player_id))
+                  request.form['skill_level'], request.form['email'], selfie_filename, player_id_input, player_id))
         else:
             conn.execute('''
                 UPDATE players 
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?,
                     dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
-                    skill_level = ?, email = ?
+                    skill_level = ?, email = ?, player_id = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
                   request.form['dob'], request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
                   request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
-                  request.form['skill_level'], request.form['email'], player_id))
+                  request.form['skill_level'], request.form['email'], player_id_input, player_id))
         
         conn.commit()
         conn.close()
