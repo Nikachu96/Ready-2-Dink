@@ -2615,20 +2615,37 @@ def validate_match_result():
 
 @app.route('/get_pending_matches/<int:player_id>')
 def get_pending_matches(player_id):
-    """Get matches that need score submission"""
+    """Get matches that need score submission or validation"""
     conn = get_db_connection()
     
+    # Get matches that need score submission (status = 'pending') 
+    # OR matches that need validation from this player
     matches = conn.execute('''
         SELECT m.*, 
                p1.full_name as player1_name,
-               p2.full_name as player2_name
+               p2.full_name as player2_name,
+               CASE 
+                   WHEN m.status = 'pending' THEN 'needs_score'
+                   WHEN m.player1_id = ? AND COALESCE(m.player1_validated, 0) = 0 THEN 'needs_validation'
+                   WHEN m.player2_id = ? AND COALESCE(m.player2_validated, 0) = 0 THEN 'needs_validation'
+                   ELSE 'waiting_opponent'
+               END as action_needed
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
         WHERE (m.player1_id = ? OR m.player2_id = ?)
-          AND m.status = 'pending'
+          AND (
+              m.status = 'pending' 
+              OR (
+                  m.validation_status IN ('pending', 'partial')
+                  AND (
+                      (m.player1_id = ? AND COALESCE(m.player1_validated, 0) = 0)
+                      OR (m.player2_id = ? AND COALESCE(m.player2_validated, 0) = 0)
+                  )
+              )
+          )
         ORDER BY m.created_at DESC
-    ''', (player_id, player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
     
     conn.close()
     

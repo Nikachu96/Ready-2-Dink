@@ -1063,19 +1063,38 @@ function displayPendingMatches(matches) {
         const opponent = match.player1_id === {{ player.id }} ? match.player2_name : match.player1_name;
         const courtInfo = match.court_location || 'Court TBD';
         
+        let actionButton = '';
+        let statusBadge = '';
+        
+        if (match.action_needed === 'needs_score') {
+            actionButton = `<button class="btn btn-warning btn-sm" onclick="openScoreModal(${match.id}, '${opponent}', ${match.player1_id}, ${match.player2_id})">
+                <i class="fas fa-pencil-alt me-1"></i>Submit Score
+            </button>`;
+            statusBadge = '<span class="badge bg-warning text-dark ms-2">Score Needed</span>';
+        } else if (match.action_needed === 'needs_validation') {
+            actionButton = `<button class="btn btn-info btn-sm" onclick="openValidationModal(${match.id}, '${opponent}', ${match.player1_id}, ${match.player2_id}, '${match.match_result || ''}')">
+                <i class="fas fa-shield-check me-1"></i>Validate Score
+            </button>`;
+            statusBadge = '<span class="badge bg-info ms-2">Validation Required</span>';
+        } else {
+            actionButton = `<button class="btn btn-secondary btn-sm" disabled>
+                <i class="fas fa-clock me-1"></i>Awaiting Opponent
+            </button>`;
+            statusBadge = '<span class="badge bg-secondary ms-2">Awaiting Opponent</span>';
+        }
+        
         html += `
             <div class="pending-match-item mb-3 p-3 border rounded">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="mb-1">Match vs ${opponent}</h6>
+                        <h6 class="mb-1">Match vs ${opponent} ${statusBadge}</h6>
                         <small class="text-muted">
                             <i class="fas fa-map-marker-alt me-1"></i>${courtInfo} • 
                             <i class="fas fa-calendar me-1"></i>${new Date(match.created_at).toLocaleDateString()}
+                            ${match.match_result ? ` • Score: ${match.match_result}` : ''}
                         </small>
                     </div>
-                    <button class="btn btn-warning btn-sm" onclick="openScoreModal(${match.id}, '${opponent}', ${match.player1_id}, ${match.player2_id})">
-                        <i class="fas fa-pencil-alt me-1"></i>Submit Score
-                    </button>
+                    ${actionButton}
                 </div>
             </div>
         `;
@@ -1117,11 +1136,82 @@ function openScoreModal(matchId, opponentName, player1Id, player2Id) {
     // Hide score preview
     document.getElementById('score-preview').style.display = 'none';
     
-    // Add real-time validation
+    // Re-enable all inputs for score submission
     ['player1-set1', 'player2-set1', 'player1-set2', 'player2-set2', 'player1-set3', 'player2-set3'].forEach(id => {
         const input = document.getElementById(id);
+        input.disabled = false;
+        input.style.backgroundColor = '';
         input.addEventListener('input', updateScorePreview);
     });
+    
+    // Reset validation fields
+    document.getElementById('score-confirmation').checked = false;
+    document.querySelectorAll('input[name="opponent-level"]').forEach(radio => radio.checked = false);
+    
+    new bootstrap.Modal(document.getElementById('scoreModal')).show();
+}
+
+function openValidationModal(matchId, opponentName, player1Id, player2Id, existingScore) {
+    currentMatchId = matchId;
+    const isPlayer1 = {{ player.id }} === player1Id;
+    
+    document.getElementById('match-details').innerHTML = `
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Validating match result vs <strong>${opponentName}</strong>
+            <div class="mt-2">
+                <strong>Submitted Score:</strong> ${existingScore}
+            </div>
+        </div>
+    `;
+    
+    // Parse existing score and populate fields
+    if (existingScore) {
+        const sets = existingScore.split(' ');
+        if (sets.length >= 2) {
+            const set1 = sets[0].split('-');
+            const set2 = sets[1].split('-');
+            
+            document.getElementById('player1-set1').value = set1[0] || '';
+            document.getElementById('player2-set1').value = set1[1] || '';
+            document.getElementById('player1-set2').value = set2[0] || '';
+            document.getElementById('player2-set2').value = set2[1] || '';
+            
+            if (sets.length === 3) {
+                const set3 = sets[2].split('-');
+                document.getElementById('player1-set3').value = set3[0] || '';
+                document.getElementById('player2-set3').value = set3[1] || '';
+            } else {
+                document.getElementById('player1-set3').value = '';
+                document.getElementById('player2-set3').value = '';
+            }
+            
+            // Update score preview
+            updateScorePreview();
+        }
+    }
+    
+    // Update all labels based on perspective
+    const yourLabel = 'Your Score';
+    const opponentLabel = opponentName + "'s Score";
+    
+    document.getElementById('player1-set1-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
+    document.getElementById('player2-set1-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
+    document.getElementById('player1-set2-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
+    document.getElementById('player2-set2-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
+    document.getElementById('player1-set3-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
+    document.getElementById('player2-set3-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
+    
+    // Disable score inputs since score is already submitted
+    ['player1-set1', 'player2-set1', 'player1-set2', 'player2-set2', 'player1-set3', 'player2-set3'].forEach(id => {
+        const input = document.getElementById(id);
+        input.disabled = true;
+        input.style.backgroundColor = '#f8f9fa';
+    });
+    
+    // Reset validation fields
+    document.getElementById('score-confirmation').checked = false;
+    document.querySelectorAll('input[name="opponent-level"]').forEach(radio => radio.checked = false);
     
     new bootstrap.Modal(document.getElementById('scoreModal')).show();
 }
@@ -1261,11 +1351,15 @@ function validateScore() {
     .then(data => {
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('scoreModal')).hide();
-            alert(data.message || 'Match result submitted successfully!');
+            alert(data.message);
             loadPendingMatches(); // Refresh the pending matches list
-            setTimeout(() => location.reload(), 1000);
+            
+            // If match is completed, refresh the page to update stats
+            if (data.match_completed) {
+                setTimeout(() => location.reload(), 1000);
+            }
         } else {
-            alert(data.message || 'Failed to submit score');
+            alert(data.message || 'Failed to validate score');
         }
     })
     .catch(error => {
