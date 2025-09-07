@@ -383,21 +383,21 @@
             <div class="card-body">
                 {% if recent_entries %}
                     <div class="table-responsive">
-                        <table class="table table-striped" style="color: var(--bs-body-color); --bs-table-striped-bg: rgba(255,255,255,0.05);">
+                        <table class="table table-striped" style="color: #ffffff; --bs-table-striped-bg: rgba(255,255,255,0.05);">
                             <thead>
-                                <tr style="color: var(--bs-body-color);">
-                                    <th style="color: var(--bs-body-color); font-weight: 600;">Player</th>
-                                    <th style="color: var(--bs-body-color); font-weight: 600;">Tournament</th>
-                                    <th style="color: var(--bs-body-color); font-weight: 600;">Level</th>
-                                    <th style="color: var(--bs-body-color); font-weight: 600;">Sport</th>
-                                    <th style="color: var(--bs-body-color); font-weight: 600;">Entry Date</th>
-                                    <th style="color: var(--bs-body-color); font-weight: 600;">Status</th>
+                                <tr style="color: #ffffff;">
+                                    <th style="color: #ffffff; font-weight: 600;">Player</th>
+                                    <th style="color: #ffffff; font-weight: 600;">Tournament</th>
+                                    <th style="color: #ffffff; font-weight: 600;">Level</th>
+                                    <th style="color: #ffffff; font-weight: 600;">Sport</th>
+                                    <th style="color: #ffffff; font-weight: 600;">Entry Date</th>
+                                    <th style="color: #ffffff; font-weight: 600;">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for entry in recent_entries %}
-                                <tr style="color: var(--bs-body-color);">
-                                    <td style="color: var(--bs-body-color);">
+                                <tr style="color: #ffffff;">
+                                    <td style="color: #ffffff;">
                                         <div class="d-flex align-items-center">
                                             {% if entry.selfie %}
                                                 <img src="{{ url_for('static', filename='uploads/' + entry.selfie) }}" 
@@ -409,15 +409,15 @@
                                                     <i class="fas fa-user text-white" style="font-size: 0.8rem;"></i>
                                                 </div>
                                             {% endif %}
-                                            <strong>{{ entry.full_name }}</strong>
+                                            <strong style="color: #ffffff;">{{ entry.full_name }}</strong>
                                         </div>
                                     </td>
-                                    <td style="color: var(--bs-body-color);"><strong>{{ entry.tournament_name }}</strong></td>
+                                    <td style="color: #ffffff;"><strong>{{ entry.tournament_name }}</strong></td>
                                     <td>
                                         <span class="badge bg-info">{{ entry.tournament_level }}</span>
                                     </td>
-                                    <td style="color: var(--bs-body-color);"><strong>{{ entry.sport }}</strong></td>
-                                    <td style="color: var(--bs-body-color);"><strong>{{ entry.entry_date }}</strong></td>
+                                    <td style="color: #ffffff;"><strong>{{ entry.sport }}</strong></td>
+                                    <td style="color: #ffffff;"><strong>{{ entry.entry_date }}</strong></td>
                                     <td>
                                         {% if entry.completed %}
                                             <span class="badge bg-success">Completed</span>
