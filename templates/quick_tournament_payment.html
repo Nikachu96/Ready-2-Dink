@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Tournament Payment - {{ tournament_instance.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+                <h4 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-credit-card me-2"></i>Tournament Payment
+                </h4>
+                <p class="mb-0 opacity-90">Complete your tournament entry</p>
+            </div>
+            <div class="card-body">
+                <!-- Tournament Summary -->
+                <div class="card mb-4" style="background-color: #f8f9fa; border: 1px solid #e9ecef;">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-trophy me-2"></i>{{ tournament_instance.name }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <span class="text-muted">Level:</span>
+                                    <span class="fw-bold ms-2">{{ tournament_instance.skill_level }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-muted">Format:</span>
+                                    <span class="fw-bold ms-2">{{ quick_join_data.tournament_type.title() }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="text-muted">Players:</span>
+                                    <span class="fw-bold ms-2">{{ tournament_instance.current_players }}/{{ tournament_instance.max_players }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <span class="text-muted">Entry Fee:</span>
+                                    <span class="fw-bold ms-2 fs-4" style="color: #E0563F;">${{ "%.2f"|format(quick_join_data.entry_fee) }}</span>
+                                </div>
+                                {% if quick_join_data.free_entry_used %}
+                                <div class="alert alert-success py-2">
+                                    <i class="fas fa-gift me-1"></i>
+                                    <strong>FREE Ambassador Entry!</strong>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Player Info -->
+                <div class="row mb-4">
+                    <div class="col-auto">
+                        {% if player.selfie %}
+                            <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                 class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;" 
+                                 alt="Player Photo">
+                        {% else %}
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 60px; height: 60px;">
+                                <i class="fas fa-user text-white fa-lg"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col">
+                        <h5 class="mb-1">{{ player.full_name }}</h5>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <span class="badge bg-primary">{{ player.skill_level }}</span>
+                            {% if player.player_id %}
+                            <span class="badge" style="background-color: #E0563F;">ID: {{ player.player_id }}</span>
+                            {% endif %}
+                            {% if player.tournament_credits and player.tournament_credits > 0 %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-wallet me-1"></i>${{ "%.2f"|format(player.tournament_credits) }} Credits
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method Selection -->
+                {% if quick_join_data.entry_fee > 0 %}
+                <form method="POST" action="{{ url_for('process_quick_tournament_payment') }}">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-credit-card me-2"></i>Payment Method
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if player.tournament_credits and player.tournament_credits > 0 %}
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="payment_credits" value="credits" 
+                                           {% if player.tournament_credits >= quick_join_data.entry_fee %}checked{% endif %} onchange="updatePaymentDisplay()">
+                                    <label class="form-check-label" for="payment_credits">
+                                        <i class="fas fa-coins me-2 text-success"></i>
+                                        <strong>Use Tournament Credits</strong>
+                                        <br><small class="text-muted">Available: ${{ "%.2f"|format(player.tournament_credits) }}</small>
+                                    </label>
+                                </div>
+                                
+                                <!-- Credit Usage Info -->
+                                <div id="credit-usage-info" class="alert alert-info" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small class="text-muted">Entry Fee:</small>
+                                            <div class="fw-bold">${{ "%.2f"|format(quick_join_data.entry_fee) }}</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Remaining Credits:</small>
+                                            <div class="fw-bold" id="remaining-credits">
+                                                ${{ "%.2f"|format(max(0, player.tournament_credits - quick_join_data.entry_fee)) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% if player.tournament_credits < quick_join_data.entry_fee %}
+                                    <div class="alert alert-warning mt-2 mb-0">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>Partial Payment:</strong> Credits will cover ${{ "%.2f"|format(player.tournament_credits) }} of ${{ "%.2f"|format(quick_join_data.entry_fee) }}. 
+                                        Remaining ${{ "%.2f"|format(quick_join_data.entry_fee - player.tournament_credits) }} needs to be paid separately.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" id="payment_cash" value="cash" 
+                                       {% if not player.tournament_credits or player.tournament_credits <= 0 %}checked{% endif %} onchange="updatePaymentDisplay()">
+                                <label class="form-check-label" for="payment_cash">
+                                    <i class="fas fa-dollar-sign me-2 text-primary"></i>
+                                    <strong>Pay Entry Fee</strong>
+                                    <br><small class="text-muted">Standard tournament entry payment</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                        <a href="{{ url_for('tournaments_overview') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Tournaments
+                        </a>
+                        <button type="submit" class="btn btn-success" id="submit-button">
+                            <i class="fas fa-credit-card me-1"></i>Complete Entry
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <!-- Free Entry -->
+                <div class="alert alert-success text-center">
+                    <h5><i class="fas fa-gift me-2"></i>FREE Entry!</h5>
+                    <p class="mb-0">This tournament entry is covered by your Ambassador benefits.</p>
+                </div>
+                
+                <form method="POST" action="{{ url_for('process_quick_tournament_payment') }}">
+                    <input type="hidden" name="payment_method" value="free">
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                        <a href="{{ url_for('tournaments_overview') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Tournaments
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check me-1"></i>Confirm Free Entry
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updatePaymentDisplay() {
+    const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+    const creditUsageInfo = document.getElementById('credit-usage-info');
+    const submitButton = document.getElementById('submit-button');
+    
+    if (paymentMethod && paymentMethod.value === 'credits') {
+        creditUsageInfo.style.display = 'block';
+        
+        const playerCredits = {{ player.tournament_credits or 0 }};
+        const entryFee = {{ quick_join_data.entry_fee }};
+        
+        if (playerCredits < entryFee) {
+            submitButton.innerHTML = '<i class="fas fa-credit-card me-1"></i>Continue with Partial Credit + Payment';
+        } else {
+            submitButton.innerHTML = '<i class="fas fa-coins me-1"></i>Complete Entry with Credits';
+        }
+    } else {
+        creditUsageInfo.style.display = 'none';
+        submitButton.innerHTML = '<i class="fas fa-credit-card me-1"></i>Complete Entry';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updatePaymentDisplay();
+});
+</script>
+{% endblock %}

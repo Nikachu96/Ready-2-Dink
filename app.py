@@ -3436,6 +3436,230 @@ def credit_transaction_history(player_id):
     
     return render_template('credit_history.html', player=player, transactions=transactions)
 
+@app.route('/quick_join_tournament/<int:player_id>')
+def quick_join_tournament(player_id):
+    """Quick tournament join - bypass form and go direct to payment"""
+    level = request.args.get('level')
+    tournament_type = request.args.get('type', 'singles')  # Default to singles
+    
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    
+    if not player:
+        flash('Player not found', 'danger')
+        conn.close()
+        return redirect(url_for('index'))
+    
+    # Check if player has accepted tournament rules
+    if not player['tournament_rules_accepted']:
+        flash('Please read and accept the tournament rules before entering tournaments', 'warning')
+        conn.close()
+        return redirect(url_for('show_tournament_rules', player_id=player_id))
+    
+    try:
+        # Get available tournament instance for the specified level
+        if level:
+            tournament_instance = conn.execute('''
+                SELECT * FROM tournament_instances 
+                WHERE status = 'open' AND skill_level = ? AND current_players < max_players
+                ORDER BY created_at ASC
+                LIMIT 1
+            ''', (level,)).fetchone()
+        else:
+            # Get any available tournament matching player skill level
+            tournament_instance = conn.execute('''
+                SELECT * FROM tournament_instances 
+                WHERE status = 'open' AND skill_level = ? AND current_players < max_players
+                ORDER BY created_at ASC
+                LIMIT 1
+            ''', (player['skill_level'],)).fetchone()
+        
+        if not tournament_instance:
+            flash(f'No available tournaments found for {level or player["skill_level"]} level', 'warning')
+            conn.close()
+            return redirect(url_for('tournaments_overview'))
+        
+        # Check if player already entered this tournament
+        existing_entry = conn.execute('''
+            SELECT COUNT(*) as count FROM tournaments 
+            WHERE player_id = ? AND tournament_instance_id = ?
+        ''', (player_id, tournament_instance['id'])).fetchone()['count']
+        
+        if existing_entry > 0:
+            flash('You are already registered for this tournament.', 'warning')
+            conn.close()
+            return redirect(url_for('tournaments_overview'))
+        
+        # Calculate entry fee
+        base_fee = tournament_instance['entry_fee']
+        entry_fee = base_fee + 10 if tournament_type == 'doubles' else base_fee
+        
+        # Check for free Ambassador entry
+        free_entry_used = False
+        is_the_hill = 'The Hill' in tournament_instance.get('name', '') or 'Big Dink' in tournament_instance.get('name', '')
+        
+        if player['free_tournament_entries'] and player['free_tournament_entries'] > 0 and not is_the_hill:
+            entry_fee = 10 if tournament_type == 'doubles' else 0
+            free_entry_used = True
+        
+        # For singles and free entries, proceed directly
+        if tournament_type == 'singles' and entry_fee == 0:
+            # Free entry - process immediately
+            entry_date = datetime.now()
+            match_deadline = entry_date + timedelta(days=14)
+            
+            # Update free entries count
+            if free_entry_used:
+                conn.execute('UPDATE players SET free_tournament_entries = free_tournament_entries - 1 WHERE id = ?', (player_id,))
+            
+            # Insert tournament entry
+            conn.execute('''
+                INSERT INTO tournaments (player_id, tournament_instance_id, tournament_name, tournament_level, tournament_type, entry_fee, sport, entry_date, match_deadline, payment_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')
+            ''', (player_id, tournament_instance['id'], tournament_instance['name'], tournament_instance['skill_level'], tournament_type, entry_fee, 'Pickleball', entry_date.strftime('%Y-%m-%d'), match_deadline.strftime('%Y-%m-%d')))
+            
+            conn.commit()
+            conn.close()
+            
+            remaining_entries = (player['free_tournament_entries'] or 0) - 1
+            flash(f'FREE Ambassador entry used! Successfully entered tournament! You have {remaining_entries} free entries remaining. Good luck!', 'success')
+            return redirect(url_for('dashboard', player_id=player_id))
+        
+        # Store tournament selection in session for payment
+        session['quick_join_data'] = {
+            'tournament_instance_id': tournament_instance['id'],
+            'tournament_type': tournament_type,
+            'player_id': player_id,
+            'entry_fee': entry_fee,
+            'free_entry_used': free_entry_used
+        }
+        
+        conn.close()
+        
+        # Redirect to payment selection
+        return redirect(url_for('quick_tournament_payment', player_id=player_id))
+        
+    except Exception as e:
+        conn.close()
+        flash(f'Error joining tournament: {str(e)}', 'danger')
+        return redirect(url_for('tournaments_overview'))
+
+@app.route('/quick_tournament_payment/<int:player_id>')
+def quick_tournament_payment(player_id):
+    """Quick payment page for tournament entry"""
+    quick_join_data = session.get('quick_join_data')
+    
+    if not quick_join_data or quick_join_data['player_id'] != player_id:
+        flash('Tournament selection expired. Please try again.', 'warning')
+        return redirect(url_for('tournaments_overview'))
+    
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    tournament_instance = conn.execute('SELECT * FROM tournament_instances WHERE id = ?', (quick_join_data['tournament_instance_id'],)).fetchone()
+    
+    if not player or not tournament_instance:
+        flash('Invalid tournament or player', 'danger')
+        conn.close()
+        return redirect(url_for('tournaments_overview'))
+    
+    conn.close()
+    
+    return render_template('quick_tournament_payment.html', 
+                         player=player, 
+                         tournament_instance=tournament_instance,
+                         quick_join_data=quick_join_data)
+
+@app.route('/process_quick_tournament_payment', methods=['POST'])
+def process_quick_tournament_payment():
+    """Process quick tournament payment"""
+    quick_join_data = session.get('quick_join_data')
+    payment_method = request.form.get('payment_method', 'cash')
+    
+    if not quick_join_data:
+        flash('Tournament selection expired. Please try again.', 'warning')
+        return redirect(url_for('tournaments_overview'))
+    
+    player_id = quick_join_data['player_id']
+    conn = get_db_connection()
+    
+    try:
+        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+        tournament_instance = conn.execute('SELECT * FROM tournament_instances WHERE id = ?', (quick_join_data['tournament_instance_id'],)).fetchone()
+        
+        entry_fee = quick_join_data['entry_fee']
+        credits_used = 0
+        remaining_payment = entry_fee
+        new_credit_balance = player['tournament_credits'] or 0
+        
+        # Handle credit payment
+        if payment_method == 'credits' and entry_fee > 0:
+            player_credits = player['tournament_credits'] or 0
+            
+            if player_credits <= 0:
+                flash('You have no tournament credits available. Please choose cash payment.', 'danger')
+                return redirect(url_for('quick_tournament_payment', player_id=player_id))
+            
+            credits_used = min(player_credits, entry_fee)
+            remaining_payment = max(0, entry_fee - credits_used)
+            
+            # Update player's credit balance
+            new_credit_balance = player_credits - credits_used
+            conn.execute('UPDATE players SET tournament_credits = ? WHERE id = ?', (new_credit_balance, player_id))
+            
+            # Record credit transaction
+            credit_description = f"Tournament entry payment: {tournament_instance['name']} ({quick_join_data['tournament_type']})"
+            if remaining_payment > 0:
+                credit_description += f" - Partial payment (${credits_used:.2f} of ${entry_fee:.2f})"
+            
+            conn.execute('''
+                INSERT INTO credit_transactions (player_id, transaction_type, amount, description)
+                VALUES (?, 'credit_used', ?, ?)
+            ''', (player_id, credits_used, credit_description))
+        
+        # Process tournament entry
+        entry_date = datetime.now()
+        match_deadline = entry_date + timedelta(days=14)
+        
+        # Update free entries if used
+        if quick_join_data['free_entry_used']:
+            conn.execute('UPDATE players SET free_tournament_entries = free_tournament_entries - 1 WHERE id = ?', (player_id,))
+        
+        # Determine payment status
+        if payment_method == 'credits' and remaining_payment == 0:
+            payment_status = 'completed'
+        elif payment_method == 'credits' and remaining_payment > 0:
+            payment_status = 'pending_payment'
+        else:
+            payment_status = 'completed'
+        
+        # Insert tournament entry
+        conn.execute('''
+            INSERT INTO tournaments (player_id, tournament_instance_id, tournament_name, tournament_level, tournament_type, entry_fee, sport, entry_date, match_deadline, payment_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (player_id, quick_join_data['tournament_instance_id'], tournament_instance['name'], tournament_instance['skill_level'], quick_join_data['tournament_type'], entry_fee, 'Pickleball', entry_date.strftime('%Y-%m-%d'), match_deadline.strftime('%Y-%m-%d'), payment_status))
+        
+        conn.commit()
+        
+        # Clear session data
+        session.pop('quick_join_data', None)
+        
+        # Show success message
+        if payment_method == 'credits' and remaining_payment == 0:
+            flash(f'Tournament entry paid with ${credits_used:.2f} in credits! New credit balance: ${new_credit_balance:.2f}', 'success')
+        elif payment_method == 'credits' and remaining_payment > 0:
+            flash(f'${credits_used:.2f} in credits applied! You have a remaining balance of ${remaining_payment:.2f} to pay.', 'warning')
+        else:
+            flash('Successfully entered tournament! Good luck!', 'success')
+        
+        conn.close()
+        return redirect(url_for('dashboard', player_id=player_id))
+        
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        flash(f'Error processing tournament entry: {str(e)}', 'danger')
+        return redirect(url_for('tournaments_overview'))
+
 @app.route('/admin/update_settings', methods=['POST'])
 @admin_required
 def update_settings():
