@@ -3561,40 +3561,72 @@ def create_test_player():
     location1 = request.form.get('location1')
     dob = request.form.get('dob')
     address = request.form.get('address')
+    username = request.form.get('username')
+    password = request.form.get('password')
     switch_immediately = request.form.get('switch_immediately')
     
     # Validate required fields
-    if not all([full_name, email, skill_level, location1, dob, address]):
-        flash('All fields are required', 'danger')
+    if not all([full_name, email, skill_level, location1, dob, address, username, password]):
+        flash('All fields including username and password are required', 'danger')
         return redirect(url_for('admin_players'))
     
     conn = get_db_connection()
     
     try:
+        from werkzeug.security import generate_password_hash
+        
         # Check if email already exists
         existing = conn.execute('SELECT id FROM players WHERE email = ?', (email,)).fetchone()
         if existing:
             flash('Email already exists', 'danger')
             return redirect(url_for('admin_players'))
         
+        # Check if username already exists
+        existing_username = conn.execute('SELECT id FROM players WHERE username = ?', (username,)).fetchone()
+        if existing_username:
+            flash('Username already exists', 'danger')
+            return redirect(url_for('admin_players'))
+        
+        # Hash password
+        password_hash = generate_password_hash(password)
+        
         # Create test player with default values
         conn.execute('''
             INSERT INTO players (
                 full_name, email, skill_level, location1, dob, address,
                 membership_type, subscription_status, tournament_credits,
-                wins, losses, is_admin, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                wins, losses, is_admin, username, password_hash, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             full_name, email, skill_level, location1, dob, address,
             membership_type, 'active' if membership_type else None, 
             5 if membership_type == 'tournament' else 0,  # Give tournament credits if tournament member
-            0, 0, False, datetime.now().isoformat()
+            0, 0, False, username, password_hash, datetime.now().isoformat()
         ))
         
         conn.commit()
         
-        # Get the new player ID
-        new_player = conn.execute('SELECT id FROM players WHERE email = ?', (email,)).fetchone()
+        # Get the new player ID and full data
+        new_player = conn.execute('SELECT * FROM players WHERE email = ?', (email,)).fetchone()
+        
+        # Send email notification to admin about new test player registration
+        player_data = {
+            'full_name': full_name,
+            'email': email,
+            'skill_level': skill_level,
+            'location1': location1,
+            'location2': '',
+            'preferred_court': address,  # Use address as preferred court for test players
+            'address': address,
+            'dob': dob
+        }
+        
+        email_sent = send_new_registration_notification(player_data)
+        
+        if email_sent:
+            logging.info(f"New test player registration email notification sent successfully for {full_name}")
+        else:
+            logging.warning(f"Failed to send email notification for new test player: {full_name}")
         
         if switch_immediately:
             session['current_player_id'] = new_player['id']
