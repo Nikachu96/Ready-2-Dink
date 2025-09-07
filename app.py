@@ -278,6 +278,29 @@ def init_db():
             VALUES (?, ?, ?)
         ''', (key, value, description))
     
+    # Bank settings table for admin business account configuration
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS bank_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            bank_name TEXT,
+            account_holder_name TEXT,
+            account_type TEXT CHECK (account_type IN ('checking', 'savings', 'business')),
+            routing_number TEXT,
+            account_number TEXT,
+            business_name TEXT,
+            business_address TEXT,
+            business_phone TEXT,
+            business_email TEXT,
+            stripe_account_id TEXT,
+            payout_method TEXT DEFAULT 'manual' CHECK (payout_method IN ('manual', 'stripe_connect', 'ach')),
+            auto_payout_enabled INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_by INTEGER,
+            FOREIGN KEY (updated_by) REFERENCES players(id)
+        )
+    ''')
+
     # Credit transactions table for tournament refunds
     c.execute('''
         CREATE TABLE IF NOT EXISTS credit_transactions (
@@ -3514,6 +3537,92 @@ def update_payout_status(payout_id):
         conn.close()
     
     return redirect(url_for('admin_payouts'))
+
+@app.route('/admin/bank_settings')
+@admin_required
+def admin_bank_settings():
+    """Display bank account settings page"""
+    conn = get_db_connection()
+    
+    # Get current bank settings (there should only be one record)
+    bank_settings = conn.execute('SELECT * FROM bank_settings ORDER BY updated_at DESC LIMIT 1').fetchone()
+    
+    conn.close()
+    
+    return render_template('admin/bank_settings.html', bank_settings=bank_settings)
+
+@app.route('/admin/save_bank_settings', methods=['POST'])
+@admin_required
+def save_bank_settings():
+    """Save or update bank account settings"""
+    admin_id = session.get('current_player_id')
+    
+    # Get form data
+    bank_name = request.form.get('bank_name')
+    account_holder_name = request.form.get('account_holder_name')
+    account_type = request.form.get('account_type')
+    routing_number = request.form.get('routing_number')
+    account_number = request.form.get('account_number')
+    business_name = request.form.get('business_name')
+    business_address = request.form.get('business_address')
+    business_phone = request.form.get('business_phone')
+    business_email = request.form.get('business_email')
+    stripe_account_id = request.form.get('stripe_account_id')
+    payout_method = request.form.get('payout_method', 'manual')
+    auto_payout_enabled = 1 if request.form.get('auto_payout_enabled') else 0
+    
+    # Validate required fields
+    if not account_holder_name or not account_type:
+        flash('Account holder name and account type are required', 'danger')
+        return redirect(url_for('admin_bank_settings'))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Check if bank settings already exist
+        existing = conn.execute('SELECT id FROM bank_settings LIMIT 1').fetchone()
+        
+        if existing:
+            # Update existing settings
+            conn.execute('''
+                UPDATE bank_settings SET
+                    bank_name = ?, account_holder_name = ?, account_type = ?,
+                    routing_number = ?, account_number = ?, business_name = ?,
+                    business_address = ?, business_phone = ?, business_email = ?,
+                    stripe_account_id = ?, payout_method = ?, auto_payout_enabled = ?,
+                    updated_at = CURRENT_TIMESTAMP, updated_by = ?
+                WHERE id = ?
+            ''', (bank_name, account_holder_name, account_type, routing_number, 
+                  account_number, business_name, business_address, business_phone,
+                  business_email, stripe_account_id, payout_method, auto_payout_enabled,
+                  admin_id, existing['id']))
+            
+            flash('Bank settings updated successfully!', 'success')
+        else:
+            # Insert new settings
+            conn.execute('''
+                INSERT INTO bank_settings (
+                    bank_name, account_holder_name, account_type, routing_number,
+                    account_number, business_name, business_address, business_phone,
+                    business_email, stripe_account_id, payout_method, auto_payout_enabled,
+                    updated_by
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (bank_name, account_holder_name, account_type, routing_number,
+                  account_number, business_name, business_address, business_phone,
+                  business_email, stripe_account_id, payout_method, auto_payout_enabled,
+                  admin_id))
+            
+            flash('Bank settings saved successfully!', 'success')
+        
+        conn.commit()
+        
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error saving bank settings: {str(e)}', 'danger')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('admin_bank_settings'))
 
 @app.route('/issue_tournament_credit', methods=['POST'])
 @admin_required

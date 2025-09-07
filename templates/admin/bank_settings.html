@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Bank Account Settings - Admin{% endblock %}
+
+{% block content %}
+<div class="row animate-in">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">
+                    <i class="fas fa-university me-2 text-primary"></i>Bank Account Settings
+                </h2>
+                <p class="text-muted mb-0">Configure your business bank account for automated revenue collection and payout processing</p>
+            </div>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Admin
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Bank Account Configuration -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h4 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-bank me-2"></i>Business Bank Account
+                </h4>
+                <p class="mb-0 opacity-90">Your primary account for tournament fees and payouts</p>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('save_bank_settings') }}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Bank Name</label>
+                                <input type="text" class="form-control" name="bank_name" 
+                                       value="{{ bank_settings.bank_name if bank_settings else '' }}" 
+                                       placeholder="e.g., Chase Bank, Wells Fargo">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Account Type</label>
+                                <select class="form-control" name="account_type" required>
+                                    <option value="">Select Account Type</option>
+                                    <option value="business" {{ 'selected' if bank_settings and bank_settings.account_type == 'business' else '' }}>Business Account</option>
+                                    <option value="checking" {{ 'selected' if bank_settings and bank_settings.account_type == 'checking' else '' }}>Personal Checking</option>
+                                    <option value="savings" {{ 'selected' if bank_settings and bank_settings.account_type == 'savings' else '' }}>Personal Savings</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Account Holder Name</label>
+                                <input type="text" class="form-control" name="account_holder_name" 
+                                       value="{{ bank_settings.account_holder_name if bank_settings else '' }}" 
+                                       placeholder="Full name as it appears on account" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Business Name</label>
+                                <input type="text" class="form-control" name="business_name" 
+                                       value="{{ bank_settings.business_name if bank_settings else '' }}" 
+                                       placeholder="Your business/company name">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Routing Number</label>
+                                <input type="text" class="form-control" name="routing_number" 
+                                       value="{{ bank_settings.routing_number if bank_settings else '' }}" 
+                                       placeholder="9-digit routing number" maxlength="9" pattern="[0-9]{9}">
+                                <small class="form-text text-muted">Found at the bottom left of your checks</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Account Number</label>
+                                <input type="text" class="form-control" name="account_number" 
+                                       value="{{ bank_settings.account_number if bank_settings else '' }}" 
+                                       placeholder="Your account number">
+                                <small class="form-text text-muted">This will be encrypted and stored securely</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Business Address</label>
+                        <textarea class="form-control" name="business_address" rows="2" 
+                                  placeholder="Full business address for tax and legal purposes">{{ bank_settings.business_address if bank_settings else '' }}</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Business Phone</label>
+                                <input type="tel" class="form-control" name="business_phone" 
+                                       value="{{ bank_settings.business_phone if bank_settings else '' }}" 
+                                       placeholder="(555) 123-4567">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Business Email</label>
+                                <input type="email" class="form-control" name="business_email" 
+                                       value="{{ bank_settings.business_email if bank_settings else '' }}" 
+                                       placeholder="business@yourcompany.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5 class="fw-bold mb-3">
+                        <i class="fas fa-cogs me-2"></i>Payout Settings
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Payout Method</label>
+                                <select class="form-control" name="payout_method">
+                                    <option value="manual" {{ 'selected' if not bank_settings or bank_settings.payout_method == 'manual' else '' }}>Manual Processing</option>
+                                    <option value="stripe_connect" {{ 'selected' if bank_settings and bank_settings.payout_method == 'stripe_connect' else '' }}>Stripe Connect (Automatic)</option>
+                                    <option value="ach" {{ 'selected' if bank_settings and bank_settings.payout_method == 'ach' else '' }}>ACH Bank Transfer</option>
+                                </select>
+                                <small class="form-text text-muted">Choose how tournament winners get paid</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Stripe Account ID</label>
+                                <input type="text" class="form-control" name="stripe_account_id" 
+                                       value="{{ bank_settings.stripe_account_id if bank_settings else '' }}" 
+                                       placeholder="acct_xxxxxxxxxx">
+                                <small class="form-text text-muted">For Stripe Connect integration</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" name="auto_payout_enabled" id="auto_payout_enabled" 
+                               {{ 'checked' if bank_settings and bank_settings.auto_payout_enabled else '' }}>
+                        <label class="form-check-label fw-bold" for="auto_payout_enabled">
+                            Enable Automatic Payouts
+                        </label>
+                        <small class="form-text text-muted d-block">
+                            When enabled, tournament winners will be paid automatically when tournaments complete
+                        </small>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>Save Bank Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Information Panel -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-info-circle me-2"></i>Important Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <h6 class="fw-bold">
+                        <i class="fas fa-shield-alt me-1"></i>Security Notice
+                    </h6>
+                    <p class="mb-0 small">Your bank account information is encrypted and stored securely. Only platform administrators can access this data.</p>
+                </div>
+
+                <h6 class="fw-bold mt-4">
+                    <i class="fas fa-money-bill-wave me-1"></i>Revenue Flow
+                </h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-2">• All tournament entry fees → Your bank account</li>
+                    <li class="mb-2">• All membership fees → Your bank account</li>
+                    <li class="mb-2">• You keep 30% of tournament fees as revenue</li>
+                    <li class="mb-2">• 70% automatically paid to tournament winners</li>
+                </ul>
+
+                <h6 class="fw-bold mt-4">
+                    <i class="fas fa-user-tie me-1"></i>Business vs Personal
+                </h6>
+                <p class="small text-muted">
+                    <strong>Recommended:</strong> Use a business bank account for cleaner accounting and tax reporting. Personal accounts work but may complicate your bookkeeping.
+                </p>
+
+                <h6 class="fw-bold mt-4">
+                    <i class="fas fa-question-circle me-1"></i>Need Help?
+                </h6>
+                <p class="small text-muted">
+                    Contact your bank to get routing and account numbers, or check the bottom of a business check.
+                </p>
+            </div>
+        </div>
+
+        {% if bank_settings %}
+        <div class="card mt-3">
+            <div class="card-header bg-success text-white">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-check-circle me-2"></i>Current Settings
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="small mb-1"><strong>Bank:</strong> {{ bank_settings.bank_name or 'Not specified' }}</p>
+                <p class="small mb-1"><strong>Account Type:</strong> {{ bank_settings.account_type|title if bank_settings.account_type else 'Not specified' }}</p>
+                <p class="small mb-1"><strong>Business:</strong> {{ bank_settings.business_name or 'Not specified' }}</p>
+                <p class="small mb-1"><strong>Payout Method:</strong> {{ bank_settings.payout_method|replace('_', ' ')|title if bank_settings.payout_method else 'Manual' }}</p>
+                <p class="small mb-1"><strong>Auto Payouts:</strong> 
+                    <span class="badge {{ 'bg-success' if bank_settings.auto_payout_enabled else 'bg-secondary' }}">
+                        {{ 'Enabled' if bank_settings.auto_payout_enabled else 'Disabled' }}
+                    </span>
+                </p>
+                <hr>
+                <p class="small text-muted mb-0">
+                    <strong>Last Updated:</strong><br>
+                    {{ bank_settings.updated_at }}
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
