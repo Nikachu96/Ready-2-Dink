@@ -42,6 +42,15 @@ Preferred communication style: Simple, everyday language.
 - **Tournament Management**: Automated deadline calculation and status tracking
 - **Dashboard System**: Personalized player profiles with tournament history
 - **Administrative Interface**: Tournament oversight with completion status management
+- **Payout Management System**: Automated tournament winner payout tracking with admin interface
+
+### Payout Management Architecture
+- **Automatic Payout Creation**: Tournament winners automatically generate payout records upon completion
+- **Multi-Platform Support**: Handles PayPal, Venmo, and Zelle account information for prize distribution
+- **Status Tracking**: Complete lifecycle management (pending → processing → paid/failed)
+- **Admin Interface**: Comprehensive payout dashboard with bulk processing capabilities
+- **Prize Calculation**: Automated calculation based on tournament entry fees (70% prize pool, 30% platform revenue)
+- **Financial Tracking**: Monthly totals, outstanding payments, and transaction history
 
 ## External Dependencies
 
