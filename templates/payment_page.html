@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Payment - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+                <h4 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-credit-card me-2"></i>Complete Payment
+                </h4>
+                <p class="mb-0 opacity-90">Secure tournament entry payment</p>
+            </div>
+            <div class="card-body">
+                <!-- Payment Amount -->
+                <div class="alert alert-info text-center mb-4">
+                    <h3 class="mb-1" style="color: #E0563F;">
+                        ${{ "%.2f"|format(payment_data.amount / 100) }}
+                    </h3>
+                    <p class="mb-0">{{ payment_data.description }}</p>
+                </div>
+
+                <!-- Payment Options -->
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-shield-alt me-2"></i>Choose Payment Method
+                    </h6>
+                    
+                    <!-- Stripe Checkout Button -->
+                    <div class="d-grid gap-2 mb-3">
+                        <a href="{{ stripe_checkout_url }}" class="btn btn-primary btn-lg" target="_blank">
+                            <i class="fab fa-cc-stripe me-2"></i>
+                            Pay with Stripe (Credit/Debit Card)
+                            <br><small class="opacity-75">Secure checkout in new window</small>
+                        </a>
+                    </div>
+
+                    <!-- Alternative Payment Methods -->
+                    <div class="row">
+                        <div class="col-6">
+                            <button class="btn btn-outline-primary w-100" onclick="alert('PayPal integration coming soon!')">
+                                <i class="fab fa-paypal me-2"></i>PayPal
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-outline-primary w-100" onclick="alert('Apple Pay integration coming soon!')">
+                                <i class="fab fa-apple-pay me-2"></i>Apple Pay
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="alert alert-light">
+                    <h6 class="fw-bold">
+                        <i class="fas fa-info-circle me-2"></i>Payment Instructions
+                    </h6>
+                    <ol class="mb-0 small">
+                        <li>Click "Pay with Stripe" above</li>
+                        <li>Complete payment in the secure checkout window</li>
+                        <li>You'll be redirected back here automatically</li>
+                        <li>Your tournament entry will be confirmed!</li>
+                    </ol>
+                </div>
+
+                <!-- Security Notice -->
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <i class="fas fa-lock me-1"></i>
+                        Secured by Stripe • Your payment information is encrypted and never stored
+                    </small>
+                </div>
+
+                <!-- Back Button -->
+                <div class="d-grid mt-4">
+                    <a href="{{ url_for('tournaments_overview') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Tournaments
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.animate-in {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

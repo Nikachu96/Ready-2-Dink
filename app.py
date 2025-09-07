@@ -3695,8 +3695,8 @@ def process_quick_tournament_payment():
                 'payment_type': payment_type
             }
             
-            # Redirect to Stripe checkout
-            return redirect(url_for('create_stripe_checkout'))
+            # Redirect to payment page
+            return redirect(url_for('payment_page'))
         
     except Exception as e:
         conn.rollback()
@@ -3718,6 +3718,21 @@ def update_settings():
     return redirect(url_for('admin_settings'))
 
 # Tournament Payment Processing Routes
+@app.route('/payment_page')
+def payment_page():
+    """Display payment page with Stripe checkout link"""
+    payment_data = session.get('payment_data')
+    if not payment_data:
+        flash('Payment session expired. Please try again.', 'warning')
+        return redirect(url_for('tournaments_overview'))
+    
+    # Create Stripe checkout URL
+    stripe_checkout_url = url_for('create_stripe_checkout')
+    
+    return render_template('payment_page.html', 
+                         payment_data=payment_data, 
+                         stripe_checkout_url=stripe_checkout_url)
+
 @app.route('/create_stripe_checkout')
 def create_stripe_checkout():
     """Create Stripe checkout session for tournament payment"""
