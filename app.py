@@ -12,6 +12,83 @@ import stripe
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
+# Email configuration for SendGrid
+def send_admin_credentials_email(full_name, email, username, password, login_url):
+    """Send admin login credentials via email"""
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        
+        sendgrid_key = os.environ.get('SENDGRID_API_KEY')
+        if not sendgrid_key:
+            logging.error("SendGrid API key not found")
+            return False
+        
+        # Create email content
+        subject = "Ready 2 Dink - Admin Access Credentials"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); padding: 20px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Ready 2 Dink</h1>
+                <p style="color: white; margin: 5px 0;">Admin Portal Access</p>
+            </div>
+            
+            <div style="padding: 30px; background: #f8f9fa;">
+                <h2 style="color: #333;">Hello {full_name},</h2>
+                
+                <p>You have been granted admin access to the Ready 2 Dink platform. Here are your login credentials:</p>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #3F567F; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #3F567F;">Login Information</h3>
+                    <p><strong>Username:</strong> {username}</p>
+                    <p><strong>Temporary Password:</strong> {password}</p>
+                    <p><strong>Login URL:</strong> <a href="{login_url}">{login_url}</a></p>
+                </div>
+                
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                    <h4 style="margin-top: 0; color: #856404;">⚠️ Important Security Notice</h4>
+                    <ul style="color: #856404; margin: 0;">
+                        <li>You will be required to change your password on first login</li>
+                        <li>Keep these credentials secure and do not share them</li>
+                        <li>Contact your administrator if you have any issues</li>
+                    </ul>
+                </div>
+                
+                <p>As an admin, you'll have access to:</p>
+                <ul>
+                    <li>Tournament management</li>
+                    <li>Player oversight</li>
+                    <li>Financial dashboard</li>
+                    <li>Platform analytics</li>
+                </ul>
+                
+                <p>Thank you for joining the Ready 2 Dink team!</p>
+            </div>
+            
+            <div style="background: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+                Ready 2 Dink Admin Portal - Confidential
+            </div>
+        </div>
+        """
+        
+        message = Mail(
+            from_email='noreply@ready2dink.com',
+            to_emails=email,
+            subject=subject,
+            html_content=html_content
+        )
+        
+        sg = SendGridAPIClient(sendgrid_key)
+        response = sg.send(message)
+        
+        logging.info(f"Email sent successfully to {email}, status code: {response.status_code}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Failed to send email to {email}: {str(e)}")
+        return False
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 
@@ -193,6 +270,11 @@ def init_db():
         
     try:
         c.execute('ALTER TABLE players ADD COLUMN password_hash TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN must_change_password INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
         pass  # Column already exists
         
@@ -3780,20 +3862,28 @@ def create_admin_staff():
                 full_name, email, location1, dob, address, job_title,
                 admin_level, is_admin, skill_level, membership_type,
                 subscription_status, tournament_credits, wins, losses, 
-                username, password_hash, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                username, password_hash, must_change_password, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             full_name, email, location1, dob, address, job_title,
             admin_level, True, 'Admin', 'tournament',
-            'active', 10, 0, 0, username, password_hash, datetime.now().isoformat()
+            'active', 10, 0, 0, username, password_hash, 1, datetime.now().isoformat()
         ))
         
         conn.commit()
         
+        # Send email with credentials
+        login_url = f"{request.host_url}admin/login"
+        email_sent = send_admin_credentials_email(full_name, email, username, password, login_url)
+        
         # Show the login credentials to the admin
         flash(f'Admin staff member "{full_name}" created successfully!', 'success')
-        flash(f'Login Credentials - Username: {username} | Password: {password}', 'info')
-        flash('Please save these credentials and share them securely with the staff member.', 'warning')
+        
+        if email_sent:
+            flash(f'Login credentials have been sent to {email}', 'success')
+        else:
+            flash(f'Email failed to send. Manual credentials - Username: {username} | Password: {password}', 'warning')
+            flash('Please share these credentials securely with the staff member.', 'warning')
         
     except Exception as e:
         conn.rollback()
@@ -3853,7 +3943,7 @@ def admin_login_post():
     try:
         # Find admin user by username
         admin = conn.execute('''
-            SELECT id, full_name, username, password_hash, is_admin
+            SELECT id, full_name, username, password_hash, is_admin, must_change_password
             FROM players 
             WHERE username = ? AND is_admin = 1
         ''', (username,)).fetchone()
@@ -3869,13 +3959,101 @@ def admin_login_post():
         
         # Login successful - set session
         session['current_player_id'] = admin['id']
-        flash(f'Welcome back, {admin["full_name"]}!', 'success')
         
+        # Check if password change is required
+        if admin['must_change_password']:
+            flash('You must change your password before accessing the admin panel', 'warning')
+            return redirect(url_for('admin_change_password'))
+        
+        flash(f'Welcome back, {admin["full_name"]}!', 'success')
         return redirect(url_for('admin_dashboard'))
         
     except Exception as e:
         flash(f'Login error: {str(e)}', 'danger')
         return redirect(url_for('admin_login'))
+    finally:
+        conn.close()
+
+@app.route('/admin/change_password')
+def admin_change_password():
+    """Display password change form for first-time login"""
+    # Check if user is logged in
+    if 'current_player_id' not in session:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    return render_template('admin_change_password.html')
+
+@app.route('/admin/change_password', methods=['POST'])
+def admin_change_password_post():
+    """Handle password change form submission"""
+    from werkzeug.security import check_password_hash, generate_password_hash
+    import re
+    
+    # Check if user is logged in
+    if 'current_player_id' not in session:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('admin_login'))
+    
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+    
+    if not all([current_password, new_password, confirm_password]):
+        flash('All fields are required', 'danger')
+        return redirect(url_for('admin_change_password'))
+    
+    # Validate password requirements
+    if len(new_password) < 8:
+        flash('Password must be at least 8 characters long', 'danger')
+        return redirect(url_for('admin_change_password'))
+    
+    if not re.search(r'[A-Za-z]', new_password) or not re.search(r'[0-9]', new_password):
+        flash('Password must contain both letters and numbers', 'danger')
+        return redirect(url_for('admin_change_password'))
+    
+    if new_password != confirm_password:
+        flash('New passwords do not match', 'danger')
+        return redirect(url_for('admin_change_password'))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Get current user
+        admin = conn.execute('''
+            SELECT id, full_name, password_hash
+            FROM players 
+            WHERE id = ? AND is_admin = 1
+        ''', (session['current_player_id'],)).fetchone()
+        
+        if not admin:
+            flash('Admin user not found', 'danger')
+            return redirect(url_for('admin_login'))
+        
+        # Verify current password
+        if not check_password_hash(admin['password_hash'], current_password):
+            flash('Current password is incorrect', 'danger')
+            return redirect(url_for('admin_change_password'))
+        
+        # Hash new password
+        new_password_hash = generate_password_hash(new_password)
+        
+        # Update password and clear must_change_password flag
+        conn.execute('''
+            UPDATE players 
+            SET password_hash = ?, must_change_password = 0
+            WHERE id = ?
+        ''', (new_password_hash, admin['id']))
+        
+        conn.commit()
+        
+        flash(f'Password updated successfully! Welcome to the admin panel, {admin["full_name"]}!', 'success')
+        return redirect(url_for('admin_dashboard'))
+        
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error updating password: {str(e)}', 'danger')
+        return redirect(url_for('admin_change_password'))
     finally:
         conn.close()
 
