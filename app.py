@@ -1770,7 +1770,7 @@ def tournament_entry(player_id):
             
             # Check if Ambassador can use free entry (excluding The Hill)
             free_entry_used = False
-            is_the_hill = 'The Hill' in tournament_instance.get('name', '') or 'Big Dink' in tournament_instance.get('name', '')
+            is_the_hill = 'The Hill' in (tournament_instance['name'] or '') or 'Big Dink' in (tournament_instance['name'] or '')
             
             if player['free_tournament_entries'] and player['free_tournament_entries'] > 0 and not is_the_hill:
                 # Ambassador has free entries available and this isn't The Hill
@@ -3496,7 +3496,7 @@ def quick_join_tournament(player_id):
         
         # Check for free Ambassador entry
         free_entry_used = False
-        is_the_hill = 'The Hill' in tournament_instance.get('name', '') or 'Big Dink' in tournament_instance.get('name', '')
+        is_the_hill = 'The Hill' in (tournament_instance['name'] or '') or 'Big Dink' in (tournament_instance['name'] or '')
         
         if player['free_tournament_entries'] and player['free_tournament_entries'] > 0 and not is_the_hill:
             entry_fee = 10 if tournament_type == 'doubles' else 0
