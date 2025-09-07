@@ -3,6 +3,57 @@
 {% block title %}Player Management - MatchSpark Admin{% endblock %}
 
 {% block content %}
+<style>
+/* Force white text for admin players table */
+.admin-players-table {
+    color: white !important;
+}
+
+.admin-players-table th {
+    color: white !important;
+    font-weight: 600 !important;
+    border-color: rgba(255,255,255,0.2) !important;
+}
+
+.admin-players-table td {
+    color: white !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+.admin-players-table .player-name {
+    color: white !important;
+    font-weight: bold !important;
+}
+
+.admin-players-table .player-id {
+    color: rgba(255,255,255,0.7) !important;
+}
+
+.admin-players-table .player-email {
+    color: white !important;
+    font-weight: bold !important;
+}
+
+.admin-players-table .player-location {
+    color: rgba(255,255,255,0.7) !important;
+}
+
+.admin-players-table .trial-text {
+    color: rgba(255,255,255,0.7) !important;
+}
+
+.admin-players-table .free-entries {
+    color: #198754 !important;
+}
+
+.admin-players-table .join-date {
+    color: rgba(255,255,255,0.7) !important;
+}
+
+.admin-players-table tr:hover {
+    background-color: rgba(255,255,255,0.075) !important;
+}
+</style>
 <div class="row animate-in">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -130,23 +181,23 @@
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover" style="color: var(--bs-body-color); --bs-table-hover-bg: rgba(255,255,255,0.075);">
+                    <table class="table table-hover admin-players-table">
                         <thead>
-                            <tr style="color: var(--bs-body-color);">
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Player</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Contact</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Subscription</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Stats</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Skill Level</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Joined</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Admin</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Actions</th>
+                            <tr>
+                                <th>Player</th>
+                                <th>Contact</th>
+                                <th>Subscription</th>
+                                <th>Stats</th>
+                                <th>Skill Level</th>
+                                <th>Joined</th>
+                                <th>Admin</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for player in players %}
-                            <tr style="color: var(--bs-body-color);">
-                                <td style="color: var(--bs-body-color);">
+                            <tr>
+                                <td>
                                     <div class="d-flex align-items-center">
                                         {% if player.selfie %}
                                             <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
@@ -159,15 +210,15 @@
                                             </div>
                                         {% endif %}
                                         <div>
-                                            <h6 class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ player.full_name }}</h6>
-                                            <small style="color: var(--bs-body-color); opacity: 0.7;">ID: {{ player.id }}</small>
+                                            <h6 class="mb-1 player-name">{{ player.full_name }}</h6>
+                                            <small class="player-id">ID: {{ player.id }}</small>
                                         </div>
                                     </div>
                                 </td>
-                                <td style="color: var(--bs-body-color);">
+                                <td>
                                     <div>
-                                        <div class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ player.email }}</div>
-                                        <small style="color: var(--bs-body-color); opacity: 0.7;">{{ player.location1 }}</small>
+                                        <div class="mb-1 player-email">{{ player.email }}</div>
+                                        <small class="player-location">{{ player.location1 }}</small>
                                     </div>
                                 </td>
                                 <td>
@@ -193,13 +244,13 @@
                                         {% endif %}
                                         
                                         {% if player.trial_end_date and player.subscription_status != 'ambassador_lifetime' %}
-                                            <small class="d-block mt-1" style="color: var(--bs-body-color); opacity: 0.7;">
+                                            <small class="d-block mt-1 trial-text">
                                                 <i class="fas fa-clock me-1"></i>Trial
                                             </small>
                                         {% endif %}
                                         
                                         {% if player.free_tournament_entries and player.free_tournament_entries > 0 %}
-                                            <small class="d-block mt-1" style="color: var(--bs-success);">
+                                            <small class="d-block mt-1 free-entries">
                                                 <i class="fas fa-gift me-1"></i>{{ player.free_tournament_entries }} free
                                             </small>
                                         {% endif %}
@@ -217,7 +268,7 @@
                                     <span class="badge bg-primary">{{ player.skill_level }}</span>
                                 </td>
                                 <td>
-                                    <small style="color: var(--bs-body-color); opacity: 0.7;">{{ player.created_at[:10] if player.created_at else 'N/A' }}</small>
+                                    <small class="join-date">{{ player.created_at[:10] if player.created_at else 'N/A' }}</small>
                                 </td>
                                 <td>
                                     {% if player.is_admin %}
@@ -231,6 +282,10 @@
                                         <a href="{{ url_for('set_player_session', player_id=player.id) }}" 
                                            class="btn btn-primary" title="Test as this player">
                                             <i class="fas fa-play me-1"></i>Test
+                                        </a>
+                                        <a href="{{ url_for('admin_edit_player', player_id=player.id) }}" 
+                                           class="btn btn-info" title="Edit Profile">
+                                            <i class="fas fa-edit"></i>
                                         </a>
                                         <form method="POST" action="{{ url_for('toggle_admin', player_id=player.id) }}" class="d-inline">
                                             <button type="submit" 
