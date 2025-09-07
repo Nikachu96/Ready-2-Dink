@@ -186,6 +186,16 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN username TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN password_hash TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     # Add availability columns
     try:
         c.execute('ALTER TABLE players ADD COLUMN availability_schedule TEXT DEFAULT NULL')
@@ -3722,6 +3732,9 @@ def admin_staff():
 def create_admin_staff():
     """Create a new admin staff member"""
     from datetime import datetime
+    import secrets
+    import string
+    from werkzeug.security import generate_password_hash
     
     # Get form data
     full_name = request.form.get('full_name')
@@ -3731,36 +3744,56 @@ def create_admin_staff():
     dob = request.form.get('dob')
     admin_level = request.form.get('admin_level', 'staff')
     address = request.form.get('address')
+    username = request.form.get('username')
+    password = request.form.get('password')
     
     # Validate required fields
-    if not all([full_name, email, location1, dob, address]):
+    if not all([full_name, email, location1, dob, address, username]):
         flash('All required fields must be filled', 'danger')
         return redirect(url_for('admin_staff'))
+    
+    # Generate password if not provided
+    if not password:
+        password = ''.join(secrets.choice(string.ascii_letters + string.digits + '!@#$%^&*') for _ in range(12))
     
     conn = get_db_connection()
     
     try:
-        # Check if email already exists
-        existing = conn.execute('SELECT id FROM players WHERE email = ?', (email,)).fetchone()
-        if existing:
+        # Check if email or username already exists
+        existing_email = conn.execute('SELECT id FROM players WHERE email = ?', (email,)).fetchone()
+        existing_username = conn.execute('SELECT id FROM players WHERE username = ?', (username,)).fetchone()
+        
+        if existing_email:
             flash('Email already exists in the system', 'danger')
             return redirect(url_for('admin_staff'))
+            
+        if existing_username:
+            flash('Username already exists. Please choose a different username.', 'danger')
+            return redirect(url_for('admin_staff'))
+        
+        # Hash the password
+        password_hash = generate_password_hash(password)
         
         # Create admin staff account
         conn.execute('''
             INSERT INTO players (
                 full_name, email, location1, dob, address, job_title,
                 admin_level, is_admin, skill_level, membership_type,
-                subscription_status, tournament_credits, wins, losses, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                subscription_status, tournament_credits, wins, losses, 
+                username, password_hash, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             full_name, email, location1, dob, address, job_title,
             admin_level, True, 'Admin', 'tournament',
-            'active', 10, 0, 0, datetime.now().isoformat()
+            'active', 10, 0, 0, username, password_hash, datetime.now().isoformat()
         ))
         
         conn.commit()
+        
+        # Show the login credentials to the admin
         flash(f'Admin staff member "{full_name}" created successfully!', 'success')
+        flash(f'Login Credentials - Username: {username} | Password: {password}', 'info')
+        flash('Please save these credentials and share them securely with the staff member.', 'warning')
         
     except Exception as e:
         conn.rollback()
@@ -3797,6 +3830,54 @@ def remove_admin_staff(player_id):
         conn.close()
     
     return redirect(url_for('admin_staff'))
+
+@app.route('/admin/login')
+def admin_login():
+    """Display admin login page"""
+    return render_template('admin_login.html')
+
+@app.route('/admin/login', methods=['POST'])
+def admin_login_post():
+    """Handle admin login form submission"""
+    from werkzeug.security import check_password_hash
+    
+    username = request.form.get('username')
+    password = request.form.get('password')
+    
+    if not username or not password:
+        flash('Username and password are required', 'danger')
+        return redirect(url_for('admin_login'))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Find admin user by username
+        admin = conn.execute('''
+            SELECT id, full_name, username, password_hash, is_admin
+            FROM players 
+            WHERE username = ? AND is_admin = 1
+        ''', (username,)).fetchone()
+        
+        if not admin:
+            flash('Invalid username or password', 'danger')
+            return redirect(url_for('admin_login'))
+        
+        # Check password
+        if not admin['password_hash'] or not check_password_hash(admin['password_hash'], password):
+            flash('Invalid username or password', 'danger')
+            return redirect(url_for('admin_login'))
+        
+        # Login successful - set session
+        session['current_player_id'] = admin['id']
+        flash(f'Welcome back, {admin["full_name"]}!', 'success')
+        
+        return redirect(url_for('admin_dashboard'))
+        
+    except Exception as e:
+        flash(f'Login error: {str(e)}', 'danger')
+        return redirect(url_for('admin_login'))
+    finally:
+        conn.close()
 
 @app.route('/issue_tournament_credit', methods=['POST'])
 @admin_required
