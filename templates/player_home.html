@@ -751,6 +751,23 @@
                     <strong>Pickleball Scoring:</strong> Each set is played to 11 points (must win by 2). Best of 3 sets wins the match.
                 </div>
                 
+                <!-- Ranking Points Info (dismissible) -->
+                <div id="ranking-points-info" class="alert alert-warning mb-3" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <i class="fas fa-trophy me-2"></i>
+                            <strong>Ranking Points:</strong> Ranking points are awarded when scores are validated by both players. If one player doesn't validate the score, they will not get ranking points but the other player will.
+                        </div>
+                        <button type="button" class="btn-close" onclick="dismissRankingInfo()" aria-label="Close"></button>
+                    </div>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="dont-show-ranking-info">
+                        <label class="form-check-label" for="dont-show-ranking-info">
+                            <small>Don't show me this message again</small>
+                        </label>
+                    </div>
+                </div>
+                
                 <!-- Set 1 -->
                 <div class="card mb-3">
                     <div class="card-header bg-primary text-white">
@@ -1148,6 +1165,9 @@ function openScoreModal(matchId, opponentName, player1Id, player2Id) {
     document.getElementById('score-confirmation').checked = false;
     document.querySelectorAll('input[name="opponent-level"]').forEach(radio => radio.checked = false);
     
+    // Show ranking points info if not dismissed
+    showRankingInfoIfNeeded();
+    
     new bootstrap.Modal(document.getElementById('scoreModal')).show();
 }
 
@@ -1213,7 +1233,30 @@ function openValidationModal(matchId, opponentName, player1Id, player2Id, existi
     document.getElementById('score-confirmation').checked = false;
     document.querySelectorAll('input[name="opponent-level"]').forEach(radio => radio.checked = false);
     
+    // Show ranking points info if not dismissed (for validation too)
+    showRankingInfoIfNeeded();
+    
     new bootstrap.Modal(document.getElementById('scoreModal')).show();
+}
+
+function showRankingInfoIfNeeded() {
+    // Check if user has dismissed the ranking info
+    const dismissed = localStorage.getItem('rankingInfoDismissed');
+    if (!dismissed) {
+        document.getElementById('ranking-points-info').style.display = 'block';
+    } else {
+        document.getElementById('ranking-points-info').style.display = 'none';
+    }
+}
+
+function dismissRankingInfo() {
+    const dontShowAgain = document.getElementById('dont-show-ranking-info').checked;
+    
+    if (dontShowAgain) {
+        localStorage.setItem('rankingInfoDismissed', 'true');
+    }
+    
+    document.getElementById('ranking-points-info').style.display = 'none';
 }
 
 function updateScorePreview() {
