@@ -269,6 +269,32 @@ def init_db():
         )
     ''')
     
+    # Add validation columns for two-step score validation
+    try:
+        c.execute('ALTER TABLE matches ADD COLUMN player1_validated INTEGER DEFAULT 0')
+    except Exception:
+        pass  # Column already exists
+    
+    try:
+        c.execute('ALTER TABLE matches ADD COLUMN player2_validated INTEGER DEFAULT 0')
+    except Exception:
+        pass  # Column already exists
+    
+    try:
+        c.execute('ALTER TABLE matches ADD COLUMN player1_skill_feedback TEXT')
+    except Exception:
+        pass  # Column already exists
+    
+    try:
+        c.execute('ALTER TABLE matches ADD COLUMN player2_skill_feedback TEXT')
+    except Exception:
+        pass  # Column already exists
+    
+    try:
+        c.execute('ALTER TABLE matches ADD COLUMN validation_status TEXT DEFAULT "pending"')
+    except Exception:
+        pass  # Column already exists
+    
     # Enhanced tournaments table with levels and fees
     # Create tournament instances table (defines individual tournaments)
     c.execute('''
