@@ -3293,7 +3293,73 @@ def toggle_admin(player_id):
 def set_player_session(player_id):
     """Set current player session (for testing/admin purposes)"""
     session['current_player_id'] = player_id
+    flash('Switched to player session for testing', 'info')
     return redirect(url_for('player_home', player_id=player_id))
+
+@app.route('/admin/create_test_player', methods=['POST'])
+@admin_required
+def create_test_player():
+    """Create a test player for admin testing purposes"""
+    import secrets
+    from datetime import datetime
+    
+    # Get form data
+    full_name = request.form.get('full_name')
+    email = request.form.get('email')
+    skill_level = request.form.get('skill_level')
+    membership_type = request.form.get('membership_type') or None
+    location1 = request.form.get('location1')
+    dob = request.form.get('dob')
+    address = request.form.get('address')
+    switch_immediately = request.form.get('switch_immediately')
+    
+    # Validate required fields
+    if not all([full_name, email, skill_level, location1, dob, address]):
+        flash('All fields are required', 'danger')
+        return redirect(url_for('admin_players'))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Check if email already exists
+        existing = conn.execute('SELECT id FROM players WHERE email = ?', (email,)).fetchone()
+        if existing:
+            flash('Email already exists', 'danger')
+            return redirect(url_for('admin_players'))
+        
+        # Create test player with default values
+        conn.execute('''
+            INSERT INTO players (
+                full_name, email, skill_level, location1, dob, address,
+                membership_type, subscription_status, tournament_credits,
+                wins, losses, is_admin, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            full_name, email, skill_level, location1, dob, address,
+            membership_type, 'active' if membership_type else None, 
+            5 if membership_type == 'tournament' else 0,  # Give tournament credits if tournament member
+            0, 0, False, datetime.now().isoformat()
+        ))
+        
+        conn.commit()
+        
+        # Get the new player ID
+        new_player = conn.execute('SELECT id FROM players WHERE email = ?', (email,)).fetchone()
+        
+        if switch_immediately:
+            session['current_player_id'] = new_player['id']
+            flash(f'Test player "{full_name}" created and logged in!', 'success')
+            return redirect(url_for('player_home', player_id=new_player['id']))
+        else:
+            flash(f'Test player "{full_name}" created successfully!', 'success')
+            return redirect(url_for('admin_players'))
+            
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error creating test player: {str(e)}', 'danger')
+        return redirect(url_for('admin_players'))
+    finally:
+        conn.close()
 
 @app.route('/setup_first_admin')
 def setup_first_admin():

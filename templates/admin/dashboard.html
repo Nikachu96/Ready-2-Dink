@@ -16,8 +16,8 @@
                 <button class="btn btn-outline-success" onclick="toggleSection('tournaments')">
                     <i class="fas fa-trophy me-1"></i>Tournaments
                 </button>
-                <button class="btn btn-outline-primary" onclick="toggleSection('users')">
-                    <i class="fas fa-users me-1"></i>Users
+                <button class="btn btn-outline-primary" onclick="window.location.href='{{ url_for('admin_players') }}'">
+                    <i class="fas fa-users me-1"></i>Test Players
                 </button>
                 <button class="btn btn-outline-warning" onclick="window.location.href='{{ url_for('admin_payouts') }}'">
                     <i class="fas fa-money-bill-wave me-1"></i>Payouts
