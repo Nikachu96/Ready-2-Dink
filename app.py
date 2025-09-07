@@ -3663,16 +3663,25 @@ def process_quick_tournament_payment():
         # Clear session data
         session.pop('quick_join_data', None)
         
-        # Show success message
+        # Show success message and redirect based on payment status
         if payment_method == 'credits' and remaining_payment == 0:
             flash(f'Tournament entry paid with ${credits_used:.2f} in credits! New credit balance: ${new_credit_balance:.2f}', 'success')
+            conn.close()
+            return redirect(url_for('dashboard', player_id=player_id))
         elif payment_method == 'credits' and remaining_payment > 0:
             flash(f'${credits_used:.2f} in credits applied! You have a remaining balance of ${remaining_payment:.2f} to pay.', 'warning')
+            conn.close()
+            return redirect(url_for('dashboard', player_id=player_id))
+        elif quick_join_data['free_entry_used'] and entry_fee == 0:
+            flash('FREE Ambassador entry used! Successfully entered tournament! Good luck!', 'success')
+            conn.close()
+            return redirect(url_for('dashboard', player_id=player_id))
         else:
-            flash('Successfully entered tournament! Good luck!', 'success')
-        
-        conn.close()
-        return redirect(url_for('dashboard', player_id=player_id))
+            # Payment required - redirect to payment processing
+            flash(f'Tournament reserved! Payment of ${entry_fee:.2f} is required to complete your entry.', 'warning')
+            conn.close()
+            # Redirect to Stripe payment or payment processing interface
+            return redirect(url_for('tournaments_overview'))  # Temporarily redirect here until Stripe is set up
         
     except Exception as e:
         conn.rollback()
