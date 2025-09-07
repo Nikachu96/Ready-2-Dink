@@ -3450,6 +3450,87 @@ def update_settings():
     return redirect(url_for('admin_settings'))
 
 # Stripe Subscription Routes
+def create_membership_prices():
+    """Create or retrieve Stripe prices for membership subscriptions"""
+    import stripe
+    stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+    
+    # Define membership plans
+    membership_plans = {
+        'discovery': {
+            'name': 'Discovery Membership',
+            'amount': 499,  # $4.99
+            'description': 'Access to player discovery and matching features'
+        },
+        'tournament': {
+            'name': 'Tournament Membership', 
+            'amount': 1999,  # $19.99
+            'description': 'Full access including tournaments and competitive features'
+        }
+    }
+    
+    price_ids = {}
+    
+    for plan_type, plan_info in membership_plans.items():
+        try:
+            # Try to find existing price by looking for products with matching names
+            products = stripe.Product.list(limit=100)
+            existing_product = None
+            
+            for product in products.data:
+                if product.name == plan_info['name']:
+                    existing_product = product
+                    break
+            
+            if existing_product:
+                # Get the price for this product
+                prices = stripe.Price.list(product=existing_product.id, limit=1)
+                if prices.data:
+                    price_ids[plan_type] = prices.data[0].id
+                    continue
+            
+            # Create new product and price if not found
+            product = stripe.Product.create(
+                name=plan_info['name'],
+                description=plan_info['description']
+            )
+            
+            price = stripe.Price.create(
+                unit_amount=plan_info['amount'],
+                currency='usd',
+                recurring={'interval': 'month'},
+                product=product.id,
+                nickname=f"{plan_type}_monthly"
+            )
+            
+            price_ids[plan_type] = price.id
+            
+        except Exception as e:
+            # Fallback to creating new ones
+            logging.error(f"Error creating/finding price for {plan_type}: {e}")
+            try:
+                product = stripe.Product.create(
+                    name=f"{plan_info['name']} - {plan_type}",
+                    description=plan_info['description']
+                )
+                
+                price = stripe.Price.create(
+                    unit_amount=plan_info['amount'],
+                    currency='usd',
+                    recurring={'interval': 'month'},
+                    product=product.id,
+                    nickname=f"{plan_type}_monthly_fallback"
+                )
+                
+                price_ids[plan_type] = price.id
+                
+            except Exception as fallback_error:
+                logging.error(f"Fallback price creation failed for {plan_type}: {fallback_error}")
+                # Use a hardcoded fallback (this should be replaced with actual price IDs)
+                price_ids[plan_type] = 'price_fallback_' + plan_type
+    
+    return price_ids
+
 @app.route('/create_subscription', methods=['POST'])
 def create_subscription():
     """Create Stripe subscription with free trial"""
@@ -3488,11 +3569,8 @@ def create_subscription():
             )
             conn.commit()
         
-        # Define subscription prices (these should be created in Stripe Dashboard)
-        price_ids = {
-            'discovery': 'price_discovery_monthly',  # Replace with actual Stripe Price ID
-            'tournament': 'price_tournament_monthly'  # Replace with actual Stripe Price ID
-        }
+        # Create or get Stripe prices for memberships
+        price_ids = create_membership_prices()
         
         # Get domain for success/cancel URLs
         domain = request.headers.get('Host', 'localhost:5000')
