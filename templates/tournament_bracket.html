@@ -89,7 +89,7 @@
                                                 {% endif %}
                                                 <span class="player-name">{{ match.player1_name }}</span>
                                             </div>
-                                            <span class="match-score">{{ match.player1_score or '-' }}</span>
+                                            <span class="match-score">{{ match.player1_score if match.player1_score is not none else '-' }}</span>
                                         </div>
                                         <hr class="my-1">
                                         {% else %}
@@ -117,7 +117,7 @@
                                                 {% endif %}
                                                 <span class="player-name">{{ match.player2_name }}</span>
                                             </div>
-                                            <span class="match-score">{{ match.player2_score or '-' }}</span>
+                                            <span class="match-score">{{ match.player2_score if match.player2_score is not none else '-' }}</span>
                                         </div>
                                         {% else %}
                                         <div class="player-row d-flex justify-content-between align-items-center">
@@ -136,6 +136,11 @@
                                                 <small class="text-success">
                                                     <i class="fas fa-check-circle"></i> Complete
                                                 </small>
+                                                {% if match.match_result %}
+                                                <div class="match-result-display mt-1">
+                                                    <small class="badge bg-success">{{ match.match_result }}</small>
+                                                </div>
+                                                {% endif %}
                                             {% elif match.status == 'in_progress' %}
                                                 <small class="text-warning">
                                                     <i class="fas fa-play-circle"></i> In Progress

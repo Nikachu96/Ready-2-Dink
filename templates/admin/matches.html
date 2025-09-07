@@ -116,9 +116,9 @@
                                     </div>
                                 </td>
                                 <td>
-                                    {% if match.player1_score is not none and match.player2_score is not none %}
-                                        <span class="fw-bold">
-                                            {{ match.player1_score }} - {{ match.player2_score }}
+                                    {% if match.match_result %}
+                                        <span class="fw-bold text-success">
+                                            {{ match.match_result }}
                                         </span>
                                     {% else %}
                                         <span class="text-muted">Not reported</span>
