@@ -3836,6 +3836,100 @@ def payment_cancel():
         flash('Payment session not found.', 'warning')
         return redirect(url_for('tournaments_overview'))
 
+@app.route('/withdraw_tournament/<int:tournament_id>')
+def withdraw_tournament(tournament_id):
+    """Allow player to withdraw from tournament and get refund"""
+    if 'player_id' not in session:
+        flash('Please log in to withdraw from tournaments.', 'warning')
+        return redirect(url_for('login'))
+    
+    player_id = session['player_id']
+    conn = get_db_connection()
+    
+    try:
+        # Get tournament entry details
+        tournament_entry = conn.execute('''
+            SELECT t.*, ti.name as tournament_name, ti.current_players, ti.max_players, ti.status
+            FROM tournaments t 
+            JOIN tournament_instances ti ON t.tournament_instance_id = ti.id
+            WHERE t.id = ? AND t.player_id = ?
+        ''', (tournament_id, player_id)).fetchone()
+        
+        if not tournament_entry:
+            flash('Tournament entry not found or you are not registered for this tournament.', 'danger')
+            conn.close()
+            return redirect(url_for('dashboard', player_id=player_id))
+        
+        # Check if tournament is still accepting withdrawals (not full yet)
+        if tournament_entry['current_players'] >= tournament_entry['max_players']:
+            flash('Cannot withdraw from full tournaments. Contact support for assistance.', 'warning')
+            conn.close()
+            return redirect(url_for('dashboard', player_id=player_id))
+        
+        # Check if tournament has started
+        if tournament_entry['status'] != 'open':
+            flash('Cannot withdraw from tournaments that have already started.', 'warning')
+            conn.close()
+            return redirect(url_for('dashboard', player_id=player_id))
+        
+        # Process withdrawal
+        if tournament_entry['payment_status'] == 'completed' and tournament_entry['entry_fee'] > 0:
+            # Paid entry - process refund
+            refund_amount = tournament_entry['entry_fee']
+            
+            # Remove tournament entry
+            conn.execute('DELETE FROM tournaments WHERE id = ?', (tournament_id,))
+            
+            # Update tournament player count
+            conn.execute('UPDATE tournament_instances SET current_players = current_players - 1 WHERE id = ?', 
+                        (tournament_entry['tournament_instance_id'],))
+            
+            # Add refund as tournament credits (easier than Stripe refund processing)
+            player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+            current_credits = player['tournament_credits'] or 0
+            new_credits = current_credits + refund_amount
+            
+            conn.execute('UPDATE players SET tournament_credits = ? WHERE id = ?', (new_credits, player_id))
+            
+            # Record credit transaction
+            conn.execute('''
+                INSERT INTO credit_transactions (player_id, transaction_type, amount, description)
+                VALUES (?, 'refund', ?, ?)
+            ''', (player_id, refund_amount, f'Tournament withdrawal refund: {tournament_entry["tournament_name"]} ({tournament_entry["tournament_type"]})'))
+            
+            conn.commit()
+            flash(f'Successfully withdrawn from {tournament_entry["tournament_name"]}! ${refund_amount:.2f} added to your tournament credits.', 'success')
+            
+        elif tournament_entry['payment_status'] == 'pending_payment':
+            # Pending payment - just remove entry
+            conn.execute('DELETE FROM tournaments WHERE id = ?', (tournament_id,))
+            conn.execute('UPDATE tournament_instances SET current_players = current_players - 1 WHERE id = ?', 
+                        (tournament_entry['tournament_instance_id'],))
+            conn.commit()
+            flash(f'Successfully withdrawn from {tournament_entry["tournament_name"]}!', 'success')
+            
+        else:
+            # Free entry - just remove
+            conn.execute('DELETE FROM tournaments WHERE id = ?', (tournament_id,))
+            conn.execute('UPDATE tournament_instances SET current_players = current_players - 1 WHERE id = ?', 
+                        (tournament_entry['tournament_instance_id'],))
+            
+            # Restore free entry if it was used
+            if tournament_entry['entry_fee'] == 0:
+                conn.execute('UPDATE players SET free_tournament_entries = free_tournament_entries + 1 WHERE id = ?', (player_id,))
+            
+            conn.commit()
+            flash(f'Successfully withdrawn from {tournament_entry["tournament_name"]}!', 'success')
+        
+        conn.close()
+        return redirect(url_for('dashboard', player_id=player_id))
+        
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        flash(f'Error withdrawing from tournament: {str(e)}', 'danger')
+        return redirect(url_for('dashboard', player_id=player_id))
+
 # Stripe Subscription Routes
 def create_membership_prices():
     """Create or retrieve Stripe prices for membership subscriptions"""
