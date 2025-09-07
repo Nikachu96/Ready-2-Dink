@@ -284,9 +284,14 @@ function updatePaymentDisplay() {
     const paymentOptions = document.getElementById('payment-options');
     const submitButton = document.getElementById('submit-button');
     
-    if (paymentMethod && paymentMethod.value === 'credits') {
-        creditUsageInfo.style.display = 'block';
-        paymentOptions.style.display = 'none';
+    // Only proceed if elements exist
+    if (!paymentMethod || !submitButton) {
+        return;
+    }
+    
+    if (paymentMethod.value === 'credits') {
+        if (creditUsageInfo) creditUsageInfo.style.display = 'block';
+        if (paymentOptions) paymentOptions.style.display = 'none';
         
         const playerCredits = {{ player.tournament_credits or 0 }};
         const entryFee = {{ quick_join_data.entry_fee }};
@@ -296,13 +301,13 @@ function updatePaymentDisplay() {
         } else {
             submitButton.innerHTML = '<i class="fas fa-coins me-1"></i>Complete Entry with Credits';
         }
-    } else if (paymentMethod && paymentMethod.value === 'cash') {
-        creditUsageInfo.style.display = 'none';
-        paymentOptions.style.display = 'block';
+    } else if (paymentMethod.value === 'cash') {
+        if (creditUsageInfo) creditUsageInfo.style.display = 'none';
+        if (paymentOptions) paymentOptions.style.display = 'block';
         submitButton.innerHTML = '<i class="fas fa-credit-card me-1"></i>Proceed to Payment';
     } else {
-        creditUsageInfo.style.display = 'none';
-        paymentOptions.style.display = 'none';
+        if (creditUsageInfo) creditUsageInfo.style.display = 'none';
+        if (paymentOptions) paymentOptions.style.display = 'none';
         submitButton.innerHTML = '<i class="fas fa-credit-card me-1"></i>Complete Entry';
     }
 }
