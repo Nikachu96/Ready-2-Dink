@@ -136,6 +136,37 @@
                         </div>
                     </div>
                     
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="preferred_court_1" class="form-label">
+                                    <i class="fas fa-map-marker-alt me-1"></i>Favorite Court #1 *
+                                </label>
+                                <input type="text" class="form-control court-search" id="preferred_court_1" name="preferred_court_1" 
+                                       value="{{ player.preferred_court_1 or player.location1 or '' }}" placeholder="Search for pickleball courts..." required>
+                                <div id="preferred_court_1-map" class="map-container mt-2" style="height: 200px; display: none; border-radius: 8px;"></div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Your primary pickleball court or venue
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="preferred_court_2" class="form-label">
+                                    <i class="fas fa-map-marker me-1"></i>Favorite Court #2
+                                </label>
+                                <input type="text" class="form-control court-search" id="preferred_court_2" name="preferred_court_2" 
+                                       value="{{ player.preferred_court_2 or player.location2 or '' }}" placeholder="Optional second court...">
+                                <div id="preferred_court_2-map" class="map-container mt-2" style="height: 200px; display: none; border-radius: 8px;"></div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Alternative court location
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="mb-3">
                         <label for="selfie" class="form-label">
                             <i class="fas fa-camera me-1"></i>Update Profile Photo
@@ -215,6 +246,214 @@ document.getElementById('selfie').addEventListener('change', function(e) {
         };
         reader.readAsDataURL(file);
     }
+});
+
+// Map functionality for court search
+let maps = {};
+let markers = {};
+
+function initializeMap(containerId, inputId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Default to a general location (USA center)
+    const map = L.map(containerId).setView([39.8283, -98.5795], 4);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    maps[containerId] = map;
+    markers[containerId] = null;
+    
+    return map;
+}
+
+function searchCourt(query, mapId, inputId) {
+    if (!query || query.length < 3) return;
+    
+    // Enhanced search for pickleball courts and venues
+    const searchQuery = `pickleball court ${query}`;
+    
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=8&addressdetails=1`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                const result = data[0];
+                const lat = parseFloat(result.lat);
+                const lon = parseFloat(result.lon);
+                
+                // Store coordinates for database (create hidden input)
+                let coordinatesInput = document.getElementById(inputId + '_coordinates');
+                if (!coordinatesInput) {
+                    coordinatesInput = document.createElement('input');
+                    coordinatesInput.type = 'hidden';
+                    coordinatesInput.id = inputId + '_coordinates';
+                    coordinatesInput.name = inputId + '_coordinates';
+                    document.getElementById(inputId).parentNode.appendChild(coordinatesInput);
+                }
+                coordinatesInput.value = JSON.stringify({lat: lat, lng: lon, address: result.display_name});
+                
+                const map = maps[mapId];
+                if (map) {
+                    // Remove existing marker
+                    if (markers[mapId]) {
+                        map.removeLayer(markers[mapId]);
+                    }
+                    
+                    // Add new marker with enhanced popup for exact directions
+                    const popupContent = `
+                        <div class="text-center" style="min-width: 200px;">
+                            <strong style="color: #3F567F;">${result.display_name}</strong><br>
+                            <small class="text-muted">Lat: ${lat.toFixed(6)}, Lng: ${lon.toFixed(6)}</small><br>
+                            <div class="mt-2">
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" 
+                                   target="_blank" class="btn btn-sm btn-primary me-1">
+                                   <i class="fas fa-directions"></i> Get Directions
+                                </a>
+                                <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" 
+                                   target="_blank" class="btn btn-sm btn-outline-secondary">
+                                   <i class="fas fa-map"></i> View on Map
+                                </a>
+                            </div>
+                            <div class="mt-1">
+                                <small class="text-success">
+                                    <i class="fas fa-map-pin"></i> Exact location saved
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                    
+                    markers[mapId] = L.marker([lat, lon])
+                        .addTo(map)
+                        .bindPopup(popupContent)
+                        .openPopup();
+                    
+                    // Center map on court with higher zoom for precision
+                    map.setView([lat, lon], 16);
+                }
+            } else {
+                // Fallback: try general search if no courts found
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`)
+                    .then(response => response.json())
+                    .then(generalData => {
+                        if (generalData && generalData.length > 0) {
+                            const result = generalData[0];
+                            const lat = parseFloat(result.lat);
+                            const lon = parseFloat(result.lon);
+                            
+                            // Store coordinates
+                            let coordinatesInput = document.getElementById(inputId + '_coordinates');
+                            if (!coordinatesInput) {
+                                coordinatesInput = document.createElement('input');
+                                coordinatesInput.type = 'hidden';
+                                coordinatesInput.id = inputId + '_coordinates';
+                                coordinatesInput.name = inputId + '_coordinates';
+                                document.getElementById(inputId).parentNode.appendChild(coordinatesInput);
+                            }
+                            coordinatesInput.value = JSON.stringify({lat: lat, lng: lon, address: result.display_name});
+                            
+                            const map = maps[mapId];
+                            if (map) {
+                                if (markers[mapId]) {
+                                    map.removeLayer(markers[mapId]);
+                                }
+                                
+                                const popupContent = `
+                                    <div class="text-center">
+                                        <strong style="color: #E0563F;">${result.display_name}</strong><br>
+                                        <small class="text-muted">General location - please verify court details</small><br>
+                                        <div class="mt-2">
+                                            <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" 
+                                               target="_blank" class="btn btn-sm btn-primary">
+                                               <i class="fas fa-directions"></i> Get Directions
+                                            </a>
+                                        </div>
+                                    </div>
+                                `;
+                                
+                                markers[mapId] = L.marker([lat, lon])
+                                    .addTo(map)
+                                    .bindPopup(popupContent)
+                                    .openPopup();
+                                
+                                map.setView([lat, lon], 14);
+                            }
+                        }
+                    });
+            }
+        })
+        .catch(error => {
+            console.log('Court search error:', error);
+        });
+}
+
+// Initialize court search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const courtInputs = document.querySelectorAll('.court-search');
+    
+    courtInputs.forEach(input => {
+        const mapId = input.id + '-map';
+        let searchTimeout;
+        
+        // If input has a value, search for it immediately
+        if (input.value && input.value.length >= 3) {
+            setTimeout(() => {
+                const mapContainer = document.getElementById(mapId);
+                if (mapContainer) {
+                    mapContainer.style.display = 'block';
+                    initializeMap(mapId, input.id);
+                    searchCourt(input.value, mapId, input.id);
+                }
+            }, 500);
+        }
+        
+        input.addEventListener('input', function() {
+            const query = this.value.trim();
+            const mapContainer = document.getElementById(mapId);
+            
+            if (query.length >= 3) {
+                // Show map container
+                if (mapContainer) {
+                    mapContainer.style.display = 'block';
+                    
+                    // Initialize map if not already done
+                    if (!maps[mapId]) {
+                        setTimeout(() => {
+                            initializeMap(mapId, input.id);
+                        }, 100);
+                    }
+                    
+                    // Debounced search
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        searchCourt(query, mapId, input.id);
+                    }, 500);
+                }
+            } else {
+                // Hide map container if query is too short
+                if (mapContainer) {
+                    mapContainer.style.display = 'none';
+                }
+            }
+        });
+        
+        input.addEventListener('focus', function() {
+            if (this.value.length >= 3) {
+                const mapContainer = document.getElementById(mapId);
+                if (mapContainer) {
+                    mapContainer.style.display = 'block';
+                    
+                    // Refresh map size when shown
+                    setTimeout(() => {
+                        if (maps[mapId]) {
+                            maps[mapId].invalidateSize();
+                        }
+                    }, 100);
+                }
+            }
+        });
+    });
 });
 </script>
 {% endblock %}

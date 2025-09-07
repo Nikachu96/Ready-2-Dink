@@ -73,9 +73,22 @@
                     </div>
                     
                     <!-- Action Buttons -->
-                    {% if not player.membership_type %}
                     <div class="col-md-4 text-end">
                         <div class="d-grid gap-2">
+                            {% if player.preferred_court_1 %}
+                            <button onclick="showCourtLocation('{{ player.preferred_court_1 }}', 'primary')" 
+                                    class="btn btn-lg fw-semibold text-white"
+                                    style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
+                                <i class="fas fa-map-marker-alt me-2"></i>Favorite Court #1
+                            </button>
+                            {% endif %}
+                            {% if player.preferred_court_2 %}
+                            <button onclick="showCourtLocation('{{ player.preferred_court_2 }}', 'secondary')" 
+                                    class="btn btn-outline-light">
+                                <i class="fas fa-map-marker me-2"></i>Favorite Court #2
+                            </button>
+                            {% endif %}
+                            {% if not player.membership_type and not player.preferred_court_1 %}
                             <button onclick="showMembershipModal('discovery')" 
                                     class="btn btn-lg fw-semibold text-white"
                                     style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
@@ -85,9 +98,9 @@
                                     class="btn btn-outline-light">
                                 <i class="fas fa-bell me-2"></i>Notifications
                             </button>
+                            {% endif %}
                         </div>
                     </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -1459,6 +1472,58 @@ document.addEventListener('DOMContentLoaded', function() {
         updateNotificationButtons(isEnabled);
     }
 });
+
+// Function to show court location
+function showCourtLocation(courtName, type) {
+    if (!courtName || courtName.trim() === '') {
+        alert('No court location set');
+        return;
+    }
+    
+    // Create modal dialog to show court information
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); color: white;">
+                    <h5 class="modal-title">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        Favorite Court ${type === 'primary' ? '#1' : '#2'}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <h4 style="color: #3F567F;">${courtName}</h4>
+                        <p class="text-muted">This player's ${type === 'primary' ? 'primary' : 'secondary'} favorite pickleball location</p>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(courtName)}" 
+                           target="_blank" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Search on Google Maps
+                        </a>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(courtName)}" 
+                           target="_blank" class="btn btn-outline-primary">
+                            <i class="fas fa-directions me-2"></i>Get Directions
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Show modal
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+    
+    // Remove modal from DOM when hidden
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+}
 </script>
 
 <style>

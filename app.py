@@ -1175,7 +1175,7 @@ def register():
         logging.info(f"Form data keys: {list(request.form.keys())}")
         logging.info(f"Files: {list(request.files.keys())}")
         # Form validation
-        required_fields = ['full_name', 'address', 'zip_code', 'city', 'state', 'dob', 'skill_level', 'email']
+        required_fields = ['full_name', 'address', 'zip_code', 'city', 'state', 'dob', 'preferred_court_1', 'skill_level', 'email']
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
@@ -1198,11 +1198,15 @@ def register():
             conn = get_db_connection()
             cursor = conn.execute('''
                 INSERT INTO players 
-                (full_name, address, zip_code, city, state, dob, preferred_sport, skill_level, email, selfie)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (full_name, address, zip_code, city, state, dob, preferred_sport, 
+                 preferred_court_1, preferred_court_2, court1_coordinates, court2_coordinates,
+                 skill_level, email, selfie)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
-                  request.form['dob'], 'Pickleball', 
+                  request.form['dob'], 'Pickleball',
+                  request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
+                  request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
                   request.form['skill_level'], request.form['email'], selfie_filename))
             
             player_id = cursor.lastrowid
@@ -2216,7 +2220,7 @@ def update_profile():
     player_id = players[0]['id']
     
     # Form validation
-    required_fields = ['full_name', 'address', 'zip_code', 'city', 'state', 'dob', 'skill_level', 'email']
+    required_fields = ['full_name', 'address', 'zip_code', 'city', 'state', 'dob', 'preferred_court_1', 'skill_level', 'email']
     for field in required_fields:
         if not request.form.get(field):
             flash(f'{field.replace("_", " ").title()} is required', 'danger')
@@ -2246,22 +2250,28 @@ def update_profile():
             conn.execute('''
                 UPDATE players 
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?, 
-                    dob = ?, skill_level = ?, email = ?, selfie = ?
+                    dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
+                    court1_coordinates = ?, court2_coordinates = ?,
+                    skill_level = ?, email = ?, selfie = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
-                  request.form['dob'], request.form['skill_level'], 
-                  request.form['email'], selfie_filename, player_id))
+                  request.form['dob'], request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
+                  request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
+                  request.form['skill_level'], request.form['email'], selfie_filename, player_id))
         else:
             conn.execute('''
                 UPDATE players 
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?,
-                    dob = ?, skill_level = ?, email = ?
+                    dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
+                    court1_coordinates = ?, court2_coordinates = ?,
+                    skill_level = ?, email = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
-                  request.form['dob'], request.form['skill_level'], 
-                  request.form['email'], player_id))
+                  request.form['dob'], request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
+                  request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
+                  request.form['skill_level'], request.form['email'], player_id))
         
         conn.commit()
         conn.close()
