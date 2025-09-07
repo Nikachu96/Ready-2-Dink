@@ -3496,6 +3496,36 @@ def admin_update_player(player_id):
         flash(f'Error updating player: {str(e)}', 'danger')
         return redirect(url_for('admin_edit_player', player_id=player_id))
 
+@app.route('/admin/players/<int:player_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_player(player_id):
+    """Delete a test player (except ID 1)"""
+    # Prevent deletion of the main admin account (ID 1)
+    if player_id == 1:
+        flash('Cannot delete the main admin account', 'danger')
+        return redirect(url_for('admin_players'))
+    
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    
+    if not player:
+        flash('Player not found', 'danger')
+        conn.close()
+        return redirect(url_for('admin_players'))
+    
+    try:
+        # Delete the player
+        conn.execute('DELETE FROM players WHERE id = ?', (player_id,))
+        conn.commit()
+        flash(f'Player "{player["full_name"]}" deleted successfully', 'success')
+        logging.info(f"Player {player_id} ({player['full_name']}) deleted by admin")
+    except Exception as e:
+        logging.error(f"Error deleting player {player_id}: {str(e)}")
+        flash(f'Error deleting player: {str(e)}', 'danger')
+    
+    conn.close()
+    return redirect(url_for('admin_players'))
+
 @app.route('/update_tournament_instance', methods=['POST'])
 @admin_required
 def update_tournament_instance():
