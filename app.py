@@ -4878,7 +4878,7 @@ def create_membership_prices():
         },
         'tournament': {
             'name': 'Tournament Membership', 
-            'amount': 1999,  # $19.99
+            'amount': 999,  # $9.99
             'description': 'Full access including tournaments and competitive features'
         }
     }
