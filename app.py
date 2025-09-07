@@ -73,7 +73,7 @@ def send_admin_credentials_email(full_name, email, username, password, login_url
         """
         
         message = Mail(
-            from_email='noreply@ready2dink.com',
+            from_email='lucien255@gmail.com',
             to_emails=email,
             subject=subject,
             html_content=html_content
