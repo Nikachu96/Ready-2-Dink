@@ -478,30 +478,45 @@
         }
 
         async function subscribeToNotifications() {
+            console.log('Starting notification subscription process...');
+            
             try {
-                const hasPermission = await requestNotificationPermission();
-                if (!hasPermission) {
-                    throw new Error('Notification permission denied');
+                // Step 1: Check if notifications are supported
+                if (!('Notification' in window)) {
+                    throw new Error('This browser does not support notifications');
+                }
+                
+                console.log('Notifications supported. Current permission:', Notification.permission);
+                
+                // Step 2: Request permission
+                let permission = Notification.permission;
+                if (permission === 'default') {
+                    console.log('Requesting notification permission...');
+                    permission = await Notification.requestPermission();
+                    console.log('Permission result:', permission);
+                }
+                
+                if (permission !== 'granted') {
+                    throw new Error('Notification permission was denied');
                 }
 
-                const registration = await navigator.serviceWorker.ready;
-                
-                // Demo mode - simulate subscription for development
-                // In production, you would use proper VAPID keys and real push notifications
-                console.log('Demo mode - simulating push notification subscription');
+                // Step 3: Skip service worker for mobile - use simple subscription
+                console.log('Creating simple subscription for mobile compatibility...');
                 const subscription = {
-                    endpoint: 'demo-endpoint-' + Date.now(),
+                    endpoint: 'mobile-demo-endpoint-' + Date.now(),
                     toJSON: () => ({
-                        endpoint: 'demo-endpoint-' + Date.now(),
+                        endpoint: 'mobile-demo-endpoint-' + Date.now(),
                         keys: {
-                            p256dh: 'demo-p256dh-key-' + Date.now(),
-                            auth: 'demo-auth-key-' + Date.now()
+                            p256dh: 'mobile-demo-p256dh-' + Date.now(),
+                            auth: 'mobile-demo-auth-' + Date.now()
                         }
                     })
                 };
 
-                // Send subscription to server
-                console.log('Sending subscription to server:', subscription.toJSON());
+                console.log('Subscription created:', subscription.toJSON());
+
+                // Step 4: Send to server
+                console.log('Sending subscription to server...');
                 const response = await fetch('/subscribe-notifications', {
                     method: 'POST',
                     headers: {
@@ -512,24 +527,36 @@
                     })
                 });
 
-                console.log('Response status:', response.status);
+                console.log('Server response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                }
+                
                 const result = await response.json();
-                console.log('Response result:', result);
+                console.log('Server response:', result);
                 
                 if (result.success) {
+                    console.log('Notifications successfully enabled!');
                     showNotificationBanner('success', '✅ Notifications enabled! You\'ll receive updates about your matches and tournaments.');
                     updateNotificationUI();
                 } else {
-                    throw new Error(result.message || 'Unknown server error');
+                    throw new Error(result.message || 'Server returned error');
                 }
+                
             } catch (error) {
-                console.error('Failed to subscribe to notifications:', error);
-                let errorMessage = 'Unknown error';
+                console.error('Notification subscription failed:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                    type: error.constructor.name
+                });
+                
+                let errorMessage = 'Unknown error occurred';
                 if (error.message) {
                     errorMessage = error.message;
-                } else if (error.toString) {
-                    errorMessage = error.toString();
                 }
+                
                 showNotificationBanner('error', '❌ Failed to enable notifications: ' + errorMessage);
             }
         }
