@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Pending Guardian Approval - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); border: none;">
+                <div class="text-center">
+                    <h4 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-clock me-2"></i>Account Pending Approval
+                    </h4>
+                    <p class="mb-0 opacity-90">Waiting for Guardian Consent</p>
+                </div>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-4">
+                    <i class="fas fa-hourglass-half text-warning" style="font-size: 4rem;"></i>
+                </div>
+
+                <h3 class="text-warning mb-3">Almost There, {{ player.full_name }}!</h3>
+                
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-shield-alt me-2"></i>COPPA Protection Active</h5>
+                    <p class="mb-0">
+                        Since you're 13 years old or younger, federal law requires us to get permission from your parent or guardian 
+                        before you can start using Ready 2 Dink.
+                    </p>
+                </div>
+
+                <div class="row text-center mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <i class="fas fa-envelope-open text-primary" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">Email Sent</h6>
+                                <p class="small mb-0">We've sent a consent form to your guardian</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <i class="fas fa-user-shield text-warning" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">Guardian Review</h6>
+                                <p class="small mb-0">They'll review and provide consent</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <i class="fas fa-check-circle text-success" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">Account Active</h6>
+                                <p class="small mb-0">You'll be able to start playing!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h6><i class="fas fa-info-circle me-2"></i>What's happening?</h6>
+                        <div class="text-start">
+                            <ol>
+                                <li><strong>Email Sent:</strong> A consent form was sent to <code>{{ player.guardian_email }}</code></li>
+                                <li><strong>Guardian Reviews:</strong> They'll read about Ready 2 Dink and your safety</li>
+                                <li><strong>Consent Provided:</strong> They'll complete the authorization form</li>
+                                <li><strong>Account Activated:</strong> You'll get an email and can start playing!</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-parent me-2"></i>For Your Guardian</h6>
+                    <p class="mb-2">If your parent or guardian hasn't received the email, ask them to:</p>
+                    <ul class="text-start mb-0">
+                        <li>Check their spam/junk folder</li>
+                        <li>Look for an email from Ready 2 Dink</li>
+                        <li>Add ready2dink.com to their email contacts</li>
+                    </ul>
+                </div>
+
+                <div class="mt-4">
+                    <button class="btn btn-primary btn-lg me-2" onclick="window.location.reload()">
+                        <i class="fas fa-sync-alt me-1"></i>Check Status
+                    </button>
+                    <a href="/" class="btn btn-secondary">
+                        <i class="fas fa-home me-1"></i>Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-body text-center">
+                <h6><i class="fas fa-question-circle me-2"></i>Need Help?</h6>
+                <p class="mb-2">
+                    If you're having trouble or your guardian hasn't received the email after a few minutes, 
+                    please contact our support team.
+                </p>
+                <a href="{{ url_for('contact') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-envelope me-2"></i>Contact Support
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh every 30 seconds to check if account has been activated
+setTimeout(function() {
+    window.location.reload();
+}, 30000);
+
+// Add visual feedback when checking status
+document.querySelector('button[onclick="window.location.reload()"]').addEventListener('click', function() {
+    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Checking...';
+    this.disabled = true;
+});
+</script>
+{% endblock %}

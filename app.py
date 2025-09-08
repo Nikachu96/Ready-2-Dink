@@ -1728,10 +1728,12 @@ def register():
                 else:
                     logging.warning(f"Failed to send guardian consent email to {guardian_email}")
                     flash('Registration successful, but we had trouble sending the guardian consent email. Please contact support.', 'warning')
+                
+                # Redirect to pending approval page for underage players
+                return redirect(url_for('pending_guardian_approval', player_id=player_id))
             else:
                 flash('Registration successful! Please review and accept our terms and disclaimers to continue.', 'success')
-            
-            return redirect(url_for('show_disclaimers', player_id=player_id))
+                return redirect(url_for('show_disclaimers', player_id=player_id))
             
         except sqlite3.IntegrityError as e:
             logging.error(f"Registration failed - Email already exists: {request.form['email']} - {str(e)}")
@@ -1883,6 +1885,27 @@ def submit_guardian_consent(player_id):
         logging.error(f"Error processing guardian consent for player {player_id}: {str(e)}")
         flash(f'Error processing consent: {str(e)}', 'danger')
         return redirect(url_for('guardian_consent_form', player_id=player_id))
+
+@app.route('/pending-guardian-approval/<int:player_id>')
+def pending_guardian_approval(player_id):
+    """Show pending approval page for underage players"""
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    conn.close()
+    
+    if not player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('index'))
+    
+    if not player['guardian_consent_required']:
+        flash('Guardian consent is not required for this player', 'info')
+        return redirect(url_for('show_disclaimers', player_id=player_id))
+    
+    if player['account_status'] == 'active':
+        flash('Your account has been activated! Welcome to Ready 2 Dink!', 'success')
+        return redirect(url_for('player_home', player_id=player_id))
+    
+    return render_template('pending_guardian_approval.html', player=player)
 
 @app.route('/qa')
 def qa():
