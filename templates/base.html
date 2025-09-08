@@ -840,7 +840,7 @@
                             // Reload page to continue to app  
                             setTimeout(() => {
                                 window.location.reload();
-                            }, 3000);
+                            }, 5000);
                         } else {
                             throw new Error(result.message || 'Failed to sign NDA');
                         }
@@ -860,19 +860,20 @@
         function showSuccessMessage(message) {
             const alert = document.createElement('div');
             alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
-            alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+            alert.style.cssText = 'top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; max-width: 500px; min-width: 400px; font-size: 18px; font-weight: bold; text-align: center; padding: 20px; border: 3px solid #28a745; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
             alert.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div style="font-size: 24px; margin-bottom: 10px;">✅</div>
+                <div style="color: #155724; font-size: 16px; line-height: 1.4;">${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" style="position: absolute; top: 10px; right: 10px;"></button>
             `;
             document.body.appendChild(alert);
             
-            // Auto remove after 5 seconds
+            // Auto remove after 8 seconds (longer for readability)
             setTimeout(() => {
                 if (alert.parentNode) {
                     alert.remove();
                 }
-            }, 5000);
+            }, 8000);
         }
         
         // Function to show NDA modal (called from login redirect)
