@@ -4894,10 +4894,24 @@ def quick_join_tournament(player_id):
             conn.close()
             return redirect(url_for('tournaments_overview'))
         
+        # Get player connections (people they've played matches with)
+        player_connections = conn.execute('''
+            SELECT DISTINCT p.id, p.full_name, p.skill_level, p.player_id
+            FROM players p
+            INNER JOIN matches m ON (
+                (m.player1_id = ? AND m.player2_id = p.id) OR
+                (m.player2_id = ? AND m.player1_id = p.id)
+            )
+            WHERE p.id != ?
+            ORDER BY p.full_name
+            LIMIT 20
+        ''', (player_id, player_id, player_id)).fetchall()
+        
         conn.close()
         return render_template('tournament_format_selection.html', 
                              tournament_instance=tournament_instance, 
-                             player=player)
+                             player=player,
+                             player_connections=player_connections)
         
     except Exception as e:
         conn.close()
@@ -4910,6 +4924,7 @@ def process_format_selection():
     tournament_instance_id = request.form.get('tournament_instance_id')
     player_id = request.form.get('player_id')
     tournament_format = request.form.get('tournament_format', 'singles')
+    partner_id = request.form.get('partner_id') if tournament_format == 'doubles' else None
     
     conn = get_db_connection()
     
@@ -4921,6 +4936,33 @@ def process_format_selection():
             flash('Invalid player or tournament', 'danger')
             conn.close()
             return redirect(url_for('tournaments_overview'))
+        
+        # Validate partner selection for doubles
+        if tournament_format == 'doubles':
+            if not partner_id:
+                flash('Please select a partner for doubles play.', 'danger')
+                conn.close()
+                return redirect(url_for('quick_join_tournament', player_id=player_id))
+            
+            # Verify partner exists and has played with this player
+            partner = conn.execute('SELECT * FROM players WHERE id = ?', (partner_id,)).fetchone()
+            if not partner:
+                flash('Selected partner not found.', 'danger')
+                conn.close()
+                return redirect(url_for('quick_join_tournament', player_id=player_id))
+            
+            # Check if they've played together
+            connection = conn.execute('''
+                SELECT 1 FROM matches 
+                WHERE (player1_id = ? AND player2_id = ?) 
+                   OR (player1_id = ? AND player2_id = ?)
+                LIMIT 1
+            ''', (player_id, partner_id, partner_id, player_id)).fetchone()
+            
+            if not connection:
+                flash('You can only invite players you have played with before.', 'danger')
+                conn.close()
+                return redirect(url_for('quick_join_tournament', player_id=player_id))
         
         # Calculate entry fee (NO EXTRA FEE FOR DOUBLES!)
         base_fee = tournament_instance['entry_fee']
@@ -4941,7 +4983,8 @@ def process_format_selection():
             'tournament_instance_id': int(tournament_instance_id),
             'tournament_type': tournament_format,
             'entry_fee': entry_fee,
-            'free_entry_used': free_entry_used
+            'free_entry_used': free_entry_used,
+            'partner_id': int(partner_id) if partner_id else None
         }
         
         # Store player ID in session

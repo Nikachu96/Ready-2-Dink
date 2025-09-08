@@ -58,7 +58,7 @@
                         <!-- Singles Option -->
                         <div class="col-md-6">
                             <div class="format-option">
-                                <input type="radio" id="singles" name="tournament_format" value="singles" checked class="format-radio">
+                                <input type="radio" id="singles" name="tournament_format" value="singles" checked class="format-radio" onchange="togglePartnerSelection()">
                                 <label for="singles" class="format-card">
                                     <div class="card h-100 border-primary">
                                         <div class="card-body text-center p-4">
@@ -90,7 +90,7 @@
                         <!-- Doubles Option -->
                         <div class="col-md-6">
                             <div class="format-option">
-                                <input type="radio" id="doubles" name="tournament_format" value="doubles" class="format-radio">
+                                <input type="radio" id="doubles" name="tournament_format" value="doubles" class="format-radio" onchange="togglePartnerSelection()">
                                 <label for="doubles" class="format-card">
                                     <div class="card h-100 border-warning">
                                         <div class="card-body text-center p-4">
@@ -116,6 +116,48 @@
                                         </div>
                                     </div>
                                 </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Partner Selection (hidden by default) -->
+                    <div id="partner-selection" class="mb-4" style="display: none;">
+                        <div class="card border-warning">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-user-friends me-2"></i>Select Your Doubles Partner
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-3">Choose a partner from your connections. Only players you've played with before can be invited.</p>
+                                
+                                <div class="mb-3">
+                                    <label for="partner_id" class="form-label fw-bold">Available Partners</label>
+                                    <select name="partner_id" id="partner_id" class="form-select">
+                                        <option value="">Select a partner...</option>
+                                        {% for connection in player_connections %}
+                                        <option value="{{ connection.id }}">
+                                            {{ connection.full_name }} 
+                                            <span class="text-muted">({{ connection.skill_level }})</span>
+                                            {% if connection.player_id %}
+                                            - ID: {{ connection.player_id }}
+                                            {% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if not player_connections %}
+                                    <div class="text-muted small mt-2">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        You don't have any connections yet. Play some matches to connect with other players!
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="fas fa-bell me-2"></i>
+                                    <strong>How it works:</strong> Your selected partner will receive an invitation notification. 
+                                    They need to accept and pay their entry fee to confirm your doubles team.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -159,6 +201,41 @@
         </div>
     </div>
 </div>
+
+<script>
+function togglePartnerSelection() {
+    const selectedFormat = document.querySelector('input[name="tournament_format"]:checked');
+    const partnerSelection = document.getElementById('partner-selection');
+    const partnerSelect = document.getElementById('partner_id');
+    
+    if (selectedFormat && selectedFormat.value === 'doubles') {
+        partnerSelection.style.display = 'block';
+        partnerSelect.setAttribute('required', 'required');
+    } else {
+        partnerSelection.style.display = 'none';
+        partnerSelect.removeAttribute('required');
+        partnerSelect.value = '';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    togglePartnerSelection();
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const selectedFormat = document.querySelector('input[name="tournament_format"]:checked');
+    const partnerSelect = document.getElementById('partner_id');
+    
+    if (selectedFormat && selectedFormat.value === 'doubles' && !partnerSelect.value) {
+        e.preventDefault();
+        alert('Please select a partner for doubles play.');
+        partnerSelect.focus();
+        return false;
+    }
+});
+</script>
 
 <style>
 .animate-in {
@@ -222,6 +299,11 @@
 .btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Partner selection animations */
+#partner-selection {
+    transition: all 0.3s ease;
 }
 </style>
 {% endblock %}
