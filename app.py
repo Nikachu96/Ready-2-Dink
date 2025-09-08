@@ -3562,6 +3562,56 @@ def admin_tournaments():
     
     return render_template('admin/tournaments.html', tournaments=tournaments)
 
+@app.route('/admin/ambassadors')
+@admin_required
+def admin_ambassadors():
+    """Admin ambassador management with state tracking"""
+    conn = get_db_connection()
+    
+    # Get ambassador statistics by state
+    state_stats = conn.execute('''
+        SELECT 
+            state_territory,
+            COUNT(*) as ambassador_count,
+            AVG(qualified_referrals) as avg_referrals,
+            MAX(qualified_referrals) as top_referrals,
+            COUNT(CASE WHEN lifetime_membership_granted = 1 THEN 1 END) as lifetime_members
+        FROM ambassadors 
+        WHERE status = 'active'
+        GROUP BY state_territory
+        ORDER BY ambassador_count DESC, state_territory
+    ''').fetchall()
+    
+    # Get all ambassadors with their details
+    ambassadors = conn.execute('''
+        SELECT 
+            a.*, 
+            p.full_name, 
+            p.email,
+            COUNT(ar.id) as total_referrals,
+            COUNT(CASE WHEN ar.qualified = 1 THEN 1 END) as qualified_referrals_actual
+        FROM ambassadors a
+        JOIN players p ON a.player_id = p.id
+        LEFT JOIN ambassador_referrals ar ON a.id = ar.ambassador_id
+        WHERE a.status = 'active'
+        GROUP BY a.id
+        ORDER BY a.state_territory, a.qualified_referrals DESC
+    ''').fetchall()
+    
+    # Get total counts for overview
+    total_ambassadors = conn.execute('SELECT COUNT(*) as count FROM ambassadors WHERE status = "active"').fetchone()['count']
+    total_states = conn.execute('SELECT COUNT(DISTINCT state_territory) as count FROM ambassadors WHERE status = "active"').fetchone()['count']
+    total_referrals = conn.execute('SELECT COUNT(*) as count FROM ambassador_referrals WHERE qualified = 1').fetchone()['count']
+    
+    conn.close()
+    
+    return render_template('admin/ambassadors.html', 
+                         state_stats=state_stats,
+                         ambassadors=ambassadors,
+                         total_ambassadors=total_ambassadors,
+                         total_states=total_states,
+                         total_referrals=total_referrals)
+
 @app.route('/admin/toggle_admin/<int:player_id>', methods=['POST'])
 @admin_required
 def toggle_admin(player_id):
@@ -5177,6 +5227,17 @@ def become_ambassador():
             flash('You are already registered as an Ambassador!', 'info')
             conn.close()
             return redirect(url_for('ambassador_dashboard'))
+        
+        # Check ambassador limit for this state (10 max per state)
+        state_count = conn.execute('''
+            SELECT COUNT(*) as count FROM ambassadors 
+            WHERE state_territory = ? AND status = 'active'
+        ''', (state_territory,)).fetchone()['count']
+        
+        if state_count >= 10:
+            flash(f'Sorry, {state_territory} already has the maximum of 10 ambassadors. Please choose a different state or territory.', 'warning')
+            conn.close()
+            return render_template('become_ambassador.html', error_state=state_territory)
         
         # Create ambassador record
         conn.execute('''

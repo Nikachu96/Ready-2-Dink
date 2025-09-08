@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}Ambassador State Management - Ready 2 Dink Admin{% endblock %}
+
+{% block content %}
+<div class="row animate-in">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">
+                    <i class="fas fa-map-marked-alt me-2 text-primary"></i>Ambassador State Management
+                </h2>
+                <p class="text-muted mb-0">Track ambassador presence across states and territories (Max 10 per state)</p>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-dark">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overview Stats -->
+<div class="row mb-4 animate-in">
+    <div class="col-md-3">
+        <div class="card text-white" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%);">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h3 class="fw-bold">{{ total_ambassadors }}</h3>
+                <p class="mb-0">Total Ambassadors</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white" style="background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);">
+            <div class="card-body text-center">
+                <i class="fas fa-map-marked-alt fa-2x mb-2"></i>
+                <h3 class="fw-bold">{{ total_states }}</h3>
+                <p class="mb-0">States/Territories</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white" style="background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);">
+            <div class="card-body text-center">
+                <i class="fas fa-handshake fa-2x mb-2"></i>
+                <h3 class="fw-bold">{{ total_referrals }}</h3>
+                <p class="mb-0">Qualified Referrals</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white" style="background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <h3 class="fw-bold">
+                    {% set full_states = state_stats|selectattr('ambassador_count', 'equalto', 10)|list|length %}
+                    {{ full_states }}
+                </h3>
+                <p class="mb-0">Full States (10/10)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- State Statistics -->
+<div class="row mb-4 animate-in">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>State Distribution Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>State/Territory</th>
+                                <th>Ambassadors</th>
+                                <th>Capacity</th>
+                                <th>Avg Referrals</th>
+                                <th>Top Performer</th>
+                                <th>Lifetime Members</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for state in state_stats %}
+                            <tr>
+                                <td>
+                                    <strong>{{ state.state_territory }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary fs-6">{{ state.ambassador_count }}</span>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px; min-width: 120px;">
+                                        {% set percentage = (state.ambassador_count / 10) * 100 %}
+                                        <div class="progress-bar 
+                                                    {% if percentage >= 100 %}bg-danger
+                                                    {% elif percentage >= 80 %}bg-warning
+                                                    {% elif percentage >= 50 %}bg-info
+                                                    {% else %}bg-success{% endif %}" 
+                                             style="width: {{ percentage }}%">
+                                            {{ state.ambassador_count }}/10
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-muted">{{ "%.1f"|format(state.avg_referrals or 0) }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ state.top_referrals or 0 }}</span>
+                                </td>
+                                <td>
+                                    {% if state.lifetime_members > 0 %}
+                                        <span class="badge" style="background: linear-gradient(45deg, #FFD700, #FFA500); color: #000;">
+                                            <i class="fas fa-crown me-1"></i>{{ state.lifetime_members }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if state.ambassador_count >= 10 %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-ban me-1"></i>Full
+                                        </span>
+                                    {% elif state.ambassador_count >= 8 %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-exclamation me-1"></i>Nearly Full
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Available
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if not state_stats %}
+                <div class="text-center py-5">
+                    <i class="fas fa-map fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Ambassadors Yet</h5>
+                    <p class="text-muted">Ambassador state data will appear here once applications are submitted.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Ambassador List -->
+<div class="row animate-in">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users me-2"></i>All Ambassadors by State
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Ambassador</th>
+                                <th>State</th>
+                                <th>Referral Code</th>
+                                <th>Performance</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ambassador in ambassadors %}
+                            <tr>
+                                <td>
+                                    <div>
+                                        <h6 class="mb-1">{{ ambassador.full_name }}</h6>
+                                        <small class="text-muted">{{ ambassador.email }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ ambassador.state_territory }}</span>
+                                </td>
+                                <td>
+                                    <code class="bg-light px-2 py-1 rounded">{{ ambassador.referral_code }}</code>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-success">{{ ambassador.qualified_referrals_actual }}/20</span>
+                                        <div class="progress flex-grow-1" style="height: 8px; max-width: 100px;">
+                                            {% set progress = (ambassador.qualified_referrals_actual / 20) * 100 %}
+                                            <div class="progress-bar bg-success" style="width: {{ progress }}%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if ambassador.lifetime_membership_granted %}
+                                        <span class="badge" style="background: linear-gradient(45deg, #FFD700, #FFA500); color: #000;">
+                                            <i class="fas fa-crown me-1"></i>Lifetime Member
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-primary">Active</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ ambassador.application_date[:10] if ambassador.application_date else 'N/A' }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('set_player_session', player_id=ambassador.player_id) }}" 
+                                           class="btn btn-outline-primary" title="Login as ambassador">
+                                            <i class="fas fa-sign-in-alt"></i>
+                                        </a>
+                                        <button class="btn btn-outline-info" title="View details" 
+                                                onclick="showAmbassadorDetails('{{ ambassador.full_name }}', '{{ ambassador.state_territory }}', '{{ ambassador.referral_code }}', {{ ambassador.qualified_referrals_actual }}, {{ ambassador.total_referrals }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ambassador Details Modal -->
+<div class="modal fade" id="ambassadorDetailsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-tie me-2"></i>Ambassador Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted">Name:</label>
+                            <div id="modal-name"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted">State/Territory:</label>
+                            <div id="modal-state"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted">Referral Code:</label>
+                            <div id="modal-code"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted">Qualified Referrals:</label>
+                            <div id="modal-qualified"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold text-muted">Total Referrals:</label>
+                    <div id="modal-total"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showAmbassadorDetails(name, state, code, qualified, total) {
+    document.getElementById('modal-name').textContent = name;
+    document.getElementById('modal-state').innerHTML = `<span class="badge bg-info">${state}</span>`;
+    document.getElementById('modal-code').innerHTML = `<code class="bg-light px-2 py-1 rounded">${code}</code>`;
+    document.getElementById('modal-qualified').innerHTML = `<span class="badge bg-success">${qualified}/20</span>`;
+    document.getElementById('modal-total').textContent = total;
+    
+    const modal = new bootstrap.Modal(document.getElementById('ambassadorDetailsModal'));
+    modal.show();
+}
+
+// Add animation on load
+document.addEventListener('DOMContentLoaded', function() {
+    const elements = document.querySelectorAll('.animate-in');
+    elements.forEach((el, index) => {
+        setTimeout(() => {
+            el.style.animation = 'fadeInUp 0.6s ease-out forwards';
+        }, index * 100);
+    });
+});
+</script>
+
+<style>
+.animate-in {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.progress {
+    position: relative;
+    overflow: visible;
+}
+
+.progress-bar {
+    font-size: 0.75rem;
+    line-height: 20px;
+    text-align: center;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+}
+</style>
+{% endblock %}
