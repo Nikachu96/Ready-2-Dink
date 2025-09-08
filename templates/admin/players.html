@@ -67,6 +67,9 @@
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#testPlayerModal">
                     <i class="fas fa-user-plus me-1"></i>Create Test Player
                 </button>
+                <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#bulkTestModal">
+                    <i class="fas fa-users me-1"></i>Create 30 Test Accounts
+                </button>
                 <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
                 </a>
@@ -343,6 +346,48 @@
                 </div>
                 {% endif %}
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Test Account Creation Modal -->
+<div class="modal fade" id="bulkTestModal" tabindex="-1" aria-labelledby="bulkTestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkTestModalLabel">
+                    <i class="fas fa-users me-2"></i>Create Bulk Test Accounts
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_bulk_test_accounts') }}">
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>This will create test accounts with full premium access:</strong>
+                        <ul class="mt-2 mb-0">
+                            <li>Premium tournament membership</li>
+                            <li>50 tournament credits</li>
+                            <li>10 free tournament entries</li>
+                            <li>All disclaimers automatically accepted</li>
+                            <li>Username format: testuser001, testuser002, etc.</li>
+                            <li>Password for all: <code>testpass123</code></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="count" class="form-label">Number of Test Accounts</label>
+                        <input type="number" class="form-control" id="count" name="count" value="30" min="1" max="50" required>
+                        <small class="form-text text-muted">Maximum: 50 accounts</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('This will create multiple test accounts. Are you sure?')">
+                        <i class="fas fa-users me-1"></i>Create Test Accounts
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

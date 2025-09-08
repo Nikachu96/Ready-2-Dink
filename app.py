@@ -1560,9 +1560,9 @@ def index():
         player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
         conn.close()
         
-        if player and player['disclaimers_accepted']:
+        if player and (player['disclaimers_accepted'] or player['test_account']):
             return redirect(url_for('player_home', player_id=player_id))
-        elif player and not player['disclaimers_accepted']:
+        elif player and not player['disclaimers_accepted'] and not player['test_account']:
             return redirect(url_for('show_disclaimers', player_id=player_id))
     
     # For new visitors, show the landing page (not redirect to register)
