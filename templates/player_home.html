@@ -120,6 +120,43 @@
     </div>
 </div>
 
+<!-- Notification Preferences Section -->
+<div class="row mb-4 animate-in">
+    <div class="col-12">
+        <div class="card" style="border-radius: 12px; border: none; background-color: rgba(255,255,255,0.05);">
+            <div class="card-body p-3">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="fas fa-bell fa-2x" style="color: #D174D2;"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1 fw-bold">Match & Tournament Notifications</h6>
+                                <small class="text-muted">Get notified about match reminders, tournament updates, and new challenges</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   role="switch" 
+                                   id="notificationToggle"
+                                   {% if player.notifications_enabled %}checked{% endif %}
+                                   style="width: 3rem; height: 1.5rem;">
+                            <label class="form-check-label fw-semibold" for="notificationToggle" style="margin-left: 0.5rem;">
+                                <span id="notificationStatus">
+                                    {% if player.notifications_enabled %}ON{% else %}OFF{% endif %}
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Prominent Find Match Section -->
 <div class="row mb-4 animate-in">
@@ -1942,6 +1979,71 @@ function showCourtLocation(courtName, type) {
         document.body.removeChild(modal);
     });
 }
+
+// Simple notification toggle function
+async function toggleNotifications() {
+    const toggle = document.getElementById('notificationToggle');
+    const status = document.getElementById('notificationStatus');
+    
+    try {
+        const response = await fetch('/toggle-notifications', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                enabled: toggle.checked
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            status.textContent = toggle.checked ? 'ON' : 'OFF';
+            
+            // Show simple success message
+            const message = toggle.checked ? 
+                '✅ Notifications enabled! You\'ll see updates here in your dashboard.' : 
+                '🔕 Notifications disabled.';
+            showSimpleMessage(message, toggle.checked ? 'success' : 'info');
+        } else {
+            // Revert toggle if failed
+            toggle.checked = !toggle.checked;
+            showSimpleMessage('❌ Failed to update notification settings', 'error');
+        }
+    } catch (error) {
+        // Revert toggle if failed
+        toggle.checked = !toggle.checked;
+        showSimpleMessage('❌ Error updating notifications', 'error');
+    }
+}
+
+// Simple message display function
+function showSimpleMessage(message, type) {
+    const alertClass = type === 'error' ? 'alert-danger' : `alert-${type}`;
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 350px;';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 4000);
+}
+
+// Set up toggle event listener
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.getElementById('notificationToggle');
+    if (toggle) {
+        toggle.addEventListener('change', toggleNotifications);
+    }
+});
 </script>
 
 <style>

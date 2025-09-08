@@ -2236,6 +2236,33 @@ def unsubscribe_notifications():
     
     return jsonify({'success': True, 'message': 'Notifications disabled successfully!'})
 
+@app.route('/toggle-notifications', methods=['POST'])
+def toggle_notifications():
+    """Simple toggle for notification preferences"""
+    try:
+        if 'player_id' not in session:
+            return jsonify({'success': False, 'message': 'Not logged in'})
+        
+        data = request.get_json()
+        enabled = data.get('enabled', False)
+        
+        conn = get_db_connection()
+        conn.execute('''
+            UPDATE players 
+            SET notifications_enabled = ?
+            WHERE id = ?
+        ''', (1 if enabled else 0, session['player_id']))
+        conn.commit()
+        conn.close()
+        
+        status = "enabled" if enabled else "disabled"
+        logging.info(f"Notifications {status} for player {session['player_id']}")
+        return jsonify({'success': True, 'message': f'Notifications {status} successfully!'})
+        
+    except Exception as e:
+        logging.error(f"Error in toggle_notifications: {e}")
+        return jsonify({'success': False, 'message': f'Server error: {str(e)}'})
+
 @app.route('/notification-status')
 def notification_status():
     """Get current notification status for player"""
