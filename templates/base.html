@@ -270,7 +270,7 @@
 
         /* Navigation spacing fixes */
         .navbar-nav {
-            gap: 0.5rem;
+            gap: 0.2rem;
         }
 
         .nav-item {
@@ -280,13 +280,21 @@
 
         .nav-link {
             white-space: nowrap;
-            padding: 0.5rem 0.75rem !important;
+            padding: 0.4rem 0.5rem !important;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 1400px) {
+            .nav-link {
+                font-size: 0.8rem;
+                padding: 0.3rem 0.4rem !important;
+            }
         }
 
         @media (max-width: 1200px) {
             .nav-link {
-                font-size: 0.9rem;
-                padding: 0.4rem 0.6rem !important;
+                font-size: 0.75rem;
+                padding: 0.25rem 0.3rem !important;
             }
         }
 
@@ -387,7 +395,6 @@
                         </a>
                     </li>
                     {% endif %}
-                    <!-- Debug: current_player_id={{ current_player_id }}, admin={{ current_user_is_admin }} -->
                 </ul>
             </div>
         </div>
