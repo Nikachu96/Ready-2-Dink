@@ -1192,7 +1192,17 @@ def find_match_for_player(player_id):
     
     if potential_matches:
         # Create a match
-        match_court = player['preferred_court'] if potential_matches['preferred_court'] == player['preferred_court'] else player['preferred_court']
+        # Determine court location - use shared court if both prefer same court, otherwise use a default
+        if (player['preferred_court'] and potential_matches['preferred_court'] and 
+            player['preferred_court'] == potential_matches['preferred_court']):
+            match_court = player['preferred_court']
+        elif player['preferred_court']:
+            match_court = player['preferred_court']
+        elif potential_matches['preferred_court']:
+            match_court = potential_matches['preferred_court']
+        else:
+            # Default to the first player's location if no preferred courts
+            match_court = player['location1'] or 'Local Court'
         
         # Set default sport to Pickleball if preferred_sport is NULL
         match_sport = player['preferred_sport'] if player['preferred_sport'] else 'Pickleball'
