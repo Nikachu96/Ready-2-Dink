@@ -486,29 +486,19 @@
 
                 const registration = await navigator.serviceWorker.ready;
                 
-                // For demo purposes, we'll create a subscription without VAPID keys
-                // In production, you would need proper VAPID keys
-                let subscription;
-                try {
-                    // Try with VAPID key first (will fail in demo)
-                    subscription = await registration.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: urlBase64ToUint8Array('BP_PUBLIC_KEY_PLACEHOLDER')
-                    });
-                } catch (error) {
-                    // Fallback for demo - simulate subscription
-                    console.log('VAPID key demo mode - simulating subscription');
-                    subscription = {
+                // Demo mode - simulate subscription for development
+                // In production, you would use proper VAPID keys and real push notifications
+                console.log('Demo mode - simulating push notification subscription');
+                const subscription = {
+                    endpoint: 'demo-endpoint-' + Date.now(),
+                    toJSON: () => ({
                         endpoint: 'demo-endpoint-' + Date.now(),
-                        toJSON: () => ({
-                            endpoint: 'demo-endpoint-' + Date.now(),
-                            keys: {
-                                p256dh: 'demo-p256dh-key',
-                                auth: 'demo-auth-key'
-                            }
-                        })
-                    };
-                }
+                        keys: {
+                            p256dh: 'demo-p256dh-key-' + Date.now(),
+                            auth: 'demo-auth-key-' + Date.now()
+                        }
+                    })
+                };
 
                 // Send subscription to server
                 const response = await fetch('/subscribe-notifications', {
