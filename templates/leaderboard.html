@@ -13,11 +13,18 @@
                         <h4 class="card-title mb-0 fw-bold">
                             <i class="fas fa-trophy me-2"></i>Player Rankings
                         </h4>
-                        <p class="mb-0 opacity-90">Top competitive players by ranking points</p>
+                        <p class="mb-0 opacity-90">Top competitive players by ranking points and skill level</p>
                     </div>
                 </div>
             </div>
+
+            <!-- Beginner Leaderboard -->
             <div class="card-body p-0">
+                <div class="bg-success text-white p-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-leaf me-2"></i>Beginner Division
+                    </h5>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-dark table-hover mb-0">
                         <thead>
@@ -30,7 +37,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for player in leaderboard %}
+                            {% for player in beginner_leaderboard %}
                             <tr>
                                 <td class="text-center align-middle">
                                     {% if loop.index == 1 %}
@@ -100,11 +107,220 @@
                                     {% endif %}
                                 </td>
                             </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-light py-3">
+                                    <i class="fas fa-user-friends me-2"></i>No beginner players yet
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            <!-- Intermediate Leaderboard -->
+            <div class="card-body p-0">
+                <div class="bg-warning text-white p-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star me-2"></i>Intermediate Division
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-center text-white" style="width: 80px; color: white !important;">Rank</th>
+                                <th class="text-white" style="color: white !important;">Player</th>
+                                <th class="text-center text-white" style="color: white !important;">Points</th>
+                                <th class="text-center text-white" style="color: white !important;">Match Record</th>
+                                <th class="text-center text-white" style="color: white !important;">Tournaments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for player in intermediate_leaderboard %}
+                            <tr>
+                                <td class="text-center align-middle">
+                                    {% if loop.index == 1 %}
+                                        <span class="badge bg-warning text-white fs-6 px-3 py-2">
+                                            <i class="fas fa-crown me-1"></i>#{{ loop.index }}
+                                        </span>
+                                    {% elif loop.index == 2 %}
+                                        <span class="badge bg-secondary fs-6 px-3 py-2">
+                                            <i class="fas fa-medal me-1"></i>#{{ loop.index }}
+                                        </span>
+                                    {% elif loop.index == 3 %}
+                                        <span class="badge bg-warning fs-6 px-3 py-2" style="background: #cd7f32 !important;">
+                                            <i class="fas fa-award me-1"></i>#{{ loop.index }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-primary fs-6 px-2 py-1">
+                                            #{{ loop.index }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle">
+                                    <div class="d-flex align-items-center">
+                                        {% if player.selfie %}
+                                            <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                                 class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" 
+                                                 alt="Player">
+                                        {% else %}
+                                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-3" 
+                                                 style="width: 50px; height: 50px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <h6 class="mb-0 text-white">{{ player.full_name }}</h6>
+                                            {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                                <small class="text-warning">
+                                                    {% for i in range(player.tournament_wins) %}⭐{% endfor %}
+                                                    Tournament Winner{{ 's' if player.tournament_wins > 1 else '' }}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <span class="badge bg-success fs-6 px-3 py-2">
+                                        {{ player.ranking_points or 0 }} pts
+                                    </span>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <span class="badge bg-info">
+                                        {{ player.wins or 0 }}W-{{ player.losses or 0 }}L
+                                    </span>
+                                    {% if (player.wins or 0) + (player.losses or 0) > 0 %}
+                                        <br>
+                                        <small class="text-light">
+                                            {{ "%.1f"|format(((player.wins or 0) / ((player.wins or 0) + (player.losses or 0)) * 100)) }}% win rate
+                                        </small>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center align-middle">
+                                    {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                        <span class="badge bg-warning text-white">
+                                            <i class="fas fa-trophy me-1"></i>{{ player.tournament_wins }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-light">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-light py-3">
+                                    <i class="fas fa-user-friends me-2"></i>No intermediate players yet
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Advanced Leaderboard -->
+            <div class="card-body p-0">
+                <div class="bg-danger text-white p-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-fire me-2"></i>Advanced Division
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-center text-white" style="width: 80px; color: white !important;">Rank</th>
+                                <th class="text-white" style="color: white !important;">Player</th>
+                                <th class="text-center text-white" style="color: white !important;">Points</th>
+                                <th class="text-center text-white" style="color: white !important;">Match Record</th>
+                                <th class="text-center text-white" style="color: white !important;">Tournaments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for player in advanced_leaderboard %}
+                            <tr>
+                                <td class="text-center align-middle">
+                                    {% if loop.index == 1 %}
+                                        <span class="badge bg-warning text-white fs-6 px-3 py-2">
+                                            <i class="fas fa-crown me-1"></i>#{{ loop.index }}
+                                        </span>
+                                    {% elif loop.index == 2 %}
+                                        <span class="badge bg-secondary fs-6 px-3 py-2">
+                                            <i class="fas fa-medal me-1"></i>#{{ loop.index }}
+                                        </span>
+                                    {% elif loop.index == 3 %}
+                                        <span class="badge bg-warning fs-6 px-3 py-2" style="background: #cd7f32 !important;">
+                                            <i class="fas fa-award me-1"></i>#{{ loop.index }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-primary fs-6 px-2 py-1">
+                                            #{{ loop.index }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle">
+                                    <div class="d-flex align-items-center">
+                                        {% if player.selfie %}
+                                            <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                                 class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" 
+                                                 alt="Player">
+                                        {% else %}
+                                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-3" 
+                                                 style="width: 50px; height: 50px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <h6 class="mb-0 text-white">{{ player.full_name }}</h6>
+                                            {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                                <small class="text-warning">
+                                                    {% for i in range(player.tournament_wins) %}⭐{% endfor %}
+                                                    Tournament Winner{{ 's' if player.tournament_wins > 1 else '' }}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <span class="badge bg-success fs-6 px-3 py-2">
+                                        {{ player.ranking_points or 0 }} pts
+                                    </span>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <span class="badge bg-info">
+                                        {{ player.wins or 0 }}W-{{ player.losses or 0 }}L
+                                    </span>
+                                    {% if (player.wins or 0) + (player.losses or 0) > 0 %}
+                                        <br>
+                                        <small class="text-light">
+                                            {{ "%.1f"|format(((player.wins or 0) / ((player.wins or 0) + (player.losses or 0)) * 100)) }}% win rate
+                                        </small>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center align-middle">
+                                    {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                        <span class="badge bg-warning text-white">
+                                            <i class="fas fa-trophy me-1"></i>{{ player.tournament_wins }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-light">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-light py-3">
+                                    <i class="fas fa-user-friends me-2"></i>No advanced players yet
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="card-footer bg-transparent">
                 <div class="row text-center">
                     <div class="col-md-3">
@@ -141,7 +357,7 @@
                                 <i class="fas fa-crown me-1"></i>Championship Invitation - Best of 5 Sets
                             </h6>
                             <p class="mb-0 text-white">
-                                <strong>Only the top 16 players will be invited to the year-end championship!</strong><br>
+                                <strong>Only the top 16 players from each division will be invited to the year-end championship!</strong><br>
                                 <small>Championship matches are best of 5 sets. Higher ranked players get court advantage during tournaments and receive perks like balls & accessories. All points reset January 1st.</small>
                             </p>
                         </div>

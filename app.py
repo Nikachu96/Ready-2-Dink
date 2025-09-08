@@ -806,17 +806,26 @@ def get_player_ranking(player_id):
     
     return None  # Player not ranked yet
 
-def get_leaderboard(limit=10):
-    """Get top players by ranking points"""
+def get_leaderboard(limit=10, skill_level=None):
+    """Get top players by ranking points, optionally filtered by skill level"""
     conn = get_db_connection()
     
-    leaderboard = conn.execute('''
-        SELECT id, full_name, ranking_points, wins, losses, tournament_wins, selfie
-        FROM players 
-        WHERE ranking_points > 0 OR wins > 0
-        ORDER BY ranking_points DESC, wins DESC, losses ASC
-        LIMIT ?
-    ''', (limit,)).fetchall()
+    if skill_level:
+        leaderboard = conn.execute('''
+            SELECT id, full_name, ranking_points, wins, losses, tournament_wins, selfie, skill_level
+            FROM players 
+            WHERE (ranking_points > 0 OR wins > 0) AND skill_level = ?
+            ORDER BY ranking_points DESC, wins DESC, losses ASC
+            LIMIT ?
+        ''', (skill_level, limit)).fetchall()
+    else:
+        leaderboard = conn.execute('''
+            SELECT id, full_name, ranking_points, wins, losses, tournament_wins, selfie, skill_level
+            FROM players 
+            WHERE ranking_points > 0 OR wins > 0
+            ORDER BY ranking_points DESC, wins DESC, losses ASC
+            LIMIT ?
+        ''', (limit,)).fetchall()
     
     conn.close()
     
@@ -2134,10 +2143,15 @@ def view_tournament_bracket(tournament_instance_id):
 
 @app.route('/leaderboard')
 def leaderboard():
-    """Display player leaderboard"""
-    leaderboard_players = get_leaderboard(50)  # Top 50 players
+    """Display player leaderboard by skill levels"""
+    beginner_leaderboard = get_leaderboard(20, 'Beginner')
+    intermediate_leaderboard = get_leaderboard(20, 'Intermediate') 
+    advanced_leaderboard = get_leaderboard(20, 'Advanced')
     
-    return render_template('leaderboard.html', leaderboard=leaderboard_players)
+    return render_template('leaderboard.html', 
+                         beginner_leaderboard=beginner_leaderboard,
+                         intermediate_leaderboard=intermediate_leaderboard,
+                         advanced_leaderboard=advanced_leaderboard)
 
 @app.route('/subscribe-notifications', methods=['POST'])
 def subscribe_notifications():
