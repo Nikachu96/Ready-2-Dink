@@ -1733,10 +1733,18 @@ def index():
         player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
         conn.close()
         
+        # Check disclaimers first
+        if player and not player['disclaimers_accepted'] and not player['test_account']:
+            return redirect(url_for('show_disclaimers', player_id=player_id))
+        
+        # Then check NDA for non-admin users
+        if player and not player.get('is_admin', False):
+            if not player.get('nda_accepted', 0):
+                return redirect(url_for('nda_required'))
+        
+        # All checks passed, redirect to home
         if player and (player['disclaimers_accepted'] or player['test_account']):
             return redirect(url_for('player_home', player_id=player_id))
-        elif player and not player['disclaimers_accepted'] and not player['test_account']:
-            return redirect(url_for('show_disclaimers', player_id=player_id))
     
     # For new visitors, show the landing page (not redirect to register)
     return render_template('landing.html')
