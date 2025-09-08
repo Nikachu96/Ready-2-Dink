@@ -89,6 +89,121 @@ def send_admin_credentials_email(full_name, email, username, password, login_url
         logging.error(f"Failed to send email to {email}: {str(e)}")
         return False
 
+def send_nda_confirmation_email(player_data, signature, nda_date, ip_address):
+    """Send NDA confirmation email to admin with signed agreement details"""
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        
+        sendgrid_key = os.environ.get('SENDGRID_API_KEY')
+        if not sendgrid_key:
+            logging.error("SendGrid API key not found")
+            return False
+        
+        # Admin email - you can change this to your preferred email
+        admin_email = "admin@ready2dink.com"
+        
+        subject = f"NDA Signed: {player_data['full_name']} - Ready 2 Dink Beta"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; background: #f8f9fa;">
+            <div style="background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%); padding: 25px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 28px;">Ready 2 Dink</h1>
+                <p style="color: #E0563F; margin: 5px 0; font-size: 16px; font-weight: bold;">NDA SIGNED NOTIFICATION</p>
+            </div>
+            
+            <div style="padding: 30px; background: white;">
+                <div style="background: #e8f5e8; border-left: 4px solid #28a745; padding: 15px; margin-bottom: 20px;">
+                    <h2 style="color: #28a745; margin: 0; font-size: 18px;">✅ New NDA Signature Received</h2>
+                </div>
+                
+                <h3 style="color: #333; border-bottom: 2px solid #E0563F; padding-bottom: 10px;">Signatory Information</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; width: 30%;">Full Name:</td>
+                        <td style="padding: 12px; border: 1px solid #ddd;">{player_data['full_name']}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Email:</td>
+                        <td style="padding: 12px; border: 1px solid #ddd;">{player_data['email']}</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Username:</td>
+                        <td style="padding: 12px; border: 1px solid #ddd;">{player_data['username']}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Phone:</td>
+                        <td style="padding: 12px; border: 1px solid #ddd;">{player_data.get('phone', 'Not provided')}</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">City:</td>
+                        <td style="padding: 12px; border: 1px solid #ddd;">{player_data.get('city', 'Not provided')}, {player_data.get('state', 'Not provided')}</td>
+                    </tr>
+                </table>
+                
+                <h3 style="color: #333; border-bottom: 2px solid #D174D2; padding-bottom: 10px;">Signature Details</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; width: 30%;">Digital Signature:</td>
+                        <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Courier New', monospace; color: #E0563F; font-weight: bold;">{signature}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Date & Time:</td>
+                        <td style="padding: 12px; border: 1px solid #ddd;">{nda_date}</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">IP Address:</td>
+                        <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Courier New', monospace;">{ip_address}</td>
+                    </tr>
+                </table>
+                
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0;">
+                    <h4 style="color: #856404; margin: 0 0 10px 0;">🔒 Legal Record</h4>
+                    <p style="margin: 0; color: #856404; font-size: 14px;">
+                        This email serves as a legal record of the NDA acceptance. The signatory has agreed to maintain confidentiality 
+                        of all Ready 2 Dink beta information for a period of 3 years or until public launch.
+                    </p>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <p style="color: #6c757d; font-size: 14px;">
+                        This is an automated notification from Ready 2 Dink Beta Testing System<br>
+                        Generated on {datetime.now().strftime('%Y-%m-%d at %I:%M %p')}
+                    </p>
+                </div>
+            </div>
+            
+            <div style="background: #343a40; padding: 20px; text-align: center;">
+                <p style="color: #adb5bd; margin: 0; font-size: 12px;">
+                    © 2024 Ready 2 Dink. All rights reserved. | Beta Testing Platform
+                </p>
+            </div>
+        </div>
+        """
+        
+        # Create the email
+        message = Mail(
+            from_email='noreply@ready2dink.com',
+            to_emails=admin_email,
+            subject=subject,
+            html_content=html_content
+        )
+        
+        # Send the email
+        sg = SendGridAPIClient(sendgrid_key)
+        response = sg.send(message)
+        
+        if response.status_code == 202:
+            logging.info(f"NDA confirmation email sent successfully for {player_data['full_name']}")
+            return True
+        else:
+            logging.error(f"Failed to send NDA email. Status: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        logging.error(f"Error sending NDA confirmation email: {e}")
+        return False
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 
@@ -2292,6 +2407,13 @@ def sign_nda():
         
         # Record NDA acceptance in database
         conn = get_db_connection()
+        
+        # Get player details for email
+        player = conn.execute('''
+            SELECT * FROM players WHERE id = ?
+        ''', (session['player_id'],)).fetchone()
+        
+        # Update NDA status
         conn.execute('''
             UPDATE players 
             SET nda_accepted = 1,
@@ -2303,7 +2425,20 @@ def sign_nda():
         conn.commit()
         conn.close()
         
-        logging.info(f"NDA signed by player {session['player_id']} with signature '{signature}' from IP {client_ip}")
+        # Send email notification
+        nda_date = datetime.now().strftime('%Y-%m-%d at %I:%M %p UTC')
+        email_sent = send_nda_confirmation_email(
+            player_data=dict(player),
+            signature=signature,
+            nda_date=nda_date,
+            ip_address=client_ip
+        )
+        
+        if email_sent:
+            logging.info(f"NDA signed by player {session['player_id']} with signature '{signature}' from IP {client_ip} - Email sent")
+        else:
+            logging.warning(f"NDA signed by player {session['player_id']} with signature '{signature}' from IP {client_ip} - Email failed")
+        
         return jsonify({'success': True, 'message': 'NDA signed successfully!'})
         
     except Exception as e:
