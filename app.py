@@ -5177,6 +5177,156 @@ def process_quick_tournament_payment():
         flash(f'Error processing tournament entry: {str(e)}', 'danger')
         return redirect(url_for('tournaments_overview'))
 
+@app.route('/partner_invitations/<int:player_id>')
+def partner_invitations(player_id):
+    """View partner invitations for a player"""
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    
+    if not player:
+        flash('Player not found', 'danger')
+        conn.close()
+        return redirect(url_for('index'))
+    
+    # Get pending invitations for this player
+    invitations = conn.execute('''
+        SELECT pi.*, 
+               p.full_name as inviter_name, 
+               p.player_id as inviter_player_id,
+               p.skill_level as inviter_skill_level
+        FROM partner_invitations pi
+        JOIN players p ON pi.inviter_id = p.id
+        WHERE pi.invitee_id = ? AND pi.status = 'pending'
+        ORDER BY pi.created_at DESC
+    ''', (player_id,)).fetchall()
+    
+    conn.close()
+    return render_template('partner_invitations.html', 
+                         player=player, 
+                         invitations=invitations)
+
+@app.route('/accept_partner_invitation/<int:invitation_id>')
+def accept_partner_invitation(invitation_id):
+    """Accept a partner invitation"""
+    conn = get_db_connection()
+    
+    try:
+        # Get invitation details
+        invitation = conn.execute('''
+            SELECT pi.*, t.tournament_instance_id, t.tournament_name, t.entry_fee
+            FROM partner_invitations pi
+            JOIN tournaments t ON pi.tournament_entry_id = t.id
+            WHERE pi.id = ? AND pi.status = 'pending'
+        ''', (invitation_id,)).fetchone()
+        
+        if not invitation:
+            flash('Invitation not found or already processed.', 'danger')
+            conn.close()
+            return redirect(url_for('index'))
+        
+        # Update invitation status
+        conn.execute('''
+            UPDATE partner_invitations 
+            SET status = 'accepted', responded_at = datetime('now')
+            WHERE id = ?
+        ''', (invitation_id,))
+        
+        # Get player info
+        invitee = conn.execute('SELECT * FROM players WHERE id = ?', (invitation['invitee_id'],)).fetchone()
+        inviter = conn.execute('SELECT * FROM players WHERE id = ?', (invitation['inviter_id'],)).fetchone()
+        
+        # Create tournament entry for the accepting player
+        entry_date = datetime.now()
+        match_deadline = entry_date + timedelta(days=14)
+        
+        conn.execute('''
+            INSERT INTO tournaments (player_id, tournament_instance_id, tournament_name, tournament_level, tournament_type, entry_fee, sport, entry_date, match_deadline, payment_status)
+            VALUES (?, ?, ?, 'Intermediate', 'doubles', ?, 'Pickleball', ?, ?, 'pending_payment')
+        ''', (invitation['invitee_id'], invitation['tournament_instance_id'], invitation['tournament_name'], invitation['entry_fee'], entry_date.strftime('%Y-%m-%d'), match_deadline.strftime('%Y-%m-%d')))
+        
+        # Update original tournament entry status 
+        conn.execute('''
+            UPDATE tournaments 
+            SET payment_status = 'pending_payment'
+            WHERE id = ?
+        ''', (invitation['tournament_entry_id'],))
+        
+        # Send notification to inviter
+        message = f"{invitee['full_name']} accepted your doubles invitation for {invitation['tournament_name']}! Your team is confirmed."
+        
+        conn.execute('''
+            INSERT INTO notifications (player_id, type, title, message, data)
+            VALUES (?, 'invitation_accepted', 'Partner Accepted!', ?, ?)
+        ''', (invitation['inviter_id'], message, str({'invitation_id': invitation_id})))
+        
+        send_push_notification(invitation['inviter_id'], message, "Partner Accepted!")
+        
+        conn.commit()
+        flash(f'Partner invitation accepted! You are now teamed up with {inviter["full_name"]} for {invitation["tournament_name"]}.', 'success')
+        
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error accepting invitation: {str(e)}', 'danger')
+    
+    conn.close()
+    return redirect(url_for('dashboard', player_id=invitation['invitee_id']))
+
+@app.route('/decline_partner_invitation/<int:invitation_id>')
+def decline_partner_invitation(invitation_id):
+    """Decline a partner invitation"""
+    conn = get_db_connection()
+    
+    try:
+        # Get invitation details
+        invitation = conn.execute('''
+            SELECT pi.*
+            FROM partner_invitations pi
+            WHERE pi.id = ? AND pi.status = 'pending'
+        ''', (invitation_id,)).fetchone()
+        
+        if not invitation:
+            flash('Invitation not found or already processed.', 'danger')
+            conn.close()
+            return redirect(url_for('index'))
+        
+        # Update invitation status
+        conn.execute('''
+            UPDATE partner_invitations 
+            SET status = 'declined', responded_at = datetime('now')
+            WHERE id = ?
+        ''', (invitation_id,))
+        
+        # Update original tournament entry status back to pending_payment 
+        conn.execute('''
+            UPDATE tournaments 
+            SET payment_status = 'pending_payment'
+            WHERE id = ?
+        ''', (invitation['tournament_entry_id'],))
+        
+        # Get player info
+        invitee = conn.execute('SELECT * FROM players WHERE id = ?', (invitation['invitee_id'],)).fetchone()
+        inviter = conn.execute('SELECT * FROM players WHERE id = ?', (invitation['inviter_id'],)).fetchone()
+        
+        # Send notification to inviter
+        message = f"{invitee['full_name']} declined your doubles invitation for {invitation['tournament_name']}. You can select a different partner or continue as singles."
+        
+        conn.execute('''
+            INSERT INTO notifications (player_id, type, title, message, data)
+            VALUES (?, 'invitation_declined', 'Partner Declined', ?, ?)
+        ''', (invitation['inviter_id'], message, str({'invitation_id': invitation_id})))
+        
+        send_push_notification(invitation['inviter_id'], message, "Partner Declined")
+        
+        conn.commit()
+        flash(f'Partner invitation declined. {inviter["full_name"]} has been notified.', 'info')
+        
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error declining invitation: {str(e)}', 'danger')
+    
+    conn.close()
+    return redirect(url_for('dashboard', player_id=invitation['invitee_id']))
+
 @app.route('/admin/update_settings', methods=['POST'])
 @admin_required
 def update_settings():
