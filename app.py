@@ -5682,6 +5682,22 @@ def membership_payment_page(membership_type):
         membership_display = membership_type.replace("_", " ").title()
         flash(f'Test account granted {membership_display} membership access!', 'success')
         return redirect(url_for('player_home', player_id=session['player_id']))
+        
+    # TEMPORARY: Make admin user (id=1) act like test account for testing
+    if player and player['id'] == 1:
+        conn.execute('''
+            UPDATE players 
+            SET membership_type = ?, 
+                subscription_status = 'active',
+                test_account = 1
+            WHERE id = ?
+        ''', (membership_type, session['player_id']))
+        conn.commit()
+        conn.close()
+        
+        membership_display = membership_type.replace("_", " ").title()
+        flash(f'Admin account granted {membership_display} membership access for testing!', 'success')
+        return redirect(url_for('player_home', player_id=session['player_id']))
     
     conn.close()
     
