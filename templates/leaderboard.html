@@ -64,7 +64,7 @@
                                             </div>
                                         {% endif %}
                                         <div>
-                                            <h6 class="mb-0">{{ player.full_name }}</h6>
+                                            <h6 class="mb-0 text-white">{{ player.full_name }}</h6>
                                             {% if player.tournament_wins and player.tournament_wins > 0 %}
                                                 <small class="text-warning">
                                                     {% for i in range(player.tournament_wins) %}⭐{% endfor %}
@@ -85,7 +85,7 @@
                                     </span>
                                     {% if (player.wins or 0) + (player.losses or 0) > 0 %}
                                         <br>
-                                        <small class="text-muted">
+                                        <small class="text-light">
                                             {{ "%.1f"|format(((player.wins or 0) / ((player.wins or 0) + (player.losses or 0)) * 100)) }}% win rate
                                         </small>
                                     {% endif %}
@@ -96,7 +96,7 @@
                                             <i class="fas fa-trophy me-1"></i>{{ player.tournament_wins }}
                                         </span>
                                     {% else %}
-                                        <span class="text-muted">-</span>
+                                        <span class="text-light">-</span>
                                     {% endif %}
                                 </td>
                             </tr>
