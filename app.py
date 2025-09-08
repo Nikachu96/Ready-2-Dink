@@ -2144,9 +2144,9 @@ def view_tournament_bracket(tournament_instance_id):
 @app.route('/leaderboard')
 def leaderboard():
     """Display player leaderboard by skill levels"""
-    beginner_leaderboard = get_leaderboard(20, 'Beginner')
-    intermediate_leaderboard = get_leaderboard(20, 'Intermediate') 
-    advanced_leaderboard = get_leaderboard(20, 'Advanced')
+    beginner_leaderboard = get_leaderboard(50, 'Beginner')
+    intermediate_leaderboard = get_leaderboard(50, 'Intermediate') 
+    advanced_leaderboard = get_leaderboard(50, 'Advanced')
     
     return render_template('leaderboard.html', 
                          beginner_leaderboard=beginner_leaderboard,
