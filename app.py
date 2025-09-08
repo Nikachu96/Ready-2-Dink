@@ -5078,16 +5078,16 @@ def process_quick_tournament_payment():
         if quick_join_data['free_entry_used']:
             conn.execute('UPDATE players SET free_tournament_entries = free_tournament_entries - 1 WHERE id = ?', (player_id,))
         
-        # Determine payment status based on doubles partnership
+        # Determine payment status - for doubles, inviter pays immediately, partner pays on acceptance
         partner_id = quick_join_data.get('partner_id')
-        if quick_join_data['tournament_type'] == 'doubles' and partner_id:
-            payment_status = 'pending_partner'  # Waiting for partner acceptance
-        elif payment_method == 'credits' and remaining_payment == 0:
+        if payment_method == 'credits' and remaining_payment == 0:
             payment_status = 'completed'
         elif payment_method == 'credits' and remaining_payment > 0:
             payment_status = 'pending_payment'
         elif quick_join_data['free_entry_used'] and entry_fee == 0:
             payment_status = 'completed'  # Free Ambassador entry
+        elif quick_join_data['tournament_type'] == 'doubles' and partner_id:
+            payment_status = 'completed'  # Inviter pays upfront, waiting for partner acceptance
         else:
             payment_status = 'pending_payment'  # Requires actual payment processing
         
@@ -5129,12 +5129,14 @@ def process_quick_tournament_payment():
         
         # Show success message and redirect based on payment status
         if quick_join_data['tournament_type'] == 'doubles' and partner_id:
-            # Doubles tournament with partner invitation
+            # Doubles tournament with partner invitation - inviter pays upfront
             partner = conn.execute('SELECT * FROM players WHERE id = ?', (partner_id,)).fetchone()
             if quick_join_data['free_entry_used']:
-                flash(f'FREE Ambassador entry used! Partner invitation sent to {partner["full_name"]}. They need to accept to confirm your doubles team.', 'success')
+                flash(f'FREE Ambassador entry used! Partner invitation sent to {partner["full_name"]}. They need to accept and pay their entry fee to confirm your doubles team.', 'success')
+            elif payment_method == 'credits' and remaining_payment == 0:
+                flash(f'Tournament entry paid with ${credits_used:.2f} in credits! Partner invitation sent to {partner["full_name"]}. They need to accept and pay ${entry_fee:.2f} to confirm your team. New credit balance: ${new_credit_balance:.2f}', 'success')
             else:
-                flash(f'Tournament entry submitted! Partner invitation sent to {partner["full_name"]}. They need to accept and pay their fee to confirm your doubles team.', 'success')
+                flash(f'Tournament entry complete! Partner invitation sent to {partner["full_name"]}. They need to accept and pay ${entry_fee:.2f} to confirm your doubles team.', 'success')
             conn.close()
             return redirect(url_for('dashboard', player_id=player_id))
         elif payment_method == 'credits' and remaining_payment == 0:
@@ -5244,12 +5246,8 @@ def accept_partner_invitation(invitation_id):
             VALUES (?, ?, ?, 'Intermediate', 'doubles', ?, 'Pickleball', ?, ?, 'pending_payment')
         ''', (invitation['invitee_id'], invitation['tournament_instance_id'], invitation['tournament_name'], invitation['entry_fee'], entry_date.strftime('%Y-%m-%d'), match_deadline.strftime('%Y-%m-%d')))
         
-        # Update original tournament entry status 
-        conn.execute('''
-            UPDATE tournaments 
-            SET payment_status = 'pending_payment'
-            WHERE id = ?
-        ''', (invitation['tournament_entry_id'],))
+        # Original tournament entry stays completed since inviter already paid
+        # No need to update the inviter's payment status
         
         # Send notification to inviter
         message = f"{invitee['full_name']} accepted your doubles invitation for {invitation['tournament_name']}! Your team is confirmed."
@@ -5296,12 +5294,8 @@ def decline_partner_invitation(invitation_id):
             WHERE id = ?
         ''', (invitation_id,))
         
-        # Update original tournament entry status back to pending_payment 
-        conn.execute('''
-            UPDATE tournaments 
-            SET payment_status = 'pending_payment'
-            WHERE id = ?
-        ''', (invitation['tournament_entry_id'],))
+        # Original tournament entry stays completed since inviter already paid
+        # No need to update the inviter's payment status when declined
         
         # Get player info
         invitee = conn.execute('SELECT * FROM players WHERE id = ?', (invitation['invitee_id'],)).fetchone()
