@@ -2355,8 +2355,8 @@ def tournament_entry(player_id):
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
     
-    # Check if player has accepted tournament rules
-    if not player['tournament_rules_accepted']:
+    # Check if player has accepted tournament rules (skip for test accounts)
+    if not player['tournament_rules_accepted'] and not player['test_account']:
         flash('Please read and accept the tournament rules before entering tournaments', 'warning')
         return redirect(url_for('show_tournament_rules', player_id=player_id))
     
@@ -2413,7 +2413,11 @@ def tournament_entry(player_id):
             free_entry_used = False
             is_the_hill = 'The Hill' in (tournament_instance['name'] or '') or 'Big Dink' in (tournament_instance['name'] or '')
             
-            if player['free_tournament_entries'] and player['free_tournament_entries'] > 0 and not is_the_hill:
+            # Test accounts get free entry to all tournaments
+            if player['test_account']:
+                entry_fee = 0  # FREE for test accounts
+                free_entry_used = True
+            elif player['free_tournament_entries'] and player['free_tournament_entries'] > 0 and not is_the_hill:
                 # Ambassador has free entries available and this isn't The Hill
                 entry_fee = 0  # FREE for both singles and doubles with Ambassador benefits
                 free_entry_used = True
@@ -5991,6 +5995,89 @@ def track_referral_conversion(player_id, membership_type):
     # Clear session referral data
     session.pop('ambassador_id', None)
     session.pop('referral_code', None)
+
+@app.route('/admin/create-bulk-test-accounts', methods=['POST'])
+@admin_required
+def create_bulk_test_accounts():
+    """Create multiple test accounts for testing purposes"""
+    import secrets
+    from datetime import datetime
+    from werkzeug.security import generate_password_hash
+    
+    # Get the number of accounts to create
+    count = int(request.form.get('count', 30))
+    
+    if count > 50:  # Safety limit
+        flash('Cannot create more than 50 test accounts at once', 'danger')
+        return redirect(url_for('admin_players'))
+    
+    conn = get_db_connection()
+    created_accounts = []
+    
+    try:
+        for i in range(1, count + 1):
+            # Generate test user data
+            username = f"testuser{i:03d}"
+            email = f"testuser{i:03d}@ready2dink.test"
+            full_name = f"Test User {i:03d}"
+            password = "testpass123"  # Standard password for all test accounts
+            
+            # Check if account already exists
+            existing = conn.execute('SELECT id FROM players WHERE email = ? OR username = ?', (email, username)).fetchone()
+            if existing:
+                continue  # Skip if already exists
+                
+            # Hash password  
+            password_hash = generate_password_hash(password)
+            
+            # Create test account with premium benefits
+            conn.execute('''
+                INSERT INTO players (
+                    full_name, email, username, password_hash, skill_level, 
+                    location1, location2, dob, address, zip_code,
+                    membership_type, subscription_status, tournament_credits,
+                    free_tournament_entries, disclaimers_accepted, tournament_rules_accepted,
+                    test_account, is_looking_for_match, ranking_points, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                full_name, email, username, password_hash, 
+                ['Beginner', 'Intermediate', 'Advanced'][i % 3],  # Rotate skill levels
+                f"Test City {i % 10}", f"Test State {i % 5}", '1990-01-01', 
+                f"{i} Test Street", f"1234{i % 10}",
+                'tournament', 'active', 50,  # Premium membership with credits
+                10, 1, 1,  # Free entries, disclaimers and rules accepted
+                1, 1, 100,  # Test account, looking for match, starting points
+                datetime.now().isoformat()
+            ))
+            
+            player_id = conn.lastrowid
+            created_accounts.append({
+                'id': player_id,
+                'username': username, 
+                'email': email,
+                'full_name': full_name,
+                'password': password
+            })
+        
+        conn.commit()
+        flash(f'Successfully created {len(created_accounts)} test accounts with full access!', 'success')
+        logging.info(f"Created {len(created_accounts)} bulk test accounts")
+        
+        # Display account details for the admin
+        account_details = []
+        for account in created_accounts[:10]:  # Show first 10 for reference
+            account_details.append(f"Username: {account['username']}, Password: testpass123")
+        
+        if account_details:
+            flash(f"Sample logins - {', '.join(account_details[:3])} (All use password: testpass123)", 'info')
+        
+    except Exception as e:
+        conn.rollback()
+        logging.error(f"Error creating bulk test accounts: {str(e)}")
+        flash(f'Error creating test accounts: {str(e)}', 'danger')
+    
+    conn.close()
+    return redirect(url_for('admin_players'))
 
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
