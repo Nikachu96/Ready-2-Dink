@@ -1495,7 +1495,16 @@ def index():
     
     # If user is already logged in, redirect to their dashboard
     if 'current_player_id' in session:
-        return redirect(url_for('player_home', player_id=session['current_player_id']))
+        player_id = session['current_player_id']
+        # Check if player still exists and has accepted disclaimers
+        conn = get_db_connection()
+        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+        conn.close()
+        
+        if player and player['disclaimers_accepted']:
+            return redirect(url_for('player_home', player_id=player_id))
+        elif player and not player['disclaimers_accepted']:
+            return redirect(url_for('show_disclaimers', player_id=player_id))
     
     # For new visitors, show the landing page (not redirect to register)
     return render_template('landing.html')
