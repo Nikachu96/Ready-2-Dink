@@ -1237,83 +1237,120 @@ def send_guardian_consent_email(guardian_email, player_name, player_id):
     try:
         consent_url = f"https://ready2dink.com/guardian-consent/{player_id}"
         
-        subject = f"🛡️ Ready 2 Dink - Guardian Consent Required for {player_name}"
+        subject = f"🛡️ Parental Consent Required - Ready 2 Dink Authorization for {player_name}"
         
         html_content = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; background: white;">
+            <!-- Header -->
             <div style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); padding: 20px; text-align: center;">
-                <h1 style="color: white; margin: 0;">Ready 2 Dink</h1>
-                <p style="color: white; margin: 5px 0;">Guardian Consent Required</p>
+                <h1 style="color: white; margin: 0; font-size: 24px;">Ready 2 Dink</h1>
+                <p style="color: white; margin: 5px 0; font-size: 16px;">Parental Consent Authorization Required</p>
             </div>
             
-            <div style="padding: 30px; background: #f8f9fa;">
-                <h2 style="color: #333;">Dear Parent/Guardian,</h2>
-                
-                <p>Your child, <strong>{player_name}</strong>, has attempted to register for Ready 2 Dink, our pickleball matchmaking platform.</p>
-                
-                <div style="background: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
-                    <h3 style="margin-top: 0; color: #856404;">🛡️ COPPA Compliance Required</h3>
-                    <p style="color: #856404; margin: 0;">
-                        Because your child is 13 years old or younger, federal law (Children's Online Privacy Protection Act) 
-                        requires us to obtain your explicit consent before creating their account and collecting any personal information.
+            <!-- Official Form Content -->
+            <div style="padding: 30px; background: white; border: 2px solid #3F567F;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h2 style="color: #333; margin: 0; font-size: 20px; font-weight: bold;">Parental Consent Authorization Form</h2>
+                    <h3 style="color: #333; margin: 5px 0; font-size: 16px;">For Children Under 13 – Ready 2 Dink</h3>
+                    <p style="color: #666; font-style: italic; margin: 15px 0;">
+                        In compliance with the Children's Online Privacy Protection Act (COPPA), parental consent is required 
+                        before a child under 13 can use Ready 2 Dink.
                     </p>
                 </div>
-                
-                <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #3F567F; margin: 20px 0;">
-                    <h3 style="margin-top: 0; color: #3F567F;">What information do we collect?</h3>
-                    <ul style="color: #333;">
-                        <li>Name and email address</li>
-                        <li>Physical address and location preferences</li>
-                        <li>Date of birth (for age verification)</li>
-                        <li>Skill level and sports preferences</li>
-                        <li>Optional profile photo</li>
-                    </ul>
+
+                <!-- Child Information Section -->
+                <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border-left: 4px solid #3F567F;">
+                    <h4 style="color: #3F567F; margin-top: 0;">Child Information</h4>
+                    <p style="margin: 10px 0;"><strong>Child's Full Name:</strong> {player_name}</p>
+                    <p style="margin: 10px 0;"><strong>Child's Date of Birth:</strong> [From Registration Form]</p>
                 </div>
-                
-                <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #10B981; margin: 20px 0;">
-                    <h3 style="margin-top: 0; color: #10B981;">How do we use this information?</h3>
-                    <ul style="color: #333;">
-                        <li>Match your child with other players of similar skill levels</li>
-                        <li>Provide tournament and event notifications</li>
-                        <li>Ensure safe and appropriate interactions</li>
-                        <li>Contact you regarding their account activity</li>
-                    </ul>
+
+                <!-- Parent/Guardian Information Section -->
+                <div style="margin: 30px 0; padding: 20px; background: #f0f8ff; border-left: 4px solid #0066cc;">
+                    <h4 style="color: #0066cc; margin-top: 0;">Parent/Guardian Information</h4>
+                    <p style="margin: 10px 0;"><strong>Parent/Guardian Full Name:</strong> [To be completed in form]</p>
+                    <p style="margin: 10px 0;"><strong>Relationship to Child:</strong> [To be completed in form]</p>
+                    <p style="margin: 10px 0;"><strong>Email Address:</strong> {guardian_email}</p>
+                    <p style="margin: 10px 0;"><strong>Phone Number:</strong> [To be completed in form]</p>
                 </div>
-                
-                <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; border-left: 4px solid #0066cc; margin: 20px 0;">
-                    <h3 style="margin-top: 0; color: #0066cc;">Your Rights as a Parent/Guardian</h3>
-                    <ul style="color: #333;">
-                        <li>Review all information collected about your child</li>
-                        <li>Request deletion of your child's personal information</li>
-                        <li>Refuse to allow further collection of information</li>
-                        <li>Revoke consent at any time</li>
+
+                <!-- Information We Collect Section -->
+                <div style="margin: 30px 0; padding: 20px; background: #fff3cd; border-left: 4px solid #ffc107;">
+                    <h4 style="color: #856404; margin-top: 0;">Information We Collect</h4>
+                    <p style="color: #856404;">By authorizing your child's account, you acknowledge that Ready 2 Dink will collect:</p>
+                    <ul style="color: #856404; margin: 15px 0;">
+                        <li>Profile photo (selfie)</li>
+                        <li>Date of birth</li>
+                        <li>Preferred play locations</li>
+                        <li>Match results, tournament participation, and skill ratings</li>
                     </ul>
+                    <p style="color: #856404; margin: 15px 0;"><strong>This information is used only to:</strong></p>
+                    <ul style="color: #856404; margin: 15px 0;">
+                        <li>Connect players by skill level and location</li>
+                        <li>Organize tournaments and track results</li>
+                        <li>Maintain a safe and fair community</li>
+                    </ul>
+                    <p style="color: #856404; font-weight: bold;">
+                        We do not sell or share your child's personal information with third parties for marketing.
+                    </p>
                 </div>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                    <h3 style="color: #333;">Ready to give consent?</h3>
+
+                <!-- Parent/Guardian Rights Section -->
+                <div style="margin: 30px 0; padding: 20px; background: #e7f3ff; border-left: 4px solid #007bff;">
+                    <h4 style="color: #007bff; margin-top: 0;">Parent/Guardian Rights</h4>
+                    <p style="color: #007bff;">As the parent/guardian, you have the right to:</p>
+                    <ul style="color: #007bff; margin: 15px 0;">
+                        <li>Review the information we collect from your child</li>
+                        <li>Request deletion of your child's data</li>
+                        <li>Withdraw consent and terminate your child's account at any time</li>
+                    </ul>
+                    <p style="color: #007bff;">
+                        Requests can be made by emailing <a href="mailto:support@ready2dink.com" style="color: #007bff;">support@ready2dink.com</a>
+                    </p>
+                </div>
+
+                <!-- Authorization Section -->
+                <div style="margin: 30px 0; padding: 20px; background: #d4edda; border-left: 4px solid #28a745;">
+                    <h4 style="color: #155724; margin-top: 0;">Authorization</h4>
+                    <p style="color: #155724; margin: 15px 0;">
+                        <strong>☐ I Consent</strong> – I authorize my child to create and use a Ready 2 Dink account.<br>
+                        <strong>☐ I Do Not Consent</strong> – I do not authorize account creation.
+                    </p>
+                </div>
+
+                <!-- Call to Action -->
+                <div style="text-align: center; margin: 40px 0; padding: 30px; background: #f8f9fa; border-radius: 8px;">
+                    <h3 style="color: #333; margin-bottom: 15px;">Complete Authorization Online</h3>
                     <p style="color: #666; margin: 15px 0;">
-                        Click the button below to review the full consent form and provide your authorization.
-                        Your child's account will remain pending until you complete this process.
+                        Click the button below to access the secure digital consent form and provide your authorization.
                     </p>
                     <a href="{consent_url}" 
-                       style="background: #3F567F; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 10px 0; font-weight: bold;">
-                        🛡️ Review & Provide Consent
+                       style="background: #3F567F; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 15px 0; font-weight: bold; font-size: 16px;">
+                        🛡️ Complete Consent Form
                     </a>
-                </div>
-                
-                <div style="background: #f8d7da; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545; margin: 20px 0;">
-                    <h4 style="margin-top: 0; color: #721c24;">⚠️ Important</h4>
-                    <p style="color: #721c24; margin: 0;">
-                        This consent form was sent because someone indicated they are 13 years old or younger when registering. 
-                        If this was submitted in error or you have concerns, please contact our support team immediately.
+                    <p style="color: #666; font-size: 14px; margin-top: 15px;">
+                        Your child's account will remain pending until you complete this authorization.
                     </p>
                 </div>
-                
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
-                    <p style="color: #666; font-size: 14px;">
-                        Questions? Contact us at <a href="mailto:support@ready2dink.com">support@ready2dink.com</a><br>
-                        Ready 2 Dink | Connecting Pickleball Players Safely
+
+                <!-- Important Notice -->
+                <div style="background: #f8d7da; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545; margin: 20px 0;">
+                    <h4 style="margin-top: 0; color: #721c24;">⚠️ Important</h4>
+                    <p style="color: #721c24; margin: 0; font-size: 14px;">
+                        This consent form was sent because someone indicated they are 13 years old or younger when registering. 
+                        If this was submitted in error or you have concerns, please contact our support team immediately at 
+                        <a href="mailto:support@ready2dink.com" style="color: #721c24;">support@ready2dink.com</a>
+                    </p>
+                </div>
+
+                <!-- Footer -->
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center;">
+                    <p style="color: #666; font-size: 14px; margin: 10px 0;">
+                        <strong>Questions?</strong> Contact us at <a href="mailto:support@ready2dink.com">support@ready2dink.com</a>
+                    </p>
+                    <p style="color: #666; font-size: 12px; margin: 5px 0;">
+                        Ready 2 Dink | Connecting Pickleball Players Safely<br>
+                        This form complies with the Children's Online Privacy Protection Act (COPPA)
                     </p>
                 </div>
             </div>
