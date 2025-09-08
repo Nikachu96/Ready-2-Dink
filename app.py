@@ -1232,8 +1232,113 @@ def send_contact_form_notification(name, email, subject, message, player_info=""
     """
     return send_admin_notification(email_subject, email_body)
 
+def send_guardian_consent_email(guardian_email, player_name, player_id):
+    """Send guardian consent form for COPPA compliance"""
+    try:
+        consent_url = f"https://ready2dink.com/guardian-consent/{player_id}"
+        
+        subject = f"🛡️ Ready 2 Dink - Guardian Consent Required for {player_name}"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); padding: 20px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Ready 2 Dink</h1>
+                <p style="color: white; margin: 5px 0;">Guardian Consent Required</p>
+            </div>
+            
+            <div style="padding: 30px; background: #f8f9fa;">
+                <h2 style="color: #333;">Dear Parent/Guardian,</h2>
+                
+                <p>Your child, <strong>{player_name}</strong>, has attempted to register for Ready 2 Dink, our pickleball matchmaking platform.</p>
+                
+                <div style="background: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #856404;">🛡️ COPPA Compliance Required</h3>
+                    <p style="color: #856404; margin: 0;">
+                        Because your child is 13 years old or younger, federal law (Children's Online Privacy Protection Act) 
+                        requires us to obtain your explicit consent before creating their account and collecting any personal information.
+                    </p>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #3F567F; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #3F567F;">What information do we collect?</h3>
+                    <ul style="color: #333;">
+                        <li>Name and email address</li>
+                        <li>Physical address and location preferences</li>
+                        <li>Date of birth (for age verification)</li>
+                        <li>Skill level and sports preferences</li>
+                        <li>Optional profile photo</li>
+                    </ul>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #10B981; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #10B981;">How do we use this information?</h3>
+                    <ul style="color: #333;">
+                        <li>Match your child with other players of similar skill levels</li>
+                        <li>Provide tournament and event notifications</li>
+                        <li>Ensure safe and appropriate interactions</li>
+                        <li>Contact you regarding their account activity</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; border-left: 4px solid #0066cc; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #0066cc;">Your Rights as a Parent/Guardian</h3>
+                    <ul style="color: #333;">
+                        <li>Review all information collected about your child</li>
+                        <li>Request deletion of your child's personal information</li>
+                        <li>Refuse to allow further collection of information</li>
+                        <li>Revoke consent at any time</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <h3 style="color: #333;">Ready to give consent?</h3>
+                    <p style="color: #666; margin: 15px 0;">
+                        Click the button below to review the full consent form and provide your authorization.
+                        Your child's account will remain pending until you complete this process.
+                    </p>
+                    <a href="{consent_url}" 
+                       style="background: #3F567F; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 10px 0; font-weight: bold;">
+                        🛡️ Review & Provide Consent
+                    </a>
+                </div>
+                
+                <div style="background: #f8d7da; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545; margin: 20px 0;">
+                    <h4 style="margin-top: 0; color: #721c24;">⚠️ Important</h4>
+                    <p style="color: #721c24; margin: 0;">
+                        This consent form was sent because someone indicated they are 13 years old or younger when registering. 
+                        If this was submitted in error or you have concerns, please contact our support team immediately.
+                    </p>
+                </div>
+                
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
+                    <p style="color: #666; font-size: 14px;">
+                        Questions? Contact us at <a href="mailto:support@ready2dink.com">support@ready2dink.com</a><br>
+                        Ready 2 Dink | Connecting Pickleball Players Safely
+                    </p>
+                </div>
+            </div>
+        </div>
+        """
+        
+        return send_email_notification(guardian_email, subject, html_content)
+        
+    except Exception as e:
+        logging.error(f"Failed to send guardian consent email: {e}")
+        return False
+
 def send_new_registration_notification(player_data):
     """Send notification when new player registers"""
+    guardian_status = ""
+    if player_data.get('guardian_email'):
+        guardian_status = f"""
+        <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h4 style="margin-top: 0; color: #856404;">🛡️ COPPA Compliance</h4>
+            <p style="color: #856404; margin: 0;"><strong>Guardian Email:</strong> {player_data['guardian_email']}</p>
+            <p style="color: #856404; margin: 0;"><strong>Account Status:</strong> {player_data['account_status'].upper()}</p>
+            <p style="color: #856404; margin: 0;"><em>Awaiting guardian consent for underage player</em></p>
+        </div>
+        """
+    
     email_subject = f"🎾 New Player Registration: {player_data['full_name']}"
     email_body = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -1255,6 +1360,8 @@ def send_new_registration_notification(player_data):
                 <p><strong>Date of Birth:</strong> {player_data['dob']}</p>
                 {f"<p><strong>Secondary Location:</strong> {player_data['location2']}</p>" if player_data.get('location2') else ''}
             </div>
+            
+            {guardian_status}
             
             <div style="margin-top: 30px; text-align: center;">
                 <p style="color: #666;">
@@ -1515,21 +1622,40 @@ def register():
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 selfie_filename = filename
         
+        # Check if guardian consent is required (COPPA compliance)
+        guardian_email = request.form.get('guardian_email', '').strip()
+        requires_consent = bool(guardian_email)
+        account_status = 'pending' if requires_consent else 'active'
+        
         try:
             logging.info(f"Attempting registration for: {request.form['full_name']} ({request.form['email']})")
+            
+            # Calculate age for logging
+            dob_str = request.form['dob']
+            try:
+                from datetime import datetime
+                dob_parts = dob_str.split('-')
+                birth_date = datetime(int(dob_parts[2]), int(dob_parts[0]), int(dob_parts[1]))
+                today = datetime.now()
+                age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                logging.info(f"Player age: {age}, Guardian consent required: {requires_consent}")
+            except:
+                logging.warning(f"Could not calculate age from DOB: {dob_str}")
+            
             conn = get_db_connection()
             cursor = conn.execute('''
                 INSERT INTO players 
                 (full_name, address, zip_code, city, state, dob, preferred_sport, 
                  preferred_court_1, preferred_court_2, court1_coordinates, court2_coordinates,
-                 skill_level, email, selfie)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 skill_level, email, selfie, guardian_email, account_status, guardian_consent_required)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
                   request.form['dob'], 'Pickleball',
                   request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
                   request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
-                  request.form['skill_level'], request.form['email'], selfie_filename))
+                  request.form['skill_level'], request.form['email'], selfie_filename,
+                  guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0))
             
             player_id = cursor.lastrowid
             conn.commit()
@@ -1540,11 +1666,13 @@ def register():
                 'full_name': request.form['full_name'],
                 'email': request.form['email'],
                 'skill_level': request.form['skill_level'],
-                'location1': request.form['location1'],
-                'location2': request.form.get('location2', ''),
-                'preferred_court': request.form['preferred_court'],
+                'location1': request.form.get('city', '') + ', ' + request.form.get('state', ''),
+                'location2': request.form.get('preferred_court_2', ''),
+                'preferred_court': request.form.get('preferred_court_1', ''),
                 'address': request.form['address'],
-                'dob': request.form['dob']
+                'dob': request.form['dob'],
+                'guardian_email': guardian_email,
+                'account_status': account_status
             }
             
             email_sent = send_new_registration_notification(player_data)
@@ -1554,7 +1682,18 @@ def register():
             else:
                 logging.warning(f"Failed to send email notification for new registration: {player_data['full_name']}")
             
-            flash('Registration successful! Please review and accept our terms and disclaimers to continue.', 'success')
+            # Send guardian consent email if required
+            if requires_consent and guardian_email:
+                consent_sent = send_guardian_consent_email(guardian_email, request.form['full_name'], player_id)
+                if consent_sent:
+                    logging.info(f"Guardian consent email sent to {guardian_email} for player {request.form['full_name']}")
+                    flash('Registration submitted! A consent form has been sent to your guardian for approval. Your account will be activated once they complete the authorization.', 'info')
+                else:
+                    logging.warning(f"Failed to send guardian consent email to {guardian_email}")
+                    flash('Registration successful, but we had trouble sending the guardian consent email. Please contact support.', 'warning')
+            else:
+                flash('Registration successful! Please review and accept our terms and disclaimers to continue.', 'success')
+            
             return redirect(url_for('show_disclaimers', player_id=player_id))
             
         except sqlite3.IntegrityError as e:
