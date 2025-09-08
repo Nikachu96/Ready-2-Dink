@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}NDA Required - Ready 2 Dink Beta{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="text-center mb-4">
+            <div class="card" style="background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%); color: white; border: none;">
+                <div class="card-body p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-shield-alt fa-4x" style="color: #E0563F;"></i>
+                    </div>
+                    <h2 class="fw-bold mb-3">Welcome to Ready 2 Dink Beta!</h2>
+                    <p class="lead mb-4">
+                        Before you can access our exclusive beta platform, you'll need to read and digitally sign our Non-Disclosure Agreement.
+                    </p>
+                    <p class="text-muted mb-4">
+                        This ensures the confidentiality of our beta features and helps protect our intellectual property during testing.
+                    </p>
+                    <button class="btn btn-lg fw-bold" onclick="showNDAModal()" 
+                            style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; color: white;">
+                        <i class="fas fa-file-contract me-2"></i>
+                        Review & Sign NDA
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Automatically show NDA modal when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Small delay to ensure page is fully loaded
+    setTimeout(() => {
+        showNDAModal();
+    }, 500);
+});
+</script>
+{% endblock %}

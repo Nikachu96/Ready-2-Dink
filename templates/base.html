@@ -421,6 +421,104 @@
         {% endwith %}
     </div>
 
+    <!-- NDA Modal -->
+    <div class="modal fade" id="ndaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content" style="background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%); color: white; border: none;">
+                <div class="modal-header border-bottom border-secondary">
+                    <h4 class="modal-title fw-bold">
+                        <i class="fas fa-shield-alt me-2" style="color: #E0563F;"></i>
+                        Non-Disclosure Agreement - Ready 2 Dink Beta Testing
+                    </h4>
+                </div>
+                <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                    <div class="alert alert-warning" style="background-color: rgba(224, 86, 63, 0.2); border-color: #E0563F; color: white;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Important:</strong> You must read and digitally sign this agreement to access the Ready 2 Dink beta platform.
+                    </div>
+                    
+                    <div class="nda-content">
+                        <h5 class="text-warning mb-3">CONFIDENTIALITY AND NON-DISCLOSURE AGREEMENT</h5>
+                        
+                        <p><strong>Effective Date:</strong> <span id="nda-date"></span></p>
+                        
+                        <p>This Non-Disclosure Agreement ("Agreement") is entered into between <strong>Ready 2 Dink</strong> ("Company") and the undersigned beta tester ("Recipient").</p>
+                        
+                        <h6 class="text-info mt-4 mb-2">1. CONFIDENTIAL INFORMATION</h6>
+                        <p>Recipient acknowledges that during beta testing, they will have access to confidential and proprietary information including but not limited to:</p>
+                        <ul>
+                            <li>Software features, functionality, and user interface designs</li>
+                            <li>Business strategies, marketing plans, and development roadmaps</li>
+                            <li>User data, analytics, and platform performance metrics</li>
+                            <li>Technical architecture, algorithms, and system specifications</li>
+                            <li>Any other non-public information related to Ready 2 Dink</li>
+                        </ul>
+                        
+                        <h6 class="text-info mt-4 mb-2">2. NON-DISCLOSURE OBLIGATIONS</h6>
+                        <p>Recipient agrees to:</p>
+                        <ul>
+                            <li><strong>Not disclose</strong> any confidential information to third parties</li>
+                            <li><strong>Not use</strong> confidential information for any purpose other than authorized testing</li>
+                            <li><strong>Protect</strong> confidential information with the same level of care used for their own confidential information</li>
+                            <li><strong>Not reverse engineer</strong> or attempt to extract source code or algorithms</li>
+                        </ul>
+                        
+                        <h6 class="text-info mt-4 mb-2">3. BETA TESTING RESPONSIBILITIES</h6>
+                        <p>As a beta tester, Recipient agrees to:</p>
+                        <ul>
+                            <li>Provide constructive feedback and report bugs through designated channels</li>
+                            <li>Use the platform for legitimate testing purposes only</li>
+                            <li>Not create fake accounts or manipulate the system</li>
+                            <li>Respect other beta testers and maintain a professional testing environment</li>
+                        </ul>
+                        
+                        <h6 class="text-info mt-4 mb-2">4. INTELLECTUAL PROPERTY</h6>
+                        <p>All intellectual property rights in the Ready 2 Dink platform remain with the Company. Recipient acknowledges they have no ownership rights in the platform or its content.</p>
+                        
+                        <h6 class="text-info mt-4 mb-2">5. TERM AND TERMINATION</h6>
+                        <p>This Agreement remains in effect until:</p>
+                        <ul>
+                            <li>The beta testing period concludes</li>
+                            <li>Recipient's access is terminated by the Company</li>
+                            <li>Ready 2 Dink launches publicly</li>
+                        </ul>
+                        <p>Confidentiality obligations survive termination for <strong>3 years</strong>.</p>
+                        
+                        <h6 class="text-info mt-4 mb-2">6. LEGAL COMPLIANCE</h6>
+                        <p>This Agreement is governed by applicable laws. Any violations may result in legal action and immediate termination of beta access.</p>
+                        
+                        <div class="alert alert-info mt-4" style="background-color: rgba(209, 116, 210, 0.2); border-color: #D174D2;">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Questions?</strong> Contact us at <a href="mailto:legal@ready2dink.com" class="text-white">legal@ready2dink.com</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-secondary">
+                    <div class="w-100">
+                        <div class="row align-items-end">
+                            <div class="col-md-8">
+                                <label for="nda-signature" class="form-label">
+                                    <i class="fas fa-signature me-1"></i>
+                                    Digital Signature (Type your full legal name):
+                                </label>
+                                <input type="text" class="form-control" id="nda-signature" 
+                                       placeholder="Enter your full legal name as digital signature"
+                                       style="background-color: rgba(255,255,255,0.1); border-color: #444; color: white;">
+                                <small class="text-muted">By typing your name, you agree to be legally bound by this agreement.</small>
+                            </div>
+                            <div class="col-md-4 text-end mt-3 mt-md-0">
+                                <button type="button" class="btn btn-lg fw-bold" id="sign-nda-btn" disabled
+                                        style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; color: white;">
+                                    <i class="fas fa-pen-nib me-2"></i>Sign & Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main class="container my-4">
         {% block content %}{% endblock %}
@@ -678,6 +776,110 @@
                 }, 4000); // 4 seconds
             });
         });
+    </script>
+    
+    <!-- NDA Modal JavaScript -->
+    <script>
+        // NDA Modal functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const ndaSignature = document.getElementById('nda-signature');
+            const signButton = document.getElementById('sign-nda-btn');
+            const ndaDateElement = document.getElementById('nda-date');
+            
+            // Set current date
+            if (ndaDateElement) {
+                ndaDateElement.textContent = new Date().toLocaleDateString();
+            }
+            
+            // Enable sign button when signature is entered
+            if (ndaSignature && signButton) {
+                ndaSignature.addEventListener('input', function() {
+                    const signature = this.value.trim();
+                    signButton.disabled = signature.length < 3;
+                    
+                    if (signature.length >= 3) {
+                        signButton.style.background = 'linear-gradient(45deg, #E0563F, #D174D2)';
+                    } else {
+                        signButton.style.background = '#666';
+                    }
+                });
+                
+                // Handle NDA signing
+                signButton.addEventListener('click', async function() {
+                    const signature = ndaSignature.value.trim();
+                    
+                    if (signature.length < 3) {
+                        alert('Please enter your full legal name to sign the agreement.');
+                        return;
+                    }
+                    
+                    try {
+                        signButton.disabled = true;
+                        signButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing...';
+                        
+                        const response = await fetch('/sign-nda', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                signature: signature
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            // Close modal and redirect
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('ndaModal'));
+                            modal.hide();
+                            
+                            // Show success message
+                            showSuccessMessage('✅ NDA signed successfully! Welcome to Ready 2 Dink Beta.');
+                            
+                            // Reload page to continue to app
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            throw new Error(result.message || 'Failed to sign NDA');
+                        }
+                    } catch (error) {
+                        console.error('NDA signing error:', error);
+                        alert('Error signing NDA: ' + error.message);
+                        
+                        // Reset button
+                        signButton.disabled = false;
+                        signButton.innerHTML = '<i class="fas fa-pen-nib me-2"></i>Sign & Continue';
+                    }
+                });
+            }
+        });
+        
+        // Show success message function
+        function showSuccessMessage(message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+        
+        // Function to show NDA modal (called from login redirect)
+        function showNDAModal() {
+            const modal = new bootstrap.Modal(document.getElementById('ndaModal'));
+            modal.show();
+        }
     </script>
     
     {% block scripts %}{% endblock %}

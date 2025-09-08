@@ -1574,8 +1574,23 @@ def player_login_post():
         
         # Login successful - set session
         session['current_player_id'] = player['id']
+        session['player_id'] = player['id']  # For consistency
         
         # flash(f'Welcome back, {player["full_name"]}!', 'success')
+        
+        # Check NDA acceptance for regular users
+        if not player['is_admin']:
+            # Check if NDA has been signed
+            nda_status = conn.execute('''
+                SELECT nda_accepted FROM players WHERE id = ?
+            ''', (player['id'],)).fetchone()
+            
+            if not nda_status or not nda_status['nda_accepted']:
+                # NDA not signed - redirect to NDA page
+                conn.close()
+                return redirect(url_for('nda_required'))
+        
+        conn.close()
         
         # Redirect to appropriate dashboard
         if player['is_admin']:
@@ -2256,6 +2271,63 @@ def unsubscribe_notifications():
     conn.close()
     
     return jsonify({'success': True, 'message': 'Notifications disabled successfully!'})
+
+@app.route('/sign-nda', methods=['POST'])
+def sign_nda():
+    """Handle NDA digital signature submission"""
+    try:
+        if 'player_id' not in session:
+            return jsonify({'success': False, 'message': 'Not logged in'})
+        
+        data = request.get_json()
+        signature = data.get('signature', '').strip()
+        
+        if len(signature) < 3:
+            return jsonify({'success': False, 'message': 'Signature must be at least 3 characters'})
+        
+        # Get client IP address for legal record
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        if client_ip:
+            client_ip = client_ip.split(',')[0].strip()
+        
+        # Record NDA acceptance in database
+        conn = get_db_connection()
+        conn.execute('''
+            UPDATE players 
+            SET nda_accepted = 1,
+                nda_accepted_date = datetime('now'),
+                nda_signature = ?,
+                nda_ip_address = ?
+            WHERE id = ?
+        ''', (signature, client_ip, session['player_id']))
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"NDA signed by player {session['player_id']} with signature '{signature}' from IP {client_ip}")
+        return jsonify({'success': True, 'message': 'NDA signed successfully!'})
+        
+    except Exception as e:
+        logging.error(f"Error in sign_nda: {e}")
+        return jsonify({'success': False, 'message': f'Server error: {str(e)}'})
+
+@app.route('/nda-required')
+def nda_required():
+    """Show NDA requirement page for users who haven't signed yet"""
+    if 'player_id' not in session:
+        return redirect(url_for('player_login'))
+    
+    # Check if already signed
+    conn = get_db_connection()
+    player = conn.execute('''
+        SELECT nda_accepted FROM players WHERE id = ?
+    ''', (session['player_id'],)).fetchone()
+    conn.close()
+    
+    if player and player['nda_accepted']:
+        # Already signed, redirect to home
+        return redirect(url_for('player_home', player_id=session['player_id']))
+    
+    return render_template('nda_required.html')
 
 @app.route('/toggle-notifications', methods=['POST'])
 def toggle_notifications():
