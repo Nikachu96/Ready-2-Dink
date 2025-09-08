@@ -1985,6 +1985,9 @@ async function toggleNotifications() {
     const toggle = document.getElementById('notificationToggle');
     const status = document.getElementById('notificationStatus');
     
+    // Update status text immediately when toggle changes
+    status.textContent = toggle.checked ? 'ON' : 'OFF';
+    
     try {
         const response = await fetch('/toggle-notifications', {
             method: 'POST',
@@ -1998,8 +2001,6 @@ async function toggleNotifications() {
         
         const result = await response.json();
         if (result.success) {
-            status.textContent = toggle.checked ? 'ON' : 'OFF';
-            
             // Show simple success message
             const message = toggle.checked ? 
                 '✅ Notifications enabled! You\'ll see updates here in your dashboard.' : 
@@ -2008,11 +2009,13 @@ async function toggleNotifications() {
         } else {
             // Revert toggle if failed
             toggle.checked = !toggle.checked;
+            status.textContent = toggle.checked ? 'ON' : 'OFF';
             showSimpleMessage('❌ Failed to update notification settings', 'error');
         }
     } catch (error) {
         // Revert toggle if failed
         toggle.checked = !toggle.checked;
+        status.textContent = toggle.checked ? 'ON' : 'OFF';
         showSimpleMessage('❌ Error updating notifications', 'error');
     }
 }
