@@ -181,9 +181,9 @@ def send_nda_confirmation_email(player_data, signature, nda_date, ip_address):
         </div>
         """
         
-        # Create the email
+        # Create the email with verified sender
         message = Mail(
-            from_email='noreply@ready2dink.com',
+            from_email='admin@ready2dink.com',  # Use verified sender
             to_emails=admin_email,
             subject=subject,
             html_content=html_content
