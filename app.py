@@ -2890,12 +2890,23 @@ def update_app_config():
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/find_match/<int:player_id>', methods=['POST'])
-@require_disclaimers_accepted
 def find_match(player_id):
     """API endpoint to find a match for a player"""
     try:
-        # Set player as looking for match
+        # Check if player exists and bypass disclaimers for test accounts
         conn = get_db_connection()
+        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+        
+        if not player:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Player not found'})
+            
+        # Skip disclaimer check for test accounts and admin
+        if not player['test_account'] and player['id'] != 1 and not player['disclaimers_accepted']:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Please accept disclaimers first', 'redirect': f'/show_disclaimers/{player_id}'})
+        
+        # Set player as looking for match
         conn.execute('UPDATE players SET is_looking_for_match = 1 WHERE id = ?', (player_id,))
         conn.commit()
         conn.close()
