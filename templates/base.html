@@ -403,7 +403,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show d-flex align-items-center" role="alert">
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show d-flex align-items-center auto-dismiss" role="alert">
                         {% if category == 'success' %}
                             <i class="fas fa-check-circle fa-2x me-3" style="color: white;"></i>
                         {% elif category == 'error' or category == 'danger' %}
@@ -655,6 +655,23 @@
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Auto-dismiss flash messages -->
+    <script>
+        // Auto-dismiss flash messages after 4 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert.auto-dismiss');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    // Only dismiss if the alert still exists and hasn't been manually closed
+                    if (alert.parentNode) {
+                        const bootstrapAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                        bootstrapAlert.close();
+                    }
+                }, 4000); // 4 seconds
+            });
+        });
+    </script>
     
     {% block scripts %}{% endblock %}
 </body>
