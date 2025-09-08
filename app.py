@@ -657,6 +657,39 @@ def init_db():
         )
     ''')
     
+    # Partner invitations table for doubles tournaments
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS partner_invitations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tournament_entry_id INTEGER NOT NULL,
+            inviter_id INTEGER NOT NULL,
+            invitee_id INTEGER NOT NULL,
+            tournament_name TEXT NOT NULL,
+            entry_fee REAL NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            responded_at TEXT,
+            FOREIGN KEY(tournament_entry_id) REFERENCES tournaments(id),
+            FOREIGN KEY(inviter_id) REFERENCES players(id),
+            FOREIGN KEY(invitee_id) REFERENCES players(id)
+        )
+    ''')
+    
+    # Notifications table for all app notifications
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            message TEXT NOT NULL,
+            data TEXT,
+            read_status INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(player_id) REFERENCES players(id)
+        )
+    ''')
+    
     # Create default tournament instances if none exist
     existing_tournaments = c.execute('SELECT COUNT(*) as count FROM tournament_instances').fetchone()[0]
     
