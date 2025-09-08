@@ -2288,6 +2288,46 @@ def ranking_info():
     """Ranking system information page"""
     return render_template('ranking_info.html')
 
+@app.route('/withdraw-from-tournament', methods=['POST'])
+def withdraw_from_tournament():
+    """Handle tournament withdrawal requests"""
+    tournament_id = request.form.get('tournament_id')
+    
+    if not tournament_id:
+        flash('Invalid tournament ID', 'danger')
+        return redirect(url_for('tournaments_overview'))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Get tournament details first
+        tournament = conn.execute('''
+            SELECT * FROM tournaments WHERE id = ?
+        ''', (tournament_id,)).fetchone()
+        
+        if not tournament:
+            flash('Tournament not found', 'danger')
+            return redirect(url_for('tournaments_overview'))
+        
+        # Check if current user owns this tournament entry
+        current_player_id = session.get('current_player_id')
+        if not current_player_id or tournament['player_id'] != current_player_id:
+            flash('You can only withdraw from your own tournaments', 'danger')
+            return redirect(url_for('tournaments_overview'))
+        
+        # Delete the tournament entry
+        conn.execute('DELETE FROM tournaments WHERE id = ?', (tournament_id,))
+        conn.commit()
+        
+        flash(f'Successfully withdrawn from {tournament["tournament_name"]}. Entry fees are non-refundable.', 'info')
+        
+    except Exception as e:
+        flash(f'Error withdrawing from tournament: {str(e)}', 'danger')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('tournaments_overview'))
+
 @app.route('/tournaments')
 def tournaments_overview():
     """Tournament overview page - requires login"""

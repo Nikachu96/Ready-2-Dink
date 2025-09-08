@@ -392,6 +392,7 @@
                                     <th class="text-white fw-bold">Sport</th>
                                     <th class="text-white fw-bold">Entry Date</th>
                                     <th class="text-white fw-bold">Status</th>
+                                    <th class="text-white fw-bold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -423,6 +424,19 @@
                                             <span class="badge bg-success">Completed</span>
                                         {% else %}
                                             <span class="badge bg-warning">Active</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if not entry.completed %}
+                                            <form method="POST" action="{{ url_for('withdraw_from_tournament') }}" class="d-inline" 
+                                                  onsubmit="return confirm('Are you sure you want to withdraw from this tournament? Entry fees are non-refundable.')">
+                                                <input type="hidden" name="tournament_id" value="{{ entry.id }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Withdraw from Tournament">
+                                                    <i class="fas fa-times me-1"></i>Withdraw
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <span class="text-muted small">-</span>
                                         {% endif %}
                                     </td>
                                 </tr>
