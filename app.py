@@ -5132,11 +5132,11 @@ def process_quick_tournament_payment():
             # Doubles tournament with partner invitation - inviter pays upfront
             partner = conn.execute('SELECT * FROM players WHERE id = ?', (partner_id,)).fetchone()
             if quick_join_data['free_entry_used']:
-                flash(f'FREE Ambassador entry used! Partner invitation sent to {partner["full_name"]}. They need to accept and pay their entry fee to confirm your doubles team.', 'success')
+                flash(f'FREE Ambassador entry used! Partner invitation sent to {partner["full_name"]}.', 'success')
             elif payment_method == 'credits' and remaining_payment == 0:
-                flash(f'Tournament entry paid with ${credits_used:.2f} in credits! Partner invitation sent to {partner["full_name"]}. They need to accept and pay ${entry_fee:.2f} to confirm your team. New credit balance: ${new_credit_balance:.2f}', 'success')
+                flash(f'Tournament entry paid with ${credits_used:.2f} in credits! Partner invitation sent to {partner["full_name"]}. New credit balance: ${new_credit_balance:.2f}', 'success')
             else:
-                flash(f'Tournament entry complete! Partner invitation sent to {partner["full_name"]}. They need to accept and pay ${entry_fee:.2f} to confirm your doubles team.', 'success')
+                flash(f'Tournament entry complete! Partner invitation sent to {partner["full_name"]}.', 'success')
             conn.close()
             return redirect(url_for('dashboard', player_id=player_id))
         elif payment_method == 'credits' and remaining_payment == 0:
