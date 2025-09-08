@@ -4396,9 +4396,15 @@ def create_test_player():
     password = request.form.get('password')
     switch_immediately = request.form.get('switch_immediately')
     
-    # Validate required fields
-    if not all([full_name, email, skill_level, location1, dob, address, username, password]):
-        flash('All fields including username and password are required', 'danger')
+    # Auto-generate email if not provided
+    if not email or email.strip() == '':
+        import time
+        timestamp = int(time.time())
+        email = f"{username}_{timestamp}@ready2dink.test"
+    
+    # Validate required fields (email is now optional and auto-generated)
+    if not all([full_name, skill_level, location1, dob, address, username, password]):
+        flash('All fields except email are required', 'danger')
         return redirect(url_for('admin_players'))
     
     conn = get_db_connection()
