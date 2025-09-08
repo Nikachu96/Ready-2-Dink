@@ -1158,15 +1158,8 @@ def find_match_for_player(player_id):
         conn.close()
         return None
     
-    # Find potential matches - handle NULL values properly
-    if player['preferred_sport'] is None:
-        sport_condition = "preferred_sport IS NULL"
-        sport_params = []
-    else:
-        sport_condition = "preferred_sport = ?"
-        sport_params = [player['preferred_sport']]
-    
-    # Handle court matching - if no preferred court, match by location
+    # Find potential matches - simplified for pickleball-only app
+    # Handle court matching - if no preferred court, match by location  
     if player['preferred_court']:
         location_condition = "(preferred_court = ? OR location1 = ? OR location2 = ?)"
         location_params = [player['preferred_court'], player['location1'], player['location2']]
@@ -1174,11 +1167,11 @@ def find_match_for_player(player_id):
         location_condition = "(location1 = ? OR location2 = ?)"
         location_params = [player['location1'], player['location2']]
     
+    # Simplified query since all players play Pickleball
     query = f'''
         SELECT * FROM players 
         WHERE id != ? 
         AND is_looking_for_match = 1
-        AND {sport_condition}
         AND skill_level = ?
         AND {location_condition}
         AND id NOT IN (
@@ -1194,7 +1187,7 @@ def find_match_for_player(player_id):
         LIMIT 1
     '''
     
-    params = [player_id] + sport_params + [player['skill_level']] + location_params + [player_id, player_id, player_id]
+    params = [player_id, player['skill_level']] + location_params + [player_id, player_id, player_id]
     potential_matches = conn.execute(query, params).fetchone()
     
     if potential_matches:
