@@ -1419,14 +1419,22 @@ def inject_user_context():
     current_player_id = session.get('current_player_id')
     is_admin = False
     
+    # Debug logging
+    logging.info(f"Context processor: current_player_id from session = {current_player_id}")
+    
     if current_player_id:
         conn = get_db_connection()
         player = conn.execute('SELECT is_admin FROM players WHERE id = ?', (current_player_id,)).fetchone()
         conn.close()
         if player:
             is_admin = bool(player['is_admin'])
+            logging.info(f"Context processor: Player found, is_admin = {is_admin}")
+        else:
+            logging.warning(f"Context processor: No player found with ID {current_player_id}")
     
-    return dict(current_user_is_admin=is_admin, current_player_id=current_player_id)
+    context = dict(current_user_is_admin=is_admin, current_player_id=current_player_id)
+    logging.info(f"Context processor: Returning context = {context}")
+    return context
 
 @app.route('/logout')
 def logout():
