@@ -127,9 +127,13 @@ def require_disclaimers_accepted(f):
         
         if player_id:
             conn = get_db_connection()
-            player = conn.execute('SELECT disclaimers_accepted FROM players WHERE id = ?', (player_id,)).fetchone()
+            player = conn.execute('SELECT disclaimers_accepted, test_account FROM players WHERE id = ?', (player_id,)).fetchone()
             conn.close()
             
+            # Skip validation for test accounts
+            if player and player['test_account']:
+                return f(*args, **kwargs)
+                
             if player and not player['disclaimers_accepted']:
                 flash('Please accept our terms and disclaimers to continue using Ready 2 Dink', 'warning')
                 return redirect(url_for('show_disclaimers', player_id=player_id))
@@ -241,6 +245,11 @@ def init_db():
         
     try:
         c.execute('ALTER TABLE players ADD COLUMN trial_end_date TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN test_account INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
         pass  # Column already exists
         
