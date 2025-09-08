@@ -445,8 +445,8 @@
                         <p>This Non-Disclosure Agreement ("Agreement") is entered into between <strong>Ready 2 Dink</strong> ("Company") and the undersigned beta tester ("Recipient").</p>
                         
                         <h6 class="text-white mt-4 mb-2" style="color: #fff !important; font-weight: bold;">1. CONFIDENTIAL INFORMATION</h6>
-                        <p>Recipient acknowledges that during beta testing, they will have access to confidential and proprietary information including but not limited to:</p>
-                        <ul>
+                        <p style="color: white;">Recipient acknowledges that during beta testing, they will have access to confidential and proprietary information including but not limited to:</p>
+                        <ul style="color: white;">
                             <li>Software features, functionality, and user interface designs</li>
                             <li>Business strategies, marketing plans, and development roadmaps</li>
                             <li>User data, analytics, and platform performance metrics</li>
@@ -455,8 +455,8 @@
                         </ul>
                         
                         <h6 class="text-white mt-4 mb-2" style="color: #fff !important; font-weight: bold;">2. NON-DISCLOSURE OBLIGATIONS</h6>
-                        <p>Recipient agrees to:</p>
-                        <ul>
+                        <p style="color: white;">Recipient agrees to:</p>
+                        <ul style="color: white;">
                             <li><strong>Not disclose</strong> any confidential information to third parties</li>
                             <li><strong>Not use</strong> confidential information for any purpose other than authorized testing</li>
                             <li><strong>Protect</strong> confidential information with the same level of care used for their own confidential information</li>
@@ -464,8 +464,8 @@
                         </ul>
                         
                         <h6 class="text-white mt-4 mb-2" style="color: #fff !important; font-weight: bold;">3. BETA TESTING RESPONSIBILITIES</h6>
-                        <p>As a beta tester, Recipient agrees to:</p>
-                        <ul>
+                        <p style="color: white;">As a beta tester, Recipient agrees to:</p>
+                        <ul style="color: white;">
                             <li>Provide constructive feedback and report bugs through designated channels</li>
                             <li>Use the platform for legitimate testing purposes only</li>
                             <li>Not create fake accounts or manipulate the system</li>
@@ -473,19 +473,19 @@
                         </ul>
                         
                         <h6 class="text-white mt-4 mb-2" style="color: #fff !important; font-weight: bold;">4. INTELLECTUAL PROPERTY</h6>
-                        <p>All intellectual property rights in the Ready 2 Dink platform remain with the Company. Recipient acknowledges they have no ownership rights in the platform or its content.</p>
+                        <p style="color: white;">All intellectual property rights in the Ready 2 Dink platform remain with the Company. Recipient acknowledges they have no ownership rights in the platform or its content.</p>
                         
                         <h6 class="text-white mt-4 mb-2" style="color: #fff !important; font-weight: bold;">5. TERM AND TERMINATION</h6>
-                        <p>This Agreement remains in effect until:</p>
-                        <ul>
+                        <p style="color: white;">This Agreement remains in effect until:</p>
+                        <ul style="color: white;">
                             <li>The beta testing period concludes</li>
                             <li>Recipient's access is terminated by the Company</li>
                             <li>Ready 2 Dink launches publicly</li>
                         </ul>
-                        <p>Confidentiality obligations survive termination for <strong>3 years</strong>.</p>
+                        <p style="color: white;">Confidentiality obligations survive termination for <strong>3 years</strong>.</p>
                         
                         <h6 class="text-white mt-4 mb-2" style="color: #fff !important; font-weight: bold;">6. LEGAL COMPLIANCE</h6>
-                        <p>This Agreement is governed by applicable laws. Any violations may result in legal action and immediate termination of beta access.</p>
+                        <p style="color: white;">This Agreement is governed by applicable laws. Any violations may result in legal action and immediate termination of beta access.</p>
                         
                         <div class="alert alert-info mt-4" style="background-color: rgba(209, 116, 210, 0.2); border-color: #D174D2;">
                             <i class="fas fa-info-circle me-2"></i>
@@ -837,10 +837,10 @@
                             // Show success message
                             showSuccessMessage('✅ NDA signed successfully! Welcome to Ready 2 Dink Beta.');
                             
-                            // Reload page to continue to app
+                            // Reload page to continue to app  
                             setTimeout(() => {
                                 window.location.reload();
-                            }, 1500);
+                            }, 3000);
                         } else {
                             throw new Error(result.message || 'Failed to sign NDA');
                         }
