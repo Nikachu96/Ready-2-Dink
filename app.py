@@ -2516,7 +2516,7 @@ def tournament_entry(player_id):
                 return redirect(url_for('tournament_entry', player_id=player_id))
             
             entry_date = datetime.now()
-            match_deadline = entry_date + timedelta(days=14)  # 2 weeks for tournaments
+            match_deadline = entry_date + timedelta(days=30)  # 1 month for tournaments
             
             # Update free entries count if used
             if free_entry_used:
