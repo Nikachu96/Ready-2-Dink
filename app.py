@@ -1158,14 +1158,29 @@ def find_match_for_player(player_id):
         conn.close()
         return None
     
-    # Find potential matches
-    potential_matches = conn.execute('''
+    # Find potential matches - handle NULL values properly
+    if player['preferred_sport'] is None:
+        sport_condition = "preferred_sport IS NULL"
+        sport_params = []
+    else:
+        sport_condition = "preferred_sport = ?"
+        sport_params = [player['preferred_sport']]
+    
+    # Handle court matching - if no preferred court, match by location
+    if player['preferred_court']:
+        location_condition = "(preferred_court = ? OR location1 = ? OR location2 = ?)"
+        location_params = [player['preferred_court'], player['location1'], player['location2']]
+    else:
+        location_condition = "(location1 = ? OR location2 = ?)"
+        location_params = [player['location1'], player['location2']]
+    
+    query = f'''
         SELECT * FROM players 
         WHERE id != ? 
         AND is_looking_for_match = 1
-        AND preferred_sport = ?
+        AND {sport_condition}
         AND skill_level = ?
-        AND (preferred_court = ? OR location1 = ? OR location2 = ?)
+        AND {location_condition}
         AND id NOT IN (
             SELECT CASE 
                 WHEN player1_id = ? THEN player2_id 
@@ -1177,9 +1192,10 @@ def find_match_for_player(player_id):
         )
         ORDER BY created_at ASC
         LIMIT 1
-    ''', (player_id, player['preferred_sport'], player['skill_level'], 
-          player['preferred_court'], player['location1'], player['location2'],
-          player_id, player_id, player_id)).fetchone()
+    '''
+    
+    params = [player_id] + sport_params + [player['skill_level']] + location_params + [player_id, player_id, player_id]
+    potential_matches = conn.execute(query, params).fetchone()
     
     if potential_matches:
         # Create a match
