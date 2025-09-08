@@ -1755,6 +1755,98 @@ def accept_disclaimers():
         flash(f'Error accepting disclaimers: {str(e)}', 'danger')
         return redirect(url_for('show_disclaimers', player_id=player_id))
 
+@app.route('/guardian-consent/<int:player_id>')
+def guardian_consent_form(player_id):
+    """Display guardian consent form for COPPA compliance"""
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    conn.close()
+    
+    if not player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('index'))
+    
+    if not player['guardian_consent_required']:
+        flash('Guardian consent is not required for this player', 'info')
+        return redirect(url_for('index'))
+    
+    if player['account_status'] == 'active':
+        flash('This player has already been activated', 'success')
+        return redirect(url_for('index'))
+    
+    return render_template('guardian_consent.html', player=player)
+
+@app.route('/guardian-consent/<int:player_id>/submit', methods=['POST'])
+def submit_guardian_consent(player_id):
+    """Process guardian consent form submission"""
+    consent_given = request.form.get('consent_given')
+    guardian_name = request.form.get('guardian_name', '').strip()
+    
+    if not consent_given or not guardian_name:
+        flash('All fields are required to provide consent', 'danger')
+        return redirect(url_for('guardian_consent_form', player_id=player_id))
+    
+    try:
+        from datetime import datetime
+        consent_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        conn = get_db_connection()
+        conn.execute('''
+            UPDATE players 
+            SET account_status = 'active', 
+                guardian_consent_date = ?,
+                disclaimers_accepted = 1
+            WHERE id = ?
+        ''', (consent_date, player_id))
+        conn.commit()
+        
+        # Get player details for notification
+        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+        conn.close()
+        
+        if player:
+            # Send activation notification email to player
+            activation_subject = "🎉 Ready 2 Dink Account Activated!"
+            activation_body = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">Ready 2 Dink</h1>
+                    <p style="color: white; margin: 5px 0;">Account Activated!</p>
+                </div>
+                
+                <div style="padding: 30px; background: #f8f9fa;">
+                    <h2 style="color: #333;">Great news, {player['full_name']}!</h2>
+                    
+                    <p>Your guardian has provided consent and your Ready 2 Dink account is now <strong>ACTIVE</strong>!</p>
+                    
+                    <div style="background: #d4edda; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #155724;">🎉 Welcome to Ready 2 Dink!</h3>
+                        <p style="color: #155724; margin: 0;">
+                            You can now start matching with other pickleball players, join tournaments, and enjoy all the features of our platform.
+                        </p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://ready2dink.com/player_home/{player['id']}" 
+                           style="background: #10B981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+                            🎾 Start Playing!
+                        </a>
+                    </div>
+                </div>
+            </div>
+            """
+            
+            send_email_notification(player['email'], activation_subject, activation_body)
+            logging.info(f"Guardian consent provided for player {player_id}. Account activated.")
+        
+        flash(f'Thank you for providing consent! {player["full_name"]}\'s account has been activated and they can now use Ready 2 Dink.', 'success')
+        return render_template('guardian_consent_success.html', player=player, guardian_name=guardian_name)
+        
+    except Exception as e:
+        logging.error(f"Error processing guardian consent for player {player_id}: {str(e)}")
+        flash(f'Error processing consent: {str(e)}', 'danger')
+        return redirect(url_for('guardian_consent_form', player_id=player_id))
+
 @app.route('/tournament-rules/<int:player_id>')
 def show_tournament_rules(player_id):
     """Show tournament rules page before tournament entry"""
