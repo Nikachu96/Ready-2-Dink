@@ -73,7 +73,7 @@ def send_admin_credentials_email(full_name, email, username, password, login_url
         """
         
         message = Mail(
-            from_email='lucien255@gmail.com',
+            from_email='admin@ready2dink.com',
             to_emails=email,
             subject=subject,
             html_content=html_content
@@ -100,7 +100,7 @@ def send_nda_confirmation_email(player_data, signature, nda_date, ip_address):
             logging.error("SendGrid API key not found")
             return False
         
-        # Admin email - you can change this to your preferred email
+        # Admin email - using verified address
         admin_email = "admin@ready2dink.com"
         
         subject = f"NDA Signed: {player_data['full_name']} - Ready 2 Dink Beta"
@@ -1373,7 +1373,7 @@ def send_email_notification(to_email, subject, message_body, from_email=None):
         
         # Use environment variable for from email, with fallback to verified sender
         if not from_email:
-            from_email = os.environ.get('FROM_EMAIL', 'lucien255@gmail.com')
+            from_email = os.environ.get('FROM_EMAIL', 'admin@ready2dink.com')
         
         # If domain isn't verified yet, use a test approach
         # We'll temporarily use a verified test pattern
@@ -1738,8 +1738,8 @@ def index():
             return redirect(url_for('show_disclaimers', player_id=player_id))
         
         # Then check NDA for non-admin users
-        if player and not player.get('is_admin', False):
-            if not player.get('nda_accepted', 0):
+        if player and not player['is_admin']:
+            if not player['nda_accepted']:
                 return redirect(url_for('nda_required'))
         
         # All checks passed, redirect to home
