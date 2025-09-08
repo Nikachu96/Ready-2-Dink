@@ -5078,8 +5078,11 @@ def process_quick_tournament_payment():
         if quick_join_data['free_entry_used']:
             conn.execute('UPDATE players SET free_tournament_entries = free_tournament_entries - 1 WHERE id = ?', (player_id,))
         
-        # Determine payment status
-        if payment_method == 'credits' and remaining_payment == 0:
+        # Determine payment status based on doubles partnership
+        partner_id = quick_join_data.get('partner_id')
+        if quick_join_data['tournament_type'] == 'doubles' and partner_id:
+            payment_status = 'pending_partner'  # Waiting for partner acceptance
+        elif payment_method == 'credits' and remaining_payment == 0:
             payment_status = 'completed'
         elif payment_method == 'credits' and remaining_payment > 0:
             payment_status = 'pending_payment'
@@ -5094,13 +5097,47 @@ def process_quick_tournament_payment():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (player_id, quick_join_data['tournament_instance_id'], tournament_instance['name'], tournament_instance['skill_level'], quick_join_data['tournament_type'], entry_fee, 'Pickleball', entry_date.strftime('%Y-%m-%d'), match_deadline.strftime('%Y-%m-%d'), payment_status))
         
+        # Get the tournament entry ID for partner invitation
+        tournament_entry_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+        
+        # Handle doubles partner invitation
+        if quick_join_data['tournament_type'] == 'doubles' and partner_id:
+            # Create partner invitation record
+            conn.execute('''
+                INSERT INTO partner_invitations 
+                (tournament_entry_id, inviter_id, invitee_id, tournament_name, entry_fee, status, created_at)
+                VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))
+            ''', (tournament_entry_id, player_id, partner_id, tournament_instance['name'], entry_fee))
+            
+            # Send notification to partner
+            partner = conn.execute('SELECT * FROM players WHERE id = ?', (partner_id,)).fetchone()
+            message = f"{player['full_name']} has invited you to play doubles in {tournament_instance['name']}! Entry fee: ${entry_fee}. Check your invitations to accept."
+            
+            # Create notification record
+            conn.execute('''
+                INSERT INTO notifications (player_id, type, title, message, data)
+                VALUES (?, 'partner_invitation', 'Doubles Tournament Invitation', ?, ?)
+            ''', (partner_id, message, str({'tournament_entry_id': tournament_entry_id, 'inviter_id': player_id})))
+            
+            # Send push notification
+            send_push_notification(partner_id, message, "Doubles Tournament Invitation")
+        
         conn.commit()
         
         # Clear session data
         session.pop('quick_join_data', None)
         
         # Show success message and redirect based on payment status
-        if payment_method == 'credits' and remaining_payment == 0:
+        if quick_join_data['tournament_type'] == 'doubles' and partner_id:
+            # Doubles tournament with partner invitation
+            partner = conn.execute('SELECT * FROM players WHERE id = ?', (partner_id,)).fetchone()
+            if quick_join_data['free_entry_used']:
+                flash(f'FREE Ambassador entry used! Partner invitation sent to {partner["full_name"]}. They need to accept to confirm your doubles team.', 'success')
+            else:
+                flash(f'Tournament entry submitted! Partner invitation sent to {partner["full_name"]}. They need to accept and pay their fee to confirm your doubles team.', 'success')
+            conn.close()
+            return redirect(url_for('dashboard', player_id=player_id))
+        elif payment_method == 'credits' and remaining_payment == 0:
             flash(f'Tournament entry paid with ${credits_used:.2f} in credits! New credit balance: ${new_credit_balance:.2f}', 'success')
             conn.close()
             return redirect(url_for('dashboard', player_id=player_id))
