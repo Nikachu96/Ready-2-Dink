@@ -5664,6 +5664,27 @@ def membership_payment_page(membership_type):
         flash('Invalid membership type.', 'warning')
         return redirect(url_for('dashboard', player_id=session['player_id']))
     
+    # Check if this is a test account - bypass payment and grant membership directly
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (session['player_id'],)).fetchone()
+    
+    if player and player['test_account']:
+        # Grant test accounts immediate access without payment
+        conn.execute('''
+            UPDATE players 
+            SET membership_type = ?, 
+                subscription_status = 'active'
+            WHERE id = ?
+        ''', (membership_type, session['player_id']))
+        conn.commit()
+        conn.close()
+        
+        membership_display = membership_type.replace("_", " ").title()
+        flash(f'Test account granted {membership_display} membership access!', 'success')
+        return redirect(url_for('player_home', player_id=session['player_id']))
+    
+    conn.close()
+    
     # Store membership data in session
     session['membership_data'] = {
         'membership_type': membership_type,
@@ -5682,6 +5703,19 @@ def create_subscription_checkout():
     """Create Stripe subscription checkout session"""
     if 'player_id' not in session:
         return jsonify({'error': 'Not logged in'}), 401
+    
+    # Check for test account and bypass payment
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (session['player_id'],)).fetchone()
+    
+    if player and player['test_account']:
+        # Test accounts should have already been handled in membership_payment_page
+        # But if they somehow get here, redirect them back to dashboard
+        conn.close()
+        flash('Test account access already granted!', 'info')
+        return redirect(url_for('player_home', player_id=session['player_id']))
+    
+    conn.close()
     
     membership_data = session.get('membership_data')
     if not membership_data:
