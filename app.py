@@ -1932,15 +1932,15 @@ def register():
                 INSERT INTO players 
                 (full_name, address, zip_code, city, state, dob, preferred_sport, 
                  preferred_court_1, preferred_court_2, court1_coordinates, court2_coordinates,
-                 skill_level, email, selfie, guardian_email, account_status, guardian_consent_required)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 skill_level, email, selfie, guardian_email, account_status, guardian_consent_required, test_account)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
                   request.form['dob'], 'Pickleball',
                   request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
                   request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
                   request.form['skill_level'], request.form['email'], selfie_filename,
-                  guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0))
+                  guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 1))
             
             player_id = cursor.lastrowid
             conn.commit()
