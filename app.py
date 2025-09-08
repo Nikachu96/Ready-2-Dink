@@ -1554,7 +1554,7 @@ def player_login_post():
         # Login successful - set session
         session['current_player_id'] = player['id']
         
-        flash(f'Welcome back, {player["full_name"]}!', 'success')
+        # flash(f'Welcome back, {player["full_name"]}!', 'success')
         
         # Redirect to appropriate dashboard
         if player['is_admin']:
