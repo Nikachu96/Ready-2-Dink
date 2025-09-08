@@ -61,23 +61,23 @@
             <div class="card-body">
                 {% if recent_tournaments %}
                     <div class="table-responsive">
-                        <table class="table table-striped">
+                        <table class="table table-dark table-hover">
                             <thead>
                                 <tr>
-                                    <th>Tournament</th>
-                                    <th>Player</th>
-                                    <th>Entry Date</th>
-                                    <th>Deadline</th>
-                                    <th>Status</th>
+                                    <th class="text-white">Tournament</th>
+                                    <th class="text-white">Player</th>
+                                    <th class="text-white">Entry Date</th>
+                                    <th class="text-white">Deadline</th>
+                                    <th class="text-white">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for tournament in recent_tournaments %}
                                 <tr>
-                                    <td>{{ tournament.tournament_name }}</td>
-                                    <td>{{ tournament.full_name }}</td>
-                                    <td>{{ tournament.entry_date }}</td>
-                                    <td>{{ tournament.match_deadline }}</td>
+                                    <td class="text-white">{{ tournament.tournament_name }}</td>
+                                    <td class="text-white">{{ tournament.full_name }}</td>
+                                    <td class="text-white">{{ tournament.entry_date }}</td>
+                                    <td class="text-white">{{ tournament.match_deadline }}</td>
                                     <td>
                                         {% if tournament.completed %}
                                             <span class="badge bg-success">Completed</span>
