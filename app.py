@@ -1201,10 +1201,13 @@ def find_match_for_player(player_id):
         # Create a match
         match_court = player['preferred_court'] if potential_matches['preferred_court'] == player['preferred_court'] else player['preferred_court']
         
+        # Set default sport to Pickleball if preferred_sport is NULL
+        match_sport = player['preferred_sport'] if player['preferred_sport'] else 'Pickleball'
+        
         cursor = conn.execute('''
             INSERT INTO matches (player1_id, player2_id, sport, court_location, status)
             VALUES (?, ?, ?, ?, 'pending')
-        ''', (player_id, potential_matches['id'], player['preferred_sport'], match_court))
+        ''', (player_id, potential_matches['id'], match_sport, match_court))
         
         match_id = cursor.lastrowid
         
