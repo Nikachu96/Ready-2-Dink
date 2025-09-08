@@ -135,12 +135,12 @@
                     </div>
                     
                     {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
-                        <button onclick="findNewMatch({{ player.id }})" class="btn btn-lg px-5 py-3 shadow-lg text-white" style="background: linear-gradient(45deg, #3F567F, #D174D2); border: none;" style="font-size: 1.2rem; border-radius: 50px; font-weight: 600; letter-spacing: 0.5px; transform: scale(1); transition: all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <button onclick="findNewMatch({{ player.id }})" class="btn btn-lg px-5 py-3 shadow-lg text-white hover-scale" style="background: linear-gradient(45deg, #3F567F, #D174D2); border: none; font-size: 1.2rem; border-radius: 50px; font-weight: 600; letter-spacing: 0.5px; transition: all 0.3s ease;">
                             <i class="fas fa-search me-3"></i>Find My Match
                             <div class="small mt-1 opacity-75">Connect with players near you</div>
                         </button>
                     {% else %}
-                        <button onclick="showMembershipModal('discovery')" class="btn btn-lg px-5 py-3 shadow-lg text-white" style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; font-size: 1.2rem; border-radius: 50px; font-weight: 600; letter-spacing: 0.5px; transform: scale(1); transition: all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <button onclick="showMembershipModal('discovery')" class="btn btn-lg px-5 py-3 shadow-lg text-white hover-scale" style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; font-size: 1.2rem; border-radius: 50px; font-weight: 600; letter-spacing: 0.5px; transition: all 0.3s ease;">
                             <i class="fas fa-unlock me-3"></i>Unlock Matchmaking
                             <div class="small mt-1 opacity-75">Upgrade to find opponents</div>
                         </button>
@@ -1958,6 +1958,15 @@ function showCourtLocation(courtName, type) {
         transform: scale(0.8);
         opacity: 0.8;
     }
+}
+
+.hover-scale {
+    transform: scale(1);
+    transition: all 0.3s ease;
+}
+
+.hover-scale:hover {
+    transform: scale(1.05) !important;
 }
 </style>
 {% endblock %}
