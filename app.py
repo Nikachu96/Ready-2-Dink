@@ -1884,6 +1884,11 @@ def submit_guardian_consent(player_id):
         flash(f'Error processing consent: {str(e)}', 'danger')
         return redirect(url_for('guardian_consent_form', player_id=player_id))
 
+@app.route('/qa')
+def qa():
+    """Q&A help page"""
+    return render_template('qa.html')
+
 @app.route('/tournament-rules/<int:player_id>')
 def show_tournament_rules(player_id):
     """Show tournament rules page before tournament entry"""

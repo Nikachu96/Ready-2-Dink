@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}Q&A - Help & Support - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+                <h4 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-question-circle me-2"></i>Questions & Answers
+                </h4>
+                <p class="mb-0 opacity-90">Get answers to frequently asked questions about Ready 2 Dink</p>
+            </div>
+            <div class="card-body">
+                <!-- Quick Navigation -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="mb-3"><i class="fas fa-compass me-2"></i>Quick Navigation</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="#profile-account" class="btn btn-outline-primary btn-sm">Profile & Account</a>
+                                    <a href="#match-gameplay" class="btn btn-outline-primary btn-sm">Match & Gameplay</a>
+                                    <a href="#tournaments" class="btn btn-outline-primary btn-sm">Tournaments</a>
+                                    <a href="#technical" class="btn btn-outline-primary btn-sm">Technical Support</a>
+                                    <a href="#safety" class="btn btn-outline-primary btn-sm">Safety & Meeting</a>
+                                    <a href="#ranking" class="btn btn-outline-primary btn-sm">Ranking & Points</a>
+                                    <a href="#ambassador" class="btn btn-outline-primary btn-sm">Ambassador Program</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile & Account Section -->
+                <div id="profile-account" class="mb-5">
+                    <div class="card" style="border-left: 4px solid #3F567F;">
+                        <div class="card-header bg-primary bg-opacity-10">
+                            <h5 class="mb-0"><i class="fas fa-user-cog me-2"></i>Profile & Account</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="profileAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#profile1">
+                                            How do I update my skill level as I improve?
+                                        </button>
+                                    </h2>
+                                    <div id="profile1" class="accordion-collapse collapse" data-bs-parent="#profileAccordion">
+                                        <div class="accordion-body">
+                                            You can update your profile under "Profile settings"
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#profile2">
+                                            Can I change my profile photo?
+                                        </button>
+                                    </h2>
+                                    <div id="profile2" class="accordion-collapse collapse" data-bs-parent="#profileAccordion">
+                                        <div class="accordion-body">
+                                            You can update your profile under "Profile settings"
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#profile3">
+                                            How do I delete my account?
+                                        </button>
+                                    </h2>
+                                    <div id="profile3" class="accordion-collapse collapse" data-bs-parent="#profileAccordion">
+                                        <div class="accordion-body">
+                                            In your profile settings
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#profile4">
+                                            What if I forget my password?
+                                        </button>
+                                    </h2>
+                                    <div id="profile4" class="accordion-collapse collapse" data-bs-parent="#profileAccordion">
+                                        <div class="accordion-body">
+                                            You can reset your password in you profile settings
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Match & Gameplay Section -->
+                <div id="match-gameplay" class="mb-5">
+                    <div class="card" style="border-left: 4px solid #28a745;">
+                        <div class="card-header bg-success bg-opacity-10">
+                            <h5 class="mb-0"><i class="fas fa-tennis-ball me-2"></i>Match & Gameplay Issues</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="matchAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#match1">
+                                            What if my opponent doesn't show up?
+                                        </button>
+                                    </h2>
+                                    <div id="match1" class="accordion-collapse collapse" data-bs-parent="#matchAccordion">
+                                        <div class="accordion-body">
+                                            If your opponent doesn't show, they forfeit the match, you can record the forfeit in your score card, you will get your ranking points
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#match2">
+                                            How do I handle disputes about scores?
+                                        </button>
+                                    </h2>
+                                    <div id="match2" class="accordion-collapse collapse" data-bs-parent="#matchAccordion">
+                                        <div class="accordion-body">
+                                            This is something you will have to handle yourself, maybe reply the match on another day and ask a friend to be the referee.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#match3">
+                                            What's the etiquette for messaging opponents?
+                                        </button>
+                                    </h2>
+                                    <div id="match3" class="accordion-collapse collapse" data-bs-parent="#matchAccordion">
+                                        <div class="accordion-body">
+                                            You can message your opponents to discuss game times and locations or whatever you would like.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#match4">
+                                            Can I report inappropriate behavior?
+                                        </button>
+                                    </h2>
+                                    <div id="match4" class="accordion-collapse collapse" data-bs-parent="#matchAccordion">
+                                        <div class="accordion-body">
+                                            Yes, any inappropriate behavior will be investigated
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#match5">
+                                            What should I bring to matches?
+                                        </button>
+                                    </h2>
+                                    <div id="match5" class="accordion-collapse collapse" data-bs-parent="#matchAccordion">
+                                        <div class="accordion-body">
+                                            Your equipment, your hydration product of choice and your will to win!
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tournament Questions Section -->
+                <div id="tournaments" class="mb-5">
+                    <div class="card" style="border-left: 4px solid #ffc107;">
+                        <div class="card-header bg-warning bg-opacity-10">
+                            <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Tournament Questions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="tournamentAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tournament1">
+                                            How exactly do tournaments work? (format, timing, brackets)
+                                        </button>
+                                    </h2>
+                                    <div id="tournament1" class="accordion-collapse collapse" data-bs-parent="#tournamentAccordion">
+                                        <div class="accordion-body">
+                                            <ul class="mb-0">
+                                                <li><strong>Format:</strong> Best of 3 sets</li>
+                                                <li><strong>Timing:</strong> You have a week to complete your match and record your score</li>
+                                                <li><strong>Brackets:</strong> Brackets will be shown when tournaments is full</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tournament2">
+                                            What do the skill levels mean specifically?
+                                        </button>
+                                    </h2>
+                                    <div id="tournament2" class="accordion-collapse collapse" data-bs-parent="#tournamentAccordion">
+                                        <div class="accordion-body">
+                                            Definitions Of Player Skill Ratings | USA Pickleball
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tournament3">
+                                            Can I get tournament refunds if I can't play?
+                                        </button>
+                                    </h2>
+                                    <div id="tournament3" class="accordion-collapse collapse" data-bs-parent="#tournamentAccordion">
+                                        <div class="accordion-body">
+                                            If you can't play for an important reason like medical reason, we will offer a credit for a future tournament
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tournament4">
+                                            When do tournaments actually start after I enter?
+                                        </button>
+                                    </h2>
+                                    <div id="tournament4" class="accordion-collapse collapse" data-bs-parent="#tournamentAccordion">
+                                        <div class="accordion-body">
+                                            When all the spots are full, players get a message to alert them
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tournament5">
+                                            How are prizes distributed in custom tournaments?
+                                        </button>
+                                    </h2>
+                                    <div id="tournament5" class="accordion-collapse collapse" data-bs-parent="#tournamentAccordion">
+                                        <div class="accordion-body">
+                                            Prizes are distributed via, Venmo, Zelle or PayPal, NOT CASH IS HANDED OUT
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technical Support Section -->
+                <div id="technical" class="mb-5">
+                    <div class="card" style="border-left: 4px solid #dc3545;">
+                        <div class="card-header bg-danger bg-opacity-10">
+                            <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Technical Support</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="technicalAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tech1">
+                                            App won't load/crashes
+                                        </button>
+                                    </h2>
+                                    <div id="tech1" class="accordion-collapse collapse" data-bs-parent="#technicalAccordion">
+                                        <div class="accordion-body">
+                                            Use the contact form
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tech2">
+                                            Not receiving notifications
+                                        </button>
+                                    </h2>
+                                    <div id="tech2" class="accordion-collapse collapse" data-bs-parent="#technicalAccordion">
+                                        <div class="accordion-body">
+                                            Use the contact form
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tech3">
+                                            Can't find other players in my area
+                                        </button>
+                                    </h2>
+                                    <div id="tech3" class="accordion-collapse collapse" data-bs-parent="#technicalAccordion">
+                                        <div class="accordion-body">
+                                            Use the contact form
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tech4">
+                                            Match results not saving properly
+                                        </button>
+                                    </h2>
+                                    <div id="tech4" class="accordion-collapse collapse" data-bs-parent="#technicalAccordion">
+                                        <div class="accordion-body">
+                                            Use the contact form
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Safety & Meeting People Section -->
+                <div id="safety" class="mb-5">
+                    <div class="card" style="border-left: 4px solid #17a2b8;">
+                        <div class="card-header bg-info bg-opacity-10">
+                            <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Safety & Meeting People</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="safetyAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#safety1">
+                                            Tips for safely meeting opponents
+                                        </button>
+                                    </h2>
+                                    <div id="safety1" class="accordion-collapse collapse" data-bs-parent="#safetyAccordion">
+                                        <div class="accordion-body">
+                                            Once you arrived for your match, confirm that your opponent matches the pic on their profile
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#safety2">
+                                            What if I feel uncomfortable with a match?
+                                        </button>
+                                    </h2>
+                                    <div id="safety2" class="accordion-collapse collapse" data-bs-parent="#safetyAccordion">
+                                        <div class="accordion-body">
+                                            Talk to your opponents about maybe picking another location, but if you stop playing or do not play, you will forfeit the match
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#safety3">
+                                            How to verify someone's identity
+                                        </button>
+                                    </h2>
+                                    <div id="safety3" class="accordion-collapse collapse" data-bs-parent="#safetyAccordion">
+                                        <div class="accordion-body">
+                                            Each player is assign a R2D number, ask for theirs and compare it to the one that shows in their profiles
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ranking & Points Section -->
+                <div id="ranking" class="mb-5">
+                    <div class="card" style="border-left: 4px solid #6f42c1;">
+                        <div class="card-header bg-secondary bg-opacity-10">
+                            <h5 class="mb-0"><i class="fas fa-medal me-2"></i>Ranking & Points</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="rankingAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ranking1">
+                                            Exactly how are ranking points calculated?
+                                        </button>
+                                    </h2>
+                                    <div id="ranking1" class="accordion-collapse collapse" data-bs-parent="#rankingAccordion">
+                                        <div class="accordion-body">
+                                            See ranking page
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ranking2">
+                                            Why didn't I get points for my win?
+                                        </button>
+                                    </h2>
+                                    <div id="ranking2" class="accordion-collapse collapse" data-bs-parent="#rankingAccordion">
+                                        <div class="accordion-body">
+                                            Did you post and validate your score, if so send us a contact form for tech support
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ranking3">
+                                            How often do rankings update?
+                                        </button>
+                                    </h2>
+                                    <div id="ranking3" class="accordion-collapse collapse" data-bs-parent="#rankingAccordion">
+                                        <div class="accordion-body">
+                                            Once per week
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ambassador Program Section -->
+                <div id="ambassador" class="mb-5">
+                    <div class="card" style="border-left: 4px solid #fd7e14;">
+                        <div class="card-header" style="background-color: rgba(253, 126, 20, 0.1);">
+                            <h5 class="mb-0"><i class="fas fa-crown me-2"></i>Ambassador Program</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="ambassadorAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ambassador1">
+                                            Detailed requirements to qualify
+                                        </button>
+                                    </h2>
+                                    <div id="ambassador1" class="accordion-collapse collapse" data-bs-parent="#ambassadorAccordion">
+                                        <div class="accordion-body">
+                                            <ul class="mb-0">
+                                                <li>Apply to become an Ambassador on the home page</li>
+                                                <li>Leave or visit another state, be the first user in another state</li>
+                                                <li>Get 20 players to become "Tournament Members"</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ambassador2">
+                                            How to track my referral progress
+                                        </button>
+                                    </h2>
+                                    <div id="ambassador2" class="accordion-collapse collapse" data-bs-parent="#ambassadorAccordion">
+                                        <div class="accordion-body">
+                                            On the "Track my Progress" tab on the home page
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ambassador3">
+                                            When do I receive ambassador benefits?
+                                        </button>
+                                    </h2>
+                                    <div id="ambassador3" class="accordion-collapse collapse" data-bs-parent="#ambassadorAccordion">
+                                        <div class="accordion-body">
+                                            As soon as you reach 20 registered tournament members
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Support -->
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-life-ring me-2"></i>Still Need Help?</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="mb-3">Can't find what you're looking for? Our support team is here to help!</p>
+                        <a href="{{ url_for('contact') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-envelope me-2"></i>Contact Support
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Smooth scrolling for navigation links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelector(this.getAttribute('href')).scrollIntoView({
+            behavior: 'smooth'
+        });
+    });
+});
+</script>
+{% endblock %}
