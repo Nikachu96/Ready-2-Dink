@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Guardian Consent Required - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); border: none;">
+                <h4 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-shield-alt me-2"></i>Guardian Consent Required
+                </h4>
+                <p class="mb-0 opacity-90">COPPA Compliance - Parent/Guardian Authorization</p>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <h6><i class="fas fa-info-circle me-2"></i>Children's Online Privacy Protection Act (COPPA)</h6>
+                    <p class="mb-0">This form is required by federal law for users 13 years old or younger. By completing this form, you are providing consent for your child to create and use a Ready 2 Dink account.</p>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6><i class="fas fa-user me-2"></i>Player Information</h6>
+                                <p><strong>Name:</strong> {{ player.full_name }}</p>
+                                <p><strong>Email:</strong> {{ player.email }}</p>
+                                <p><strong>Date of Birth:</strong> {{ player.dob }}</p>
+                                <p><strong>Address:</strong> {{ player.address }}, {{ player.city }}, {{ player.state }} {{ player.zip_code }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5><i class="fas fa-clipboard-list me-2"></i>What We Collect & How We Use It</h5>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-database me-1"></i>Information We Collect</h6>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li><i class="fas fa-check text-success me-2"></i>Name and contact information</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Date of birth (age verification)</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Location and court preferences</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Skill level and sports interests</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Optional profile photo</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-heart me-1"></i>How We Use It</h6>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li><i class="fas fa-users text-primary me-2"></i>Match with other players</li>
+                                    <li><i class="fas fa-trophy text-warning me-2"></i>Tournament participation</li>
+                                    <li><i class="fas fa-bell text-info me-2"></i>Event notifications</li>
+                                    <li><i class="fas fa-shield-alt text-success me-2"></i>Safety and moderation</li>
+                                    <li><i class="fas fa-envelope text-secondary me-2"></i>Account communication</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning mb-4">
+                    <h6><i class="fas fa-user-shield me-2"></i>Your Rights as a Parent/Guardian</h6>
+                    <ul class="mb-0">
+                        <li>Review all information collected about your child</li>
+                        <li>Request deletion of your child's personal information at any time</li>
+                        <li>Refuse to allow further collection or use of your child's information</li>
+                        <li>Revoke this consent at any time by contacting support@ready2dink.com</li>
+                    </ul>
+                </div>
+
+                <form method="POST" action="{{ url_for('submit_guardian_consent', player_id=player.id) }}">
+                    <div class="mb-4">
+                        <label for="guardian_name" class="form-label">
+                            <i class="fas fa-user-tie me-1"></i>Your Full Name (Parent/Guardian) *
+                        </label>
+                        <input type="text" class="form-control" id="guardian_name" name="guardian_name" 
+                               placeholder="Enter your full legal name" required>
+                        <div class="form-text">This will be recorded as the authorizing guardian</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="consent_given" name="consent_given" value="yes" required>
+                            <label class="form-check-label fw-bold" for="consent_given">
+                                <i class="fas fa-check-circle text-success me-2"></i>I Provide Consent
+                            </label>
+                        </div>
+                        <div class="ms-4 mt-2">
+                            <small class="text-muted">
+                                By checking this box, I certify that I am the parent or legal guardian of <strong>{{ player.full_name }}</strong> 
+                                and I give my consent for Ready 2 Dink to collect, use, and disclose my child's personal information 
+                                as described above and in accordance with Ready 2 Dink's Privacy Policy and Terms of Service.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>What happens next?</strong> Once you submit this form, your child's account will be immediately activated 
+                        and they'll receive an email confirmation. They can then start using all Ready 2 Dink features safely.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-shield-alt me-1"></i>Provide Consent & Activate Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-body text-center">
+                <h6><i class="fas fa-question-circle me-2"></i>Questions or Concerns?</h6>
+                <p class="mb-2">Contact our support team at <a href="mailto:support@ready2dink.com">support@ready2dink.com</a></p>
+                <p class="text-muted small mb-0">
+                    Ready 2 Dink is committed to protecting children's privacy and complying with all applicable laws.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

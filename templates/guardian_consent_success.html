@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Consent Approved - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: none;">
+                <h4 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-check-circle me-2"></i>Consent Successfully Provided
+                </h4>
+                <p class="mb-0 opacity-90">Account Activated - Thank You!</p>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-4">
+                    <i class="fas fa-shield-alt text-success" style="font-size: 4rem;"></i>
+                </div>
+
+                <h3 class="text-success mb-3">✅ Account Activated!</h3>
+                
+                <div class="alert alert-success">
+                    <h5><i class="fas fa-party-horn me-2"></i>Great news!</h5>
+                    <p class="mb-0">
+                        <strong>{{ guardian_name }}</strong>, you have successfully provided consent for 
+                        <strong>{{ player.full_name }}</strong> to use Ready 2 Dink.
+                    </p>
+                </div>
+
+                <div class="row text-center mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <i class="fas fa-envelope text-primary" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">Email Sent</h6>
+                                <p class="small mb-0">{{ player.full_name }} will receive an activation email</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <i class="fas fa-users text-success" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">Ready to Play</h6>
+                                <p class="small mb-0">Account is now fully active and functional</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body">
+                                <i class="fas fa-shield-alt text-info" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">Protected</h6>
+                                <p class="small mb-0">Privacy and safety remain our top priority</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h6><i class="fas fa-info-circle me-2"></i>What your child can now do:</h6>
+                        <div class="row text-start">
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Match with other players</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Join tournaments</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Find local courts</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Track their progress</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Connect with community</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Receive notifications</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-user-shield me-2"></i>Remember: You're Always in Control</h6>
+                    <p class="mb-0">
+                        You can revoke this consent at any time by emailing 
+                        <a href="mailto:support@ready2dink.com">support@ready2dink.com</a>. 
+                        We're committed to protecting your child's privacy and safety.
+                    </p>
+                </div>
+
+                <div class="mt-4">
+                    <a href="/" class="btn btn-primary btn-lg">
+                        <i class="fas fa-home me-1"></i>Return to Ready 2 Dink
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-body text-center">
+                <h6><i class="fas fa-heart me-2 text-danger"></i>Thank You!</h6>
+                <p class="text-muted mb-0">
+                    Your trust means everything to us. We're excited to welcome {{ player.full_name }} to the Ready 2 Dink community!
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
