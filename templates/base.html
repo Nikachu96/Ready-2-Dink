@@ -267,6 +267,39 @@
             background: var(--glass-bg);
             transform: translateY(-1px);
         }
+
+        /* Navigation spacing fixes */
+        .navbar-nav {
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .nav-link {
+            white-space: nowrap;
+            padding: 0.5rem 0.75rem !important;
+        }
+
+        @media (max-width: 1200px) {
+            .nav-link {
+                font-size: 0.9rem;
+                padding: 0.4rem 0.6rem !important;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .nav-item {
+                flex: none;
+                text-align: left;
+            }
+            
+            .navbar-nav {
+                gap: 0;
+            }
+        }
         
         @keyframes fadeInUp {
             from {
@@ -304,7 +337,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto d-flex justify-content-between w-100">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('index') }}">
                             <i class="fas fa-home me-1"></i>Home
