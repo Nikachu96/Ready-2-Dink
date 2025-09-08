@@ -46,7 +46,7 @@
                                     <select class="form-select" id="tournament_type" name="tournament_type" required onchange="togglePartnerSelection()">
                                         <option value="">Select type</option>
                                         <option value="singles">Singles (1v1)</option>
-                                        <option value="doubles">Doubles (2v2) - Additional $10 fee</option>
+                                        <option value="doubles">Doubles (2v2)</option>
                                     </select>
                                 </div>
                             </div>
@@ -291,15 +291,7 @@ function togglePartnerSelection() {
         partnerSelection.style.display = 'block';
         partnerSelect.required = true;
         
-        // Update tournament fees to show +$10 for doubles
-        tournamentCards.forEach(card => {
-            const feeElement = card.querySelector('.tournament-fee');
-            if (feeElement) {
-                const baseFee = parseFloat(feeElement.dataset.baseFee);
-                const doublesFee = baseFee + 10;
-                feeElement.textContent = '$' + doublesFee.toFixed(0);
-            }
-        });
+        // No additional fee for doubles - same price as singles
     } else {
         partnerSelection.style.display = 'none';
         partnerSelect.required = false;
@@ -457,15 +449,7 @@ function togglePartnerSelection() {
         partnerSelection.style.display = 'block';
         partnerSelect.required = true;
         
-        // Update tournament fees to show +$10 for doubles
-        tournamentCards.forEach(card => {
-            const feeElement = card.querySelector('.tournament-fee');
-            if (feeElement) {
-                const baseFee = parseFloat(feeElement.dataset.baseFee);
-                const doublesFee = baseFee + 10;
-                feeElement.textContent = '$' + doublesFee.toFixed(0);
-            }
-        });
+        // No additional fee for doubles - same price as singles
     } else {
         partnerSelection.style.display = 'none';
         partnerSelect.required = false;
