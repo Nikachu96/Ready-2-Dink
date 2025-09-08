@@ -146,9 +146,12 @@
                         </div>
                     </div>
                     
+                    <!-- Hidden field for guardian email -->
+                    <input type="hidden" id="guardian_email" name="guardian_email" value="">
+                    
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">Cancel</a>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="register-btn">
                             <i class="fas fa-save me-1"></i>Register Player
                         </button>
                     </div>
@@ -157,11 +160,70 @@
         </div>
     </div>
 </div>
+
+<!-- Guardian Consent Modal for Under-13 Players -->
+<div class="modal fade" id="guardianConsentModal" tabindex="-1" aria-labelledby="guardianConsentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="guardianConsentModalLabel">
+                    <i class="fas fa-shield-alt me-2"></i>Guardian Consent Required
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-4">
+                    <h6><i class="fas fa-info-circle me-2"></i>Children's Online Privacy Protection Act (COPPA) Compliance</h6>
+                    <p class="mb-0">Since you are 13 years old or younger, we need permission from your parent or legal guardian before you can create an account. This is required by federal law to protect children's privacy online.</p>
+                </div>
+                
+                <div class="mb-4">
+                    <h6><i class="fas fa-user-friends me-2"></i>What happens next?</h6>
+                    <ol class="ps-3">
+                        <li>You'll provide your parent/guardian's email address</li>
+                        <li>We'll send them a consent form to review and sign</li>
+                        <li>Your account will be created but remain "pending" until we receive their authorization</li>
+                        <li>Once approved, you'll be able to use all Ready 2 Dink features!</li>
+                    </ol>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="guardian_email_input" class="form-label">
+                        <i class="fas fa-envelope me-1"></i>Parent/Guardian Email Address *
+                    </label>
+                    <input type="email" class="form-control" id="guardian_email_input" 
+                           placeholder="parent@example.com" required>
+                    <div class="form-text">
+                        <i class="fas fa-info-circle me-1"></i>
+                        We'll send the consent form to this email address
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Important:</strong> Make sure this is your parent or legal guardian's email address. They must review and sign the consent form before your account can be activated.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel Registration
+                </button>
+                <button type="button" class="btn btn-primary" id="confirm-guardian-email">
+                    <i class="fas fa-check me-1"></i>Continue with Guardian Consent
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Date of birth validation and formatting
+// Global variables for age verification
+let requiresGuardianConsent = false;
+let guardianModalShown = false;
+
+// Date of birth validation and age verification
 document.getElementById('dob').addEventListener('input', function(e) {
     let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
     
@@ -185,6 +247,31 @@ document.getElementById('dob').addEventListener('input', function(e) {
             day >= 1 && day <= 31 && 
             year >= 1900 && year <= currentYear) {
             
+            // Calculate age for COPPA compliance
+            const birthDate = new Date(year, month - 1, day);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            
+            // Check if player is 13 or under
+            if (age <= 13 && !guardianModalShown) {
+                requiresGuardianConsent = true;
+                guardianModalShown = true;
+                
+                // Show guardian consent modal after a brief delay
+                setTimeout(() => {
+                    const guardianModal = new bootstrap.Modal(document.getElementById('guardianConsentModal'));
+                    guardianModal.show();
+                }, 500);
+            } else if (age > 13) {
+                requiresGuardianConsent = false;
+                document.getElementById('guardian_email').value = '';
+            }
+            
             // Clear any validation errors
             e.target.setCustomValidity('');
             e.target.classList.remove('is-invalid');
@@ -202,6 +289,58 @@ document.getElementById('dob').addEventListener('input', function(e) {
         // Reset validation state for incomplete dates
         e.target.setCustomValidity('');
         e.target.classList.remove('is-valid', 'is-invalid');
+        requiresGuardianConsent = false;
+    }
+});
+
+// Guardian consent modal handlers
+document.getElementById('confirm-guardian-email').addEventListener('click', function() {
+    const guardianEmailInput = document.getElementById('guardian_email_input');
+    const guardianEmail = guardianEmailInput.value.trim();
+    
+    if (!guardianEmail) {
+        guardianEmailInput.classList.add('is-invalid');
+        guardianEmailInput.setCustomValidity('Guardian email is required');
+        return;
+    }
+    
+    // Basic email validation
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(guardianEmail)) {
+        guardianEmailInput.classList.add('is-invalid');
+        guardianEmailInput.setCustomValidity('Please enter a valid email address');
+        return;
+    }
+    
+    // Set the guardian email in the hidden field
+    document.getElementById('guardian_email').value = guardianEmail;
+    guardianEmailInput.classList.remove('is-invalid');
+    guardianEmailInput.setCustomValidity('');
+    
+    // Close the modal
+    const guardianModal = bootstrap.Modal.getInstance(document.getElementById('guardianConsentModal'));
+    guardianModal.hide();
+    
+    // Show success message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+    alertDiv.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>Guardian Email Saved!</strong> Your registration will be processed pending guardian approval.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert before the form buttons
+    const buttonContainer = document.querySelector('.d-grid.gap-2');
+    buttonContainer.parentNode.insertBefore(alertDiv, buttonContainer);
+});
+
+// Form submission validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    if (requiresGuardianConsent && !document.getElementById('guardian_email').value) {
+        e.preventDefault();
+        alert('Please complete the guardian consent process before submitting your registration.');
+        return false;
     }
 });
 
