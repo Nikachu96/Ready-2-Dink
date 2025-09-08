@@ -213,6 +213,27 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    # Add COPPA compliance fields for underage players
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN guardian_email TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN account_status TEXT DEFAULT "active"')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN guardian_consent_required INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN guardian_consent_date TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     try:
         c.execute('ALTER TABLE players ADD COLUMN subscription_end_date TEXT DEFAULT NULL')
     except sqlite3.OperationalError:
