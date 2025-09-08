@@ -501,6 +501,7 @@
                 };
 
                 // Send subscription to server
+                console.log('Sending subscription to server:', subscription.toJSON());
                 const response = await fetch('/subscribe-notifications', {
                     method: 'POST',
                     headers: {
@@ -511,16 +512,25 @@
                     })
                 });
 
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Response result:', result);
+                
                 if (result.success) {
                     showNotificationBanner('success', '✅ Notifications enabled! You\'ll receive updates about your matches and tournaments.');
                     updateNotificationUI();
                 } else {
-                    throw new Error(result.message);
+                    throw new Error(result.message || 'Unknown server error');
                 }
             } catch (error) {
                 console.error('Failed to subscribe to notifications:', error);
-                showNotificationBanner('error', '❌ Failed to enable notifications: ' + error.message);
+                let errorMessage = 'Unknown error';
+                if (error.message) {
+                    errorMessage = error.message;
+                } else if (error.toString) {
+                    errorMessage = error.toString();
+                }
+                showNotificationBanner('error', '❌ Failed to enable notifications: ' + errorMessage);
             }
         }
 

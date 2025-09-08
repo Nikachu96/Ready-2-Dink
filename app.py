@@ -2187,25 +2187,37 @@ def leaderboard():
 @app.route('/subscribe-notifications', methods=['POST'])
 def subscribe_notifications():
     """Handle push notification subscription"""
-    if 'player_id' not in session:
-        return jsonify({'success': False, 'message': 'Not logged in'})
-    
-    data = request.get_json()
-    subscription = data.get('subscription')
-    
-    if not subscription:
-        return jsonify({'success': False, 'message': 'No subscription data'})
-    
-    conn = get_db_connection()
-    conn.execute('''
-        UPDATE players 
-        SET push_subscription = ?, notifications_enabled = 1
-        WHERE id = ?
-    ''', (json.dumps(subscription), session['player_id']))
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'success': True, 'message': 'Notifications enabled successfully!'})
+    try:
+        logging.info(f"Notification subscription attempt - session: {session}")
+        
+        if 'player_id' not in session:
+            logging.warning("No player_id in session for notification subscription")
+            return jsonify({'success': False, 'message': 'Not logged in'})
+        
+        data = request.get_json()
+        logging.info(f"Received subscription data: {data}")
+        
+        subscription = data.get('subscription') if data else None
+        
+        if not subscription:
+            logging.warning("No subscription data received")
+            return jsonify({'success': False, 'message': 'No subscription data'})
+        
+        conn = get_db_connection()
+        conn.execute('''
+            UPDATE players 
+            SET push_subscription = ?, notifications_enabled = 1
+            WHERE id = ?
+        ''', (json.dumps(subscription), session['player_id']))
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"Successfully enabled notifications for player {session['player_id']}")
+        return jsonify({'success': True, 'message': 'Notifications enabled successfully!'})
+        
+    except Exception as e:
+        logging.error(f"Error in subscribe_notifications: {e}")
+        return jsonify({'success': False, 'message': f'Server error: {str(e)}'})
 
 @app.route('/unsubscribe-notifications', methods=['POST'])
 def unsubscribe_notifications():
