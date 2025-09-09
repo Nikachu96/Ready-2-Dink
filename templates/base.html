@@ -837,10 +837,10 @@
                             // Show success message
                             showSuccessMessage('✅ NDA signed successfully! Welcome to Ready 2 Dink Beta.');
                             
-                            // Reload page to continue to app  
+                            // Redirect to trigger server-side flow  
                             setTimeout(() => {
-                                window.location.reload();
-                            }, 5000);
+                                window.location.href = '/nda-required';
+                            }, 2000);
                         } else {
                             throw new Error(result.message || 'Failed to sign NDA');
                         }
