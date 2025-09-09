@@ -3995,7 +3995,7 @@ def validate_match_result():
     # Update validation status for the validating player
     if is_player1:
         # Check if player1 already validated
-        if match.get('player1_validated', 0) == 1:
+        if match['player1_validated'] == 1:
             conn.close()
             return jsonify({'success': False, 'message': 'You have already validated this match'})
         
@@ -4010,7 +4010,7 @@ def validate_match_result():
         ''', (opponent_skill_feedback, match_score, player1_sets_won, player2_sets_won, match_id))
     else:
         # Check if player2 already validated
-        if match.get('player2_validated', 0) == 1:
+        if match['player2_validated'] == 1:
             conn.close()
             return jsonify({'success': False, 'message': 'You have already validated this match'})
         
@@ -4027,8 +4027,8 @@ def validate_match_result():
     # Check if both players have now validated
     updated_match = conn.execute('SELECT * FROM matches WHERE id = ?', (match_id,)).fetchone()
     
-    both_validated = (updated_match.get('player1_validated', 0) == 1 and 
-                     updated_match.get('player2_validated', 0) == 1)
+    both_validated = (updated_match['player1_validated'] == 1 and 
+                     updated_match['player2_validated'] == 1)
     
     if both_validated:
         # Determine winner based on sets won
