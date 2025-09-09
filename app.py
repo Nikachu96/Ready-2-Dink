@@ -1365,27 +1365,18 @@ def find_match_for_player(player_id):
         location_condition = "(location1 = ? OR location2 = ?)"
         location_params = [player['location1'], player['location2']]
     
-    # Simplified query since all players play Pickleball
+    # Simplified query since all players play Pickleball - ALLOW MULTIPLE MATCHES
     query = f'''
         SELECT * FROM players 
         WHERE id != ? 
         AND is_looking_for_match = 1
         AND skill_level = ?
         AND {location_condition}
-        AND id NOT IN (
-            SELECT CASE 
-                WHEN player1_id = ? THEN player2_id 
-                ELSE player1_id 
-            END 
-            FROM matches 
-            WHERE (player1_id = ? OR player2_id = ?) 
-            AND status IN ('pending', 'confirmed')
-        )
         ORDER BY created_at ASC
         LIMIT 1
     '''
     
-    params = [player_id, player['skill_level']] + location_params + [player_id, player_id, player_id]
+    params = [player_id, player['skill_level']] + location_params
     potential_matches = conn.execute(query, params).fetchone()
     
     if potential_matches:
