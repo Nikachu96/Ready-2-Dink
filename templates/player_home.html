@@ -1355,11 +1355,22 @@ function displayPendingMatches(matches) {
     
     // Update Submit Results section
     if (pendingScores.length > 0) {
+        let buttonAction = '';
+        if (pendingScores.length === 1) {
+            // If only one match, directly open the score modal
+            const match = pendingScores[0];
+            const opponent = match.player1_id === {{ player.id }} ? match.player2_name : match.player1_name;
+            buttonAction = `onclick="openScoreModal(${match.id}, '${opponent}', ${match.player1_id}, ${match.player2_id})"`;
+        } else {
+            // If multiple matches, show selection
+            buttonAction = `onclick="showDetailedMatches('submit')"`;
+        }
+        
         submitResultsContainer.innerHTML = `
             <div class="text-center">
                 <div class="badge bg-warning text-dark fs-6 mb-2">${pendingScores.length}</div>
                 <p class="small mb-2 fw-bold">Match${pendingScores.length > 1 ? 'es' : ''} to Report</p>
-                <button class="btn btn-warning btn-sm" onclick="showDetailedMatches('submit')">
+                <button class="btn btn-warning btn-sm" ${buttonAction}>
                     <i class="fas fa-edit me-1"></i>Submit Scores
                 </button>
             </div>
