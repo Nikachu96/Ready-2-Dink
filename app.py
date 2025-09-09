@@ -3314,7 +3314,7 @@ def accept_challenge():
     """API endpoint to accept a match challenge"""
     try:
         data = request.get_json()
-        challenge_id = data.get('challengeId')
+        challenge_id = data.get('challenge_id') or data.get('challengeId')  # Support both formats
         
         if not challenge_id:
             return jsonify({'success': False, 'message': 'Challenge ID is required'})
@@ -3336,7 +3336,7 @@ def decline_challenge():
     """API endpoint to decline a match challenge"""
     try:
         data = request.get_json()
-        challenge_id = data.get('challengeId')
+        challenge_id = data.get('challenge_id') or data.get('challengeId')  # Support both formats
         
         if not challenge_id:
             return jsonify({'success': False, 'message': 'Challenge ID is required'})
