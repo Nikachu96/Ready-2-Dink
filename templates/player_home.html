@@ -232,42 +232,99 @@
     </div>
 </div>
 
-<!-- Prominent Find Match Section -->
+<!-- 4-Section Layout: Ready 2 Play | Challenges | Upcoming Matches | Submit Results -->
 <div class="row mb-4 animate-in">
-    <div class="col-12">
-        <div class="card text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #E0563F 0%, #D174D2 100%); border: none; min-height: 200px;">
+    <!-- Section 1: Ready 2 Play -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card text-white h-100" style="background: linear-gradient(135deg, #E0563F 0%, #D174D2 100%); border: none;">
             <div class="card-body text-center d-flex flex-column justify-content-center">
-                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(255,255,255,0.05); backdrop-filter: blur(1px);"></div>
-                <div class="position-relative">
-                    <div class="mb-4">
-                        <i class="fas fa-users fa-4x mb-3" style="opacity: 0.9;"></i>
-                        <h3 class="fw-bold mb-2">Ready to Play?</h3>
-                        <p class="fs-5 mb-4 opacity-90">Find your next pickleball opponent and get on the court!</p>
-                    </div>
-                    
-                    {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
-                        <button onclick="findNewMatch({{ player.id }})" class="btn btn-lg px-5 py-3 shadow-lg text-white hover-scale" style="background: linear-gradient(45deg, #3F567F, #D174D2); border: none; font-size: 1.2rem; border-radius: 50px; font-weight: 600; letter-spacing: 0.5px; transition: all 0.3s ease;">
-                            <i class="fas fa-search me-3"></i>Find My Match
-                            <div class="small mt-1 opacity-75">Connect with players near you</div>
-                        </button>
-                    {% else %}
-                        <button onclick="showMembershipModal('discovery')" class="btn btn-lg px-5 py-3 shadow-lg text-white hover-scale" style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; font-size: 1.2rem; border-radius: 50px; font-weight: 600; letter-spacing: 0.5px; transition: all 0.3s ease;">
-                            <i class="fas fa-unlock me-3"></i>Unlock Matchmaking
-                            <div class="small mt-1 opacity-75">Upgrade to find opponents</div>
-                        </button>
-                    {% endif %}
-                    
-                    <div class="mt-3">
-                        <small class="opacity-75">
-                            <i class="fas fa-map-marker-alt me-1"></i>
-                            Based on your location: {{ player.location1 }}
-                        </small>
-                    </div>
+                <div class="mb-3">
+                    <i class="fas fa-users fa-3x mb-2"></i>
+                    <h5 class="fw-bold">Ready 2 Play?</h5>
+                    <p class="small mb-3">Find your next opponent</p>
+                </div>
+                
+                {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
+                    <button onclick="findNewMatch({{ player.id }})" class="btn btn-light btn-sm fw-bold">
+                        <i class="fas fa-search me-2"></i>Find My Match
+                    </button>
+                {% else %}
+                    <button onclick="showMembershipModal('discovery')" class="btn btn-light btn-sm fw-bold">
+                        <i class="fas fa-unlock me-2"></i>Unlock Now
+                    </button>
+                {% endif %}
+                
+                <div class="mt-2">
+                    <small class="opacity-75">
+                        <i class="fas fa-map-marker-alt me-1"></i>{{ player.location1 }}
+                    </small>
                 </div>
             </div>
-            <!-- Animated pulse effect for emphasis -->
-            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="pointer-events: none;">
-                <div style="width: 300px; height: 300px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; animation: pulse 3s infinite;"></div>
+        </div>
+    </div>
+
+    <!-- Section 2: Challenges -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card h-100" style="border: 2px solid #3F567F;">
+            <div class="card-header text-white text-center" style="background: #3F567F;">
+                <h6 class="mb-0 fw-bold">
+                    <i class="fas fa-handshake me-2"></i>Challenges
+                </h6>
+            </div>
+            <div class="card-body text-center">
+                <div id="challenges-container">
+                    <div class="text-muted">
+                        <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i>
+                        <p class="small mb-0">No new challenges</p>
+                    </div>
+                </div>
+                <button class="btn btn-outline-primary btn-sm mt-2" onclick="loadChallenges()">
+                    <i class="fas fa-refresh me-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Upcoming Matches -->  
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card h-100" style="border: 2px solid #D174D2;">
+            <div class="card-header text-white text-center" style="background: #D174D2;">
+                <h6 class="mb-0 fw-bold">
+                    <i class="fas fa-calendar-check me-2"></i>Upcoming Matches
+                </h6>
+            </div>
+            <div class="card-body text-center">
+                <div id="upcoming-matches-container">
+                    <div class="text-muted">
+                        <i class="fas fa-calendar fa-2x mb-2 opacity-50"></i>
+                        <p class="small mb-0">No scheduled matches</p>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm mt-2" onclick="loadUpcomingMatches()">
+                    <i class="fas fa-refresh me-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Submit Match Results -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card h-100" style="border: 2px solid #E0563F;">
+            <div class="card-header text-white text-center" style="background: #E0563F;">
+                <h6 class="mb-0 fw-bold">
+                    <i class="fas fa-clipboard-list me-2"></i>Submit Results
+                </h6>
+            </div>
+            <div class="card-body text-center">
+                <div id="submit-results-container">
+                    <div class="text-muted">
+                        <i class="fas fa-trophy fa-2x mb-2 opacity-50"></i>
+                        <p class="small mb-0">No matches to report</p>
+                    </div>
+                </div>
+                <button class="btn btn-outline-warning btn-sm mt-2" onclick="loadPendingMatches()">
+                    <i class="fas fa-refresh me-1"></i>Refresh
+                </button>
             </div>
         </div>
     </div>
@@ -887,17 +944,22 @@
     </div>
 </div>
 
-<!-- Pending Matches for Score Submission -->
-<div class="row mt-4 animate-in" id="pending-matches-section" style="display: none;">
+<!-- Detailed Matches Section (Expanded when needed) -->
+<div class="row mt-4 animate-in" id="detailed-matches-section" style="display: none;">
     <div class="col-12">
-        <div class="card border-warning">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-clipboard-list me-2"></i>Submit Match Results
-                </h5>
+        <div class="card">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #3F567F 0%, #E0563F 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>Match Details
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="hideDetailedMatches()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
             <div class="card-body">
-                <div id="pending-matches-container">
+                <div id="detailed-matches-container">
                     <div class="text-center py-3">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
@@ -1281,15 +1343,109 @@ function loadPendingMatches() {
 }
 
 function displayPendingMatches(matches) {
-    const section = document.getElementById('pending-matches-section');
-    const container = document.getElementById('pending-matches-container');
+    const submitResultsContainer = document.getElementById('submit-results-container');
+    const upcomingMatchesContainer = document.getElementById('upcoming-matches-container');
+    const challengesContainer = document.getElementById('challenges-container');
     
-    if (matches.length === 0) {
-        section.style.display = 'none';
-        return;
+    // Separate matches by type
+    let pendingScores = matches.filter(m => m.action_needed === 'needs_score');
+    let needsValidation = matches.filter(m => m.action_needed === 'needs_validation');
+    let upcomingMatches = matches.filter(m => m.status === 'confirmed');
+    let challenges = matches.filter(m => m.status === 'pending');
+    
+    // Update Submit Results section
+    if (pendingScores.length > 0) {
+        submitResultsContainer.innerHTML = `
+            <div class="text-center">
+                <div class="badge bg-warning text-dark fs-6 mb-2">${pendingScores.length}</div>
+                <p class="small mb-2 fw-bold">Match${pendingScores.length > 1 ? 'es' : ''} to Report</p>
+                <button class="btn btn-warning btn-sm" onclick="showDetailedMatches('submit')">
+                    <i class="fas fa-edit me-1"></i>Submit Scores
+                </button>
+            </div>
+        `;
+    } else {
+        submitResultsContainer.innerHTML = `
+            <div class="text-muted">
+                <i class="fas fa-trophy fa-2x mb-2 opacity-50"></i>
+                <p class="small mb-0">No matches to report</p>
+            </div>
+        `;
     }
     
+    // Update Upcoming Matches section  
+    if (upcomingMatches.length > 0) {
+        upcomingMatchesContainer.innerHTML = `
+            <div class="text-center">
+                <div class="badge bg-success fs-6 mb-2">${upcomingMatches.length}</div>
+                <p class="small mb-2 fw-bold">Scheduled Match${upcomingMatches.length > 1 ? 'es' : ''}</p>
+                <button class="btn btn-success btn-sm" onclick="showDetailedMatches('upcoming')">
+                    <i class="fas fa-calendar me-1"></i>View Details
+                </button>
+            </div>
+        `;
+    } else {
+        upcomingMatchesContainer.innerHTML = `
+            <div class="text-muted">
+                <i class="fas fa-calendar fa-2x mb-2 opacity-50"></i>
+                <p class="small mb-0">No scheduled matches</p>
+            </div>
+        `;
+    }
+    
+    // Update Challenges section
+    if (challenges.length > 0) {
+        challengesContainer.innerHTML = `
+            <div class="text-center">
+                <div class="badge bg-primary fs-6 mb-2">${challenges.length}</div>
+                <p class="small mb-2 fw-bold">New Challenge${challenges.length > 1 ? 's' : ''}</p>
+                <button class="btn btn-primary btn-sm" onclick="showDetailedMatches('challenges')">
+                    <i class="fas fa-handshake me-1"></i>Respond
+                </button>
+            </div>
+        `;
+    } else {
+        challengesContainer.innerHTML = `
+            <div class="text-muted">
+                <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i>
+                <p class="small mb-0">No new challenges</p>
+            </div>
+        `;
+    }
+    
+    // Store matches for detailed view
+    window.currentMatches = {
+        submit: pendingScores,
+        upcoming: upcomingMatches, 
+        challenges: challenges,
+        validation: needsValidation
+    };
+}
+
+// New function to show detailed matches section
+function showDetailedMatches(type) {
+    const section = document.getElementById('detailed-matches-section');
+    const container = document.getElementById('detailed-matches-container');
+    
     section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+    
+    let matches = window.currentMatches[type] || [];
+    let title = '';
+    
+    switch(type) {
+        case 'submit':
+            title = 'Submit Match Results';
+            break;
+        case 'upcoming':
+            title = 'Upcoming Matches';
+            break;
+        case 'challenges':
+            title = 'Incoming Challenges';
+            break;
+    }
+    
+    document.querySelector('#detailed-matches-section .card-title').innerHTML = `<i class="fas fa-list me-2"></i>${title}`;
     
     let html = '';
     matches.forEach(match => {
@@ -1309,31 +1465,58 @@ function displayPendingMatches(matches) {
                 <i class="fas fa-shield-check me-1"></i>Validate Score
             </button>`;
             statusBadge = '<span class="badge bg-info ms-2">Validation Required</span>';
+        } else if (match.status === 'confirmed') {
+            actionButton = `<button class="btn btn-outline-success btn-sm" disabled>
+                <i class="fas fa-calendar-check me-1"></i>Scheduled
+            </button>`;
+            statusBadge = '<span class="badge bg-success ms-2">Confirmed</span>';
         } else {
             actionButton = `<button class="btn btn-secondary btn-sm" disabled>
-                <i class="fas fa-clock me-1"></i>Awaiting Opponent
+                <i class="fas fa-clock me-1"></i>Waiting for Response
             </button>`;
-            statusBadge = '<span class="badge bg-secondary ms-2">Awaiting Opponent</span>';
+            statusBadge = '<span class="badge bg-secondary ms-2">Pending</span>';
         }
         
         html += `
-            <div class="pending-match-item mb-3 p-3 border rounded">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-1">Match vs ${opponent} ${statusBadge}</h6>
-                        <small class="text-muted">
-                            <i class="fas fa-map-marker-alt me-1"></i>${courtInfo} • 
-                            <i class="fas fa-calendar me-1"></i>${new Date(match.created_at).toLocaleDateString()}
-                            ${match.match_result ? ` • Score: ${match.match_result}` : ''}
-                        </small>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">vs ${opponent}</h6>
+                            <small class="text-muted">
+                                <i class="fas fa-map-marker-alt me-1"></i>${courtInfo}
+                                ${statusBadge}
+                            </small>
+                        </div>
+                        ${actionButton}
                     </div>
-                    ${actionButton}
                 </div>
             </div>
         `;
     });
     
+    if (html === '') {
+        html = `<div class="text-center py-4 text-muted">
+            <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
+            <p>No ${title.toLowerCase()} found</p>
+        </div>`;
+    }
+    
     container.innerHTML = html;
+}
+
+// Function to hide detailed matches
+function hideDetailedMatches() {
+    document.getElementById('detailed-matches-section').style.display = 'none';
+}
+
+// New functions for the other sections
+function loadChallenges() {
+    loadPendingMatches(); // Reuse existing function since it loads all matches
+}
+
+function loadUpcomingMatches() {
+    loadPendingMatches(); // Reuse existing function since it loads all matches
 }
 
 function openScoreModal(matchId, opponentName, player1Id, player2Id) {
