@@ -558,30 +558,30 @@
 </div>
 
 <!-- Share Ready 2 Dink -->
-<div class="row mb-4 animate-in">
+<div class="row mb-3 animate-in">
     <div class="col-12">
         <div class="card text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); border: none;">
-            <div class="card-body text-center position-relative">
+            <div class="card-body text-center position-relative py-3">
                 <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(255,255,255,0.05); backdrop-filter: blur(1px);"></div>
                 
                 <div class="position-relative">
-                    <div class="mb-4">
-                        <i class="fas fa-share-alt fa-3x mb-3" style="opacity: 0.9;"></i>
-                        <h4 class="fw-bold mb-2">Share Ready 2 Dink</h4>
-                        <p class="fs-5 mb-3 opacity-90">Help your friends discover the best pickleball community!</p>
+                    <div class="mb-2">
+                        <i class="fas fa-share-alt fa-2x mb-2" style="opacity: 0.9;"></i>
+                        <h6 class="fw-bold mb-1">Share Ready 2 Dink</h6>
+                        <p class="small mb-2 opacity-90">Help your friends discover the best pickleball community!</p>
                     </div>
                     
                     <div class="row justify-content-center">
-                        <div class="col-md-6 col-lg-4">
-                            <div class="mb-4">
+                        <div class="col-md-4 col-lg-3">
+                            <div class="mb-2">
                                 <!-- QR Code -->
-                                <div class="bg-white p-3 rounded-3 mx-auto" style="max-width: 200px;">
-                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ request.url_root }}&v=3" 
+                                <div class="bg-white p-2 rounded-2 mx-auto" style="max-width: 120px;">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}&v=3" 
                                          alt="Ready 2 Dink QR Code" 
                                          class="img-fluid"
                                          style="width: 100%; height: auto;">
                                 </div>
-                                <p class="mt-2 small opacity-90">
+                                <p class="mt-1 small opacity-90">
                                     <i class="fas fa-qrcode me-1"></i>
                                     Scan to join Ready 2 Dink
                                 </p>
@@ -589,16 +589,16 @@
                         </div>
                     </div>
                     
-                    <div class="d-flex justify-content-center gap-3 flex-wrap mb-3">
-                        <button onclick="copyShareLink()" class="btn btn-lg px-4 py-2 shadow-lg text-white" style="background: linear-gradient(45deg, #10B981, #059669); border: none; border-radius: 50px; font-weight: 600;">
-                            <i class="fas fa-link me-2"></i>Copy Link
+                    <div class="d-flex justify-content-center gap-2 flex-wrap mb-2">
+                        <button onclick="copyShareLink()" class="btn btn-sm px-3 py-1 text-white" style="background: linear-gradient(45deg, #10B981, #059669); border: none; border-radius: 20px; font-weight: 600;">
+                            <i class="fas fa-link me-1"></i>Copy Link
                         </button>
-                        <button onclick="shareOnSocial()" class="btn btn-lg px-4 py-2 text-white" style="background: linear-gradient(45deg, #059669, #047857); border: none; border-radius: 50px; font-weight: 600;">
-                            <i class="fas fa-share me-2"></i>Share
+                        <button onclick="shareOnSocial()" class="btn btn-sm px-3 py-1 text-white" style="background: linear-gradient(45deg, #059669, #047857); border: none; border-radius: 20px; font-weight: 600;">
+                            <i class="fas fa-share me-1"></i>Share
                         </button>
                     </div>
                     
-                    <div class="mt-3">
+                    <div class="mt-1">
                         <small class="opacity-75">
                             <i class="fas fa-gift me-1"></i>
                             Help friends find their pickleball community!
