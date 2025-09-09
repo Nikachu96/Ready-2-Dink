@@ -233,7 +233,7 @@
                 </div>
                 
                 <!-- Compact notification toggle (hidden initially) -->
-                <div id="compactNotificationBar" class="d-flex justify-content-center align-items-center" style="display: none !important;">
+                <div id="compactNotificationBar" class="d-flex justify-content-center align-items-center" style="display: none;">
                     <small class="text-muted me-3">Notifications</small>
                     <div class="form-check form-switch">
                         <input class="form-check-input" 
@@ -3015,7 +3015,7 @@ function collapseNotificationBar() {
         
         setTimeout(() => {
             fullBar.style.display = 'none';
-            compactBar.style.display = 'flex !important';
+            compactBar.style.display = 'flex';
             compactBar.style.opacity = '0';
             
             // Fade in compact bar
