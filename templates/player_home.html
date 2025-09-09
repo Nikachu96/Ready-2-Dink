@@ -1336,8 +1336,11 @@ function respondToChallenge(challengeId, opponentName) {
                             <button class="btn btn-success btn-lg" onclick="acceptChallenge(${challengeId})">
                                 <i class="fas fa-check me-2"></i>Accept Challenge
                             </button>
+                            <button class="btn btn-warning btn-lg" onclick="showCounterProposal(${challengeId})">
+                                <i class="fas fa-handshake me-2"></i>Counter-Propose
+                            </button>
                             <button class="btn btn-danger btn-lg" onclick="declineChallenge(${challengeId})">
-                                <i class="fas fa-times me-2"></i>Decline Challenge
+                                <i class="fas fa-times me-2"></i>Decline Outright
                             </button>
                         </div>
                     </div>
@@ -1408,6 +1411,110 @@ function declineChallenge(challengeId) {
     .catch(error => {
         console.error('Error:', error);
         alert('Error declining challenge');
+    });
+}
+
+// Function to show counter-proposal modal
+function showCounterProposal(challengeId) {
+    // Close the challenge response modal first
+    const challengeModal = bootstrap.Modal.getInstance(document.getElementById('challengeResponseModal'));
+    if (challengeModal) {
+        challengeModal.hide();
+    }
+    
+    // Create counter-proposal modal
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div class="modal fade" id="counterProposalModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: #F39C12; color: white;">
+                        <h5 class="modal-title">
+                            <i class="fas fa-handshake me-2"></i>Make Counter-Proposal
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-4">
+                            <p class="text-muted">Suggest a different time or location that works better for you:</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="proposedLocation" class="form-label fw-semibold">
+                                <i class="fas fa-map-marker-alt me-1" style="color: #3F567F;"></i>Alternative Location
+                            </label>
+                            <input type="text" class="form-control" id="proposedLocation" 
+                                   placeholder="e.g. Central Park Courts, Downtown YMCA">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="proposedTime" class="form-label fw-semibold">
+                                <i class="fas fa-clock me-1" style="color: #3F567F;"></i>Alternative Time
+                            </label>
+                            <input type="text" class="form-control" id="proposedTime" 
+                                   placeholder="e.g. Saturday Morning, Tuesday Evening 6pm">
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <small>You can suggest just a location, just a time, or both. Leave blank any you're flexible about.</small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-warning btn-lg" onclick="submitCounterProposal(${challengeId})">
+                                <i class="fas fa-paper-plane me-2"></i>Send Counter-Proposal
+                            </button>
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    new bootstrap.Modal(document.getElementById('counterProposalModal')).show();
+    
+    // Clean up modal after it's hidden
+    document.getElementById('counterProposalModal').addEventListener('hidden.bs.modal', function() {
+        modal.remove();
+    });
+}
+
+// Function to submit counter-proposal
+function submitCounterProposal(challengeId) {
+    const proposedLocation = document.getElementById('proposedLocation').value.trim();
+    const proposedTime = document.getElementById('proposedTime').value.trim();
+    
+    if (!proposedLocation && !proposedTime) {
+        alert('Please suggest at least a location or time alternative.');
+        return;
+    }
+    
+    fetch('/decline_challenge', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            challenge_id: challengeId,
+            player_id: {{ player.id }},
+            proposed_location: proposedLocation,
+            proposed_time: proposedTime
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('counterProposalModal')).hide();
+            alert(data.message);
+            loadPendingMatches(); // Refresh the sections
+        } else {
+            alert('Error sending counter-proposal: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error sending counter-proposal');
     });
 }
 

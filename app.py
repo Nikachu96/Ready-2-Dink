@@ -3408,31 +3408,119 @@ def accept_challenge():
         logging.error(f"Error accepting challenge {challenge_id}: {str(e)}")
         return jsonify({'success': False, 'message': f'Error accepting challenge: {str(e)}'})
 
-@app.route('/decline_challenge', methods=['POST'])
-def decline_challenge():
-    """API endpoint to decline a match challenge"""
+@app.route('/accept_counter_proposal', methods=['POST'])
+def accept_counter_proposal():
+    """Accept a counter-proposal and finalize the match details"""
     try:
         data = request.get_json()
-        challenge_id = data.get('challenge_id') or data.get('challengeId')  # Support both formats
+        challenge_id = data.get('challenge_id') or data.get('challengeId')
         
         if not challenge_id:
             return jsonify({'success': False, 'message': 'Challenge ID is required'})
         
         conn = get_db_connection()
         
-        # Update match status to declined and allow players to find new matches
-        conn.execute('UPDATE matches SET status = ? WHERE id = ?', ('declined', challenge_id))
+        # Get match details with the proposed changes
+        match_details = conn.execute('''
+            SELECT m.proposed_location, m.proposed_time, m.sport,
+                   p1.full_name as player1_name, p2.full_name as player2_name,
+                   m.player1_id, m.player2_id
+            FROM matches m
+            JOIN players p1 ON m.player1_id = p1.id  
+            JOIN players p2 ON m.player2_id = p2.id
+            WHERE m.id = ?
+        ''', (challenge_id,)).fetchone()
         
-        # Get the players from this match to mark them as available again
-        match = conn.execute('SELECT player1_id, player2_id FROM matches WHERE id = ?', (challenge_id,)).fetchone()
-        if match:
-            conn.execute('UPDATE players SET is_looking_for_match = 1 WHERE id IN (?, ?)', 
-                        (match['player1_id'], match['player2_id']))
+        if not match_details:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Match not found'})
+        
+        # Finalize the match with the proposed details
+        final_location = match_details['proposed_location']
+        final_time = match_details['proposed_time'] 
+        
+        conn.execute('''
+            UPDATE matches 
+            SET court_location = ?, scheduled_time = ?, status = 'confirmed',
+                proposed_location = NULL, proposed_time = NULL, last_proposer_id = NULL
+            WHERE id = ?
+        ''', (final_location, final_time, challenge_id))
         
         conn.commit()
         conn.close()
         
-        return jsonify({'success': True, 'message': 'Challenge declined. You can find new matches.'})
+        # Format success message
+        location = final_location or 'TBD - coordinate with opponent'
+        time = final_time or 'Flexible timing - coordinate with opponent'
+        
+        message = f"Counter-proposal accepted! 🎾 Final match: {location} at {time}. Game on!"
+        
+        return jsonify({'success': True, 'message': message})
+        
+    except Exception as e:
+        logging.error(f"Error accepting counter-proposal {challenge_id}: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error accepting counter-proposal: {str(e)}'})
+
+@app.route('/decline_challenge', methods=['POST'])
+def decline_challenge():
+    """API endpoint to decline a match challenge or propose alternatives"""
+    try:
+        data = request.get_json()
+        challenge_id = data.get('challenge_id') or data.get('challengeId')  # Support both formats
+        proposed_location = data.get('proposed_location')
+        proposed_time = data.get('proposed_time')
+        player_id = data.get('player_id')
+        
+        if not challenge_id:
+            return jsonify({'success': False, 'message': 'Challenge ID is required'})
+        
+        conn = get_db_connection()
+        
+        # Check if this is a counter-proposal or outright decline
+        if proposed_location or proposed_time:
+            # This is a counter-proposal
+            match = conn.execute('SELECT player1_id, player2_id, negotiation_round FROM matches WHERE id = ?', (challenge_id,)).fetchone()
+            
+            if not match:
+                conn.close()
+                return jsonify({'success': False, 'message': 'Match not found'})
+            
+            # Update match with counter-proposal
+            conn.execute('''
+                UPDATE matches 
+                SET proposed_location = ?, proposed_time = ?, last_proposer_id = ?, 
+                    negotiation_round = ?, status = 'counter_proposed'
+                WHERE id = ?
+            ''', (proposed_location, proposed_time, player_id, 
+                  match['negotiation_round'] + 1, challenge_id))
+            
+            conn.commit()
+            conn.close()
+            
+            # Format response message
+            location_msg = f"Location: {proposed_location}" if proposed_location else ""
+            time_msg = f"Time: {proposed_time}" if proposed_time else ""
+            separator = " | " if location_msg and time_msg else ""
+            
+            message = f"Counter-proposal sent! {location_msg}{separator}{time_msg}. Waiting for their response."
+            
+            return jsonify({'success': True, 'message': message})
+        
+        else:
+            # Outright decline - update match status to declined and allow players to find new matches
+            conn.execute('UPDATE matches SET status = ? WHERE id = ?', ('declined', challenge_id))
+            
+            # Get the players from this match to mark them as available again
+            match = conn.execute('SELECT player1_id, player2_id FROM matches WHERE id = ?', (challenge_id,)).fetchone()
+            if match:
+                conn.execute('UPDATE players SET is_looking_for_match = 1 WHERE id IN (?, ?)', 
+                            (match['player1_id'], match['player2_id']))
+            
+            conn.commit()
+            conn.close()
+            
+            return jsonify({'success': True, 'message': 'Challenge declined. You can find new matches.'})
+            
     except Exception as e:
         logging.error(f"Error declining challenge {challenge_id}: {str(e)}")
         return jsonify({'success': False, 'message': f'Error declining challenge: {str(e)}'})
