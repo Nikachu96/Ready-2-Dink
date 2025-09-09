@@ -150,7 +150,7 @@
                     <input type="hidden" id="guardian_email" name="guardian_email" value="">
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2" style="color: white;">Cancel</a>
                         <button type="submit" class="btn btn-primary" id="register-btn">
                             <i class="fas fa-save me-1"></i>Register Player
                         </button>
@@ -225,21 +225,50 @@ let guardianModalShown = false;
 
 // Date of birth validation and age verification
 document.getElementById('dob').addEventListener('input', function(e) {
+    // Store cursor position before formatting
+    let cursorPosition = e.target.selectionStart;
+    let oldValue = e.target.value;
     let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
     
     // Auto-format as user types: MM-DD-YYYY
+    let formattedValue = '';
     if (value.length >= 2 && value.length <= 4) {
-        value = value.substring(0, 2) + '-' + value.substring(2);
+        formattedValue = value.substring(0, 2) + '-' + value.substring(2);
     } else if (value.length > 4) {
-        value = value.substring(0, 2) + '-' + value.substring(2, 4) + '-' + value.substring(4, 8);
+        formattedValue = value.substring(0, 2) + '-' + value.substring(2, 4) + '-' + value.substring(4, 8);
+    } else {
+        formattedValue = value;
     }
     
-    e.target.value = value;
+    // Only update if the value actually changed (prevents cursor jumping)
+    if (formattedValue !== oldValue) {
+        e.target.value = formattedValue;
+        
+        // Restore cursor position intelligently
+        let newCursorPosition = cursorPosition;
+        if (formattedValue.length < oldValue.length) {
+            // User is deleting, keep cursor where it was
+            newCursorPosition = Math.min(cursorPosition, formattedValue.length);
+        } else if (formattedValue.length > oldValue.length) {
+            // Auto-formatting added characters, adjust cursor
+            if (cursorPosition === 2 || cursorPosition === 5) {
+                newCursorPosition = cursorPosition + 1;
+            }
+        }
+        
+        // Set cursor position after a brief delay to ensure it takes effect
+        setTimeout(() => {
+            e.target.setSelectionRange(newCursorPosition, newCursorPosition);
+        }, 0);
+    }
+    
+    // Use the formatted value for validation
+    let value_for_validation = formattedValue;
     
     // Validate date format - simplified validation
     const datePattern = /^\d{2}-\d{2}-\d{4}$/;
-    if (datePattern.test(value)) {
-        const [month, day, year] = value.split('-').map(Number);
+    if (datePattern.test(value_for_validation)) {
+        const [month, day, year] = value_for_validation.split('-').map(Number);
         
         // Basic validation: month 1-12, day 1-31, year 1900-current year
         const currentYear = new Date().getFullYear();
@@ -281,7 +310,7 @@ document.getElementById('dob').addEventListener('input', function(e) {
             e.target.classList.remove('is-valid');
             e.target.classList.add('is-invalid');
         }
-    } else if (value.length === 10) {
+    } else if (value_for_validation.length === 10) {
         e.target.setCustomValidity('Please use MM-DD-YYYY format');
         e.target.classList.remove('is-valid');
         e.target.classList.add('is-invalid');

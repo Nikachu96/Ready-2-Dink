@@ -1940,7 +1940,7 @@ def register():
                   request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
                   request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
                   request.form['skill_level'], request.form['email'], selfie_filename,
-                  guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 1))
+                  guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0))
             
             player_id = cursor.lastrowid
             conn.commit()
