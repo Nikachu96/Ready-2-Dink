@@ -968,6 +968,7 @@ function findNewMatch(playerId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            alert('🎾 Match found! Check your pending challenges above.');
             location.reload();
         } else {
             alert(data.message || 'No matches found at the moment. Try again later!');
