@@ -1122,18 +1122,18 @@ function showMatchProposal(playerId, playerName, playerLocation, skillLevel) {
                             <h6 class="fw-bold mb-3" style="color: #000;">
                                 <i class="fas fa-calendar-alt me-2"></i>Match Proposal
                             </h6>
-                            <div class="row">
+                            <div class="row" id="matchProposalDetails">
                                 <div class="col-4">
                                     <strong style="color: #000;">Location:</strong><br>
-                                    <span style="color: #333;">${playerLocation} area courts</span>
+                                    <span style="color: #333;" id="proposalLocation">${playerLocation} area courts</span>
                                 </div>
                                 <div class="col-4">
                                     <strong style="color: #000;">Date:</strong><br>
-                                    <span style="color: #333;">Please specify when responding</span>
+                                    <span style="color: #333;" id="proposalDate">Please specify when responding</span>
                                 </div>
                                 <div class="col-4">
                                     <strong style="color: #000;">Time:</strong><br>
-                                    <span style="color: #333;">Please specify when responding</span>
+                                    <span style="color: #333;" id="proposalTime">Please specify when responding</span>
                                 </div>
                             </div>
                         </div>
@@ -1166,10 +1166,13 @@ function showMatchProposal(playerId, playerName, playerLocation, skillLevel) {
 }
 
 function acceptMatchProposal(playerId, playerName) {
-    challengePlayer(playerId);
-    // Close the modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('matchProposalModal'));
-    modal.hide();
+    // First show a form to specify match details before sending challenge
+    const currentModal = bootstrap.Modal.getInstance(document.getElementById('matchProposalModal'));
+    currentModal.hide();
+    
+    setTimeout(() => {
+        showMatchDetailsForm(playerId, playerName);
+    }, 300);
 }
 
 function showCounterProposal(playerId, playerName, playerLocation, skillLevel) {
@@ -1276,6 +1279,112 @@ Date: ${formattedDate}<br>
 Time: ${formattedTime}`);
 }
 
+function showMatchDetailsForm(playerId, playerName) {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div class="modal fade" id="matchDetailsModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: #28a745; color: white;">
+                        <h5 class="modal-title">
+                            <i class="fas fa-calendar-plus me-2"></i>Propose Match Details
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center mb-4">
+                            <h6>Challenge: <strong>${playerName}</strong></h6>
+                            <p class="text-muted">Specify your proposed match details:</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-map-marker-alt me-1"></i>Proposed Location *
+                            </label>
+                            <input type="text" class="form-control" id="matchLocation" 
+                                   placeholder="e.g., Apex Community Center, Cary Tennis Park" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-calendar me-1"></i>Proposed Date *
+                            </label>
+                            <input type="date" class="form-control" id="matchDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-clock me-1"></i>Proposed Time *
+                            </label>
+                            <input type="time" class="form-control" id="matchTime" required>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success" onclick="sendMatchChallenge(${playerId}, '${playerName}')">
+                                <i class="fas fa-paper-plane me-2"></i>Send Challenge
+                            </button>
+                            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bootstrapModal = new bootstrap.Modal(document.getElementById('matchDetailsModal'));
+    bootstrapModal.show();
+    
+    // Clean up when modal is hidden
+    document.getElementById('matchDetailsModal').addEventListener('hidden.bs.modal', function () {
+        document.body.removeChild(modal);
+    });
+    
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('matchDate').min = today;
+}
+
+function sendMatchChallenge(playerId, playerName) {
+    const location = document.getElementById('matchLocation').value;
+    const date = document.getElementById('matchDate').value;
+    const time = document.getElementById('matchTime').value;
+    
+    if (!location || !date || !time) {
+        showErrorToast('Please fill in all required fields: location, date, and time.');
+        return;
+    }
+    
+    // Send challenge with proposed details
+    challengePlayerWithDetails(playerId, location, date, time);
+    
+    // Close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('matchDetailsModal'));
+    modal.hide();
+    
+    // Format the date nicely for confirmation
+    const dateObj = new Date(date);
+    const formattedDate = dateObj.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+    
+    // Format time nicely
+    const timeObj = new Date(`2000-01-01T${time}`);
+    const formattedTime = timeObj.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+    });
+    
+    showSuccessToast(`Challenge sent to ${playerName}!<br>
+Location: ${location}<br>
+Date: ${formattedDate}<br>
+Time: ${formattedTime}`);
+}
+
 function challengePlayerFromModal(playerId, playerName) {
     challengePlayer(playerId);
     // Close the modal
@@ -1305,20 +1414,37 @@ function challengeAllPlayers(playerIds) {
 }
 
 function challengePlayer(opponentId) {
+    // Legacy function for compatibility
+    challengePlayerWithDetails(opponentId, null, null, null);
+}
+
+function challengePlayerWithDetails(opponentId, proposedLocation, proposedDate, proposedTime) {
+    const requestData = {
+        target_player_id: opponentId
+    };
+    
+    // Add proposed details if provided
+    if (proposedLocation && proposedDate && proposedTime) {
+        requestData.proposed_location = proposedLocation;
+        requestData.proposed_date = proposedDate;
+        requestData.proposed_time = proposedTime;
+    }
+    
     // Create a direct challenge to the specified player
     fetch(`/find_match/{{ player.id }}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            target_player_id: opponentId
-        })
+        body: JSON.stringify(requestData)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showSuccessToast(data.message);
+            // Don't show toast here if details were provided (already shown)
+            if (!proposedLocation) {
+                showSuccessToast(data.message);
+            }
             loadPendingMatches(); // Refresh the page sections
         } else {
             showErrorToast(data.message || 'Unable to send challenge. Please try again.');
@@ -1326,7 +1452,7 @@ function challengePlayer(opponentId) {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error sending challenge. Please try again.');
+        showErrorToast('Error sending challenge. Please try again.');
     });
 }
 

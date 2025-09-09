@@ -1471,7 +1471,7 @@ def find_match_for_player(player_id):
     conn.close()
     return None
 
-def create_direct_challenge(challenger_id, target_id):
+def create_direct_challenge(challenger_id, target_id, proposed_location=None, proposed_date=None, proposed_time=None):
     """Create a direct challenge between two specific players"""
     try:
         conn = get_db_connection()
@@ -1486,9 +1486,11 @@ def create_direct_challenge(challenger_id, target_id):
             
         # Allow unlimited challenges - removed restriction check
             
-        # Determine court location using same logic as regular matchmaking
-        if (challenger['preferred_court'] and target['preferred_court'] and 
-            challenger['preferred_court'] == target['preferred_court']):
+        # Use proposed location and time if provided, otherwise fall back to automatic logic
+        if proposed_location:
+            match_court = proposed_location
+        elif (challenger['preferred_court'] and target['preferred_court'] and 
+              challenger['preferred_court'] == target['preferred_court']):
             match_court = challenger['preferred_court']
         elif challenger['preferred_court']:
             match_court = challenger['preferred_court']
@@ -1497,8 +1499,12 @@ def create_direct_challenge(challenger_id, target_id):
         else:
             match_court = challenger['location1'] or 'Local Court'
         
-        # Get suggested match time
-        scheduled_time = suggest_match_time(challenger, target)
+        # Use proposed date/time if provided, otherwise suggest match time
+        if proposed_date and proposed_time:
+            # Combine date and time into a proper datetime string
+            scheduled_time = f"{proposed_date} {proposed_time}"
+        else:
+            scheduled_time = suggest_match_time(challenger, target)
         
         # Create the match
         cursor = conn.execute('''
@@ -3441,7 +3447,18 @@ def find_match(player_id):
         
         if target_player_id:
             # Direct challenge to specific player
-            match_id = create_direct_challenge(player_id, target_player_id)
+            # Extract proposed match details if provided
+            proposed_location = data.get('proposed_location')
+            proposed_date = data.get('proposed_date')  
+            proposed_time = data.get('proposed_time')
+            
+            match_id = create_direct_challenge(
+                player_id, 
+                target_player_id, 
+                proposed_location, 
+                proposed_date, 
+                proposed_time
+            )
             if match_id:
                 return jsonify({'success': True, 'match_id': match_id, 'message': 'Challenge sent successfully!'})
             else:
