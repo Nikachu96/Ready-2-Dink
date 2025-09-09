@@ -2981,9 +2981,11 @@ async function toggleNotifications(isCompact = false) {
             
             // Collapse the full bar to compact view after first interaction (only if it's not already compact)
             if (!isCompact) {
+                console.log('Starting collapse timer...');
                 setTimeout(() => {
+                    console.log('Executing collapse...');
                     collapseNotificationBar();
-                }, 1500);
+                }, 2000);
             }
         } else {
             // Revert both toggles if failed
@@ -3005,25 +3007,24 @@ async function toggleNotifications(isCompact = false) {
 
 // Function to collapse notification bar to compact view
 function collapseNotificationBar() {
+    console.log('collapseNotificationBar called');
     const fullBar = document.getElementById('fullNotificationBar');
     const compactBar = document.getElementById('compactNotificationBar');
     
+    console.log('fullBar:', fullBar);
+    console.log('compactBar:', compactBar);
+    
     if (fullBar && compactBar) {
-        // Fade out full bar
-        fullBar.style.transition = 'opacity 0.3s ease-out';
-        fullBar.style.opacity = '0';
+        console.log('Both elements found, starting collapse...');
         
-        setTimeout(() => {
-            fullBar.style.display = 'none';
-            compactBar.style.display = 'flex';
-            compactBar.style.opacity = '0';
-            
-            // Fade in compact bar
-            setTimeout(() => {
-                compactBar.style.transition = 'opacity 0.3s ease-in';
-                compactBar.style.opacity = '1';
-            }, 50);
-        }, 300);
+        // Immediate transition for testing
+        fullBar.style.display = 'none';
+        compactBar.style.display = 'flex';
+        compactBar.style.opacity = '1';
+        
+        console.log('Collapse completed');
+    } else {
+        console.log('Elements not found!');
     }
 }
 
