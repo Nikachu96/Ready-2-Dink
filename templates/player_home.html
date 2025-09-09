@@ -958,6 +958,58 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 let currentRecipientId = null;
 
+function showSuccessToast(message) {
+    const toast = document.createElement('div');
+    toast.innerHTML = `
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 11000;">
+            <div class="toast show" role="alert">
+                <div class="toast-header" style="background: #28a745; color: white;">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong class="me-auto">Success</strong>
+                    <button type="button" class="btn-close btn-close-white" onclick="this.closest('.toast').parentElement.remove()"></button>
+                </div>
+                <div class="toast-body" style="background: white; color: #333;">
+                    ${message}
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
+function showErrorToast(message) {
+    const toast = document.createElement('div');
+    toast.innerHTML = `
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 11000;">
+            <div class="toast show" role="alert">
+                <div class="toast-header" style="background: #dc3545; color: white;">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong class="me-auto">Error</strong>
+                    <button type="button" class="btn-close btn-close-white" onclick="this.closest('.toast').parentElement.remove()"></button>
+                </div>
+                <div class="toast-body" style="background: white; color: #333;">
+                    ${message}
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 7 seconds (longer for errors)
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 7000);
+}
+
 function findNewMatch(playerId) {
     fetch(`/find_match/${playerId}`, {
         method: 'POST',
@@ -1186,7 +1238,7 @@ function sendCounterProposal(playerId, playerName) {
     const time = document.getElementById('proposedTime').value;
     
     if (!location || !date || !time) {
-        alert('Please fill in all required fields: location, date, and time.');
+        showErrorToast('Please fill in all required fields: location, date, and time.');
         return;
     }
     
@@ -1214,9 +1266,9 @@ function sendCounterProposal(playerId, playerName) {
     const modal = bootstrap.Modal.getInstance(document.getElementById('counterProposalModal'));
     modal.hide();
     
-    alert(`Counter-proposal sent to ${playerName}!
-Location: ${location}
-Date: ${formattedDate}
+    showSuccessToast(`Counter-proposal sent to ${playerName}!<br>
+Location: ${location}<br>
+Date: ${formattedDate}<br>
 Time: ${formattedTime}`);
 }
 
@@ -1262,10 +1314,10 @@ function challengePlayer(opponentId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(data.message);
+            showSuccessToast(data.message);
             loadPendingMatches(); // Refresh the page sections
         } else {
-            alert(data.message || 'Unable to send challenge. Please try again.');
+            showErrorToast(data.message || 'Unable to send challenge. Please try again.');
         }
     })
     .catch(error => {
