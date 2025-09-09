@@ -103,6 +103,9 @@
 </div>
 {% endif %}
 
+<!-- Notification Area -->
+<div id="notificationArea" class="position-fixed top-0 start-50 translate-middle-x" style="z-index: 9999; margin-top: 70px; min-width: 350px;"></div>
+
 <!-- Welcome Section - New Color Scheme -->
 <div class="row mb-4 animate-in">
     <div class="col-12">
@@ -2016,15 +2019,15 @@ function acceptChallenge(challengeId) {
     .then(data => {
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('challengeResponseModal')).hide();
-            alert('Challenge accepted! Match has been scheduled.');
+            showAlert('success', data.message || 'Challenge accepted! Match has been scheduled.');
             loadPendingMatches(); // Refresh the sections
         } else {
-            alert('Error accepting challenge: ' + data.message);
+            showAlert('danger', 'Error accepting challenge: ' + data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error accepting challenge');
+        showAlert('danger', 'Error accepting challenge');
     });
 }
 
@@ -2044,15 +2047,15 @@ function declineChallenge(challengeId) {
     .then(data => {
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('challengeResponseModal')).hide();
-            alert('Challenge declined.');
+            showAlert('info', 'Challenge declined.');
             loadPendingMatches(); // Refresh the sections
         } else {
-            alert('Error declining challenge: ' + data.message);
+            showAlert('danger', 'Error declining challenge: ' + data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error declining challenge');
+        showAlert('danger', 'Error declining challenge');
     });
 }
 
@@ -3016,6 +3019,34 @@ function showSimpleMessage(message, type) {
             alert.remove();
         }
     }, 4000);
+}
+
+// Function to show Bootstrap alerts instead of browser popups
+function showAlert(type, message) {
+    const notificationArea = document.getElementById('notificationArea');
+    const alertId = 'alert-' + Date.now();
+    
+    const alertHtml = `
+        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert" 
+             style="margin-bottom: 10px; border-radius: 8px; border: none;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : type === 'info' ? 'info-circle' : 'exclamation-circle'} me-2"></i>
+                <div>${message}</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    notificationArea.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        const alertElement = document.getElementById(alertId);
+        if (alertElement) {
+            const bsAlert = new bootstrap.Alert(alertElement);
+            bsAlert.close();
+        }
+    }, 5000);
 }
 
 // Set up toggle event listener
