@@ -174,67 +174,7 @@
 let requiresGuardianConsent = false;
 let guardianModalShown = false;
 
-// Date of birth validation - no formatting during typing
-document.getElementById('dob').addEventListener('blur', function(e) {
-    // Just validate, don't auto-format
-    let value_for_validation = e.target.value;
-    
-    // Validate date format - simplified validation
-    const datePattern = /^\d{2}-\d{2}-\d{4}$/;
-    if (datePattern.test(value_for_validation)) {
-        const [month, day, year] = value_for_validation.split('-').map(Number);
-        
-        // Basic validation: month 1-12, day 1-31, year 1900-current year
-        const currentYear = new Date().getFullYear();
-        if (month >= 1 && month <= 12 && 
-            day >= 1 && day <= 31 && 
-            year >= 1900 && year <= currentYear) {
-            
-            // Calculate age for COPPA compliance
-            const birthDate = new Date(year, month - 1, day);
-            const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-            
-            // Check if player is 13 or under
-            if (age <= 13 && !guardianModalShown) {
-                requiresGuardianConsent = true;
-                guardianModalShown = true;
-                
-                // Show guardian consent modal after a brief delay
-                setTimeout(() => {
-                    const guardianModal = new bootstrap.Modal(document.getElementById('guardianConsentModal'));
-                    guardianModal.show();
-                }, 500);
-            } else if (age > 13) {
-                requiresGuardianConsent = false;
-                document.getElementById('guardian_email').value = '';
-            }
-            
-            // Clear any validation errors
-            e.target.setCustomValidity('');
-            e.target.classList.remove('is-invalid');
-            e.target.classList.add('is-valid');
-        } else {
-            e.target.setCustomValidity('Please enter a valid date');
-            e.target.classList.remove('is-valid');
-            e.target.classList.add('is-invalid');
-        }
-    } else if (value_for_validation.length === 10) {
-        e.target.setCustomValidity('Please use MM-DD-YYYY format');
-        e.target.classList.remove('is-valid');
-        e.target.classList.add('is-invalid');
-    } else {
-        // Reset validation state for incomplete dates
-        e.target.setCustomValidity('');
-        e.target.classList.remove('is-valid', 'is-invalid');
-        requiresGuardianConsent = false;
-    }
-});
+// No date formatting - plain text field
 
 // Guardian consent modal handlers
 document.getElementById('confirm-guardian-email').addEventListener('click', function() {
