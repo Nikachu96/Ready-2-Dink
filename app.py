@@ -1348,11 +1348,20 @@ def find_match_for_player(player_id):
         return None
     
     # Find potential matches - simplified for pickleball-only app
-    # Handle court matching - if no preferred court, match by location  
-    if player['preferred_court']:
+    # More flexible location matching - Triangle area cities are compatible
+    triangle_cities = ['apex', 'raleigh', 'cary', 'durham', 'wake forest', 'morrisville', 'chapel hill']
+    player_city = player['location1'].lower() if player['location1'] else ''
+    
+    if player_city in triangle_cities:
+        # If player is in Triangle area, match with other Triangle cities
+        location_condition = "(" + " OR ".join([f"LOWER(location1) = '{city}'" for city in triangle_cities]) + ")"
+        location_params = []
+    elif player['preferred_court']:
+        # Use preferred court matching
         location_condition = "(preferred_court = ? OR location1 = ? OR location2 = ?)"
         location_params = [player['preferred_court'], player['location1'], player['location2']]
     else:
+        # Exact location match as fallback
         location_condition = "(location1 = ? OR location2 = ?)"
         location_params = [player['location1'], player['location2']]
     
