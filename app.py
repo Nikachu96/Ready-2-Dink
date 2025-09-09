@@ -1625,7 +1625,8 @@ def send_new_registration_notification(player_data):
 @app.context_processor
 def inject_user_context():
     """Make current user admin status available to all templates"""
-    current_player_id = session.get('current_player_id')
+    # Check both session keys used in the app
+    current_player_id = session.get('player_id') or session.get('pending_player_id') or session.get('current_player_id')
     is_admin = False
     
     # Debug logging
