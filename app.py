@@ -2036,6 +2036,11 @@ def accept_disclaimers():
         conn.commit()
         conn.close()
         
+        # Log the user in automatically
+        session['current_player_id'] = int(player_id)
+        session['player_id'] = int(player_id)
+        session['show_profile_completion'] = True  # Flag to show completion prompt
+        
         flash('Thank you for accepting our terms! Welcome to Ready 2 Dink!', 'success')
         # Try to find a match for the new player now that they've accepted terms
         find_match_for_player(int(player_id))
@@ -3466,6 +3471,13 @@ def update_profile():
         conn.close()
         flash(f'Error updating profile: {str(e)}', 'danger')
         return redirect(url_for('profile_settings'))
+
+@app.route('/clear_profile_completion_flag', methods=['POST'])
+def clear_profile_completion_flag():
+    """Clear the profile completion flag from session"""
+    if 'show_profile_completion' in session:
+        del session['show_profile_completion']
+    return jsonify({'success': True})
 
 @app.route('/send_message', methods=['POST'])
 def send_message():
