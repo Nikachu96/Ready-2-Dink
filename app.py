@@ -1941,11 +1941,12 @@ def register():
             cursor = conn.execute('''
                 INSERT INTO players 
                 (full_name, email, dob, username, password_hash, preferred_sport, 
-                 guardian_email, account_status, guardian_consent_required, test_account)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 guardian_email, account_status, guardian_consent_required, test_account, address)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['full_name'], request.form['email'], request.form['dob'], 
                   request.form['username'], password_hash, 'Pickleball',
-                  guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0))
+                  guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0, 
+                  'Address not provided'))
             
             player_id = cursor.lastrowid
             conn.commit()
@@ -1987,8 +1988,15 @@ def register():
                 return redirect(url_for('show_disclaimers', player_id=player_id))
             
         except sqlite3.IntegrityError as e:
-            logging.error(f"Registration failed - Email already exists: {request.form['email']} - {str(e)}")
-            flash('Email already exists. Please use a different email address.', 'danger')
+            error_message = str(e).lower()
+            logging.error(f"Registration failed - Database constraint error: {request.form['email']} - {str(e)}")
+            
+            if 'unique constraint failed' in error_message and 'email' in error_message:
+                flash('Email already exists. Please use a different email address.', 'danger')
+            elif 'unique constraint failed' in error_message and 'username' in error_message:
+                flash('Username already taken. Please choose a different username.', 'danger')
+            else:
+                flash('Registration failed due to a data validation error. Please check your information and try again.', 'danger')
         except sqlite3.OperationalError as e:
             if 'database is locked' in str(e).lower():
                 logging.error(f"Database lock error during registration for {request.form['email']}: {str(e)}")
