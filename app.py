@@ -1988,10 +1988,10 @@ def register():
                 # Redirect to pending approval page for underage players
                 return redirect(url_for('pending_guardian_approval', player_id=player_id))
             else:
-                flash('Registration successful! Please review and accept our terms and disclaimers to continue.', 'success')
+                flash('Registration successful! Please review and accept our NDA and terms to continue.', 'success')
                 # Set session to automatically log them in after NDA
                 session['pending_player_id'] = player_id
-                return redirect(url_for('show_disclaimers', player_id=player_id))
+                return redirect(url_for('nda_required'))
             
         except sqlite3.IntegrityError as e:
             error_message = str(e).lower()
@@ -2420,7 +2420,10 @@ def unsubscribe_notifications():
 def sign_nda():
     """Handle NDA digital signature submission"""
     try:
-        if 'player_id' not in session:
+        # Handle both logged-in users and pending registrations
+        player_id = session.get('player_id') or session.get('pending_player_id')
+        
+        if not player_id:
             return jsonify({'success': False, 'message': 'Not logged in'})
         
         data = request.get_json()
@@ -2440,7 +2443,7 @@ def sign_nda():
         # Get player details for email
         player = conn.execute('''
             SELECT * FROM players WHERE id = ?
-        ''', (session['player_id'],)).fetchone()
+        ''', (player_id,)).fetchone()
         
         # Update NDA status
         conn.execute('''
@@ -2450,7 +2453,7 @@ def sign_nda():
                 nda_signature = ?,
                 nda_ip_address = ?
             WHERE id = ?
-        ''', (signature, client_ip, session['player_id']))
+        ''', (signature, client_ip, player_id))
         conn.commit()
         conn.close()
         
@@ -2464,9 +2467,13 @@ def sign_nda():
         )
         
         if email_sent:
-            logging.info(f"NDA signed by player {session['player_id']} with signature '{signature}' from IP {client_ip} - Email sent")
+            logging.info(f"NDA signed by player {player_id} with signature '{signature}' from IP {client_ip} - Email sent")
         else:
-            logging.warning(f"NDA signed by player {session['player_id']} with signature '{signature}' from IP {client_ip} - Email failed")
+            logging.warning(f"NDA signed by player {player_id} with signature '{signature}' from IP {client_ip} - Email failed")
+        
+        # Set the session player_id if it was a pending registration
+        if 'pending_player_id' in session:
+            session['player_id'] = player_id
         
         return jsonify({'success': True, 'message': 'NDA signed successfully!'})
         
@@ -2477,19 +2484,27 @@ def sign_nda():
 @app.route('/nda-required')
 def nda_required():
     """Show NDA requirement page for users who haven't signed yet"""
-    if 'player_id' not in session:
+    # Handle both logged-in users and pending registrations
+    player_id = session.get('player_id') or session.get('pending_player_id')
+    
+    if not player_id:
         return redirect(url_for('player_login'))
     
     # Check if already signed
     conn = get_db_connection()
     player = conn.execute('''
         SELECT nda_accepted FROM players WHERE id = ?
-    ''', (session['player_id'],)).fetchone()
+    ''', (player_id,)).fetchone()
     conn.close()
     
     if player and player['nda_accepted']:
-        # Already signed, redirect to home
-        return redirect(url_for('player_home', player_id=session['player_id']))
+        # Already signed, check if this is a new registration flow
+        if 'pending_player_id' in session:
+            # Continue to disclaimers for new registrations
+            return redirect(url_for('show_disclaimers', player_id=player_id))
+        else:
+            # Already established user, go to home
+            return redirect(url_for('player_home', player_id=player_id))
     
     return render_template('nda_required.html')
 
