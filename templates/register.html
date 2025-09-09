@@ -13,7 +13,7 @@
                 <p class="mb-0 opacity-90">Create your profile to start matching with pickleball players</p>
             </div>
             <div class="card-body">
-                <form method="POST" enctype="multipart/form-data" action="{{ url_for('register') }}" onsubmit="console.log('Form submitting...'); return true;">
+                <form method="POST" action="{{ url_for('register') }}" onsubmit="console.log('Form submitting...'); return true;">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -36,45 +36,6 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="address" class="form-label">
-                                    <i class="fas fa-home me-1"></i>Street Address *
-                                </label>
-                                <input type="text" class="form-control" id="address" name="address" 
-                                       placeholder="123 Main St" required>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="mb-3">
-                                <label for="zip_code" class="form-label">
-                                    <i class="fas fa-map-pin me-1"></i>Zip Code *
-                                </label>
-                                <input type="text" class="form-control" id="zip_code" name="zip_code" 
-                                       placeholder="12345" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="city" class="form-label">
-                                    <i class="fas fa-city me-1"></i>City *
-                                </label>
-                                <input type="text" class="form-control" id="city" name="city" 
-                                       placeholder="Your City" required>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="state" class="form-label">
-                                    <i class="fas fa-flag me-1"></i>State *
-                                </label>
-                                <input type="text" class="form-control" id="state" name="state" 
-                                       placeholder="CA" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
                                 <label for="dob" class="form-label">
                                     <i class="fas fa-birthday-cake me-1"></i>Date of Birth *
                                 </label>
@@ -86,62 +47,46 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    
-                    <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="preferred_court_1" class="form-label">
-                                    <i class="fas fa-map-marker-alt me-1"></i>Favorite Court #1 *
+                                <label for="username" class="form-label">
+                                    <i class="fas fa-at me-1"></i>Create Username *
                                 </label>
-                                <input type="text" class="form-control court-search" id="preferred_court_1" name="preferred_court_1" 
-                                       placeholder="Search for pickleball courts..." required>
-                                <div id="preferred_court_1-map" class="map-container mt-2" style="height: 200px; display: none; border-radius: 8px;"></div>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       placeholder="Choose a unique username" required>
                                 <div class="form-text">
                                     <i class="fas fa-info-circle me-1"></i>
-                                    Your primary pickleball court or venue
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="preferred_court_2" class="form-label">
-                                    <i class="fas fa-map-marker me-1"></i>Favorite Court #2
-                                </label>
-                                <input type="text" class="form-control court-search" id="preferred_court_2" name="preferred_court_2" 
-                                       placeholder="Optional second court...">
-                                <div id="preferred_court_2-map" class="map-container mt-2" style="height: 200px; display: none; border-radius: 8px;"></div>
-                                <div class="form-text">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Alternative court location
+                                    This will be your unique identifier in Ready 2 Dink
                                 </div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-5">
+                        <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="skill_level" class="form-label">
-                                    <i class="fas fa-star me-1"></i>Skill Level *
+                                <label for="password" class="form-label">
+                                    <i class="fas fa-lock me-1"></i>Create Password *
                                 </label>
-                                <select class="form-select" id="skill_level" name="skill_level" required>
-                                    <option value="">Select skill level</option>
-                                    <option value="Beginner">Beginner</option>
-                                    <option value="Intermediate">Intermediate</option>
-                                    <option value="Advanced">Advanced</option>
-                                    <option value="Professional">Professional</option>
-                                </select>
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="Choose a strong password" required>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Minimum 6 characters
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-7">
+                        <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="selfie" class="form-label">
-                                    <i class="fas fa-camera me-1"></i>Profile Photo
+                                <label for="confirm_password" class="form-label">
+                                    <i class="fas fa-lock me-1"></i>Confirm Password *
                                 </label>
-                                <input type="file" class="form-control" id="selfie" name="selfie" accept="image/*">
-                                <div class="form-text">Optional: Upload a profile photo (PNG, JPG, JPEG, GIF)</div>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                       placeholder="Re-enter your password" required>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Must match your password
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -149,10 +94,16 @@
                     <!-- Hidden field for guardian email -->
                     <input type="hidden" id="guardian_email" name="guardian_email" value="">
                     
+                    <div class="alert text-white mb-4" style="background-color: #2c3e50; border-color: #34495e;">
+                        <i class="fas fa-info-circle me-2 text-white"></i>
+                        <strong class="text-white">Quick Registration:</strong> 
+                        <p class="mb-0 mt-2 text-white">Get started with just the basics! After joining, you can complete your profile with courts, skill level, and photos in your account settings.</p>
+                    </div>
+                    
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2" style="color: white;">Cancel</a>
                         <button type="submit" class="btn btn-primary" id="register-btn">
-                            <i class="fas fa-save me-1"></i>Register Player
+                            <i class="fas fa-user-plus me-1"></i>Create Account
                         </button>
                     </div>
                 </form>

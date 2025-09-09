@@ -1888,24 +1888,34 @@ def register():
         logging.info(f"=== REGISTRATION POST REQUEST RECEIVED ===")
         logging.info(f"Form data keys: {list(request.form.keys())}")
         logging.info(f"Files: {list(request.files.keys())}")
-        # Form validation
-        required_fields = ['full_name', 'address', 'zip_code', 'city', 'state', 'dob', 'preferred_court_1', 'skill_level', 'email']
+        # Form validation for simplified registration
+        required_fields = ['full_name', 'email', 'dob', 'username', 'password', 'confirm_password']
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
                 return render_template('register.html')
         
-        # Handle file upload
-        selfie_filename = None
-        if 'selfie' in request.files:
-            file = request.files['selfie']
-            if file and file.filename and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                # Add timestamp to filename to avoid conflicts
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-                filename = timestamp + filename
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                selfie_filename = filename
+        # Validate password match
+        if request.form['password'] != request.form['confirm_password']:
+            flash('Passwords do not match', 'danger')
+            return render_template('register.html')
+        
+        # Validate password length
+        if len(request.form['password']) < 6:
+            flash('Password must be at least 6 characters long', 'danger')
+            return render_template('register.html')
+        
+        # Check if username is already taken
+        conn = get_db_connection()
+        existing_username = conn.execute('SELECT id FROM players WHERE username = ?', (request.form['username'],)).fetchone()
+        if existing_username:
+            conn.close()
+            flash('Username already taken. Please choose a different username.', 'danger')
+            return render_template('register.html')
+        
+        # Hash password for security
+        from werkzeug.security import generate_password_hash
+        password_hash = generate_password_hash(request.form['password'])
         
         # Check if guardian consent is required (COPPA compliance)
         guardian_email = request.form.get('guardian_email', '').strip()
@@ -1930,16 +1940,11 @@ def register():
             conn = get_db_connection()
             cursor = conn.execute('''
                 INSERT INTO players 
-                (full_name, address, zip_code, city, state, dob, preferred_sport, 
-                 preferred_court_1, preferred_court_2, court1_coordinates, court2_coordinates,
-                 skill_level, email, selfie, guardian_email, account_status, guardian_consent_required, test_account)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (request.form['full_name'], request.form['address'], 
-                  request.form['zip_code'], request.form['city'], request.form['state'],
-                  request.form['dob'], 'Pickleball',
-                  request.form.get('preferred_court_1', ''), request.form.get('preferred_court_2', ''),
-                  request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
-                  request.form['skill_level'], request.form['email'], selfie_filename,
+                (full_name, email, dob, username, password_hash, preferred_sport, 
+                 guardian_email, account_status, guardian_consent_required, test_account)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (request.form['full_name'], request.form['email'], request.form['dob'], 
+                  request.form['username'], password_hash, 'Pickleball',
                   guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0))
             
             player_id = cursor.lastrowid
@@ -1950,11 +1955,7 @@ def register():
             player_data = {
                 'full_name': request.form['full_name'],
                 'email': request.form['email'],
-                'skill_level': request.form['skill_level'],
-                'location1': request.form.get('city', '') + ', ' + request.form.get('state', ''),
-                'location2': request.form.get('preferred_court_2', ''),
-                'preferred_court': request.form.get('preferred_court_1', ''),
-                'address': request.form['address'],
+                'username': request.form['username'],
                 'dob': request.form['dob'],
                 'guardian_email': guardian_email,
                 'account_status': account_status
@@ -1981,6 +1982,8 @@ def register():
                 return redirect(url_for('pending_guardian_approval', player_id=player_id))
             else:
                 flash('Registration successful! Please review and accept our terms and disclaimers to continue.', 'success')
+                # Set session to automatically log them in after NDA
+                session['pending_player_id'] = player_id
                 return redirect(url_for('show_disclaimers', player_id=player_id))
             
         except sqlite3.IntegrityError as e:
