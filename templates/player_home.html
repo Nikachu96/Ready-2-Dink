@@ -1865,7 +1865,7 @@ function showRankingInfo() {
 
 // QR Code Sharing Functions
 function copyShareLink() {
-    const shareUrl = 'https://www.ready2dink.com';
+    const shareUrl = window.location.origin;
     navigator.clipboard.writeText(shareUrl).then(function() {
         // Show success feedback
         const btn = event.target.closest('button');
