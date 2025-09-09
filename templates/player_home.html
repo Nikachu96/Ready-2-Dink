@@ -142,6 +142,28 @@
                                     </span>
                                 </div>
                                 {% endif %}
+                                
+                                <!-- Center Banner Notification Toggle -->
+                                <div class="d-flex justify-content-center mb-3">
+                                    <div class="d-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-2">
+                                        <small class="text-white me-2">Notifications</small>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" 
+                                                   type="checkbox" 
+                                                   role="switch" 
+                                                   id="bannerNotificationToggle"
+                                                   onclick="toggleNotifications(false, true)"
+                                                   {% if player.notifications_enabled %}checked{% endif %}
+                                                   style="width: 2.5rem; height: 1.25rem;">
+                                            <label class="form-check-label text-white fw-semibold" for="bannerNotificationToggle" style="margin-left: 0.5rem;">
+                                                <span id="bannerNotificationStatus">
+                                                    {% if player.notifications_enabled %}ON{% else %}OFF{% endif %}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <div class="d-flex flex-wrap gap-3">
                                     <span class="badge px-3 py-2" style="background-color: #E0563F; color: white;">{{ player.skill_level }}</span>
                                     <span class="badge px-3 py-2" style="background-color: #3F567F; color: white;">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
@@ -183,10 +205,6 @@
                                     class="btn btn-lg fw-semibold text-white"
                                     style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
                                 <i class="fas fa-star me-2"></i>Upgrade Now
-                            </button>
-                            <button id="notificationBtn" onclick="toggleNotifications()" 
-                                    class="btn btn-outline-light">
-                                <i class="fas fa-bell me-2"></i>Notifications
                             </button>
                             {% endif %}
                         </div>
@@ -2888,18 +2906,44 @@ function showCourtLocation(courtName, type) {
 }
 
 // Enhanced notification toggle function with bar collapse
-async function toggleNotifications(isCompact = false) {
-    const toggle = isCompact ? document.getElementById('notificationToggleCompact') : document.getElementById('notificationToggle');
-    const status = isCompact ? document.getElementById('notificationStatusCompact') : document.getElementById('notificationStatus');
+async function toggleNotifications(isCompact = false, isBanner = false) {
+    let toggle, status;
+    
+    if (isBanner) {
+        toggle = document.getElementById('bannerNotificationToggle');
+        status = document.getElementById('bannerNotificationStatus');
+    } else if (isCompact) {
+        toggle = document.getElementById('notificationToggleCompact');
+        status = document.getElementById('notificationStatusCompact');
+    } else {
+        toggle = document.getElementById('notificationToggle');
+        status = document.getElementById('notificationStatus');
+    }
     
     // Update status text immediately when toggle changes
     status.textContent = toggle.checked ? 'ON' : 'OFF';
     
-    // Sync both toggles
-    const otherToggle = isCompact ? document.getElementById('notificationToggle') : document.getElementById('notificationToggleCompact');
-    const otherStatus = isCompact ? document.getElementById('notificationStatus') : document.getElementById('notificationStatusCompact');
-    otherToggle.checked = toggle.checked;
-    otherStatus.textContent = toggle.checked ? 'ON' : 'OFF';
+    // Sync all toggles
+    const bannerToggle = document.getElementById('bannerNotificationToggle');
+    const bannerStatus = document.getElementById('bannerNotificationStatus');
+    const compactToggle = document.getElementById('notificationToggleCompact');
+    const compactStatus = document.getElementById('notificationStatusCompact');
+    const mainToggle = document.getElementById('notificationToggle');
+    const mainStatus = document.getElementById('notificationStatus');
+    
+    // Update all toggles and statuses
+    if (bannerToggle && bannerStatus) {
+        bannerToggle.checked = toggle.checked;
+        bannerStatus.textContent = toggle.checked ? 'ON' : 'OFF';
+    }
+    if (compactToggle && compactStatus) {
+        compactToggle.checked = toggle.checked;
+        compactStatus.textContent = toggle.checked ? 'ON' : 'OFF';
+    }
+    if (mainToggle && mainStatus) {
+        mainToggle.checked = toggle.checked;
+        mainStatus.textContent = toggle.checked ? 'ON' : 'OFF';
+    }
     
     try {
         const response = await fetch('/toggle-notifications', {
