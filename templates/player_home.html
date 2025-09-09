@@ -922,6 +922,7 @@
             <div class="modal-body">
                 <div id="match-details" class="mb-3"></div>
                 
+                <!-- Digital Scoreboard Style -->
                 <div class="alert alert-info mb-3">
                     <i class="fas fa-info-circle me-2"></i>
                     <strong>Pickleball Scoring:</strong> Each set is played to 11 points (must win by 2). Best of 3 sets wins the match.
@@ -943,63 +944,88 @@
                         </label>
                     </div>
                 </div>
-                
-                <!-- Set 1 -->
-                <div class="card mb-3">
-                    <div class="card-header bg-primary text-white">
-                        <h6 class="mb-0"><i class="fas fa-circle me-2"></i>Set 1 (Required)</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <label class="form-label fw-bold" id="player1-set1-label">Your Score</label>
-                                <input type="number" id="player1-set1" class="form-control" min="0" max="30" placeholder="0">
+
+                <!-- Digital Scoreboard Container -->
+                <div class="bg-dark p-4 rounded mb-4" style="background: #1a1a1a !important; border: 3px solid #333;">
+                    <!-- Player Name Headers -->
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="text-center p-3 rounded fw-bold" style="background: #FFA500; color: #000; font-size: 18px;" id="player1-name-display">
+                                <i class="fas fa-user me-2"></i><span id="player1-set1-label">Your Name</span>
                             </div>
-                            <div class="col-6">
-                                <label class="form-label fw-bold" id="player2-set1-label">Opponent Score</label>
-                                <input type="number" id="player2-set1" class="form-control" min="0" max="30" placeholder="0">
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 rounded fw-bold" style="background: #FFA500; color: #000; font-size: 18px;" id="player2-name-display">
+                                <i class="fas fa-user me-2"></i><span id="player2-set1-label">Opponent</span>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Set 2 -->
-                <div class="card mb-3">
-                    <div class="card-header bg-secondary text-white">
-                        <h6 class="mb-0"><i class="fas fa-circle me-2"></i>Set 2 (Required)</h6>
+
+                    <!-- Set Headers -->
+                    <div class="row mb-2">
+                        <div class="col-2"></div>
+                        <div class="col-2 text-center">
+                            <span style="color: #00FF00; font-size: 14px; font-family: 'Courier New', monospace;">SET 1</span>
+                        </div>
+                        <div class="col-2 text-center">
+                            <span style="color: #00FF00; font-size: 14px; font-family: 'Courier New', monospace;">SET 2</span>
+                        </div>
+                        <div class="col-2 text-center">
+                            <span style="color: #00FF00; font-size: 14px; font-family: 'Courier New', monospace;">SET 3</span>
+                        </div>
+                        <div class="col-4 text-center">
+                            <span style="color: #00FF00; font-size: 14px; font-family: 'Courier New', monospace;">SETS WON</span>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <label class="form-label fw-bold" id="player1-set2-label">Your Score</label>
-                                <input type="number" id="player1-set2" class="form-control" min="0" max="30" placeholder="0">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label fw-bold" id="player2-set2-label">Opponent Score</label>
-                                <input type="number" id="player2-set2" class="form-control" min="0" max="30" placeholder="0">
+
+                    <!-- Player 1 Row -->
+                    <div class="row mb-3 align-items-center">
+                        <div class="col-2"></div>
+                        <div class="col-2 text-center">
+                            <input type="number" id="player1-set1" class="form-control text-center" min="0" max="30" placeholder="0" 
+                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                        </div>
+                        <div class="col-2 text-center">
+                            <input type="number" id="player1-set2" class="form-control text-center" min="0" max="30" placeholder="0"
+                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                        </div>
+                        <div class="col-2 text-center">
+                            <input type="number" id="player1-set3" class="form-control text-center" min="0" max="30" placeholder="-"
+                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="p-2 rounded" style="background: #000; border: 2px solid #333;">
+                                <span id="player1-sets-won" style="color: #00FF00; font-family: 'Courier New', monospace; font-size: 36px; font-weight: bold;">0</span>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Set 3 -->
-                <div class="card mb-3">
-                    <div class="card-header bg-success text-white">
-                        <h6 class="mb-0"><i class="fas fa-circle me-2"></i>Set 3 (If Needed)</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <label class="form-label fw-bold" id="player1-set3-label">Your Score</label>
-                                <input type="number" id="player1-set3" class="form-control" min="0" max="30" placeholder="Leave blank if not played">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label fw-bold" id="player2-set3-label">Opponent Score</label>
-                                <input type="number" id="player2-set3" class="form-control" min="0" max="30" placeholder="Leave blank if not played">
+
+                    <!-- Player 2 Row -->
+                    <div class="row align-items-center">
+                        <div class="col-2"></div>
+                        <div class="col-2 text-center">
+                            <input type="number" id="player2-set1" class="form-control text-center" min="0" max="30" placeholder="0"
+                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                        </div>
+                        <div class="col-2 text-center">
+                            <input type="number" id="player2-set2" class="form-control text-center" min="0" max="30" placeholder="0"
+                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                        </div>
+                        <div class="col-2 text-center">
+                            <input type="number" id="player2-set3" class="form-control text-center" min="0" max="30" placeholder="-"
+                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="p-2 rounded" style="background: #000; border: 2px solid #333;">
+                                <span id="player2-sets-won" style="color: #00FF00; font-family: 'Courier New', monospace; font-size: 36px; font-weight: bold;">0</span>
                             </div>
                         </div>
-                        <small class="text-muted">
-                            <i class="fas fa-lightbulb me-1"></i>Only fill in Set 3 if the match went to a third set
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="text-center mt-3">
+                        <small style="color: #888; font-family: 'Courier New', monospace;">
+                            <i class="fas fa-lightbulb me-1"></i>Leave Set 3 blank if match ended in 2 sets
                         </small>
                     </div>
                 </div>
@@ -1460,6 +1486,32 @@ function updateScorePreview() {
     const set2P2 = document.getElementById('player2-set2').value;
     const set3P1 = document.getElementById('player1-set3').value;
     const set3P2 = document.getElementById('player2-set3').value;
+    
+    // Calculate sets won for digital scoreboard display
+    let player1SetsWon = 0;
+    let player2SetsWon = 0;
+    
+    // Count Set 1
+    if (set1P1 && set1P2) {
+        if (parseInt(set1P1) > parseInt(set1P2)) player1SetsWon++;
+        else if (parseInt(set1P2) > parseInt(set1P1)) player2SetsWon++;
+    }
+    
+    // Count Set 2
+    if (set2P1 && set2P2) {
+        if (parseInt(set2P1) > parseInt(set2P2)) player1SetsWon++;
+        else if (parseInt(set2P2) > parseInt(set2P1)) player2SetsWon++;
+    }
+    
+    // Count Set 3 (if played)
+    if (set3P1 && set3P2) {
+        if (parseInt(set3P1) > parseInt(set3P2)) player1SetsWon++;
+        else if (parseInt(set3P2) > parseInt(set3P1)) player2SetsWon++;
+    }
+    
+    // Update digital scoreboard sets won displays
+    document.getElementById('player1-sets-won').textContent = player1SetsWon;
+    document.getElementById('player2-sets-won').textContent = player2SetsWon;
     
     if (set1P1 && set1P2 && set2P1 && set2P2) {
         let scoreText = `${set1P1}-${set1P2} ${set2P1}-${set2P2}`;
