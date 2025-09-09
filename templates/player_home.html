@@ -246,7 +246,7 @@
                 
                 {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
                     <button onclick="findNewMatch({{ player.id }})" class="btn btn-light btn-sm fw-bold">
-                        <i class="fas fa-search me-2"></i>Find My Match
+                        <i class="fas fa-search me-2"></i>Browse Players
                     </button>
                 {% else %}
                     <button onclick="showMembershipModal('discovery')" class="btn btn-light btn-sm fw-bold">
@@ -968,7 +968,10 @@ function findNewMatch(playerId) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
+        if (data.success && data.players) {
+            // Show player selection modal
+            showPlayerSelectionModal(data.players);
+        } else if (data.success) {
             alert('🎾 Match found! Check your pending challenges above.');
             location.reload();
         } else {
@@ -978,6 +981,91 @@ function findNewMatch(playerId) {
     .catch(error => {
         console.error('Error:', error);
         alert('Error finding match. Please try again.');
+    });
+}
+
+function showPlayerSelectionModal(players) {
+    // Create modal for player selection
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div class="modal fade" id="playerSelectionModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: #3F567F; color: white;">
+                        <h5 class="modal-title">
+                            <i class="fas fa-users me-2"></i>Choose Players to Challenge
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-4">Found ${players.length} compatible players at your skill level and location:</p>
+                        <div class="row" id="playersList">
+                            ${players.map(player => `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title fw-bold">${player.name}</h6>
+                                            <p class="small text-muted mb-2">
+                                                <i class="fas fa-map-marker-alt me-1"></i>${player.location}
+                                            </p>
+                                            <p class="small text-muted mb-3">
+                                                <i class="fas fa-star me-1"></i>${player.skill_level}
+                                            </p>
+                                            <button class="btn btn-primary btn-sm" onclick="challengePlayerFromModal(${player.id}, '${player.name}')">
+                                                <i class="fas fa-handshake me-1"></i>Challenge
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-success" onclick="challengeAllPlayers([${players.map(p => p.id).join(',')}])">
+                            <i class="fas fa-users me-1"></i>Challenge All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bootstrapModal = new bootstrap.Modal(document.getElementById('playerSelectionModal'));
+    bootstrapModal.show();
+    
+    // Clean up when modal is hidden
+    document.getElementById('playerSelectionModal').addEventListener('hidden.bs.modal', function () {
+        document.body.removeChild(modal);
+    });
+}
+
+function challengePlayerFromModal(playerId, playerName) {
+    challengePlayer(playerId);
+    // Close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('playerSelectionModal'));
+    modal.hide();
+}
+
+function challengeAllPlayers(playerIds) {
+    let successCount = 0;
+    let totalPlayers = playerIds.length;
+    
+    // Challenge each player
+    playerIds.forEach((playerId, index) => {
+        setTimeout(() => {
+            challengePlayer(playerId);
+            successCount++;
+            
+            if (successCount === totalPlayers) {
+                // Close modal after all challenges sent
+                const modal = bootstrap.Modal.getInstance(document.getElementById('playerSelectionModal'));
+                modal.hide();
+                alert(`🎾 Sent challenges to all ${totalPlayers} players! Check your pending challenges above.`);
+                setTimeout(() => location.reload(), 1000);
+            }
+        }, index * 500); // Stagger the requests
     });
 }
 

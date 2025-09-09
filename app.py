@@ -1337,6 +1337,62 @@ def suggest_match_time(player1, player2):
         logging.error(f"Error suggesting match time: {e}")
         return "This week - Flexible timing"
 
+def get_compatible_players(player_id):
+    """Get list of compatible players without creating matches"""
+    conn = get_db_connection()
+    
+    # Get the player's preferences
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    if not player or not player['is_looking_for_match']:
+        conn.close()
+        return []
+    
+    # Find potential matches - simplified for pickleball-only app
+    # More flexible location matching - Triangle area cities are compatible
+    triangle_cities = ['apex', 'raleigh', 'cary', 'durham', 'wake forest', 'morrisville', 'chapel hill']
+    player_city = player['location1'].lower() if player['location1'] else ''
+    
+    if player_city in triangle_cities:
+        # If player is in Triangle area, match with other Triangle cities
+        location_condition = "(" + " OR ".join([f"LOWER(location1) = '{city}'" for city in triangle_cities]) + ")"
+        location_params = []
+    elif player['preferred_court']:
+        # Use preferred court matching
+        location_condition = "(preferred_court = ? OR location1 = ? OR location2 = ?)"
+        location_params = [player['preferred_court'], player['location1'], player['location2']]
+    else:
+        # Exact location match as fallback
+        location_condition = "(location1 = ? OR location2 = ?)"
+        location_params = [player['location1'], player['location2']]
+    
+    # Get all compatible players
+    query = f'''
+        SELECT id, full_name, location1, skill_level, preferred_court 
+        FROM players 
+        WHERE id != ? 
+        AND is_looking_for_match = 1
+        AND skill_level = ?
+        AND {location_condition}
+        ORDER BY created_at ASC
+    '''
+    
+    params = [player_id, player['skill_level']] + location_params
+    compatible_players = conn.execute(query, params).fetchall()
+    
+    # Convert to list of dictionaries
+    players_list = []
+    for p in compatible_players:
+        players_list.append({
+            'id': p['id'],
+            'name': p['full_name'],
+            'location': p['location1'],
+            'skill_level': p['skill_level'],
+            'preferred_court': p['preferred_court']
+        })
+    
+    conn.close()
+    return players_list
+
 def find_match_for_player(player_id):
     """Find and create a match for a player based on skill, sport, and location"""
     conn = get_db_connection()
@@ -3373,7 +3429,7 @@ def update_app_config():
 
 @app.route('/find_match/<int:player_id>', methods=['POST'])
 def find_match(player_id):
-    """API endpoint to find a match for a player or challenge a specific player"""
+    """API endpoint to find compatible players for selection or challenge a specific player"""
     try:
         # Check if player exists and bypass disclaimers for test accounts
         conn = get_db_connection()
@@ -3400,19 +3456,17 @@ def find_match(player_id):
             else:
                 return jsonify({'success': False, 'message': 'Unable to challenge this player. You may already have a pending match with them.'})
         else:
-            # Regular matchmaking
-            # Set player as looking for match
-            conn.execute('UPDATE players SET is_looking_for_match = 1 WHERE id = ?', (player_id,))
-            conn.commit()
-            conn.close()
+            # Return compatible players for selection
+            compatible_players = get_compatible_players(player_id)
             
-            # Try to find a match
-            match_id = find_match_for_player(player_id)
-            
-            if match_id:
-                return jsonify({'success': True, 'match_id': match_id, 'message': 'Match found!'})
+            if compatible_players:
+                return jsonify({
+                    'success': True, 
+                    'players': compatible_players,
+                    'message': f'Found {len(compatible_players)} compatible players!'
+                })
             else:
-                return jsonify({'success': False, 'message': 'Great job! You\'ve matched with ALL intermediate players in your area. Try a different skill level if you want more matches, or respond to your pending matches above.'})
+                return jsonify({'success': False, 'message': 'No compatible players found at the moment. Try expanding your preferences or check back later!'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error: {str(e)}'})
 
