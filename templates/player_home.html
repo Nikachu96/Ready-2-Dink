@@ -1240,10 +1240,10 @@ function challengePlayer(opponentId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Challenge sent! ' + data.message);
+            alert(data.message);
             loadPendingMatches(); // Refresh the page sections
         } else {
-            alert(data.message || 'Unable to send challenge. You already have a pending match with this player. Check your "Pending Matches" section above!');
+            alert(data.message || 'Unable to send challenge. Please try again.');
         }
     })
     .catch(error => {
