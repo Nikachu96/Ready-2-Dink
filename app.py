@@ -1484,16 +1484,7 @@ def create_direct_challenge(challenger_id, target_id):
             conn.close()
             return None
             
-        # Check if they already have a pending/confirmed match
-        existing_match = conn.execute('''
-            SELECT id FROM matches 
-            WHERE ((player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?))
-            AND status IN ('pending', 'confirmed')
-        ''', (challenger_id, target_id, target_id, challenger_id)).fetchone()
-        
-        if existing_match:
-            conn.close()
-            return None
+        # Allow unlimited challenges - removed restriction check
             
         # Determine court location using same logic as regular matchmaking
         if (challenger['preferred_court'] and target['preferred_court'] and 

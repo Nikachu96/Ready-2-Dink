@@ -1011,8 +1011,8 @@ function showPlayerSelectionModal(players) {
                                             <p class="small text-muted mb-3">
                                                 <i class="fas fa-star me-1"></i>${player.skill_level}
                                             </p>
-                                            <button class="btn btn-primary btn-sm" onclick="challengePlayerFromModal(${player.id}, '${player.name}')">
-                                                <i class="fas fa-handshake me-1"></i>Challenge
+                                            <button class="btn btn-primary btn-sm" onclick="showMatchProposal(${player.id}, '${player.name}', '${player.location}', '${player.skill_level}')">
+                                                <i class="fas fa-info-circle me-1"></i>View Details
                                             </button>
                                         </div>
                                     </div>
@@ -1039,6 +1039,163 @@ function showPlayerSelectionModal(players) {
     document.getElementById('playerSelectionModal').addEventListener('hidden.bs.modal', function () {
         document.body.removeChild(modal);
     });
+}
+
+function showMatchProposal(playerId, playerName, playerLocation, skillLevel) {
+    // Create modal for match proposal details
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div class="modal fade" id="matchProposalModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: #3F567F; color: white;">
+                        <h5 class="modal-title">
+                            <i class="fas fa-handshake me-2"></i>Match Proposal
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center mb-4">
+                            <div class="mb-3">
+                                <i class="fas fa-user-circle fa-3x text-primary"></i>
+                            </div>
+                            <h5 class="fw-bold">${playerName}</h5>
+                            <p class="text-muted">
+                                <i class="fas fa-map-marker-alt me-1"></i>${playerLocation} • 
+                                <i class="fas fa-star me-1"></i>${skillLevel}
+                            </p>
+                        </div>
+                        
+                        <div class="border rounded p-3 mb-4" style="background-color: #f8f9fa;">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fas fa-calendar-alt me-2"></i>Match Proposal
+                            </h6>
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>Location:</strong><br>
+                                    <span class="text-muted">${playerLocation} area courts</span>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Time:</strong><br>
+                                    <span class="text-muted">This week - flexible</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success" onclick="acceptMatchProposal(${playerId}, '${playerName}')">
+                                <i class="fas fa-check me-2"></i>Accept Match
+                            </button>
+                            <button class="btn btn-warning" onclick="showCounterProposal(${playerId}, '${playerName}')">
+                                <i class="fas fa-edit me-2"></i>Counter-Propose
+                            </button>
+                            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bootstrapModal = new bootstrap.Modal(document.getElementById('matchProposalModal'));
+    bootstrapModal.show();
+    
+    // Clean up when modal is hidden
+    document.getElementById('matchProposalModal').addEventListener('hidden.bs.modal', function () {
+        document.body.removeChild(modal);
+    });
+}
+
+function acceptMatchProposal(playerId, playerName) {
+    challengePlayer(playerId);
+    // Close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('matchProposalModal'));
+    modal.hide();
+}
+
+function showCounterProposal(playerId, playerName) {
+    // Close current modal and show counter-proposal form
+    const currentModal = bootstrap.Modal.getInstance(document.getElementById('matchProposalModal'));
+    currentModal.hide();
+    
+    setTimeout(() => {
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div class="modal fade" id="counterProposalModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header" style="background: #ffc107; color: black;">
+                            <h5 class="modal-title">
+                                <i class="fas fa-edit me-2"></i>Counter-Propose to ${playerName}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="counterProposalForm">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-map-marker-alt me-1"></i>Preferred Location
+                                    </label>
+                                    <input type="text" class="form-control" id="proposedLocation" 
+                                           placeholder="e.g., Apex Community Center, Cary Tennis Park">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-clock me-1"></i>Preferred Time
+                                    </label>
+                                    <input type="text" class="form-control" id="proposedTime" 
+                                           placeholder="e.g., Tuesday 7pm, Weekend mornings">
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-warning" onclick="sendCounterProposal(${playerId}, '${playerName}')">
+                                        <i class="fas fa-paper-plane me-2"></i>Send Counter-Proposal
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        const bootstrapModal = new bootstrap.Modal(document.getElementById('counterProposalModal'));
+        bootstrapModal.show();
+        
+        // Clean up when modal is hidden
+        document.getElementById('counterProposalModal').addEventListener('hidden.bs.modal', function () {
+            document.body.removeChild(modal);
+        });
+    }, 300);
+}
+
+function sendCounterProposal(playerId, playerName) {
+    const location = document.getElementById('proposedLocation').value;
+    const time = document.getElementById('proposedTime').value;
+    
+    if (!location && !time) {
+        alert('Please specify at least a location or time preference.');
+        return;
+    }
+    
+    // Send challenge with custom proposal (this will create the match with your proposed details)
+    challengePlayer(playerId);
+    
+    // Close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('counterProposalModal'));
+    modal.hide();
+    
+    const details = [];
+    if (location) details.push(`Location: ${location}`);
+    if (time) details.push(`Time: ${time}`);
+    
+    alert(`Counter-proposal sent to ${playerName}! ${details.join(' | ')}`);
 }
 
 function challengePlayerFromModal(playerId, playerName) {
