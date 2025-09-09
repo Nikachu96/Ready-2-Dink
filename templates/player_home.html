@@ -1086,7 +1086,7 @@ function showMatchProposal(playerId, playerName, playerLocation, skillLevel) {
                             <button class="btn btn-success" onclick="acceptMatchProposal(${playerId}, '${playerName}')">
                                 <i class="fas fa-check me-2"></i>Accept Match
                             </button>
-                            <button class="btn btn-warning" onclick="showCounterProposal(${playerId}, '${playerName}')">
+                            <button class="btn btn-warning" onclick="showCounterProposal(${playerId}, '${playerName}', '${playerLocation}', '${skillLevel}')">
                                 <i class="fas fa-edit me-2"></i>Counter-Propose
                             </button>
                             <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
@@ -1116,7 +1116,7 @@ function acceptMatchProposal(playerId, playerName) {
     modal.hide();
 }
 
-function showCounterProposal(playerId, playerName) {
+function showCounterProposal(playerId, playerName, playerLocation, skillLevel) {
     // Close current modal and show counter-proposal form
     const currentModal = bootstrap.Modal.getInstance(document.getElementById('matchProposalModal'));
     currentModal.hide();
@@ -1747,6 +1747,26 @@ function showCounterProposal(challengeId) {
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
+                        <div class="border rounded p-3 mb-4" style="background-color: rgba(255,255,255,0.1); color: white;">
+                            <h6 class="fw-bold mb-3" style="color: white;">
+                                <i class="fas fa-info-circle me-2"></i>Original Proposal
+                            </h6>
+                            <div class="row">
+                                <div class="col-4">
+                                    <strong style="color: white;">Location:</strong><br>
+                                    <span style="color: #ccc;">${playerLocation} area courts</span>
+                                </div>
+                                <div class="col-4">
+                                    <strong style="color: white;">Date:</strong><br>
+                                    <span style="color: #ccc;">To be specified</span>
+                                </div>
+                                <div class="col-4">
+                                    <strong style="color: white;">Time:</strong><br>
+                                    <span style="color: #ccc;">To be specified</span>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="mb-4">
                             <p style="color: white;">Suggest a different time or location that works better for you:</p>
                         </div>
