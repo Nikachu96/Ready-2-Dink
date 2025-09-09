@@ -519,7 +519,7 @@
                             <div class="mb-4">
                                 <!-- QR Code -->
                                 <div class="bg-white p-3 rounded-3 mx-auto" style="max-width: 200px;">
-                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.ready2dink.com&v=3" 
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ request.url_root }}&v=3" 
                                          alt="Ready 2 Dink QR Code" 
                                          class="img-fluid"
                                          style="width: 100%; height: auto;">
