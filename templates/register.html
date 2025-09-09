@@ -174,21 +174,18 @@
 let requiresGuardianConsent = false;
 let guardianModalShown = false;
 
-// Date of birth validation and age verification
-document.getElementById('dob').addEventListener('input', function(e) {
+// Date of birth validation - simple approach
+document.getElementById('dob').addEventListener('blur', function(e) {
     let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
     
-    // Auto-format as user types: MM-DD-YYYY, but allow normal backspace behavior
-    if (value.length >= 2 && value.length <= 4) {
-        value = value.substring(0, 2) + '-' + value.substring(2);
-    } else if (value.length > 4) {
+    // Auto-format when user finishes typing: MM-DD-YYYY
+    if (value.length === 8) {
         value = value.substring(0, 2) + '-' + value.substring(2, 4) + '-' + value.substring(4, 8);
+        e.target.value = value;
     }
     
-    e.target.value = value;
-    
-    // Use the formatted value for validation
-    let value_for_validation = value;
+    // Use the current value for validation
+    let value_for_validation = e.target.value;
     
     // Validate date format - simplified validation
     const datePattern = /^\d{2}-\d{2}-\d{4}$/;
