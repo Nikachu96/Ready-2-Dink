@@ -2979,13 +2979,18 @@ async function toggleNotifications(isCompact = false) {
                 '🔕 Notifications disabled.';
             showAlert('success', message);
             
-            // Collapse the full bar to compact view after first interaction (only if it's not already compact)
+            // Hide the entire notification section after first interaction for cleaner UI
             if (!isCompact) {
-                console.log('Starting collapse timer...');
                 setTimeout(() => {
-                    console.log('Executing collapse...');
-                    collapseNotificationBar();
-                }, 2000);
+                    const notificationSection = document.getElementById('notificationSection');
+                    if (notificationSection) {
+                        notificationSection.style.transition = 'opacity 0.5s ease-out';
+                        notificationSection.style.opacity = '0';
+                        setTimeout(() => {
+                            notificationSection.style.display = 'none';
+                        }, 500);
+                    }
+                }, 1500);
             }
         } else {
             // Revert both toggles if failed
