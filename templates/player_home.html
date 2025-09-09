@@ -1406,11 +1406,22 @@ function displayPendingMatches(matches) {
     
     // Update Challenges section
     if (challenges.length > 0) {
+        let buttonAction = '';
+        if (challenges.length === 1) {
+            // If only one challenge, directly show accept/decline options
+            const challenge = challenges[0];
+            const opponent = challenge.player1_id === {{ player.id }} ? challenge.player2_name : challenge.player1_name;
+            buttonAction = `onclick="respondToChallenge(${challenge.id}, '${opponent}')"`;
+        } else {
+            // If multiple challenges, show selection
+            buttonAction = `onclick="showDetailedMatches('challenges')"`;
+        }
+        
         challengesContainer.innerHTML = `
             <div class="text-center">
                 <div class="badge bg-primary fs-6 mb-2">${challenges.length}</div>
                 <p class="small mb-2 fw-bold">New Challenge${challenges.length > 1 ? 's' : ''}</p>
-                <button class="btn btn-primary btn-sm" onclick="showDetailedMatches('challenges')">
+                <button class="btn btn-primary btn-sm" ${buttonAction}>
                     <i class="fas fa-handshake me-1"></i>Respond
                 </button>
             </div>
@@ -1528,6 +1539,106 @@ function loadChallenges() {
 
 function loadUpcomingMatches() {
     loadPendingMatches(); // Reuse existing function since it loads all matches
+}
+
+// Function to respond to a single challenge
+function respondToChallenge(challengeId, opponentName) {
+    // Create and show challenge response modal
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div class="modal fade" id="challengeResponseModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: #3F567F; color: white;">
+                        <h5 class="modal-title">
+                            <i class="fas fa-handshake me-2"></i>Challenge from ${opponentName}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div class="mb-4">
+                            <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
+                            <h6><strong>${opponentName}</strong> has challenged you to a match!</h6>
+                            <p class="text-muted">Choose your response:</p>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success btn-lg" onclick="acceptChallenge(${challengeId})">
+                                <i class="fas fa-check me-2"></i>Accept Challenge
+                            </button>
+                            <button class="btn btn-danger btn-lg" onclick="declineChallenge(${challengeId})">
+                                <i class="fas fa-times me-2"></i>Decline Challenge
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    new bootstrap.Modal(document.getElementById('challengeResponseModal')).show();
+    
+    // Clean up modal after it's hidden
+    document.getElementById('challengeResponseModal').addEventListener('hidden.bs.modal', function() {
+        modal.remove();
+    });
+}
+
+// Function to accept challenge
+function acceptChallenge(challengeId) {
+    fetch('/accept_challenge', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            challenge_id: challengeId,
+            player_id: {{ player.id }}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('challengeResponseModal')).hide();
+            alert('Challenge accepted! Match has been scheduled.');
+            loadPendingMatches(); // Refresh the sections
+        } else {
+            alert('Error accepting challenge: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error accepting challenge');
+    });
+}
+
+// Function to decline challenge  
+function declineChallenge(challengeId) {
+    fetch('/decline_challenge', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            challenge_id: challengeId,
+            player_id: {{ player.id }}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('challengeResponseModal')).hide();
+            alert('Challenge declined.');
+            loadPendingMatches(); // Refresh the sections
+        } else {
+            alert('Error declining challenge: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error declining challenge');
+    });
 }
 
 function openScoreModal(matchId, opponentName, player1Id, player2Id) {
