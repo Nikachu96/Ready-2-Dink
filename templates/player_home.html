@@ -129,12 +129,33 @@
                                 {% endif %}
                             </div>
                             <div class="flex-grow-1">
-                                <h2 class="mb-2 fw-bold text-white">
-                                    Welcome back, {{ player.full_name.split()[0] }}!
-                                    {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                    <i class="fas fa-crown ms-2" style="color: #E0563F;"></i>
-                                    {% endif %}
-                                </h2>
+                                <div class="d-flex align-items-center mb-2">
+                                    <h2 class="mb-0 fw-bold text-white me-3">
+                                        Welcome back, {{ player.full_name.split()[0] }}!
+                                        {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                        <i class="fas fa-crown ms-2" style="color: #E0563F;"></i>
+                                        {% endif %}
+                                    </h2>
+                                    
+                                    <!-- Notification Toggle aligned with crown -->
+                                    <div class="d-flex align-items-center bg-white bg-opacity-10 rounded-pill px-2 py-1">
+                                        <small class="text-white me-2 mb-0" style="font-size: 0.75rem;">Notifications</small>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" 
+                                                   type="checkbox" 
+                                                   role="switch" 
+                                                   id="bannerNotificationToggle"
+                                                   onclick="toggleNotifications(false, true)"
+                                                   {% if player.notifications_enabled %}checked{% endif %}
+                                                   style="width: 1.75rem; height: 0.875rem;">
+                                            <label class="form-check-label text-white fw-semibold" for="bannerNotificationToggle" style="margin-left: 0.3rem; font-size: 0.75rem;">
+                                                <span id="bannerNotificationStatus">
+                                                    {% if player.notifications_enabled %}ON{% else %}OFF{% endif %}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                                 {% if player.player_id %}
                                 <div class="mb-2">
                                     <span class="text-white-50 fs-6">
@@ -170,25 +191,6 @@
                                     style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
                                 <i class="fas fa-map-marker-alt me-2"></i>Favorite Court #1
                             </button>
-                            
-                            <!-- Notification Toggle next to Favorite Court -->
-                            <div class="d-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-2">
-                                <small class="text-white me-2">Notifications</small>
-                                <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input" 
-                                           type="checkbox" 
-                                           role="switch" 
-                                           id="bannerNotificationToggle"
-                                           onclick="toggleNotifications(false, true)"
-                                           {% if player.notifications_enabled %}checked{% endif %}
-                                           style="width: 2rem; height: 1rem;">
-                                    <label class="form-check-label text-white fw-semibold" for="bannerNotificationToggle" style="margin-left: 0.5rem;">
-                                        <span id="bannerNotificationStatus">
-                                            {% if player.notifications_enabled %}ON{% else %}OFF{% endif %}
-                                        </span>
-                                    </label>
-                                </div>
-                            </div>
                             {% endif %}
                             {% if player.preferred_court_2 %}
                             <button onclick="showCourtLocation('{{ player.preferred_court_2 }}', 'secondary')" 
