@@ -266,22 +266,44 @@
         </div>
     </div>
 
-    <!-- Section 2: Challenges -->
+    <!-- Section 2a: Challenges Received -->
     <div class="col-md-6 col-lg-3 mb-3">
-        <div class="card h-100" style="border: 2px solid #3F567F;">
-            <div class="card-header text-white text-center" style="background: #3F567F;">
+        <div class="card h-100" style="border: 2px solid #10B981;">
+            <div class="card-header text-white text-center" style="background: #10B981;">
                 <h6 class="mb-0 fw-bold">
-                    <i class="fas fa-handshake me-2"></i>Challenges
+                    <i class="fas fa-inbox me-2"></i>Challenges Received
                 </h6>
             </div>
             <div class="card-body text-center">
-                <div id="challenges-container">
+                <div id="challenges-received-container">
                     <div class="text-muted">
                         <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i>
-                        <p class="small mb-0">No new challenges</p>
+                        <p class="small mb-0">No incoming challenges</p>
                     </div>
                 </div>
-                <button class="btn btn-outline-primary btn-sm mt-2" onclick="loadChallenges()">
+                <button class="btn btn-outline-success btn-sm mt-2" onclick="loadChallenges()">
+                    <i class="fas fa-refresh me-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2b: Challenges Sent -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card h-100" style="border: 2px solid #F59E0B;">
+            <div class="card-header text-white text-center" style="background: #F59E0B;">
+                <h6 class="mb-0 fw-bold">
+                    <i class="fas fa-paper-plane me-2"></i>Challenges Sent
+                </h6>
+            </div>
+            <div class="card-body text-center">
+                <div id="challenges-sent-container">
+                    <div class="text-muted">
+                        <i class="fas fa-hourglass-half fa-2x mb-2 opacity-50"></i>
+                        <p class="small mb-0">No outgoing challenges</p>
+                    </div>
+                </div>
+                <button class="btn btn-outline-warning btn-sm mt-2" onclick="loadChallenges()">
                     <i class="fas fa-refresh me-1"></i>Refresh
                 </button>
             </div>
@@ -1717,55 +1739,52 @@ function displayPendingMatches(matches) {
         `;
     }
     
-    // Update Challenges section
-    if (challenges.length > 0) {
-        let buttonAction = '';
-        if (challenges.length === 1) {
-            // If only one challenge, directly show accept/decline options
-            const challenge = challenges[0];
-            const opponent = challenge.player1_id === {{ player.id }} ? challenge.player2_name : challenge.player1_name;
-            buttonAction = `onclick="respondToChallenge(${challenge.id}, '${opponent}', '${challenge.court_location}', '${challenge.scheduled_time}')"`;
-        } else if (challenges.length > 1) {
-            // If multiple challenges, show the first one (can be enhanced later to show a list)
-            const challenge = challenges[0];
-            const opponent = challenge.player1_id === {{ player.id }} ? challenge.player2_name : challenge.player1_name;
-            buttonAction = `onclick="respondToChallenge(${challenge.id}, '${opponent}', '${challenge.court_location}', '${challenge.scheduled_time}')"`;
-        }
-        
-        // Separate challenges you sent vs challenges you received
-        const challengesReceived = challenges.filter(c => c.player2_id === {{ player.id }});
-        const challengesSent = challenges.filter(c => c.player1_id === {{ player.id }});
-        
-        if (challengesReceived.length > 0) {
-            // You have challenges to respond to
-            const challenge = challengesReceived[0];
-            const opponent = challenge.player1_name;
-            challengesContainer.innerHTML = `
-                <div class="text-center">
-                    <div class="badge bg-success fs-6 mb-2">${challengesReceived.length}</div>
-                    <p class="small mb-2 fw-bold">Challenge${challengesReceived.length > 1 ? 's' : ''} to Respond</p>
-                    <button class="btn btn-success btn-sm" onclick="respondToChallenge(${challenge.id}, '${opponent}', '${challenge.court_location}', '${challenge.scheduled_time}')">
-                        <i class="fas fa-reply me-1"></i>Respond Now
-                    </button>
-                </div>
-            `;
-        } else if (challengesSent.length > 0) {
-            // You sent challenges, waiting for responses
-            challengesContainer.innerHTML = `
-                <div class="text-center">
-                    <div class="badge bg-warning fs-6 mb-2">${challengesSent.length}</div>
-                    <p class="small mb-2 fw-bold">Challenge${challengesSent.length > 1 ? 's' : ''} Sent</p>
-                    <button class="btn btn-outline-warning btn-sm" onclick="showDetailedMatches('challenges')">
-                        <i class="fas fa-hourglass-half me-1"></i>Waiting for Response
-                    </button>
-                </div>
-            `;
-        }
+    // Update Challenges Received section
+    const challengesReceivedContainer = document.getElementById('challenges-received-container');
+    const challengesSentContainer = document.getElementById('challenges-sent-container');
+    
+    // Separate challenges you sent vs challenges you received
+    const challengesReceived = challenges.filter(c => c.player2_id === {{ player.id }});
+    const challengesSent = challenges.filter(c => c.player1_id === {{ player.id }});
+    
+    // Update Challenges Received container
+    if (challengesReceived.length > 0) {
+        const challenge = challengesReceived[0];
+        const opponent = challenge.player1_name;
+        challengesReceivedContainer.innerHTML = `
+            <div class="text-center">
+                <div class="badge bg-success fs-6 mb-2">${challengesReceived.length}</div>
+                <p class="small mb-2 fw-bold">Challenge${challengesReceived.length > 1 ? 's' : ''} to Respond</p>
+                <button class="btn btn-success btn-sm" onclick="respondToChallenge(${challenge.id}, '${opponent}', '${challenge.court_location}', '${challenge.scheduled_time}')">
+                    <i class="fas fa-reply me-1"></i>Respond Now
+                </button>
+            </div>
+        `;
     } else {
-        challengesContainer.innerHTML = `
+        challengesReceivedContainer.innerHTML = `
             <div class="text-muted">
                 <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i>
-                <p class="small mb-0">No new challenges</p>
+                <p class="small mb-0">No incoming challenges</p>
+            </div>
+        `;
+    }
+    
+    // Update Challenges Sent container
+    if (challengesSent.length > 0) {
+        challengesSentContainer.innerHTML = `
+            <div class="text-center">
+                <div class="badge bg-warning text-dark fs-6 mb-2">${challengesSent.length}</div>
+                <p class="small mb-2 fw-bold">Challenge${challengesSent.length > 1 ? 's' : ''} Sent</p>
+                <button class="btn btn-outline-warning btn-sm" onclick="showDetailedMatches('challenges')">
+                    <i class="fas fa-hourglass-half me-1"></i>Waiting for Response
+                </button>
+            </div>
+        `;
+    } else {
+        challengesSentContainer.innerHTML = `
+            <div class="text-muted">
+                <i class="fas fa-hourglass-half fa-2x mb-2 opacity-50"></i>
+                <p class="small mb-0">No outgoing challenges</p>
             </div>
         `;
     }
