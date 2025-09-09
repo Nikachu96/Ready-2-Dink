@@ -1424,6 +1424,60 @@ def find_match_for_player(player_id):
     conn.close()
     return None
 
+def create_direct_challenge(challenger_id, target_id):
+    """Create a direct challenge between two specific players"""
+    try:
+        conn = get_db_connection()
+        
+        # Check if both players exist
+        challenger = conn.execute('SELECT * FROM players WHERE id = ?', (challenger_id,)).fetchone()
+        target = conn.execute('SELECT * FROM players WHERE id = ?', (target_id,)).fetchone()
+        
+        if not challenger or not target:
+            conn.close()
+            return None
+            
+        # Check if they already have a pending/confirmed match
+        existing_match = conn.execute('''
+            SELECT id FROM matches 
+            WHERE ((player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?))
+            AND status IN ('pending', 'confirmed')
+        ''', (challenger_id, target_id, target_id, challenger_id)).fetchone()
+        
+        if existing_match:
+            conn.close()
+            return None
+            
+        # Determine court location using same logic as regular matchmaking
+        if (challenger['preferred_court'] and target['preferred_court'] and 
+            challenger['preferred_court'] == target['preferred_court']):
+            match_court = challenger['preferred_court']
+        elif challenger['preferred_court']:
+            match_court = challenger['preferred_court']
+        elif target['preferred_court']:
+            match_court = target['preferred_court']
+        else:
+            match_court = challenger['location1'] or 'Local Court'
+        
+        # Get suggested match time
+        scheduled_time = suggest_match_time(challenger, target)
+        
+        # Create the match
+        cursor = conn.execute('''
+            INSERT INTO matches (player1_id, player2_id, sport, court_location, scheduled_time, status, created_at)
+            VALUES (?, ?, 'Pickleball', ?, ?, 'pending', datetime('now'))
+        ''', (challenger_id, target_id, match_court, scheduled_time))
+        
+        match_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        return match_id
+        
+    except Exception as e:
+        logging.error(f"Error creating direct challenge: {str(e)}")
+        return None
+
 # Initialize database
 init_db()
 
@@ -3328,7 +3382,7 @@ def update_app_config():
 
 @app.route('/find_match/<int:player_id>', methods=['POST'])
 def find_match(player_id):
-    """API endpoint to find a match for a player"""
+    """API endpoint to find a match for a player or challenge a specific player"""
     try:
         # Check if player exists and bypass disclaimers for test accounts
         conn = get_db_connection()
@@ -3343,19 +3397,31 @@ def find_match(player_id):
             conn.close()
             return jsonify({'success': False, 'message': 'Please accept disclaimers first', 'redirect': f'/show_disclaimers/{player_id}'})
         
+        # Check for targeted challenge
+        data = request.get_json() or {}
+        target_player_id = data.get('target_player_id')
         
-        # Set player as looking for match
-        conn.execute('UPDATE players SET is_looking_for_match = 1 WHERE id = ?', (player_id,))
-        conn.commit()
-        conn.close()
-        
-        # Try to find a match
-        match_id = find_match_for_player(player_id)
-        
-        if match_id:
-            return jsonify({'success': True, 'match_id': match_id, 'message': 'Match found!'})
+        if target_player_id:
+            # Direct challenge to specific player
+            match_id = create_direct_challenge(player_id, target_player_id)
+            if match_id:
+                return jsonify({'success': True, 'match_id': match_id, 'message': 'Challenge sent successfully!'})
+            else:
+                return jsonify({'success': False, 'message': 'Unable to challenge this player. You may already have a pending match with them.'})
         else:
-            return jsonify({'success': False, 'message': 'No compatible players found. We\'ll keep looking!'})
+            # Regular matchmaking
+            # Set player as looking for match
+            conn.execute('UPDATE players SET is_looking_for_match = 1 WHERE id = ?', (player_id,))
+            conn.commit()
+            conn.close()
+            
+            # Try to find a match
+            match_id = find_match_for_player(player_id)
+            
+            if match_id:
+                return jsonify({'success': True, 'match_id': match_id, 'message': 'Match found!'})
+            else:
+                return jsonify({'success': False, 'message': 'You\'ve already connected with all compatible players in your area! Check your pending matches above.'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error: {str(e)}'})
 

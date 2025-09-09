@@ -980,8 +980,29 @@ function findNewMatch(playerId) {
 }
 
 function challengePlayer(opponentId) {
-    // For now, just show a message. Later we can implement direct challenges
-    alert('Challenge feature coming soon! Use Find Match for now.');
+    // Create a direct challenge to the specified player
+    fetch('/find_match/' + {{ player.id }}, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            target_player_id: opponentId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Challenge sent! ' + data.message);
+            loadPendingMatches(); // Refresh the page sections
+        } else {
+            alert(data.message || 'Unable to send challenge. You may already have a pending match with this player.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error sending challenge. Please try again.');
+    });
 }
 
 function openMessageModal(recipientId, recipientName) {
