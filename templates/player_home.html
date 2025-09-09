@@ -1653,12 +1653,12 @@ function displayPendingMatches(matches) {
             // If only one challenge, directly show accept/decline options
             const challenge = challenges[0];
             const opponent = challenge.player1_id === {{ player.id }} ? challenge.player2_name : challenge.player1_name;
-            buttonAction = `onclick="respondToChallenge(${challenge.id}, '${opponent}')"`;
+            buttonAction = `onclick="respondToChallenge(${challenge.id}, '${opponent}', '${challenge.court_location}', '${challenge.scheduled_time}')"`;
         } else if (challenges.length > 1) {
             // If multiple challenges, show the first one (can be enhanced later to show a list)
             const challenge = challenges[0];
             const opponent = challenge.player1_id === {{ player.id }} ? challenge.player2_name : challenge.player1_name;
-            buttonAction = `onclick="respondToChallenge(${challenge.id}, '${opponent}')"`;
+            buttonAction = `onclick="respondToChallenge(${challenge.id}, '${opponent}', '${challenge.court_location}', '${challenge.scheduled_time}')"`;
         }
         
         // Separate challenges you sent vs challenges you received
@@ -1673,7 +1673,7 @@ function displayPendingMatches(matches) {
                 <div class="text-center">
                     <div class="badge bg-success fs-6 mb-2">${challengesReceived.length}</div>
                     <p class="small mb-2 fw-bold">Challenge${challengesReceived.length > 1 ? 's' : ''} to Respond</p>
-                    <button class="btn btn-success btn-sm" onclick="respondToChallenge(${challenge.id}, '${opponent}')">
+                    <button class="btn btn-success btn-sm" onclick="respondToChallenge(${challenge.id}, '${opponent}', '${challenge.court_location}', '${challenge.scheduled_time}')">
                         <i class="fas fa-reply me-1"></i>Respond Now
                     </button>
                 </div>
@@ -1805,8 +1805,69 @@ function loadUpcomingMatches() {
     loadPendingMatches(); // Reuse existing function since it loads all matches
 }
 
+// Helper functions to format proposed date and time
+function formatProposedDate(dateTimeString) {
+    if (!dateTimeString || dateTimeString === 'null' || dateTimeString === 'undefined') {
+        return 'Not specified';
+    }
+    
+    try {
+        // Handle different date formats
+        let dateObj;
+        if (dateTimeString.includes(' ')) {
+            // Format: "2025-01-15 14:30"
+            dateObj = new Date(dateTimeString);
+        } else {
+            // Just a date
+            dateObj = new Date(dateTimeString);
+        }
+        
+        if (isNaN(dateObj.getTime())) {
+            return 'Invalid date';
+        }
+        
+        return dateObj.toLocaleDateString('en-US', { 
+            weekday: 'short',
+            month: 'short', 
+            day: 'numeric',
+            year: 'numeric'
+        });
+    } catch (e) {
+        return 'Not specified';
+    }
+}
+
+function formatProposedTime(dateTimeString) {
+    if (!dateTimeString || dateTimeString === 'null' || dateTimeString === 'undefined') {
+        return 'Not specified';
+    }
+    
+    try {
+        let timeObj;
+        if (dateTimeString.includes(' ')) {
+            // Format: "2025-01-15 14:30"
+            timeObj = new Date(dateTimeString);
+        } else {
+            // Just time - create date with today's date
+            timeObj = new Date(`2000-01-01 ${dateTimeString}`);
+        }
+        
+        if (isNaN(timeObj.getTime())) {
+            return 'Invalid time';
+        }
+        
+        return timeObj.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+        });
+    } catch (e) {
+        return 'Not specified';
+    }
+}
+
 // Function to respond to a single challenge
-function respondToChallenge(challengeId, opponentName) {
+function respondToChallenge(challengeId, opponentName, proposedLocation, proposedDateTime) {
     // Create and show challenge response modal
     const modal = document.createElement('div');
     modal.innerHTML = `
@@ -1823,6 +1884,25 @@ function respondToChallenge(challengeId, opponentName) {
                         <div class="mb-4">
                             <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
                             <h6><strong>${opponentName}</strong> has challenged you to a match!</h6>
+                            <div class="border rounded p-3 mb-3" style="background-color: #f8f9fa;">
+                                <h6 class="fw-bold mb-2" style="color: #000;">
+                                    <i class="fas fa-calendar-alt me-2"></i>Match Proposal
+                                </h6>
+                                <div class="row text-start">
+                                    <div class="col-4">
+                                        <strong style="color: #000;">Location:</strong><br>
+                                        <span style="color: #333;">${proposedLocation || 'Not specified'}</span>
+                                    </div>
+                                    <div class="col-4">
+                                        <strong style="color: #000;">Date:</strong><br>
+                                        <span style="color: #333;">${formatProposedDate(proposedDateTime)}</span>
+                                    </div>
+                                    <div class="col-4">
+                                        <strong style="color: #000;">Time:</strong><br>
+                                        <span style="color: #333;">${formatProposedTime(proposedDateTime)}</span>
+                                    </div>
+                                </div>
+                            </div>
                             <p class="text-muted">Choose your response:</p>
                         </div>
                         

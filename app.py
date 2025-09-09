@@ -4168,6 +4168,8 @@ def get_pending_matches(player_id):
         SELECT m.*, 
                p1.full_name as player1_name,
                p2.full_name as player2_name,
+               m.court_location,
+               m.scheduled_time,
                CASE 
                    WHEN m.status = 'pending' THEN 'needs_score'
                    WHEN m.player1_id = ? AND COALESCE(m.player1_validated, 0) = 0 THEN 'needs_validation'
