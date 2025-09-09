@@ -1066,18 +1066,18 @@ function showMatchProposal(playerId, playerName, playerLocation, skillLevel) {
                             </p>
                         </div>
                         
-                        <div class="border rounded p-3 mb-4" style="background-color: #f8f9fa;">
-                            <h6 class="fw-bold mb-3">
+                        <div class="border rounded p-3 mb-4" style="background-color: #f8f9fa; color: #000;">
+                            <h6 class="fw-bold mb-3" style="color: #000;">
                                 <i class="fas fa-calendar-alt me-2"></i>Match Proposal
                             </h6>
                             <div class="row">
                                 <div class="col-6">
-                                    <strong>Location:</strong><br>
-                                    <span class="text-muted">${playerLocation} area courts</span>
+                                    <strong style="color: #000;">Location:</strong><br>
+                                    <span style="color: #333;">${playerLocation} area courts</span>
                                 </div>
                                 <div class="col-6">
-                                    <strong>Time:</strong><br>
-                                    <span class="text-muted">This week - flexible</span>
+                                    <strong style="color: #000;">Time:</strong><br>
+                                    <span style="color: #333;">Please specify when responding</span>
                                 </div>
                             </div>
                         </div>
@@ -1137,17 +1137,22 @@ function showCounterProposal(playerId, playerName) {
                             <form id="counterProposalForm">
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">
-                                        <i class="fas fa-map-marker-alt me-1"></i>Preferred Location
+                                        <i class="fas fa-map-marker-alt me-1"></i>Preferred Location *
                                     </label>
                                     <input type="text" class="form-control" id="proposedLocation" 
-                                           placeholder="e.g., Apex Community Center, Cary Tennis Park">
+                                           placeholder="e.g., Apex Community Center, Cary Tennis Park" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">
-                                        <i class="fas fa-clock me-1"></i>Preferred Time
+                                        <i class="fas fa-calendar me-1"></i>Specific Day *
                                     </label>
-                                    <input type="text" class="form-control" id="proposedTime" 
-                                           placeholder="e.g., Tuesday 7pm, Weekend mornings">
+                                    <input type="date" class="form-control" id="proposedDate" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-clock me-1"></i>Specific Time *
+                                    </label>
+                                    <input type="time" class="form-control" id="proposedTime" required>
                                 </div>
                                 <div class="d-grid gap-2">
                                     <button type="button" class="btn btn-warning" onclick="sendCounterProposal(${playerId}, '${playerName}')">
@@ -1177,12 +1182,30 @@ function showCounterProposal(playerId, playerName) {
 
 function sendCounterProposal(playerId, playerName) {
     const location = document.getElementById('proposedLocation').value;
+    const date = document.getElementById('proposedDate').value;
     const time = document.getElementById('proposedTime').value;
     
-    if (!location && !time) {
-        alert('Please specify at least a location or time preference.');
+    if (!location || !date || !time) {
+        alert('Please fill in all required fields: location, date, and time.');
         return;
     }
+    
+    // Format the date nicely
+    const dateObj = new Date(date);
+    const formattedDate = dateObj.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+    
+    // Format time nicely
+    const timeObj = new Date(`2000-01-01T${time}`);
+    const formattedTime = timeObj.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+    });
     
     // Send challenge with custom proposal (this will create the match with your proposed details)
     challengePlayer(playerId);
@@ -1191,11 +1214,10 @@ function sendCounterProposal(playerId, playerName) {
     const modal = bootstrap.Modal.getInstance(document.getElementById('counterProposalModal'));
     modal.hide();
     
-    const details = [];
-    if (location) details.push(`Location: ${location}`);
-    if (time) details.push(`Time: ${time}`);
-    
-    alert(`Counter-proposal sent to ${playerName}! ${details.join(' | ')}`);
+    alert(`Counter-proposal sent to ${playerName}!
+Location: ${location}
+Date: ${formattedDate}
+Time: ${formattedTime}`);
 }
 
 function challengePlayerFromModal(playerId, playerName) {
