@@ -1941,12 +1941,13 @@ def register():
             cursor = conn.execute('''
                 INSERT INTO players 
                 (full_name, email, dob, username, password_hash, preferred_sport, 
-                 guardian_email, account_status, guardian_consent_required, test_account, address)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 guardian_email, account_status, guardian_consent_required, test_account, 
+                 address, location1)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['full_name'], request.form['email'], request.form['dob'], 
                   request.form['username'], password_hash, 'Pickleball',
                   guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0, 
-                  'Address not provided'))
+                  'Address not provided', 'Location not provided'))
             
             player_id = cursor.lastrowid
             conn.commit()

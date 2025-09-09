@@ -218,13 +218,18 @@ document.getElementById('confirm-guardian-email').addEventListener('click', func
     buttonContainer.parentNode.insertBefore(alertDiv, buttonContainer);
 });
 
-// Form submission validation
+// Form submission validation and prevent double-submission
 document.querySelector('form').addEventListener('submit', function(e) {
     if (requiresGuardianConsent && !document.getElementById('guardian_email').value) {
         e.preventDefault();
         alert('Please complete the guardian consent process before submitting your registration.');
         return false;
     }
+    
+    // Prevent multiple submissions
+    const submitBtn = document.getElementById('register-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Creating Account...';
 });
 
 // Preview uploaded image
