@@ -20,7 +20,8 @@
                                 <label for="full_name" class="form-label text-dark">
                                     <i class="fas fa-user me-1"></i>Full Name *
                                 </label>
-                                <input type="text" class="form-control" id="full_name" name="full_name" required>
+                                <input type="text" class="form-control" id="full_name" name="full_name" 
+                                       value="{{ form_data.full_name if form_data else '' }}" required>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -28,7 +29,8 @@
                                 <label for="email" class="form-label text-dark">
                                     <i class="fas fa-envelope me-1"></i>Email Address *
                                 </label>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                                <input type="email" class="form-control" id="email" name="email"
+                                       value="{{ form_data.email if form_data else '' }}" required>
                             </div>
                         </div>
                     </div>
@@ -40,7 +42,7 @@
                                     <i class="fas fa-birthday-cake me-1"></i>Date of Birth *
                                 </label>
                                 <input type="text" class="form-control" id="dob" name="dob" 
-                                       placeholder="MM-DD-YYYY" required>
+                                       placeholder="MM-DD-YYYY" value="{{ form_data.dob if form_data else '' }}" required>
                                 <div class="form-text text-muted">
                                     <i class="fas fa-info-circle me-1"></i>
                                     Format: MM-DD-YYYY (e.g., 08-05-1976)
@@ -53,7 +55,7 @@
                                     <i class="fas fa-at me-1"></i>Create Username *
                                 </label>
                                 <input type="text" class="form-control" id="username" name="username" 
-                                       placeholder="Choose a unique username" required>
+                                       placeholder="Choose a unique username" value="{{ form_data.username if form_data else '' }}" required>
                                 <div class="form-text text-muted">
                                     <i class="fas fa-info-circle me-1"></i>
                                     This will be your unique identifier in Ready 2 Dink

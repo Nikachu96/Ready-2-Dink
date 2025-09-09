@@ -1893,17 +1893,17 @@ def register():
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
-                return render_template('register.html')
+                return render_template('register.html', form_data=request.form)
         
         # Validate password match
         if request.form['password'] != request.form['confirm_password']:
             flash('Passwords do not match', 'danger')
-            return render_template('register.html')
+            return render_template('register.html', form_data=request.form)
         
         # Validate password length
         if len(request.form['password']) < 6:
             flash('Password must be at least 6 characters long', 'danger')
-            return render_template('register.html')
+            return render_template('register.html', form_data=request.form)
         
         # Check if username is already taken
         conn = get_db_connection()
@@ -1911,7 +1911,7 @@ def register():
         if existing_username:
             conn.close()
             flash('Username already taken. Please choose a different username.', 'danger')
-            return render_template('register.html')
+            return render_template('register.html', form_data=request.form)
         
         # Hash password for security
         from werkzeug.security import generate_password_hash
@@ -1942,12 +1942,12 @@ def register():
                 INSERT INTO players 
                 (full_name, email, dob, username, password_hash, preferred_sport, 
                  guardian_email, account_status, guardian_consent_required, test_account, 
-                 address, location1)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 address, location1, skill_level)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['full_name'], request.form['email'], request.form['dob'], 
                   request.form['username'], password_hash, 'Pickleball',
                   guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0, 
-                  'Address not provided', 'Location not provided'))
+                  'Address not provided', 'Location not provided', 'Beginner'))
             
             player_id = cursor.lastrowid
             conn.commit()
