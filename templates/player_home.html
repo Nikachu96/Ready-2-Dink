@@ -197,62 +197,6 @@
     </div>
 </div>
 
-<!-- Notification Preferences Section -->
-<div id="notificationSection" class="row mb-4 animate-in">
-    <div class="col-12">
-        <div class="card" style="border-radius: 12px; border: none; background-color: rgba(255,255,255,0.05);">
-            <div class="card-body p-3">
-                <!-- Full notification bar (shown initially) -->
-                <div id="fullNotificationBar" class="row align-items-center">
-                    <div class="col-md-8">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <i class="fas fa-bell fa-2x" style="color: #D174D2;"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-1 fw-bold">Match & Tournament Notifications</h6>
-                                <small class="text-muted">Get notified about match reminders, tournament updates, and new challenges</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" 
-                                   type="checkbox" 
-                                   role="switch" 
-                                   id="notificationToggle"
-                                   {% if player.notifications_enabled %}checked{% endif %}
-                                   style="width: 3rem; height: 1.5rem;">
-                            <label class="form-check-label fw-semibold" for="notificationToggle" style="margin-left: 0.5rem;">
-                                <span id="notificationStatus">
-                                    {% if player.notifications_enabled %}ON{% else %}OFF{% endif %}
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Compact notification toggle (hidden initially) -->
-                <div id="compactNotificationBar" class="d-flex justify-content-center align-items-center" style="display: none;">
-                    <small class="text-muted me-3">Notifications</small>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" 
-                               type="checkbox" 
-                               role="switch" 
-                               id="notificationToggleCompact"
-                               {% if player.notifications_enabled %}checked{% endif %}
-                               style="width: 2rem; height: 1rem;">
-                        <label class="form-check-label fw-semibold" for="notificationToggleCompact" style="margin-left: 0.3rem; font-size: 0.85rem;">
-                            <span id="notificationStatusCompact">
-                                {% if player.notifications_enabled %}ON{% else %}OFF{% endif %}
-                            </span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Organized 2x3 Grid Layout for Better UX -->
 <div class="row mb-4 animate-in">
@@ -2979,19 +2923,6 @@ async function toggleNotifications(isCompact = false) {
                 '🔕 Notifications disabled.';
             showAlert('success', message);
             
-            // Hide the entire notification section after first interaction for cleaner UI
-            if (!isCompact) {
-                setTimeout(() => {
-                    const notificationSection = document.getElementById('notificationSection');
-                    if (notificationSection) {
-                        notificationSection.style.transition = 'opacity 0.5s ease-out';
-                        notificationSection.style.opacity = '0';
-                        setTimeout(() => {
-                            notificationSection.style.display = 'none';
-                        }, 500);
-                    }
-                }, 1500);
-            }
         } else {
             // Revert both toggles if failed
             toggle.checked = !toggle.checked;
@@ -3010,28 +2941,6 @@ async function toggleNotifications(isCompact = false) {
     }
 }
 
-// Function to collapse notification bar to compact view
-function collapseNotificationBar() {
-    console.log('collapseNotificationBar called');
-    const fullBar = document.getElementById('fullNotificationBar');
-    const compactBar = document.getElementById('compactNotificationBar');
-    
-    console.log('fullBar:', fullBar);
-    console.log('compactBar:', compactBar);
-    
-    if (fullBar && compactBar) {
-        console.log('Both elements found, starting collapse...');
-        
-        // Immediate transition for testing
-        fullBar.style.display = 'none';
-        compactBar.style.display = 'flex';
-        compactBar.style.opacity = '1';
-        
-        console.log('Collapse completed');
-    } else {
-        console.log('Elements not found!');
-    }
-}
 
 // Simple message display function
 function showSimpleMessage(message, type) {
