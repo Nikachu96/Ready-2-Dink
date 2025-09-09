@@ -1345,22 +1345,19 @@ function openScoreModal(matchId, opponentName, player1Id, player2Id) {
     const isPlayer1 = {{ player.id }} === player1Id;
     
     document.getElementById('match-details').innerHTML = `
-        <div class="alert alert-info">
+        <div class="alert" style="background: #333; border: 1px solid #555; color: white;">
             <i class="fas fa-info-circle me-2"></i>
             Recording match result vs <strong>${opponentName}</strong>
         </div>
     `;
     
-    // Update all labels based on perspective
-    const yourLabel = 'Your Score';
-    const opponentLabel = opponentName + "'s Score";
+    // Update player names in the digital scoreboard
+    const yourName = '{{ player.full_name.split()[0] }}';
+    const opponentDisplayName = opponentName.split(' ')[0]; // First name only
     
-    document.getElementById('player1-set1-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
-    document.getElementById('player2-set1-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
-    document.getElementById('player1-set2-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
-    document.getElementById('player2-set2-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
-    document.getElementById('player1-set3-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
-    document.getElementById('player2-set3-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
+    // Update the scoreboard player name displays
+    document.getElementById('player1-set1-label').textContent = isPlayer1 ? yourName : opponentDisplayName;
+    document.getElementById('player2-set1-label').textContent = isPlayer1 ? opponentDisplayName : yourName;
     
     // Clear all input fields
     document.getElementById('player1-set1').value = '';
@@ -1431,16 +1428,13 @@ function openValidationModal(matchId, opponentName, player1Id, player2Id, existi
         }
     }
     
-    // Update all labels based on perspective
-    const yourLabel = 'Your Score';
-    const opponentLabel = opponentName + "'s Score";
+    // Update player names in the digital scoreboard for validation modal  
+    const yourName = '{{ player.full_name.split()[0] }}';
+    const opponentDisplayName = opponentName.split(' ')[0]; // First name only
     
-    document.getElementById('player1-set1-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
-    document.getElementById('player2-set1-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
-    document.getElementById('player1-set2-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
-    document.getElementById('player2-set2-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
-    document.getElementById('player1-set3-label').textContent = isPlayer1 ? yourLabel : opponentLabel;
-    document.getElementById('player2-set3-label').textContent = isPlayer1 ? opponentLabel : yourLabel;
+    // Update the scoreboard player name displays
+    document.getElementById('player1-set1-label').textContent = isPlayer1 ? yourName : opponentDisplayName;
+    document.getElementById('player2-set1-label').textContent = isPlayer1 ? opponentDisplayName : yourName;
     
     // Disable score inputs since score is already submitted
     ['player1-set1', 'player2-set1', 'player1-set2', 'player2-set2', 'player1-set3', 'player2-set3'].forEach(id => {
