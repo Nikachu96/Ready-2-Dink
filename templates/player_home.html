@@ -1094,7 +1094,110 @@ function showPlayerSelectionModal(players) {
 }
 
 function showMatchProposal(playerId, playerName, playerLocation, skillLevel) {
-    // Create modal for match proposal details
+    // First check if there's an existing challenge from this player
+    checkExistingChallenge(playerId, playerName, playerLocation, skillLevel);
+}
+
+function checkExistingChallenge(playerId, playerName, playerLocation, skillLevel) {
+    // Get current pending matches to see if there's a challenge from this player
+    fetch(`/get_pending_matches/{{ player.id }}`)
+        .then(response => response.json())
+        .then(data => {
+            // Look for a challenge FROM the viewed player TO the current user
+            const challengeFromThisPlayer = data.matches.find(match => 
+                match.status === 'pending' && 
+                match.player1_id === playerId && 
+                match.player2_id === {{ player.id }}
+            );
+            
+            if (challengeFromThisPlayer) {
+                // Show the actual challenge details
+                showActualChallengeDetails(playerId, playerName, challengeFromThisPlayer);
+            } else {
+                // Show generic match proposal modal
+                showGenericMatchProposal(playerId, playerName, playerLocation, skillLevel);
+            }
+        })
+        .catch(error => {
+            console.error('Error checking for challenges:', error);
+            // Fallback to generic modal
+            showGenericMatchProposal(playerId, playerName, playerLocation, skillLevel);
+        });
+}
+
+function showActualChallengeDetails(playerId, playerName, challenge) {
+    // Create modal showing the actual challenge details
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div class="modal fade" id="matchProposalModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: #28a745; color: white;">
+                        <h5 class="modal-title">
+                            <i class="fas fa-inbox me-2"></i>Challenge Received from ${playerName}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center mb-4">
+                            <div class="alert alert-success">
+                                <i class="fas fa-star me-2"></i>
+                                <strong>${playerName}</strong> has challenged you to a match!
+                            </div>
+                        </div>
+                        
+                        <div class="border rounded p-3 mb-4" style="background-color: #f8f9fa; color: #000;">
+                            <h6 class="fw-bold mb-3" style="color: #000;">
+                                <i class="fas fa-calendar-alt me-2"></i>Proposed Match Details
+                            </h6>
+                            <div class="row">
+                                <div class="col-4">
+                                    <strong style="color: #000;">Location:</strong><br>
+                                    <span style="color: #333;">${challenge.court_location || 'Not specified'}</span>
+                                </div>
+                                <div class="col-4">
+                                    <strong style="color: #000;">Date:</strong><br>
+                                    <span style="color: #333;">${formatProposedDate(challenge.scheduled_time)}</span>
+                                </div>
+                                <div class="col-4">
+                                    <strong style="color: #000;">Time:</strong><br>
+                                    <span style="color: #333;">${formatProposedTime(challenge.scheduled_time)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success btn-lg" onclick="acceptChallenge(${challenge.id})">
+                                <i class="fas fa-check me-2"></i>Accept Challenge
+                            </button>
+                            <button class="btn btn-warning btn-lg" onclick="showCounterProposal(${playerId}, '${playerName}', '${challenge.court_location}', 'Intermediate')">
+                                <i class="fas fa-handshake me-2"></i>Counter-Propose
+                            </button>
+                            <button class="btn btn-danger" onclick="declineChallenge(${challenge.id})">
+                                <i class="fas fa-times me-2"></i>Decline
+                            </button>
+                            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bootstrapModal = new bootstrap.Modal(document.getElementById('matchProposalModal'));
+    bootstrapModal.show();
+    
+    // Clean up when modal is hidden
+    document.getElementById('matchProposalModal').addEventListener('hidden.bs.modal', function () {
+        document.body.removeChild(modal);
+    });
+}
+
+function showGenericMatchProposal(playerId, playerName, playerLocation, skillLevel) {
+    // Create modal for match proposal details (original functionality)
     const modal = document.createElement('div');
     modal.innerHTML = `
         <div class="modal fade" id="matchProposalModal" tabindex="-1">
@@ -1125,7 +1228,7 @@ function showMatchProposal(playerId, playerName, playerLocation, skillLevel) {
                             <div class="row" id="matchProposalDetails">
                                 <div class="col-4">
                                     <strong style="color: #000;">Location:</strong><br>
-                                    <span style="color: #333;" id="proposalLocation">${playerLocation} area courts</span>
+                                    <span style="color: #333;" id="proposalLocation">${playerLocation || 'Local'} area courts</span>
                                 </div>
                                 <div class="col-4">
                                     <strong style="color: #000;">Date:</strong><br>
@@ -2016,7 +2119,7 @@ function showCounterProposal(challengeId) {
                             <div class="row">
                                 <div class="col-4">
                                     <strong style="color: white;">Location:</strong><br>
-                                    <span style="color: #ccc;">${playerLocation} area courts</span>
+                                    <span style="color: #ccc;">${playerLocation || 'Local'} area courts</span>
                                 </div>
                                 <div class="col-4">
                                     <strong style="color: white;">Date:</strong><br>
