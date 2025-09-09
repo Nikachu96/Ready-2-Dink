@@ -981,7 +981,7 @@ function findNewMatch(playerId) {
 
 function challengePlayer(opponentId) {
     // Create a direct challenge to the specified player
-    fetch('/find_match/' + {{ player.id }}, {
+    fetch(`/find_match/{{ player.id }}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
