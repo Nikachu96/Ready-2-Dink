@@ -355,75 +355,19 @@
     </div>
 </div>
 
-<!-- Available Tournaments Call-to-Action -->
+<!-- Tournament Call-to-Action Button -->
 {% if available_tournaments %}
 <div class="row mb-4 animate-in">
     <div class="col-12">
-        <div class="card" style="border: 2px solid #D174D2; background: linear-gradient(135deg, rgba(211, 116, 210, 0.1) 0%, rgba(224, 86, 63, 0.1) 100%);"
-            <div class="card-header text-white" style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); border: none;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-trophy me-2"></i>Tournaments Open for Registration
-                    </h5>
-                    <a href="{{ url_for('tournaments_overview') }}" class="btn btn-light btn-sm">
-                        View All
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    {% for tournament in available_tournaments %}
-                    <div class="col-md-4 mb-3">
-                        <div class="card h-100" style="border: 2px solid #E0563F;">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="card-title" style="color: #3F567F;">{{ tournament.name }}</h6>
-                                    <span class="badge" style="background-color: #E0563F; color: white;">${{ "%.0f"|format(tournament.entry_fee) }}</span>
-                                </div>
-                                
-                                <p class="card-text small text-muted mb-2">{{ tournament.description }}</p>
-                                
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-users me-1"></i>{{ tournament.current_entries }}/{{ tournament.max_players }}
-                                    </small>
-                                    {% if tournament.spots_remaining <= 5 %}
-                                        <span class="badge" style="background-color: #D174D2; color: white;">{{ tournament.spots_remaining }} spots left!</span>
-                                    {% else %}
-                                        <span class="badge" style="background-color: #3F567F; color: white;">{{ tournament.spots_remaining }} spots available</span>
-                                    {% endif %}
-                                </div>
-                                
-                                <small class="text-muted d-block mb-3">
-                                    <i class="fas fa-gift me-1"></i>{{ tournament.prize_pool }}
-                                </small>
-                                
-                                <a href="{{ url_for('quick_join_tournament', player_id=player.id) }}" 
-                                   class="btn btn-sm w-100 text-white" style="background: linear-gradient(45deg, #10B981, #059669); border: none;">
-                                    <i class="fas fa-bolt me-1"></i>Quick Join
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                
-                {% if available_tournaments|length == 3 %}
-                <div class="text-center mt-3">
-                    <div class="alert alert-success d-inline-block mb-0 text-white" style="background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
-                        <i class="fas fa-fire me-2"></i>
-                        <strong>All tournament levels are open!</strong> Choose your competitive level and join the action.
-                    </div>
-                </div>
-                {% elif available_tournaments|length < 3 %}
-                <div class="text-center mt-3">
-                    <div class="alert alert-warning d-inline-block mb-0">
-                        <i class="fas fa-hourglass-half me-2"></i>
-                        <strong>Limited spots remaining!</strong> Register now before tournaments fill up.
-                    </div>
-                </div>
-                {% endif %}
-            </div>
+        <div class="text-center">
+            <a href="{{ url_for('tournaments_overview') }}" 
+               class="btn btn-lg text-white px-5 py-3" 
+               style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(211, 116, 210, 0.3);">
+                <i class="fas fa-fire me-2"></i>
+                <strong>All Tournament Levels Are Open!</strong>
+                <br>
+                <small class="opacity-90">Choose your competitive level and join the action</small>
+            </a>
         </div>
     </div>
 </div>
