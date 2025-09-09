@@ -235,10 +235,11 @@
     </div>
 </div>
 
-<!-- 4-Section Layout: Ready 2 Play | Challenges | Upcoming Matches | Submit Results -->
+<!-- Organized 2x3 Grid Layout for Better UX -->
 <div class="row mb-4 animate-in">
+    <!-- Row 1: Top 3 Cards -->
     <!-- Section 1: Ready 2 Play -->
-    <div class="col-md-6 col-lg-3 mb-3">
+    <div class="col-md-6 col-lg-4 mb-3">
         <div class="card text-white h-100" style="background: linear-gradient(135deg, #E0563F 0%, #D174D2 100%); border: none;">
             <div class="card-body text-center d-flex flex-column justify-content-center">
                 <div class="mb-3">
@@ -266,8 +267,8 @@
         </div>
     </div>
 
-    <!-- Section 2a: Challenges Received -->
-    <div class="col-md-6 col-lg-3 mb-3">
+    <!-- Section 2: Challenges Received -->
+    <div class="col-md-6 col-lg-4 mb-3">
         <div class="card h-100" style="border: 2px solid #10B981;">
             <div class="card-header text-white text-center" style="background: #10B981;">
                 <h6 class="mb-0 fw-bold">
@@ -288,8 +289,8 @@
         </div>
     </div>
 
-    <!-- Section 2b: Challenges Sent -->
-    <div class="col-md-6 col-lg-3 mb-3">
+    <!-- Section 3: Challenges Sent -->
+    <div class="col-md-6 col-lg-4 mb-3">
         <div class="card h-100" style="border: 2px solid #F59E0B;">
             <div class="card-header text-white text-center" style="background: #F59E0B;">
                 <h6 class="mb-0 fw-bold">
@@ -310,8 +311,9 @@
         </div>
     </div>
 
-    <!-- Section 3: Upcoming Matches -->  
-    <div class="col-md-6 col-lg-3 mb-3">
+    <!-- Row 2: Bottom 3 Cards -->
+    <!-- Section 4: Upcoming Matches -->  
+    <div class="col-md-6 col-lg-4 mb-3">
         <div class="card h-100" style="border: 2px solid #D174D2;">
             <div class="card-header text-white text-center" style="background: #D174D2;">
                 <h6 class="mb-0 fw-bold">
@@ -332,8 +334,8 @@
         </div>
     </div>
 
-    <!-- Section 4: Submit Match Results -->
-    <div class="col-md-6 col-lg-3 mb-3">
+    <!-- Section 5: Submit Match Results -->
+    <div class="col-md-6 col-lg-4 mb-3">
         <div class="card h-100" style="border: 2px solid #E0563F;">
             <div class="card-header text-white text-center" style="background: #E0563F;">
                 <h6 class="mb-0 fw-bold">
@@ -353,25 +355,26 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- Tournament Call-to-Action Button -->
-{% if available_tournaments %}
-<div class="row mb-4 animate-in">
-    <div class="col-12">
-        <div class="text-center">
-            <a href="{{ url_for('tournaments_overview') }}" 
-               class="btn btn-lg text-white px-5 py-3" 
-               style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(211, 116, 210, 0.3);">
-                <i class="fas fa-fire me-2"></i>
-                <strong>All Tournament Levels Are Open!</strong>
-                <br>
-                <small class="opacity-90">Choose your competitive level and join the action</small>
-            </a>
+    <!-- Section 6: Tournaments -->
+    {% if available_tournaments %}
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card h-100 text-white" style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); border: none;">
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+                <div class="mb-3">
+                    <i class="fas fa-fire fa-3x mb-2"></i>
+                    <h6 class="fw-bold">Tournament Levels Open!</h6>
+                    <p class="small mb-3 opacity-90">Choose your competitive level</p>
+                </div>
+                
+                <a href="{{ url_for('tournaments_overview') }}" class="btn btn-light btn-sm fw-bold">
+                    <i class="fas fa-trophy me-2"></i>Join Tournament
+                </a>
+            </div>
         </div>
     </div>
+    {% endif %}
 </div>
-{% endif %}
 
 
 <!-- Share Ready 2 Dink -->
