@@ -3471,7 +3471,8 @@ def accept_challenge():
         
         return jsonify({'success': True, 'message': message})
     except Exception as e:
-        logging.error(f"Error accepting challenge {challenge_id}: {str(e)}")
+        challenge_id_str = challenge_id if 'challenge_id' in locals() else 'unknown'
+        logging.error(f"Error accepting challenge {challenge_id_str}: {str(e)}")
         return jsonify({'success': False, 'message': f'Error accepting challenge: {str(e)}'})
 
 @app.route('/accept_counter_proposal', methods=['POST'])
@@ -3522,9 +3523,9 @@ def accept_counter_proposal():
         message = f"Counter-proposal accepted! 🎾 Final match: {location} at {time}. Game on!"
         
         return jsonify({'success': True, 'message': message})
-        
     except Exception as e:
-        logging.error(f"Error accepting counter-proposal {challenge_id}: {str(e)}")
+        challenge_id_str = challenge_id if 'challenge_id' in locals() else 'unknown'
+        logging.error(f"Error accepting counter-proposal {challenge_id_str}: {str(e)}")
         return jsonify({'success': False, 'message': f'Error accepting counter-proposal: {str(e)}'})
 
 @app.route('/decline_challenge', methods=['POST'])
@@ -3588,7 +3589,8 @@ def decline_challenge():
             return jsonify({'success': True, 'message': 'Challenge declined. You can find new matches.'})
             
     except Exception as e:
-        logging.error(f"Error declining challenge {challenge_id}: {str(e)}")
+        challenge_id_str = challenge_id if 'challenge_id' in locals() else 'unknown'
+        logging.error(f"Error declining challenge {challenge_id_str}: {str(e)}")
         return jsonify({'success': False, 'message': f'Error declining challenge: {str(e)}'})
 
 @app.route('/players')
