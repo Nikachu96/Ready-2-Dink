@@ -3280,6 +3280,35 @@ def find_match(player_id):
             conn.close()
             return jsonify({'success': False, 'message': 'Please accept disclaimers first', 'redirect': f'/show_disclaimers/{player_id}'})
         
+        # Check if player already has pending matches
+        existing_matches = conn.execute('''
+            SELECT m.*, 
+                   p1.full_name as player1_name, 
+                   p2.full_name as player2_name
+            FROM matches m
+            JOIN players p1 ON m.player1_id = p1.id
+            JOIN players p2 ON m.player2_id = p2.id
+            WHERE (m.player1_id = ? OR m.player2_id = ?) 
+            AND m.status IN ('pending', 'confirmed')
+        ''', (player_id, player_id)).fetchall()
+        
+        if existing_matches:
+            match_names = []
+            for match in existing_matches:
+                if match['player1_id'] == player_id:
+                    match_names.append(match['player2_name'])
+                else:
+                    match_names.append(match['player1_name'])
+            
+            if len(match_names) == 1:
+                message = f"You already have a pending match with {match_names[0]}! Check your 'Challenges' section to respond."
+            else:
+                names_str = ", ".join(match_names[:-1]) + f" and {match_names[-1]}"
+                message = f"You have pending matches with {names_str}! Check your 'Challenges' section to respond."
+            
+            conn.close()
+            return jsonify({'success': False, 'message': message, 'has_pending_matches': True})
+        
         # Set player as looking for match
         conn.execute('UPDATE players SET is_looking_for_match = 1 WHERE id = ?', (player_id,))
         conn.commit()
