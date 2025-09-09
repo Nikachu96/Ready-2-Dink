@@ -1186,8 +1186,31 @@ function showCounterProposal(playerId, playerName, playerLocation, skillLevel) {
                                     <label class="form-label fw-bold">
                                         <i class="fas fa-map-marker-alt me-1"></i>Alternative Location *
                                     </label>
+                                    <select class="form-control mb-2" id="counterLocationDropdown" onchange="selectCounterLocation()">
+                                        <option value="">Select a popular court location...</option>
+                                        <optgroup label="Apex Courts">
+                                            <option value="Apex Community Center - Outdoor Courts">Apex Community Center - Outdoor Courts</option>
+                                            <option value="Apex Community Center - Indoor Courts">Apex Community Center - Indoor Courts</option>
+                                            <option value="Apex Nature Park Courts">Apex Nature Park Courts</option>
+                                        </optgroup>
+                                        <optgroup label="Cary Courts">
+                                            <option value="Cary Tennis Park">Cary Tennis Park</option>
+                                            <option value="WakeMed Soccer Park - Cary">WakeMed Soccer Park - Cary</option>
+                                            <option value="Bond Park Community Center">Bond Park Community Center</option>
+                                        </optgroup>
+                                        <optgroup label="Raleigh Courts">
+                                            <option value="Millbrook Exchange Park">Millbrook Exchange Park</option>
+                                            <option value="Marsh Creek Park">Marsh Creek Park</option>
+                                            <option value="Lake Johnson Park">Lake Johnson Park</option>
+                                        </optgroup>
+                                        <optgroup label="Durham Courts">
+                                            <option value="Durham Central Park">Durham Central Park</option>
+                                            <option value="Forest Hills Park">Forest Hills Park</option>
+                                        </optgroup>
+                                        <option value="custom">🏓 Custom Location (type your own)</option>
+                                    </select>
                                     <input type="text" class="form-control" id="proposedLocation" 
-                                           placeholder="e.g., Apex Community Center, Cary Tennis Park" required>
+                                           placeholder="Enter custom location or select from dropdown above" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">
@@ -1289,8 +1312,31 @@ function showMatchDetailsForm(playerId, playerName) {
                             <label class="form-label fw-bold">
                                 <i class="fas fa-map-marker-alt me-1"></i>Proposed Location *
                             </label>
+                            <select class="form-control mb-2" id="locationDropdown" onchange="selectLocation()">
+                                <option value="">Select a popular court location...</option>
+                                <optgroup label="Apex Courts">
+                                    <option value="Apex Community Center - Outdoor Courts">Apex Community Center - Outdoor Courts</option>
+                                    <option value="Apex Community Center - Indoor Courts">Apex Community Center - Indoor Courts</option>
+                                    <option value="Apex Nature Park Courts">Apex Nature Park Courts</option>
+                                </optgroup>
+                                <optgroup label="Cary Courts">
+                                    <option value="Cary Tennis Park">Cary Tennis Park</option>
+                                    <option value="WakeMed Soccer Park - Cary">WakeMed Soccer Park - Cary</option>
+                                    <option value="Bond Park Community Center">Bond Park Community Center</option>
+                                </optgroup>
+                                <optgroup label="Raleigh Courts">
+                                    <option value="Millbrook Exchange Park">Millbrook Exchange Park</option>
+                                    <option value="Marsh Creek Park">Marsh Creek Park</option>
+                                    <option value="Lake Johnson Park">Lake Johnson Park</option>
+                                </optgroup>
+                                <optgroup label="Durham Courts">
+                                    <option value="Durham Central Park">Durham Central Park</option>
+                                    <option value="Forest Hills Park">Forest Hills Park</option>
+                                </optgroup>
+                                <option value="custom">🏓 Custom Location (type your own)</option>
+                            </select>
                             <input type="text" class="form-control" id="matchLocation" 
-                                   placeholder="e.g., Apex Community Center, Cary Tennis Park" required>
+                                   placeholder="Enter custom location or select from dropdown above" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold">
@@ -1331,6 +1377,40 @@ function showMatchDetailsForm(playerId, playerName) {
     // Set minimum date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('matchDate').min = today;
+}
+
+function selectLocation() {
+    const dropdown = document.getElementById('locationDropdown');
+    const input = document.getElementById('matchLocation');
+    
+    if (dropdown.value && dropdown.value !== 'custom') {
+        input.value = dropdown.value;
+        input.style.backgroundColor = '#e8f5e8';
+    } else if (dropdown.value === 'custom') {
+        input.value = '';
+        input.focus();
+        input.style.backgroundColor = 'white';
+        input.placeholder = 'Enter your custom court location';
+    } else {
+        input.style.backgroundColor = 'white';
+    }
+}
+
+function selectCounterLocation() {
+    const dropdown = document.getElementById('counterLocationDropdown');
+    const input = document.getElementById('proposedLocation');
+    
+    if (dropdown.value && dropdown.value !== 'custom') {
+        input.value = dropdown.value;
+        input.style.backgroundColor = '#e8f5e8';
+    } else if (dropdown.value === 'custom') {
+        input.value = '';
+        input.focus();
+        input.style.backgroundColor = 'white';
+        input.placeholder = 'Enter your custom court location';
+    } else {
+        input.style.backgroundColor = 'white';
+    }
 }
 
 function sendMatchChallenge(playerId, playerName) {
