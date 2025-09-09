@@ -996,7 +996,7 @@ function challengePlayer(opponentId) {
             alert('Challenge sent! ' + data.message);
             loadPendingMatches(); // Refresh the page sections
         } else {
-            alert(data.message || 'Unable to send challenge. You may already have a pending match with this player.');
+            alert(data.message || 'Unable to send challenge. You already have a pending match with this player. Check your "Pending Matches" section above!');
         }
     })
     .catch(error => {

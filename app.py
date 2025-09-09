@@ -3421,7 +3421,7 @@ def find_match(player_id):
             if match_id:
                 return jsonify({'success': True, 'match_id': match_id, 'message': 'Match found!'})
             else:
-                return jsonify({'success': False, 'message': 'You\'ve already connected with all compatible players in your area! Check your pending matches above.'})
+                return jsonify({'success': False, 'message': 'Great job! You\'ve matched with ALL intermediate players in your area. Try a different skill level if you want more matches, or respond to your pending matches above.'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error: {str(e)}'})
 
