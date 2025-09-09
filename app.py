@@ -1960,7 +1960,12 @@ def register():
                 'username': request.form['username'],
                 'dob': request.form['dob'],
                 'guardian_email': guardian_email,
-                'account_status': account_status
+                'account_status': account_status,
+                'skill_level': 'Beginner',
+                'location1': 'Location not provided',
+                'preferred_court': 'Not specified',
+                'address': 'Address not provided',
+                'location2': None
             }
             
             email_sent = send_new_registration_notification(player_data)
