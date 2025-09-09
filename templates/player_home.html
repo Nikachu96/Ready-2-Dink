@@ -1203,20 +1203,42 @@ function displayPendingMatches(matches) {
             const challenge = challenges[0];
             const opponent = challenge.player1_id === {{ player.id }} ? challenge.player2_name : challenge.player1_name;
             buttonAction = `onclick="respondToChallenge(${challenge.id}, '${opponent}')"`;
-        } else {
-            // If multiple challenges, show selection
-            buttonAction = `onclick="showDetailedMatches('challenges')"`;
+        } else if (challenges.length > 1) {
+            // If multiple challenges, show the first one (can be enhanced later to show a list)
+            const challenge = challenges[0];
+            const opponent = challenge.player1_id === {{ player.id }} ? challenge.player2_name : challenge.player1_name;
+            buttonAction = `onclick="respondToChallenge(${challenge.id}, '${opponent}')"`;
         }
         
-        challengesContainer.innerHTML = `
-            <div class="text-center">
-                <div class="badge bg-primary fs-6 mb-2">${challenges.length}</div>
-                <p class="small mb-2 fw-bold">New Challenge${challenges.length > 1 ? 's' : ''}</p>
-                <button class="btn btn-primary btn-sm" ${buttonAction}>
-                    <i class="fas fa-handshake me-1"></i>Respond
-                </button>
-            </div>
-        `;
+        // Separate challenges you sent vs challenges you received
+        const challengesReceived = challenges.filter(c => c.player2_id === {{ player.id }});
+        const challengesSent = challenges.filter(c => c.player1_id === {{ player.id }});
+        
+        if (challengesReceived.length > 0) {
+            // You have challenges to respond to
+            const challenge = challengesReceived[0];
+            const opponent = challenge.player1_name;
+            challengesContainer.innerHTML = `
+                <div class="text-center">
+                    <div class="badge bg-success fs-6 mb-2">${challengesReceived.length}</div>
+                    <p class="small mb-2 fw-bold">Challenge${challengesReceived.length > 1 ? 's' : ''} to Respond</p>
+                    <button class="btn btn-success btn-sm" onclick="respondToChallenge(${challenge.id}, '${opponent}')">
+                        <i class="fas fa-reply me-1"></i>Respond Now
+                    </button>
+                </div>
+            `;
+        } else if (challengesSent.length > 0) {
+            // You sent challenges, waiting for responses
+            challengesContainer.innerHTML = `
+                <div class="text-center">
+                    <div class="badge bg-warning fs-6 mb-2">${challengesSent.length}</div>
+                    <p class="small mb-2 fw-bold">Challenge${challengesSent.length > 1 ? 's' : ''} Sent</p>
+                    <button class="btn btn-outline-warning btn-sm" onclick="showDetailedMatches('challenges')">
+                        <i class="fas fa-hourglass-half me-1"></i>Waiting for Response
+                    </button>
+                </div>
+            `;
+        }
     } else {
         challengesContainer.innerHTML = `
             <div class="text-muted">
