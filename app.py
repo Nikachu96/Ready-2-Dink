@@ -1291,8 +1291,8 @@ def suggest_match_time(player1, player2):
         import json
         
         # Get player availability schedules
-        p1_schedule = json.loads(player1['availability_schedule']) if player1.get('availability_schedule') else {}
-        p2_schedule = json.loads(player2['availability_schedule']) if player2.get('availability_schedule') else {}
+        p1_schedule = json.loads(player1['availability_schedule']) if player1['availability_schedule'] else {}
+        p2_schedule = json.loads(player2['availability_schedule']) if player2['availability_schedule'] else {}
         
         # Days of the week to check (next 7 days)
         days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
@@ -1322,8 +1322,8 @@ def suggest_match_time(player1, player2):
         # If no specific overlapping times found, provide default suggestions
         if not suggested_times:
             # Check time preferences
-            p1_pref = player1.get('time_preference', 'Flexible')
-            p2_pref = player2.get('time_preference', 'Flexible') 
+            p1_pref = player1['time_preference'] if player1['time_preference'] else 'Flexible'
+            p2_pref = player2['time_preference'] if player2['time_preference'] else 'Flexible' 
             
             if p1_pref == p2_pref and p1_pref != 'Flexible':
                 return f"This week - {p1_pref}"
