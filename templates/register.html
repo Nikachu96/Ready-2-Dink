@@ -174,17 +174,9 @@
 let requiresGuardianConsent = false;
 let guardianModalShown = false;
 
-// Date of birth validation - simple approach
+// Date of birth validation - no formatting during typing
 document.getElementById('dob').addEventListener('blur', function(e) {
-    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-    
-    // Auto-format when user finishes typing: MM-DD-YYYY
-    if (value.length === 8) {
-        value = value.substring(0, 2) + '-' + value.substring(2, 4) + '-' + value.substring(4, 8);
-        e.target.value = value;
-    }
-    
-    // Use the current value for validation
+    // Just validate, don't auto-format
     let value_for_validation = e.target.value;
     
     // Validate date format - simplified validation
