@@ -3309,6 +3309,57 @@ def confirm_match(match_id):
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error: {str(e)}'})
 
+@app.route('/accept_challenge', methods=['POST'])
+def accept_challenge():
+    """API endpoint to accept a match challenge"""
+    try:
+        data = request.get_json()
+        challenge_id = data.get('challengeId')
+        
+        if not challenge_id:
+            return jsonify({'success': False, 'message': 'Challenge ID is required'})
+        
+        conn = get_db_connection()
+        
+        # Update match status to confirmed
+        conn.execute('UPDATE matches SET status = ? WHERE id = ?', ('confirmed', challenge_id))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Challenge accepted! Match has been scheduled.'})
+    except Exception as e:
+        logging.error(f"Error accepting challenge {challenge_id}: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error accepting challenge: {str(e)}'})
+
+@app.route('/decline_challenge', methods=['POST'])
+def decline_challenge():
+    """API endpoint to decline a match challenge"""
+    try:
+        data = request.get_json()
+        challenge_id = data.get('challengeId')
+        
+        if not challenge_id:
+            return jsonify({'success': False, 'message': 'Challenge ID is required'})
+        
+        conn = get_db_connection()
+        
+        # Update match status to declined and allow players to find new matches
+        conn.execute('UPDATE matches SET status = ? WHERE id = ?', ('declined', challenge_id))
+        
+        # Get the players from this match to mark them as available again
+        match = conn.execute('SELECT player1_id, player2_id FROM matches WHERE id = ?', (challenge_id,)).fetchone()
+        if match:
+            conn.execute('UPDATE players SET is_looking_for_match = 1 WHERE id IN (?, ?)', 
+                        (match['player1_id'], match['player2_id']))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Challenge declined. You can find new matches.'})
+    except Exception as e:
+        logging.error(f"Error declining challenge {challenge_id}: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error declining challenge: {str(e)}'})
+
 @app.route('/players')
 def players():
     """List all registered players"""
