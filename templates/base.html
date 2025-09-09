@@ -858,20 +858,27 @@
         
         // Show success message function
         function showSuccessMessage(message) {
+            // Create full-screen overlay to hide background
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+            
             const alert = document.createElement('div');
-            alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
-            alert.style.cssText = 'top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; max-width: 500px; min-width: 400px; font-size: 18px; font-weight: bold; text-align: center; padding: 20px; border: 3px solid #28a745; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+            alert.className = 'alert alert-success alert-dismissible fade show';
+            alert.style.cssText = 'max-width: 500px; min-width: 400px; font-size: 18px; font-weight: bold; text-align: center; padding: 30px; border: 3px solid #28a745; box-shadow: 0 4px 20px rgba(0,0,0,0.5); margin: 20px;';
             alert.innerHTML = `
-                <div style="font-size: 24px; margin-bottom: 10px;">✅</div>
-                <div style="color: #155724; font-size: 16px; line-height: 1.4;">${message}</div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" style="position: absolute; top: 10px; right: 10px;"></button>
+                <div style="font-size: 32px; margin-bottom: 15px;">✅</div>
+                <div style="color: #155724; font-size: 18px; line-height: 1.4; margin-bottom: 10px;">${message}</div>
+                <div style="color: #666; font-size: 14px;">Redirecting you to continue...</div>
+                <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 10px;"></button>
             `;
-            document.body.appendChild(alert);
+            
+            overlay.appendChild(alert);
+            document.body.appendChild(overlay);
             
             // Auto remove after 8 seconds (longer for readability)
             setTimeout(() => {
-                if (alert.parentNode) {
-                    alert.remove();
+                if (overlay.parentNode) {
+                    overlay.remove();
                 }
             }, 8000);
         }
