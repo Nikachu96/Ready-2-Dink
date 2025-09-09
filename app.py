@@ -1284,6 +1284,59 @@ def get_tournament_levels():
         }
     }
 
+def suggest_match_time(player1, player2):
+    """Suggest a match time based on both players' availability"""
+    try:
+        from datetime import datetime, timedelta
+        import json
+        
+        # Get player availability schedules
+        p1_schedule = json.loads(player1['availability_schedule']) if player1.get('availability_schedule') else {}
+        p2_schedule = json.loads(player2['availability_schedule']) if player2.get('availability_schedule') else {}
+        
+        # Days of the week to check (next 7 days)
+        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        
+        # Find overlapping available times
+        suggested_times = []
+        
+        for day in days:
+            p1_day = p1_schedule.get(day, {})
+            p2_day = p2_schedule.get(day, {})
+            
+            # If both players are available this day
+            if (p1_day.get('available') and p2_day.get('available')):
+                p1_times = set(p1_day.get('time_slots', []))
+                p2_times = set(p2_day.get('time_slots', []))
+                
+                # Find common time slots
+                common_times = p1_times.intersection(p2_times) if p2_times else p1_times
+                
+                if common_times:
+                    for time_slot in common_times:
+                        suggested_times.append(f"{day.title()} {time_slot}")
+                elif p1_times and not p2_schedule:  # Player 2 has no schedule, use Player 1's
+                    for time_slot in p1_times:
+                        suggested_times.append(f"{day.title()} {time_slot}")
+        
+        # If no specific overlapping times found, provide default suggestions
+        if not suggested_times:
+            # Check time preferences
+            p1_pref = player1.get('time_preference', 'Flexible')
+            p2_pref = player2.get('time_preference', 'Flexible') 
+            
+            if p1_pref == p2_pref and p1_pref != 'Flexible':
+                return f"This week - {p1_pref}"
+            else:
+                return "This week - Flexible timing (coordinate with opponent)"
+        
+        # Return the first suggested time
+        return suggested_times[0] if suggested_times else "This week - Flexible timing"
+        
+    except Exception as e:
+        logging.error(f"Error suggesting match time: {e}")
+        return "This week - Flexible timing"
+
 def find_match_for_player(player_id):
     """Find and create a match for a player based on skill, sport, and location"""
     conn = get_db_connection()
@@ -1343,10 +1396,13 @@ def find_match_for_player(player_id):
         # Set default sport to Pickleball if preferred_sport is NULL
         match_sport = player['preferred_sport'] if player['preferred_sport'] else 'Pickleball'
         
+        # Generate a suggested match time based on availability
+        suggested_time = suggest_match_time(player, potential_matches)
+        
         cursor = conn.execute('''
-            INSERT INTO matches (player1_id, player2_id, sport, court_location, status)
-            VALUES (?, ?, ?, ?, 'pending')
-        ''', (player_id, potential_matches['id'], match_sport, match_court))
+            INSERT INTO matches (player1_id, player2_id, sport, court_location, status, scheduled_time)
+            VALUES (?, ?, ?, ?, 'pending', ?)
+        ''', (player_id, potential_matches['id'], match_sport, match_court, suggested_time))
         
         match_id = cursor.lastrowid
         
@@ -3321,12 +3377,33 @@ def accept_challenge():
         
         conn = get_db_connection()
         
+        # Get match details before updating
+        match_details = conn.execute('''
+            SELECT m.court_location, m.scheduled_time, m.sport,
+                   p1.full_name as player1_name, p2.full_name as player2_name,
+                   m.player1_id, m.player2_id
+            FROM matches m
+            JOIN players p1 ON m.player1_id = p1.id  
+            JOIN players p2 ON m.player2_id = p2.id
+            WHERE m.id = ?
+        ''', (challenge_id,)).fetchone()
+        
+        if not match_details:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Match not found'})
+        
         # Update match status to confirmed
         conn.execute('UPDATE matches SET status = ? WHERE id = ?', ('confirmed', challenge_id))
         conn.commit()
         conn.close()
         
-        return jsonify({'success': True, 'message': 'Challenge accepted! Match has been scheduled.'})
+        # Format the success message with location and time
+        location = match_details['court_location'] or 'TBD - coordinate with opponent'
+        time = match_details['scheduled_time'] or 'Flexible timing - coordinate with opponent'
+        
+        message = f"Challenge accepted! 🎾 Match scheduled at {location} for {time}. Good luck!"
+        
+        return jsonify({'success': True, 'message': message})
     except Exception as e:
         logging.error(f"Error accepting challenge {challenge_id}: {str(e)}")
         return jsonify({'success': False, 'message': f'Error accepting challenge: {str(e)}'})
