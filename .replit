@@ -33,9 +33,5 @@ waitForPort = 5000
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 36563
-externalPort = 3000
-
 [agent]
 integrations = ["styling_replit==1.0.0", "twilio_send_message==1.0.0", "python_sendgrid==1.0.0", "python_log_in_with_replit==1.0.0", "flask_stripe==1.0.0"]
