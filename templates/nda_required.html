@@ -6,8 +6,8 @@
 <div class="row justify-content-center">
     <div class="col-12">
         <div class="text-center mb-4">
-            <div class="card" style="background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%); color: white; border: none;">
-                <div class="card-body p-5">
+            <div class="card surface-dark" data-bs-theme="dark" style="background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%); color: white; border: none;">
+                <div class="card-body p-5 surface-dark">
                     <div class="mb-4">
                         <i class="fas fa-shield-alt fa-4x" style="color: #E0563F;"></i>
                     </div>
@@ -15,7 +15,7 @@
                     <p class="lead mb-4">
                         Before you can access our exclusive beta platform, you'll need to read and digitally sign our Non-Disclosure Agreement.
                     </p>
-                    <p class="text-muted mb-4">
+                    <p class="mb-4" style="color: rgba(255,255,255,0.8) !important;">
                         This ensures the confidentiality of our beta features and helps protect our intellectual property during testing.
                     </p>
                     <button class="btn btn-lg fw-bold" onclick="showNDAForm()" 
@@ -26,14 +26,14 @@
                     
                     <!-- Direct NDA Form (hidden initially, shown instead of modal) -->
                     <div id="ndaFormContainer" class="mt-4" style="display: none;">
-                        <div class="card" style="background: linear-gradient(135deg, #2d1b69 0%, #1a1a2e 100%); color: white; border: 1px solid rgba(255,255,255,0.2);">
-                            <div class="card-header">
+                        <div class="card surface-dark" data-bs-theme="dark" style="background: linear-gradient(135deg, #2d1b69 0%, #1a1a2e 100%); color: white; border: 1px solid rgba(255,255,255,0.2);">
+                            <div class="card-header surface-dark">
                                 <h5 class="mb-0">
                                     <i class="fas fa-shield-alt me-2" style="color: #E0563F;"></i>
                                     Non-Disclosure Agreement - Ready 2 Dink Beta Testing
                                 </h5>
                             </div>
-                            <div class="card-body" style="max-height: 400px; overflow-y: auto; color: white !important;">
+                            <div class="card-body surface-dark" style="max-height: 400px; overflow-y: auto; color: white !important;">
                                 <div class="mb-4">
                                     <h6 class="fw-bold mb-3" style="color: white !important;">Beta Testing Access Agreement</h6>
                                     <ul class="list-unstyled" style="color: white !important;">
@@ -82,7 +82,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="card-footer d-flex justify-content-between align-items-center" style="border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div class="card-footer d-flex justify-content-between align-items-center surface-dark" style="border-top: 1px solid rgba(255,255,255,0.1);">
                                 <small class="text-white">
                                     <i class="fas fa-calendar me-1"></i>
                                     Date: <span id="currentDateDirect"></span>
@@ -108,15 +108,15 @@
 <!-- NDA Modal -->
 <div class="modal fade" id="ndaModal" tabindex="-1" aria-labelledby="ndaModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content" style="background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%); color: white; border: none;">
-            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <div class="modal-content surface-dark" data-bs-theme="dark" style="background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%); color: white; border: none;">
+            <div class="modal-header surface-dark" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                 <h5 class="modal-title" id="ndaModalLabel">
                     <i class="fas fa-shield-alt me-2" style="color: #E0563F;"></i>
                     Non-Disclosure Agreement - Ready 2 Dink Beta Testing
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+            <div class="modal-body surface-dark" style="max-height: 60vh; overflow-y: auto;">
                 <div class="mb-4">
                     <h6 class="fw-bold mb-3">Beta Testing Access Agreement</h6>
                     <ul class="list-unstyled">
@@ -129,18 +129,18 @@
                 
                 <div class="mb-4">
                     <h6 class="fw-bold mb-2">Key Terms:</h6>
-                    <ul class="text-muted small">
-                        <li>Recipient's access is terminated by the Company</li>
-                        <li>Ready 2 Dink launches publicly</li>
+                    <ul class="small" style="color: rgba(255,255,255,0.8) !important;">
+                        <li style="color: rgba(255,255,255,0.8) !important;">Recipient's access is terminated by the Company</li>
+                        <li style="color: rgba(255,255,255,0.8) !important;">Ready 2 Dink launches publicly</li>
                     </ul>
-                    <p class="text-muted small mb-3">
-                        Confidentiality obligations survive termination for <strong>3 years</strong>.
+                    <p class="small mb-3" style="color: rgba(255,255,255,0.8) !important;">
+                        Confidentiality obligations survive termination for <strong style="color: white !important;">3 years</strong>.
                     </p>
                 </div>
                 
                 <div class="mb-4">
                     <h6 class="fw-bold">6. LEGAL COMPLIANCE</h6>
-                    <p class="text-muted small">
+                    <p class="small" style="color: rgba(255,255,255,0.8) !important;">
                         This Agreement is governed by applicable laws. Any violations may result in legal action and immediate termination of beta access.
                     </p>
                     
@@ -159,14 +159,14 @@
                                placeholder="Enter your full legal name" 
                                style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white;" 
                                required>
-                        <div class="form-text text-muted">
+                        <div class="form-text" style="color: rgba(255,255,255,0.7) !important;">
                             By typing your name above, you agree to be bound by this Non-Disclosure Agreement.
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer justify-content-between" style="border-top: 1px solid rgba(255,255,255,0.1);">
-                <small class="text-muted">
+            <div class="modal-footer justify-content-between surface-dark" style="border-top: 1px solid rgba(255,255,255,0.1);">
+                <small style="color: rgba(255,255,255,0.7) !important;">
                     <i class="fas fa-calendar me-1"></i>
                     Date: <span id="currentDate"></span>
                 </small>
