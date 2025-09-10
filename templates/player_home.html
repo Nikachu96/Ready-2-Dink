@@ -235,9 +235,9 @@
                 </div>
                 
                 {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
-                    <button onclick="findNewMatch({{ player.id }})" class="btn btn-light btn-sm fw-bold">
+                    <a href="{{ url_for('browse_players') }}" class="btn btn-light btn-sm fw-bold">
                         <i class="fas fa-search me-2"></i>Browse Players
-                    </button>
+                    </a>
                 {% else %}
                     <button onclick="showMembershipModal('discovery')" class="btn btn-light btn-sm fw-bold">
                         <i class="fas fa-unlock me-2"></i>Unlock Now

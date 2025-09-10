@@ -332,6 +332,23 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    # Add first_name and last_name columns for better name handling
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN first_name TEXT')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN last_name TEXT')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    # Add ranking points for player rankings
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN ranking_points INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     # Add COPPA compliance fields for underage players
     try:
         c.execute('ALTER TABLE players ADD COLUMN guardian_email TEXT DEFAULT NULL')
@@ -1365,15 +1382,16 @@ def get_compatible_players(player_id):
         location_condition = "(location1 = ? OR location2 = ?)"
         location_params = [player['location1'], player['location2']]
     
-    # Get all compatible players
+    # Get all compatible players with rankings and win/loss records
     query = f'''
-        SELECT id, full_name, location1, skill_level, preferred_court 
+        SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
+               wins, losses, ranking_points, selfie
         FROM players 
         WHERE id != ? 
         AND is_looking_for_match = 1
         AND skill_level = ?
         AND {location_condition}
-        ORDER BY created_at ASC
+        ORDER BY ranking_points DESC, wins DESC, created_at ASC
     '''
     
     params = [player_id, player['skill_level']] + location_params
@@ -1382,12 +1400,22 @@ def get_compatible_players(player_id):
     # Convert to list of dictionaries
     players_list = []
     for p in compatible_players:
+        # Use first_name if available, otherwise fall back to full_name
+        display_name = p['first_name'] if p['first_name'] else p['full_name'].split()[0] if p['full_name'] else 'Unknown'
+        
         players_list.append({
             'id': p['id'],
-            'name': p['full_name'],
+            'name': display_name,
+            'full_name': p['full_name'],
+            'first_name': p['first_name'],
+            'last_name': p['last_name'],
             'location': p['location1'],
             'skill_level': p['skill_level'],
-            'preferred_court': p['preferred_court']
+            'preferred_court': p['preferred_court'],
+            'wins': p['wins'] or 0,
+            'losses': p['losses'] or 0,
+            'ranking_points': p['ranking_points'] or 0,
+            'selfie': p['selfie']
         })
     
     conn.close()
@@ -3657,12 +3685,37 @@ def decline_challenge():
 
 @app.route('/players')
 def players():
-    """List all registered players"""
+    """Admin view - List all registered players"""
     conn = get_db_connection()
     players = conn.execute('SELECT * FROM players ORDER BY created_at DESC').fetchall()
     conn.close()
     
-    return render_template('players.html', players=players)
+    return render_template('admin/players.html', players=players)
+
+@app.route('/browse-players')
+def browse_players():
+    """Browse compatible players page with player cards"""
+    current_player_id = session.get('current_player_id')
+    
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
+    
+    # Get compatible players
+    compatible_players = get_compatible_players(current_player_id)
+    
+    # Get current player info for display
+    conn = get_db_connection()
+    current_player = conn.execute('SELECT * FROM players WHERE id = ?', (current_player_id,)).fetchone()
+    conn.close()
+    
+    if not current_player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('player_login'))
+    
+    return render_template('browse_players.html', 
+                         players=compatible_players, 
+                         current_player=current_player)
 
 @app.route('/profile_settings')
 def profile_settings():
