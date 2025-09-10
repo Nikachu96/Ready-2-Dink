@@ -2079,7 +2079,7 @@ def register():
         logging.info(f"Form data keys: {list(request.form.keys())}")
         logging.info(f"Files: {list(request.files.keys())}")
         # Form validation for simplified registration
-        required_fields = ['full_name', 'email', 'dob', 'username', 'password', 'confirm_password']
+        required_fields = ['first_name', 'last_name', 'email', 'dob', 'username', 'password', 'confirm_password']
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
@@ -2113,7 +2113,7 @@ def register():
         account_status = 'pending' if requires_consent else 'active'
         
         try:
-            logging.info(f"Attempting registration for: {request.form['full_name']} ({request.form['email']})")
+            logging.info(f"Attempting registration for: {request.form['first_name']} {request.form['last_name']} ({request.form['email']})")
             
             # Calculate age for logging
             dob_str = request.form['dob']
@@ -2128,13 +2128,14 @@ def register():
                 logging.warning(f"Could not calculate age from DOB: {dob_str}")
             
             conn = get_db_connection()
+            full_name = f"{request.form['first_name']} {request.form['last_name']}"
             cursor = conn.execute('''
                 INSERT INTO players 
-                (full_name, email, dob, username, password_hash, preferred_sport, 
+                (first_name, last_name, full_name, email, dob, username, password_hash, preferred_sport, 
                  guardian_email, account_status, guardian_consent_required, test_account, 
                  address, location1, skill_level)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (request.form['full_name'], request.form['email'], request.form['dob'], 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (request.form['first_name'], request.form['last_name'], full_name, request.form['email'], request.form['dob'], 
                   request.form['username'], password_hash, 'Pickleball',
                   guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0, 
                   'Address not provided', 'Location not provided', 'Beginner'))
@@ -2145,7 +2146,9 @@ def register():
             
             # Send email notification to admin about new registration
             player_data = {
-                'full_name': request.form['full_name'],
+                'first_name': request.form['first_name'],
+                'last_name': request.form['last_name'],
+                'full_name': full_name,
                 'email': request.form['email'],
                 'username': request.form['username'],
                 'dob': request.form['dob'],
@@ -2167,9 +2170,9 @@ def register():
             
             # Send guardian consent email if required
             if requires_consent and guardian_email:
-                consent_sent = send_guardian_consent_email(guardian_email, request.form['full_name'], player_id)
+                consent_sent = send_guardian_consent_email(guardian_email, full_name, player_id)
                 if consent_sent:
-                    logging.info(f"Guardian consent email sent to {guardian_email} for player {request.form['full_name']}")
+                    logging.info(f"Guardian consent email sent to {guardian_email} for player {full_name}")
                     flash('Registration submitted! A consent form has been sent to your guardian for approval. Your account will be activated once they complete the authorization.', 'info')
                 else:
                     logging.warning(f"Failed to send guardian consent email to {guardian_email}")

@@ -17,13 +17,25 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="full_name" class="form-label text-dark">
-                                    <i class="fas fa-user me-1"></i>Full Name *
+                                <label for="first_name" class="form-label text-dark">
+                                    <i class="fas fa-user me-1"></i>First Name *
                                 </label>
-                                <input type="text" class="form-control" id="full_name" name="full_name" 
-                                       value="{{ form_data.full_name if form_data else '' }}" required>
+                                <input type="text" class="form-control" id="first_name" name="first_name" 
+                                       value="{{ form_data.first_name if form_data else '' }}" required>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="last_name" class="form-label text-dark">
+                                    <i class="fas fa-user me-1"></i>Last Name *
+                                </label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" 
+                                       value="{{ form_data.last_name if form_data else '' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="email" class="form-label text-dark">
@@ -31,6 +43,19 @@
                                 </label>
                                 <input type="email" class="form-control" id="email" name="email"
                                        value="{{ form_data.email if form_data else '' }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="username" class="form-label text-dark">
+                                    <i class="fas fa-at me-1"></i>Create Username *
+                                </label>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       placeholder="Choose a unique username" value="{{ form_data.username if form_data else '' }}" required>
+                                <div class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    This will be your unique identifier in Ready 2 Dink
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -49,19 +74,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="username" class="form-label text-dark">
-                                    <i class="fas fa-at me-1"></i>Create Username *
-                                </label>
-                                <input type="text" class="form-control" id="username" name="username" 
-                                       placeholder="Choose a unique username" value="{{ form_data.username if form_data else '' }}" required>
-                                <div class="form-text text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    This will be your unique identifier in Ready 2 Dink
-                                </div>
-                            </div>
-                        </div>
+                        <div class="col-md-6"></div>
                     </div>
                     
                     <div class="row">
