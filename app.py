@@ -1089,6 +1089,123 @@ def calculate_distance_haversine(lat1, lon1, lat2, lon2):
         logging.error(f"Unexpected error in calculate_distance_haversine: {e}")
         return None
 
+def validate_tournament_join_gps(user_latitude, user_longitude, tournament_instance, player_id=None):
+    """
+    Validate if user is within allowed radius to join a tournament based on GPS coordinates.
+    
+    Args:
+        user_latitude (float): User's current latitude
+        user_longitude (float): User's current longitude
+        tournament_instance (dict/Row): Tournament instance with location data
+        player_id (int, optional): Player ID for logging purposes
+        
+    Returns:
+        dict: {
+            'allowed': bool,           # True if user can join tournament
+            'distance_miles': float,   # Actual distance to tournament (if calculated)
+            'max_distance': float,     # Maximum allowed distance
+            'error_message': str,      # User-friendly error message (if not allowed)
+            'reason': str             # Technical reason for validation result
+        }
+    """
+    try:
+        # Input validation
+        if user_latitude is None or user_longitude is None:
+            logging.warning(f"GPS validation failed - missing user coordinates (player: {player_id})")
+            return {
+                'allowed': False,
+                'distance_miles': None,
+                'max_distance': None,
+                'error_message': 'Location information is required to join tournaments. Please enable location services and try again.',
+                'reason': 'missing_user_coordinates'
+            }
+        
+        if not tournament_instance:
+            logging.error(f"GPS validation failed - invalid tournament instance (player: {player_id})")
+            return {
+                'allowed': False,
+                'distance_miles': None,
+                'max_distance': None,
+                'error_message': 'Tournament information is invalid. Please try again.',
+                'reason': 'invalid_tournament'
+            }
+        
+        # Check if tournament has GPS coordinates
+        tournament_lat = tournament_instance.get('latitude')
+        tournament_lng = tournament_instance.get('longitude')
+        
+        if tournament_lat is None or tournament_lng is None:
+            logging.warning(f"Tournament {tournament_instance.get('name')} has no GPS coordinates - allowing join (player: {player_id})")
+            return {
+                'allowed': True,
+                'distance_miles': None,
+                'max_distance': None,
+                'error_message': None,
+                'reason': 'tournament_no_location'
+            }
+        
+        # Calculate distance between user and tournament
+        distance = calculate_distance_haversine(
+            user_latitude, user_longitude,
+            tournament_lat, tournament_lng
+        )
+        
+        if distance is None:
+            logging.error(f"GPS validation failed - could not calculate distance (player: {player_id}, tournament: {tournament_instance.get('name')})")
+            return {
+                'allowed': False,
+                'distance_miles': None,
+                'max_distance': None,
+                'error_message': 'Unable to verify your location. Please check your GPS settings and try again.',
+                'reason': 'distance_calculation_failed'
+            }
+        
+        # Get tournament join radius (default 25 miles)
+        join_radius = tournament_instance.get('join_radius_miles', 25)
+        
+        # Log the validation attempt for security auditing
+        tournament_name = tournament_instance.get('name', 'Unknown Tournament')
+        logging.info(f"GPS validation: Player {player_id} at ({user_latitude:.6f}, {user_longitude:.6f}) "
+                    f"trying to join '{tournament_name}' at ({tournament_lat:.6f}, {tournament_lng:.6f}). "
+                    f"Distance: {distance:.2f} miles, Max allowed: {join_radius} miles")
+        
+        # Check if user is within allowed radius
+        if distance <= join_radius:
+            logging.info(f"GPS validation PASSED - Player {player_id} within {join_radius} miles of {tournament_name}")
+            return {
+                'allowed': True,
+                'distance_miles': round(distance, 2),
+                'max_distance': join_radius,
+                'error_message': None,
+                'reason': 'within_radius'
+            }
+        else:
+            # User is outside allowed radius
+            logging.warning(f"GPS validation BLOCKED - Player {player_id} is {distance:.2f} miles from {tournament_name} "
+                          f"(max allowed: {join_radius} miles)")
+            
+            error_message = (f"You are outside the tournament area. You are {distance:.1f} miles away, "
+                           f"but this tournament only allows players within {join_radius} miles. "
+                           f"Tournaments can be created anywhere in the world, but players can only see and join tournaments near them.")
+            
+            return {
+                'allowed': False,
+                'distance_miles': round(distance, 2),
+                'max_distance': join_radius,
+                'error_message': error_message,
+                'reason': 'outside_radius'
+            }
+        
+    except Exception as e:
+        logging.error(f"Unexpected error in GPS validation (player: {player_id}): {e}")
+        return {
+            'allowed': False,
+            'distance_miles': None,
+            'max_distance': None,
+            'error_message': 'Location verification failed due to a technical error. Please try again.',
+            'reason': 'validation_error'
+        }
+
 def is_player_birthday(player_dob):
     """Check if it's the player's birthday today"""
     if not player_dob:
@@ -2930,13 +3047,19 @@ def withdraw_from_tournament():
 
 @app.route('/tournaments')
 def tournaments_overview():
-    """Tournament overview page - requires login"""
+    """Tournament overview page - requires login with location-based filtering"""
     # Check if user is logged in
     current_player_id = session.get('current_player_id')
     if not current_player_id:
         flash('Please log in to view tournaments', 'warning')
         return redirect(url_for('player_login'))
+    
     conn = get_db_connection()
+    
+    # Get user location from request parameters for filtering
+    user_lat = request.args.get('user_lat', type=float)
+    user_lng = request.args.get('user_lng', type=float)
+    location_filter_enabled = request.args.get('location_filter', 'false').lower() == 'true'
     
     tournament_levels = get_tournament_levels()
     
@@ -2949,8 +3072,8 @@ def tournaments_overview():
         tournament_levels[level_key]['current_entries'] = count
         tournament_levels[level_key]['spots_remaining'] = tournament_levels[level_key]['max_players'] - count
     
-    # Get tournament instances (like upcoming championship)
-    tournament_instances = conn.execute('''
+    # Get tournament instances (like upcoming championship) with location filtering
+    tournament_instances_query = '''
         SELECT * FROM tournament_instances 
         WHERE status IN ('open', 'upcoming')
         ORDER BY 
@@ -2959,17 +3082,121 @@ def tournaments_overview():
                 WHEN status = 'upcoming' THEN 2 
             END,
             created_at DESC
-    ''').fetchall()
+    '''
     
-    # Get custom tournaments created by users
-    custom_tournaments = conn.execute('''
+    all_tournament_instances = conn.execute(tournament_instances_query).fetchall()
+    
+    # Filter tournament instances by location if user location is provided
+    tournament_instances = []
+    if location_filter_enabled and user_lat is not None and user_lng is not None:
+        logging.info(f"Filtering tournaments by user location: {user_lat}, {user_lng}")
+        
+        for instance in all_tournament_instances:
+            # Skip tournaments without location data
+            if instance['latitude'] is None or instance['longitude'] is None:
+                logging.debug(f"Skipping tournament {instance['name']} - no GPS coordinates")
+                continue
+            
+            # Calculate distance between user and tournament
+            distance = calculate_distance_haversine(
+                user_lat, user_lng, 
+                instance['latitude'], instance['longitude']
+            )
+            
+            if distance is None:
+                logging.warning(f"Could not calculate distance for tournament {instance['name']}")
+                continue
+            
+            # Check if tournament is within join radius
+            join_radius = instance['join_radius_miles'] if instance['join_radius_miles'] is not None else 25
+            
+            if distance <= join_radius:
+                # Convert to dict and add distance info
+                instance_dict = dict(instance)
+                instance_dict['distance_miles'] = round(distance, 1)
+                tournament_instances.append(instance_dict)
+                logging.debug(f"Including tournament {instance['name']} - {distance:.1f} miles away")
+            else:
+                logging.debug(f"Excluding tournament {instance['name']} - {distance:.1f} miles away (max: {join_radius})")
+        
+        # Sort by distance (closest first)
+        tournament_instances.sort(key=lambda x: x.get('distance_miles', float('inf')))
+        
+        logging.info(f"Found {len(tournament_instances)} tournaments within range out of {len(all_tournament_instances)} total")
+    else:
+        # No location filtering - show all tournaments but add distance info if possible
+        tournament_instances = []
+        for instance in all_tournament_instances:
+            instance_dict = dict(instance)
+            
+            # Add distance info if both user and tournament have coordinates
+            if (user_lat is not None and user_lng is not None and 
+                instance['latitude'] is not None and instance['longitude'] is not None):
+                distance = calculate_distance_haversine(
+                    user_lat, user_lng, 
+                    instance['latitude'], instance['longitude']
+                )
+                if distance is not None:
+                    instance_dict['distance_miles'] = round(distance, 1)
+            
+            tournament_instances.append(instance_dict)
+    
+    # Get custom tournaments created by users with location filtering
+    custom_tournaments_query = '''
         SELECT ct.*, p.full_name as organizer_name, p.selfie as organizer_selfie
         FROM custom_tournaments ct
         JOIN players p ON ct.organizer_id = p.id
         WHERE ct.status = 'open' 
         AND datetime(ct.registration_deadline) > datetime('now')
         ORDER BY ct.created_at DESC
-    ''').fetchall()
+    '''
+    
+    all_custom_tournaments = conn.execute(custom_tournaments_query).fetchall()
+    
+    # Filter custom tournaments by location if user location is provided
+    custom_tournaments = []
+    if location_filter_enabled and user_lat is not None and user_lng is not None:
+        for tournament in all_custom_tournaments:
+            # Skip tournaments without location data
+            if tournament['latitude'] is None or tournament['longitude'] is None:
+                continue
+            
+            # Calculate distance
+            distance = calculate_distance_haversine(
+                user_lat, user_lng, 
+                tournament['latitude'], tournament['longitude']
+            )
+            
+            if distance is None:
+                continue
+            
+            # Check if tournament is within join radius
+            join_radius = tournament['join_radius_miles'] if tournament['join_radius_miles'] is not None else 25
+            
+            if distance <= join_radius:
+                tournament_dict = dict(tournament)
+                tournament_dict['distance_miles'] = round(distance, 1)
+                custom_tournaments.append(tournament_dict)
+        
+        # Sort by distance
+        custom_tournaments.sort(key=lambda x: x.get('distance_miles', float('inf')))
+    else:
+        # No location filtering - show all custom tournaments but add distance info if possible
+        custom_tournaments = []
+        for tournament in all_custom_tournaments:
+            tournament_dict = dict(tournament)
+            
+            # Add distance info if both user and tournament have coordinates
+            if (user_lat is not None and user_lng is not None and 
+                tournament['latitude'] is not None and tournament['longitude'] is not None):
+                distance = calculate_distance_haversine(
+                    user_lat, user_lng, 
+                    tournament['latitude'], tournament['longitude']
+                )
+                if distance is not None:
+                    tournament_dict['distance_miles'] = round(distance, 1)
+            
+            custom_tournaments.append(tournament_dict)
     
     # Get recent tournament entries
     recent_entries = conn.execute('''
@@ -2986,12 +3213,54 @@ def tournaments_overview():
     
     conn.close()
     
+    # Add comprehensive location filter info to template context
+    total_tournaments = len(all_tournament_instances)
+    total_custom_tournaments = len(all_custom_tournaments)
+    
+    # Count tournaments with GPS data
+    tournaments_with_gps = sum(1 for t in all_tournament_instances if t['latitude'] is not None and t['longitude'] is not None)
+    custom_tournaments_with_gps = sum(1 for t in all_custom_tournaments if t['latitude'] is not None and t['longitude'] is not None)
+    
+    # Calculate average distance for displayed tournaments (if user location available)
+    avg_distance = None
+    min_distance = None
+    max_distance = None
+    
+    if user_lat is not None and user_lng is not None:
+        displayed_tournaments_with_distance = [t for t in tournament_instances if 'distance_miles' in t]
+        displayed_custom_with_distance = [t for t in custom_tournaments if 'distance_miles' in t]
+        all_distances = [t['distance_miles'] for t in displayed_tournaments_with_distance + displayed_custom_with_distance]
+        
+        if all_distances:
+            avg_distance = round(sum(all_distances) / len(all_distances), 1)
+            min_distance = round(min(all_distances), 1)
+            max_distance = round(max(all_distances), 1)
+    
+    location_context = {
+        'location_filter_enabled': location_filter_enabled,
+        'user_latitude': user_lat,
+        'user_longitude': user_lng,
+        'tournaments_found': len(tournament_instances),
+        'custom_tournaments_found': len(custom_tournaments),
+        'total_tournaments': total_tournaments,
+        'total_custom_tournaments': total_custom_tournaments,
+        'tournaments_with_gps': tournaments_with_gps,
+        'custom_tournaments_with_gps': custom_tournaments_with_gps,
+        'tournaments_without_gps': total_tournaments - tournaments_with_gps,
+        'custom_tournaments_without_gps': total_custom_tournaments - custom_tournaments_with_gps,
+        'has_user_location': user_lat is not None and user_lng is not None,
+        'avg_distance': avg_distance,
+        'min_distance': min_distance,
+        'max_distance': max_distance
+    }
+    
     return render_template('tournaments_overview.html', 
                          tournament_levels=tournament_levels, 
                          tournament_instances=tournament_instances,
                          custom_tournaments=custom_tournaments,
                          recent_entries=recent_entries,
-                         players=players)
+                         players=players,
+                         location_info=location_context)
 
 @app.route('/tournament', methods=['GET', 'POST'])
 def tournament():
@@ -3164,6 +3433,36 @@ def tournament_entry(player_id):
                     UPDATE players SET free_tournament_entries = free_tournament_entries - 1
                     WHERE id = ?
                 ''', (player_id,))
+            
+            # GPS Validation for Tournament Join
+            user_latitude = request.form.get('user_latitude')
+            user_longitude = request.form.get('user_longitude')
+            
+            # Convert GPS coordinates to float if provided
+            try:
+                if user_latitude:
+                    user_latitude = float(user_latitude)
+                if user_longitude:
+                    user_longitude = float(user_longitude)
+            except (ValueError, TypeError):
+                user_latitude = None
+                user_longitude = None
+                logging.warning(f"Invalid GPS coordinates received for player {player_id}")
+            
+            # Perform GPS validation
+            gps_validation = validate_tournament_join_gps(
+                user_latitude, user_longitude, tournament_instance, player_id
+            )
+            
+            if not gps_validation['allowed']:
+                logging.warning(f"Tournament join BLOCKED for player {player_id}: {gps_validation['reason']}")
+                flash(gps_validation['error_message'], 'danger')
+                conn.close()
+                return redirect(url_for('tournament_entry', player_id=player_id))
+            
+            # Log successful GPS validation
+            if gps_validation['distance_miles'] is not None:
+                logging.info(f"GPS validation PASSED for player {player_id}: {gps_validation['distance_miles']} miles from tournament")
             
             # Determine payment status based on credits used and remaining payment
             if payment_method == 'credits' and remaining_payment == 0:
@@ -4599,7 +4898,7 @@ def create_custom_tournament():
 
 @app.route('/join_custom_tournament/<int:tournament_id>')
 def join_custom_tournament(tournament_id):
-    """Join a custom tournament with payment"""
+    """Join a custom tournament with payment and GPS validation"""
     current_player_id = session.get('current_player_id')
     if not current_player_id:
         flash('Please log in to join tournaments', 'danger')
@@ -4634,6 +4933,36 @@ def join_custom_tournament(tournament_id):
         flash('You are already registered for this tournament', 'info')
         return redirect(url_for('tournaments_overview'))
     
+    # GPS Validation for Custom Tournament Join
+    user_latitude = request.args.get('lat')
+    user_longitude = request.args.get('lng')
+    
+    # Convert GPS coordinates to float if provided
+    try:
+        if user_latitude:
+            user_latitude = float(user_latitude)
+        if user_longitude:
+            user_longitude = float(user_longitude)
+    except (ValueError, TypeError):
+        user_latitude = None
+        user_longitude = None
+        logging.warning(f"Invalid GPS coordinates received for player {current_player_id}")
+    
+    # Perform GPS validation
+    gps_validation = validate_tournament_join_gps(
+        user_latitude, user_longitude, tournament, current_player_id
+    )
+    
+    if not gps_validation['allowed']:
+        logging.warning(f"Custom tournament join BLOCKED for player {current_player_id}: {gps_validation['reason']}")
+        flash(gps_validation['error_message'], 'danger')
+        conn.close()
+        return redirect(url_for('tournaments_overview'))
+    
+    # Log successful GPS validation
+    if gps_validation['distance_miles'] is not None:
+        logging.info(f"GPS validation PASSED for custom tournament join - player {current_player_id}: {gps_validation['distance_miles']} miles from tournament")
+    
     conn.close()
     
     # Create Stripe checkout session
@@ -4654,7 +4983,9 @@ def join_custom_tournament(tournament_id):
             metadata={
                 'tournament_id': tournament_id,
                 'player_id': current_player_id,
-                'tournament_type': 'custom'
+                'tournament_type': 'custom',
+                'user_latitude': str(user_latitude) if user_latitude is not None else '',
+                'user_longitude': str(user_longitude) if user_longitude is not None else ''
             }
         )
         
@@ -4671,7 +5002,7 @@ def join_custom_tournament(tournament_id):
 
 @app.route('/tournament_payment_success/<int:tournament_id>')
 def tournament_payment_success(tournament_id):
-    """Handle successful tournament payment"""
+    """Handle successful tournament payment with GPS validation"""
     session_id = request.args.get('session_id')
     current_player_id = session.get('current_player_id')
     
@@ -4688,6 +5019,51 @@ def tournament_payment_success(tournament_id):
         
         if checkout_session.payment_status == 'paid':
             conn = get_db_connection()
+            
+            # Get tournament details for GPS validation
+            tournament = conn.execute('''
+                SELECT * FROM custom_tournaments WHERE id = ?
+            ''', (tournament_id,)).fetchone()
+            
+            if not tournament:
+                flash('Tournament not found', 'danger')
+                conn.close()
+                return redirect(url_for('tournaments_overview'))
+            
+            # Extract GPS coordinates from Stripe metadata
+            metadata = checkout_session.metadata or {}
+            user_latitude_str = metadata.get('user_latitude', '')
+            user_longitude_str = metadata.get('user_longitude', '')
+            
+            # Convert GPS coordinates to float if provided
+            user_latitude = None
+            user_longitude = None
+            try:
+                if user_latitude_str and user_latitude_str.strip():
+                    user_latitude = float(user_latitude_str)
+                if user_longitude_str and user_longitude_str.strip():
+                    user_longitude = float(user_longitude_str)
+            except (ValueError, TypeError):
+                user_latitude = None
+                user_longitude = None
+                logging.warning(f"Invalid GPS coordinates in Stripe metadata for payment {checkout_session.payment_intent}")
+            
+            # Perform GPS validation
+            gps_validation = validate_tournament_join_gps(
+                user_latitude, user_longitude, tournament, current_player_id
+            )
+            
+            if not gps_validation['allowed']:
+                logging.warning(f"Tournament payment success BLOCKED for player {current_player_id}: {gps_validation['reason']}")
+                # Payment was successful but GPS validation failed - this is a critical security issue
+                # We need to refund the payment or handle this gracefully
+                flash(f"Payment successful but tournament join blocked: {gps_validation['error_message']} Please contact support for a refund.", 'danger')
+                conn.close()
+                return redirect(url_for('tournaments_overview'))
+            
+            # Log successful GPS validation
+            if gps_validation['distance_miles'] is not None:
+                logging.info(f"GPS validation PASSED for tournament payment success - player {current_player_id}: {gps_validation['distance_miles']} miles from tournament")
             
             # Add player to tournament
             conn.execute('''
@@ -6123,6 +6499,36 @@ def process_quick_tournament_payment():
                 VALUES (?, 'credit_used', ?, ?)
             ''', (player_id, credits_used, credit_description))
         
+        # GPS Validation for Tournament Join
+        user_latitude = request.form.get('user_latitude')
+        user_longitude = request.form.get('user_longitude')
+        
+        # Convert GPS coordinates to float if provided
+        try:
+            if user_latitude:
+                user_latitude = float(user_latitude)
+            if user_longitude:
+                user_longitude = float(user_longitude)
+        except (ValueError, TypeError):
+            user_latitude = None
+            user_longitude = None
+            logging.warning(f"Invalid GPS coordinates received for player {player_id}")
+        
+        # Perform GPS validation
+        gps_validation = validate_tournament_join_gps(
+            user_latitude, user_longitude, tournament_instance, player_id
+        )
+        
+        if not gps_validation['allowed']:
+            logging.warning(f"Tournament join BLOCKED for player {player_id}: {gps_validation['reason']}")
+            flash(gps_validation['error_message'], 'danger')
+            conn.close()
+            return redirect(url_for('quick_tournament_payment', player_id=player_id))
+        
+        # Log successful GPS validation
+        if gps_validation['distance_miles'] is not None:
+            logging.info(f"GPS validation PASSED for player {player_id}: {gps_validation['distance_miles']} miles from tournament")
+        
         # Process tournament entry
         entry_date = datetime.now()
         match_deadline = entry_date + timedelta(days=14)
@@ -6262,7 +6668,22 @@ def partner_invitations(player_id):
 
 @app.route('/accept_partner_invitation/<int:invitation_id>')
 def accept_partner_invitation(invitation_id):
-    """Accept a partner invitation"""
+    """Accept a partner invitation with GPS validation"""
+    # GPS Validation - Get coordinates from request parameters
+    user_latitude = request.args.get('lat')
+    user_longitude = request.args.get('lng')
+    
+    # Convert GPS coordinates to float if provided
+    try:
+        if user_latitude:
+            user_latitude = float(user_latitude)
+        if user_longitude:
+            user_longitude = float(user_longitude)
+    except (ValueError, TypeError):
+        user_latitude = None
+        user_longitude = None
+        logging.warning(f"Invalid GPS coordinates received for partner invitation {invitation_id}")
+    
     conn = get_db_connection()
     
     try:
@@ -6278,6 +6699,32 @@ def accept_partner_invitation(invitation_id):
             flash('Invitation not found or already processed.', 'danger')
             conn.close()
             return redirect(url_for('index'))
+        
+        # Get tournament instance for GPS validation
+        tournament_instance = conn.execute('''
+            SELECT * FROM tournament_instances 
+            WHERE id = ?
+        ''', (invitation['tournament_instance_id'],)).fetchone()
+        
+        if not tournament_instance:
+            flash('Tournament not found.', 'danger')
+            conn.close()
+            return redirect(url_for('index'))
+        
+        # Perform GPS validation before accepting invitation
+        gps_validation = validate_tournament_join_gps(
+            user_latitude, user_longitude, tournament_instance, invitation['invitee_id']
+        )
+        
+        if not gps_validation['allowed']:
+            logging.warning(f"Partner invitation acceptance BLOCKED for player {invitation['invitee_id']}: {gps_validation['reason']}")
+            flash(gps_validation['error_message'], 'danger')
+            conn.close()
+            return redirect(url_for('partner_invitations', player_id=invitation['invitee_id']))
+        
+        # Log successful GPS validation
+        if gps_validation['distance_miles'] is not None:
+            logging.info(f"GPS validation PASSED for partner invitation acceptance - player {invitation['invitee_id']}: {gps_validation['distance_miles']} miles from tournament")
         
         # Update invitation status
         conn.execute('''

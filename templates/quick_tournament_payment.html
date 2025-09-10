@@ -82,9 +82,25 @@
                     </div>
                 </div>
 
+                <!-- GPS Location Status -->
+                <div id="gps-status" class="alert alert-info mb-4" style="display: none;">
+                    <div class="d-flex align-items-center">
+                        <div id="gps-spinner" class="spinner-border spinner-border-sm me-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div>
+                            <strong id="gps-status-text">Verifying your location...</strong>
+                            <br><small id="gps-status-detail" class="text-muted">This ensures you're within the tournament area</small>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Payment Method Selection -->
                 {% if quick_join_data.entry_fee > 0 %}
-                <form method="POST" action="{{ url_for('process_quick_tournament_payment') }}">
+                <form method="POST" action="{{ url_for('process_quick_tournament_payment') }}" id="payment-form">
+                    <!-- Hidden GPS coordinate fields -->
+                    <input type="hidden" name="user_latitude" id="user_latitude" value="">
+                    <input type="hidden" name="user_longitude" id="user_longitude" value="">
                     <div class="card mb-4">
                         <div class="card-header">
                             <h6 class="card-title mb-0">
@@ -260,8 +276,11 @@
                     <p class="mb-0">This tournament entry is covered by your Ambassador benefits.</p>
                 </div>
                 
-                <form method="POST" action="{{ url_for('process_quick_tournament_payment') }}">
+                <form method="POST" action="{{ url_for('process_quick_tournament_payment') }}" id="free-payment-form">
                     <input type="hidden" name="payment_method" value="free">
+                    <!-- Hidden GPS coordinate fields -->
+                    <input type="hidden" name="user_latitude" id="free_user_latitude" value="">
+                    <input type="hidden" name="user_longitude" id="free_user_longitude" value="">
                     <div class="d-grid gap-2 d-md-flex justify-content-md-between">
                         <a href="{{ url_for('tournaments_overview') }}" class="btn btn-secondary text-white">
                             <i class="fas fa-arrow-left me-1"></i>Back to Tournaments
@@ -278,6 +297,10 @@
 </div>
 
 <script>
+// GPS Location Capture and Tournament Join Validation
+let userLocation = null;
+let locationCaptureInProgress = false;
+
 function updatePaymentDisplay() {
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
     const creditUsageInfo = document.getElementById('credit-usage-info');
@@ -312,9 +335,195 @@ function updatePaymentDisplay() {
     }
 }
 
+function showGPSStatus(message, detail, isSuccess = false, isError = false) {
+    const gpsStatus = document.getElementById('gps-status');
+    const gpsStatusText = document.getElementById('gps-status-text');
+    const gpsStatusDetail = document.getElementById('gps-status-detail');
+    const gpsSpinner = document.getElementById('gps-spinner');
+    
+    if (gpsStatus && gpsStatusText && gpsStatusDetail) {
+        gpsStatusText.textContent = message;
+        gpsStatusDetail.textContent = detail;
+        gpsStatus.style.display = 'block';
+        
+        // Update alert styling
+        gpsStatus.className = 'alert mb-4';
+        if (isSuccess) {
+            gpsStatus.classList.add('alert-success');
+            gpsSpinner.style.display = 'none';
+        } else if (isError) {
+            gpsStatus.classList.add('alert-danger');
+            gpsSpinner.style.display = 'none';
+        } else {
+            gpsStatus.classList.add('alert-info');
+            gpsSpinner.style.display = 'block';
+        }
+    }
+}
+
+function hideGPSStatus() {
+    const gpsStatus = document.getElementById('gps-status');
+    if (gpsStatus) {
+        gpsStatus.style.display = 'none';
+    }
+}
+
+function getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Geolocation is not supported by this browser'));
+            return;
+        }
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 15000, // 15 seconds
+            maximumAge: 0 // Always get fresh location
+        };
+
+        showGPSStatus(
+            'Getting your current location...', 
+            'This ensures you\'re within the tournament area'
+        );
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const location = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy
+                };
+                
+                console.log('GPS location captured:', location);
+                showGPSStatus(
+                    'Location verified successfully!', 
+                    `Accuracy: ${Math.round(location.accuracy)} meters`, 
+                    true
+                );
+                
+                // Hide status after 2 seconds
+                setTimeout(hideGPSStatus, 2000);
+                
+                resolve(location);
+            },
+            (error) => {
+                console.error('GPS error:', error);
+                
+                let errorMessage = 'Unable to get your location';
+                let errorDetail = 'Please enable location services and try again';
+                
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage = 'Location access denied';
+                        errorDetail = 'Please enable location permissions for this website and refresh the page';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage = 'Location information unavailable';
+                        errorDetail = 'Please check your GPS settings and try again';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage = 'Location request timed out';
+                        errorDetail = 'Please try again or check your internet connection';
+                        break;
+                }
+                
+                showGPSStatus(errorMessage, errorDetail, false, true);
+                reject(error);
+            },
+            options
+        );
+    });
+}
+
+function updateHiddenLocationFields(latitude, longitude, formId) {
+    const latField = document.querySelector(`#${formId} input[name="user_latitude"]`);
+    const lngField = document.querySelector(`#${formId} input[name="user_longitude"]`);
+    
+    if (latField) latField.value = latitude;
+    if (lngField) lngField.value = longitude;
+    
+    console.log(`Updated ${formId} GPS fields: ${latitude}, ${longitude}`);
+}
+
+async function handleFormSubmission(event, formId) {
+    event.preventDefault();
+    
+    if (locationCaptureInProgress) {
+        console.log('Location capture already in progress');
+        return;
+    }
+    
+    locationCaptureInProgress = true;
+    const form = event.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.innerHTML;
+    
+    // Disable submit button
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Verifying Location...';
+    
+    try {
+        // Get fresh GPS coordinates
+        const location = await getCurrentPosition();
+        userLocation = location;
+        
+        // Update hidden form fields
+        updateHiddenLocationFields(location.latitude, location.longitude, formId);
+        
+        // Re-enable submit button with success message
+        submitButton.innerHTML = '<i class="fas fa-check me-1"></i>Submitting...';
+        
+        // Submit the form
+        console.log('Submitting form with GPS coordinates');
+        form.submit();
+        
+    } catch (error) {
+        console.error('GPS capture failed:', error);
+        
+        // Re-enable submit button
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonText;
+        locationCaptureInProgress = false;
+        
+        // Show error for 5 seconds, then hide
+        setTimeout(() => {
+            hideGPSStatus();
+        }, 5000);
+    }
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     updatePaymentDisplay();
+    
+    // Attach GPS-enabled form submission handlers
+    const paymentForm = document.getElementById('payment-form');
+    const freePaymentForm = document.getElementById('free-payment-form');
+    
+    if (paymentForm) {
+        paymentForm.addEventListener('submit', (event) => {
+            handleFormSubmission(event, 'payment-form');
+        });
+    }
+    
+    if (freePaymentForm) {
+        freePaymentForm.addEventListener('submit', (event) => {
+            handleFormSubmission(event, 'free-payment-form');
+        });
+    }
+    
+    // Optional: Pre-capture location on page load for better UX
+    setTimeout(() => {
+        if (!userLocation) {
+            console.log('Pre-capturing location for better UX');
+            getCurrentPosition().then((location) => {
+                userLocation = location;
+                console.log('Location pre-cached');
+            }).catch((error) => {
+                console.log('Pre-location capture failed, will try again on submit');
+            });
+        }
+    }, 1000);
 });
 </script>
 

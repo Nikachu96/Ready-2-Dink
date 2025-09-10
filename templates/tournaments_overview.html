@@ -3,6 +3,129 @@
 {% block title %}Tournaments - Tournament Management System{% endblock %}
 
 {% block content %}
+<!-- Location Status Banner -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div id="locationStatus" class="alert alert-info d-none">
+            <div class="d-flex align-items-center">
+                <div id="locationSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <i id="locationIcon" class="fas fa-map-marker-alt me-2"></i>
+                <span id="locationText">Detecting your location for nearby tournaments...</span>
+                <button id="toggleLocationBtn" type="button" class="btn btn-sm btn-outline-primary ms-auto">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh Location
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Location-Based Filtering Results -->
+{% if location_info and location_info.location_filter_enabled %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="alert alert-success">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="fas fa-filter me-2"></i>
+                    <strong>Location Filtering Active:</strong> 
+                    Showing {{ location_info.tournaments_found }} tournament(s) 
+                    {% if location_info.custom_tournaments_found > 0 %}
+                        and {{ location_info.custom_tournaments_found }} custom tournament(s)
+                    {% endif %}
+                    within your area.
+                </div>
+                <a href="{{ url_for('tournaments_overview') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-globe me-1"></i>View All Tournaments
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% elif location_info and location_info.user_latitude and location_info.user_longitude %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Location Available:</strong> 
+                    Showing all tournaments with distance information.
+                </div>
+                <button onclick="enableLocationFiltering()" class="btn btn-sm btn-primary">
+                    <i class="fas fa-filter me-1"></i>Filter by Location
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Manual Location Entry Modal -->
+<div class="modal fade" id="manualLocationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-map-marker-alt me-2"></i>Enter Your Location
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">
+                    Since we couldn't detect your location automatically, please enter your current location 
+                    to find nearby tournaments.
+                </p>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-globe-americas me-1"></i>Latitude
+                        </label>
+                        <input type="number" id="manualLatitude" class="form-control" 
+                               step="0.000001" placeholder="e.g. 40.7128" 
+                               title="Your latitude coordinate">
+                        <small class="text-muted">North: positive, South: negative</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-globe-americas me-1"></i>Longitude
+                        </label>
+                        <input type="number" id="manualLongitude" class="form-control" 
+                               step="0.000001" placeholder="e.g. -74.0060"
+                               title="Your longitude coordinate">
+                        <small class="text-muted">East: positive, West: negative</small>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle me-1"></i>How to find your coordinates:</h6>
+                    <ul class="mb-0 small">
+                        <li>Open Google Maps on your phone or computer</li>
+                        <li>Tap and hold your current location</li>
+                        <li>Your coordinates will appear at the bottom</li>
+                        <li>Copy the numbers and paste them here</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-warning d-none" id="coordinateError">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <span id="coordinateErrorText">Please enter valid coordinates</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="setManualLocation()">
+                    <i class="fas fa-check me-1"></i>Find Nearby Tournaments
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-12">
         <div class="card mb-4">
@@ -37,7 +160,7 @@
                                     {% endif %}
                                 </div>
                                 
-                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
                                     <small class="text-muted">
                                         <i class="fas fa-users me-1"></i>{{ level_info.current_entries }}/{{ level_info.max_players }} players
                                     </small>
@@ -51,6 +174,36 @@
                                         {% endif %}
                                     {% endif %}
                                 </div>
+                                
+                                <!-- Location Information -->
+                                {% if location_info and location_info.has_user_location %}
+                                <div class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        {% if location_info.location_filter_enabled %}
+                                            Tournaments within your area
+                                        {% else %}
+                                            <span class="text-info">All locations • </span>
+                                            <a href="javascript:void(0)" onclick="enableLocationFiltering()" class="text-decoration-none small">
+                                                <i class="fas fa-filter me-1"></i>Filter by location
+                                            </a>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                {% elif location_info and not location_info.has_user_location %}
+                                <div class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-globe me-1"></i>All locations
+                                        <br>
+                                        <span class="text-info">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            <a href="javascript:void(0)" onclick="initializeLocationFiltering()" class="text-decoration-none">
+                                                Enable location to see nearby tournaments
+                                            </a>
+                                        </span>
+                                    </small>
+                                </div>
+                                {% endif %}
                                 
                                 <p class="card-text small mb-2">{{ level_info.description }}</p>
                                 <p class="card-text small text-muted mb-2">
@@ -329,6 +482,9 @@
                                     <div class="col-6">
                                         <small class="text-muted">
                                             <i class="fas fa-map-marker-alt me-1"></i>{{ tournament.location }}
+                                            {% if tournament.distance_miles is defined %}
+                                                <br><span class="badge badge-sm bg-primary text-white">{{ tournament.distance_miles }} mi away</span>
+                                            {% endif %}
                                         </small>
                                     </div>
                                     <div class="col-6">
@@ -692,19 +848,22 @@ function getCurrentLocation() {
 }
 
 function getReadableAddress(latitude, longitude) {
-    // Simple reverse geocoding using a free service (you might want to use a more robust service in production)
-    fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=YOUR_API_KEY`)
+    // Optional reverse geocoding - using a free service without API key
+    // This provides approximate location for user confirmation
+    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`)
         .then(response => response.json())
         .then(data => {
-            if (data.results && data.results[0]) {
-                const address = data.results[0].formatted;
+            if (data.city || data.locality) {
+                const location = data.city || data.locality;
+                const region = data.principalSubdivision || data.countryName;
+                const displayLocation = region ? `${location}, ${region}` : location;
                 const status = document.getElementById('locationStatus');
-                status.innerHTML += `<br><small class="text-muted">Near: ${address}</small>`;
+                status.innerHTML += `<br><small class="text-muted">Near: ${displayLocation}</small>`;
             }
         })
         .catch(error => {
-            // Silently fail - address lookup is optional
-            console.log('Address lookup failed:', error);
+            // Silently fail - address lookup is optional enhancement
+            console.log('Address lookup failed (optional feature):', error);
         });
 }
 
@@ -811,5 +970,255 @@ document.getElementById('createTournamentForm').addEventListener('submit', funct
         submitBtn.innerHTML = '<i class="fas fa-plus me-2"></i>Create Tournament';
     });
 });
+
+// GPS Location-Based Tournament Filtering
+let userLatitude = null;
+let userLongitude = null;
+let locationPermissionStatus = 'unknown'; // 'unknown', 'granted', 'denied', 'unavailable'
+
+// Initialize location detection on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeLocationFiltering();
+});
+
+function initializeLocationFiltering() {
+    const locationStatus = document.getElementById('locationStatus');
+    const locationIcon = document.getElementById('locationIcon');
+    const locationText = document.getElementById('locationText');
+    const locationSpinner = document.getElementById('locationSpinner');
+    const toggleLocationBtn = document.getElementById('toggleLocationBtn');
+    
+    // Show the location status banner
+    locationStatus.classList.remove('d-none');
+    
+    // Check if geolocation is supported
+    if (!navigator.geolocation) {
+        updateLocationStatus('unavailable', 'Geolocation is not supported by this browser. Showing all tournaments.', 'warning');
+        return;
+    }
+    
+    // Request location permission
+    requestUserLocation();
+    
+    // Handle refresh location button click
+    toggleLocationBtn.addEventListener('click', function() {
+        requestUserLocation();
+    });
+}
+
+function requestUserLocation() {
+    const locationIcon = document.getElementById('locationIcon');
+    const locationText = document.getElementById('locationText');
+    const locationSpinner = document.getElementById('locationSpinner');
+    
+    // Show loading state
+    locationSpinner.classList.remove('d-none');
+    locationIcon.classList.add('d-none');
+    locationText.textContent = 'Getting your location...';
+    
+    const options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // Cache for 5 minutes
+    };
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            // Success - got user location
+            userLatitude = position.coords.latitude;
+            userLongitude = position.coords.longitude;
+            locationPermissionStatus = 'granted';
+            
+            console.log(`User location: ${userLatitude}, ${userLongitude}`);
+            
+            // Update UI to show success
+            updateLocationStatus('granted', `Location detected. Filtering tournaments within your area.`, 'success');
+            
+            // Filter tournaments based on location
+            filterTournamentsByLocation();
+        },
+        function(error) {
+            // Error handling
+            locationPermissionStatus = 'denied';
+            
+            let errorMessage;
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = "Location permission denied. Showing all tournaments.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = "Location unavailable. Showing all tournaments.";
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = "Location request timed out. Showing all tournaments.";
+                    break;
+                default:
+                    errorMessage = "Unable to get location. Showing all tournaments.";
+                    break;
+            }
+            
+            console.warn('Geolocation error:', error);
+            updateLocationStatus('denied', errorMessage, 'warning');
+        },
+        options
+    );
+}
+
+function updateLocationStatus(status, message, alertType) {
+    const locationStatus = document.getElementById('locationStatus');
+    const locationIcon = document.getElementById('locationIcon');
+    const locationText = document.getElementById('locationText');
+    const locationSpinner = document.getElementById('locationSpinner');
+    const toggleLocationBtn = document.getElementById('toggleLocationBtn');
+    
+    // Hide spinner
+    locationSpinner.classList.add('d-none');
+    locationIcon.classList.remove('d-none');
+    
+    // Update alert class
+    locationStatus.className = `alert alert-${alertType}`;
+    
+    // Update icon based on status
+    switch(status) {
+        case 'granted':
+            locationIcon.className = 'fas fa-map-marker-alt me-2 text-success';
+            toggleLocationBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Update Location';
+            break;
+        case 'denied':
+        case 'unavailable':
+            locationIcon.className = 'fas fa-exclamation-triangle me-2 text-warning';
+            toggleLocationBtn.innerHTML = '<i class="fas fa-location-arrow me-1"></i>Enable Location';
+            
+            // Add manual location button for denied/unavailable cases
+            const manualLocationBtn = document.createElement('button');
+            manualLocationBtn.type = 'button';
+            manualLocationBtn.className = 'btn btn-sm btn-outline-warning ms-2';
+            manualLocationBtn.innerHTML = '<i class="fas fa-edit me-1"></i>Enter Manually';
+            manualLocationBtn.onclick = showManualLocationModal;
+            
+            // Remove existing manual button if present
+            const existingManualBtn = locationStatus.querySelector('.btn-outline-warning');
+            if (existingManualBtn) {
+                existingManualBtn.remove();
+            }
+            
+            // Add the manual button to the status banner
+            locationStatus.querySelector('.d-flex').appendChild(manualLocationBtn);
+            break;
+        default:
+            locationIcon.className = 'fas fa-map-marker-alt me-2';
+            break;
+    }
+    
+    // Update text
+    locationText.textContent = message;
+}
+
+function filterTournamentsByLocation() {
+    if (!userLatitude || !userLongitude) {
+        console.log('No user location available for filtering');
+        return;
+    }
+    
+    // Reload page with location parameters to get filtered tournaments
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('user_lat', userLatitude);
+    currentUrl.searchParams.set('user_lng', userLongitude);
+    currentUrl.searchParams.set('location_filter', 'true');
+    
+    // Use replaceState to avoid adding to browser history
+    window.history.replaceState({}, '', currentUrl);
+    
+    // Reload the page to get filtered results
+    window.location.reload();
+}
+
+// Calculate distance between two points (client-side for display)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+// Enable location-based filtering when user clicks button
+function enableLocationFiltering() {
+    if (userLatitude && userLongitude) {
+        // If we already have location, apply filtering immediately
+        filterTournamentsByLocation();
+    } else {
+        // Request location first, then filter
+        requestUserLocation();
+    }
+}
+
+// Manual Location Modal Functions
+function showManualLocationModal() {
+    const modal = new bootstrap.Modal(document.getElementById('manualLocationModal'));
+    modal.show();
+    
+    // Clear any previous error messages
+    document.getElementById('coordinateError').classList.add('d-none');
+}
+
+function setManualLocation() {
+    const latInput = document.getElementById('manualLatitude');
+    const lngInput = document.getElementById('manualLongitude');
+    const errorDiv = document.getElementById('coordinateError');
+    const errorText = document.getElementById('coordinateErrorText');
+    
+    const latitude = parseFloat(latInput.value);
+    const longitude = parseFloat(lngInput.value);
+    
+    // Validate coordinates
+    if (isNaN(latitude) || isNaN(longitude)) {
+        showCoordinateError('Please enter valid numeric coordinates.');
+        return;
+    }
+    
+    if (latitude < -90 || latitude > 90) {
+        showCoordinateError('Latitude must be between -90 and 90 degrees.');
+        return;
+    }
+    
+    if (longitude < -180 || longitude > 180) {
+        showCoordinateError('Longitude must be between -180 and 180 degrees.');
+        return;
+    }
+    
+    // Set global location variables
+    userLatitude = latitude;
+    userLongitude = longitude;
+    locationPermissionStatus = 'manual';
+    
+    console.log(`Manual location set: ${userLatitude}, ${userLongitude}`);
+    
+    // Hide the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('manualLocationModal'));
+    modal.hide();
+    
+    // Update location status UI
+    updateLocationStatus('granted', `Manual location set. Filtering tournaments within your area.`, 'success');
+    
+    // Filter tournaments based on manual location
+    filterTournamentsByLocation();
+}
+
+function showCoordinateError(message) {
+    const errorDiv = document.getElementById('coordinateError');
+    const errorText = document.getElementById('coordinateErrorText');
+    
+    errorText.textContent = message;
+    errorDiv.classList.remove('d-none');
+    
+    // Auto-hide error after 5 seconds
+    setTimeout(() => {
+        errorDiv.classList.add('d-none');
+    }, 5000);
+}
 </script>
 {% endblock %}
