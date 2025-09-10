@@ -975,10 +975,14 @@ document.getElementById('createTournamentForm').addEventListener('submit', funct
 let userLatitude = null;
 let userLongitude = null;
 let locationPermissionStatus = 'unknown'; // 'unknown', 'granted', 'denied', 'unavailable'
+let locationInitialized = false; // Prevent multiple location detection attempts
 
 // Initialize location detection on page load
 document.addEventListener('DOMContentLoaded', function() {
-    initializeLocationFiltering();
+    if (!locationInitialized) {
+        locationInitialized = true;
+        initializeLocationFiltering();
+    }
 });
 
 function initializeLocationFiltering() {
@@ -1129,8 +1133,8 @@ function filterTournamentsByLocation() {
     // Use replaceState to avoid adding to browser history
     window.history.replaceState({}, '', currentUrl);
     
-    // Reload the page to get filtered results
-    window.location.reload();
+    // Navigate to filtered results without reloading
+    window.location.href = currentUrl.toString();
 }
 
 // Calculate distance between two points (client-side for display)
