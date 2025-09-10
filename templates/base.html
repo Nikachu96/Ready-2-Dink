@@ -218,6 +218,38 @@
             color: white !important;
         }
         
+        /* SYSTEMATIC RULE: ALL DARK BACKGROUNDS MUST HAVE WHITE TEXT */
+        /* This prevents readability issues across the entire app */
+        [style*="background: linear-gradient"][style*="#3F567F"],
+        [style*="background: linear-gradient"][style*="#2d1b69"], 
+        [style*="background: linear-gradient"][style*="#1a1a2e"],
+        [style*="background-color: rgba(59, 130, 246"],
+        [style*="background: rgba(255,255,255,0.05)"],
+        .card[style*="background: linear-gradient"],
+        .modal-content[style*="background: linear-gradient"],
+        div[style*="background: linear-gradient"][style*="#3F567F"],
+        div[style*="background: linear-gradient"][style*="#2d1b69"],
+        div[style*="background: linear-gradient"][style*="#1a1a2e"] {
+            color: white !important;
+        }
+        
+        /* Force all text elements inside dark backgrounds to be white */
+        [style*="background: linear-gradient"][style*="#3F567F"] *,
+        [style*="background: linear-gradient"][style*="#2d1b69"] *, 
+        [style*="background: linear-gradient"][style*="#1a1a2e"] *,
+        .card[style*="background: linear-gradient"] *,
+        .modal-content[style*="background: linear-gradient"] *,
+        div[style*="background: linear-gradient"][style*="#3F567F"] *,
+        div[style*="background: linear-gradient"][style*="#2d1b69"] *,
+        div[style*="background: linear-gradient"][style*="#1a1a2e"] * {
+            color: white !important;
+        }
+        
+        /* Override any competing text color rules */
+        .text-muted {
+            color: white !important;
+        }
+        
         /* Direct over gradient text should be white */
         body > .container-fluid > .row,
         .text-white {

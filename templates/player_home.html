@@ -137,9 +137,9 @@
                                         {% endif %}
                                     </h2>
                                     
-                                    <!-- Notification Toggle aligned with crown -->
+                                    <!-- Notification Toggle aligned with crown - Fixed mobile text -->
                                     <div class="d-flex align-items-center bg-white bg-opacity-10 rounded-pill px-2 py-1">
-                                        <small class="text-white me-2 mb-0" style="font-size: 0.75rem;">Notifications</small>
+                                        <small class="text-white me-1 mb-0" style="font-size: 0.7rem;">Notif</small>
                                         <div class="form-check form-switch mb-0">
                                             <input class="form-check-input" 
                                                    type="checkbox" 
@@ -147,8 +147,8 @@
                                                    id="bannerNotificationToggle"
                                                    onclick="toggleNotifications(false, true)"
                                                    {% if player.notifications_enabled %}checked{% endif %}
-                                                   style="width: 1.75rem; height: 0.875rem;">
-                                            <label class="form-check-label text-white fw-semibold" for="bannerNotificationToggle" style="margin-left: 0.3rem; font-size: 0.75rem;">
+                                                   style="width: 1.5rem; height: 0.75rem;">
+                                            <label class="form-check-label text-white fw-semibold" for="bannerNotificationToggle" style="margin-left: 0.2rem; font-size: 0.7rem;">
                                                 <span id="bannerNotificationStatus">
                                                     {% if player.notifications_enabled %}ON{% else %}OFF{% endif %}
                                                 </span>
@@ -185,6 +185,12 @@
                     <!-- Action Buttons -->
                     <div class="col-md-4 text-end">
                         <div class="d-grid gap-2">
+                            <!-- Sign Out Button - Always visible -->
+                            <a href="{{ url_for('logout') }}" class="btn btn-lg fw-semibold text-white mb-2"
+                               style="background: linear-gradient(45deg, #dc3545, #c82333); border: none;">
+                                <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                            </a>
+                            
                             {% if player.preferred_court_1 %}
                             <button onclick="showCourtLocation('{{ player.preferred_court_1 }}', 'primary')" 
                                     class="btn btn-lg fw-semibold text-white"
