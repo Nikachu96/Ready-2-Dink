@@ -117,22 +117,22 @@
                         </div>
                         <div class="row text-center">
                             <div class="col-4">
-                                <div class="fw-bold" style="font-size: 1.2rem;">{{ player.ranking_points }}</div>
-                                <small class="text-muted">Points</small>
+                                <div class="fw-bold" style="font-size: 1.2rem; color: white;">{{ player.ranking_points }}</div>
+                                <small style="color: rgba(255,255,255,0.8);">Points</small>
                             </div>
                             <div class="col-4">
-                                <div class="fw-bold" style="font-size: 1.2rem;">
+                                <div class="fw-bold" style="font-size: 1.2rem; color: white;">
                                     {% if (player.wins + player.losses) > 0 %}
                                         {{ "%.0f"|format((player.wins / (player.wins + player.losses)) * 100) }}%
                                     {% else %}
                                         0%
                                     {% endif %}
                                 </div>
-                                <small class="text-muted">Win Rate</small>
+                                <small style="color: rgba(255,255,255,0.8);">Win Rate</small>
                             </div>
                             <div class="col-4">
-                                <div class="fw-bold" style="font-size: 1.2rem;">{{ player.wins + player.losses }}</div>
-                                <small class="text-muted">Total Games</small>
+                                <div class="fw-bold" style="font-size: 1.2rem; color: white;">{{ player.wins + player.losses }}</div>
+                                <small style="color: rgba(255,255,255,0.8);">Total Matches</small>
                             </div>
                         </div>
                     </div>
