@@ -326,10 +326,60 @@
                                             <input type="number" class="form-control" name="max_players" value="32" min="4" max="64" required>
                                         </div>
                                     </div>
-                                    <div class="col-md-9">
+                                    <div class="col-md-3">
                                         <div class="mb-3">
-                                            <label class="form-label">&nbsp;</label>
-                                            <button type="submit" class="btn btn-success d-block">
+                                            <label class="form-label">Join Radius</label>
+                                            <select class="form-control" name="join_radius">
+                                                <option value="10">10 miles</option>
+                                                <option value="15">15 miles</option>
+                                                <option value="20">20 miles</option>
+                                                <option value="25" selected>25 miles</option>
+                                                <option value="30">30 miles</option>
+                                                <option value="50">50 miles</option>
+                                                <option value="100">100 miles</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tournament Location</label>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-outline-light btn-sm" id="adminGetLocationBtn" onclick="adminGetCurrentLocation()">
+                                                    <i class="fas fa-location-arrow me-1"></i>Get Location
+                                                </button>
+                                                <button type="button" class="btn btn-outline-light btn-sm" onclick="adminToggleManualLocation()">
+                                                    Manual
+                                                </button>
+                                            </div>
+                                            <div class="mt-1">
+                                                <div id="adminLocationStatus" class="small text-muted">Click "Get Location" to set GPS coordinates</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Manual GPS coordinates for admin (hidden by default) -->
+                                <div id="adminManualLocationSection" class="row" style="display: none;">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Latitude</label>
+                                            <input type="number" name="latitude" class="form-control" step="0.000001" 
+                                                   placeholder="e.g. 40.7128">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Longitude</label>
+                                            <input type="number" name="longitude" class="form-control" step="0.000001" 
+                                                   placeholder="e.g. -74.0060">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <button type="submit" class="btn btn-success">
                                                 <i class="fas fa-plus me-1"></i>Create Tournament
                                             </button>
                                         </div>
@@ -1353,6 +1403,85 @@ function loadCreditTransactions() {
         .catch(error => {
             console.error('Error loading credit transactions:', error);
         });
+}
+
+// Admin GPS Location Functions
+function adminGetCurrentLocation() {
+    const btn = document.getElementById('adminGetLocationBtn');
+    const status = document.getElementById('adminLocationStatus');
+    
+    if (!navigator.geolocation) {
+        status.innerHTML = '<span class="text-danger">Geolocation is not supported by this browser</span>';
+        return;
+    }
+    
+    // Update button state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting...';
+    status.innerHTML = '<span class="text-info">Requesting location permission...</span>';
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            
+            // Set the coordinates in the form
+            document.querySelector('input[name="latitude"]').value = latitude;
+            document.querySelector('input[name="longitude"]').value = longitude;
+            
+            // Update status
+            status.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-1"></i>Location set: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}</span>`;
+            
+            // Reset button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check me-1"></i>Set';
+            btn.classList.remove('btn-outline-light');
+            btn.classList.add('btn-success');
+        },
+        function(error) {
+            let errorMessage = '';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'Location access denied. Use manual entry below.';
+                    adminToggleManualLocation(true);
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'Location unavailable. Use manual entry below.';
+                    adminToggleManualLocation(true);
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'Location request timed out. Try again or enter manually.';
+                    break;
+                default:
+                    errorMessage = 'Error getting location.';
+                    break;
+            }
+            
+            status.innerHTML = `<span class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>${errorMessage}</span>`;
+            
+            // Reset button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-location-arrow me-1"></i>Try Again';
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+}
+
+function adminToggleManualLocation(forceShow = false) {
+    const manualSection = document.getElementById('adminManualLocationSection');
+    const isHidden = manualSection.style.display === 'none';
+    
+    if (forceShow || isHidden) {
+        manualSection.style.display = 'block';
+        document.getElementById('adminLocationStatus').innerHTML = '<span class="text-info">Enter coordinates manually below</span>';
+    } else {
+        manualSection.style.display = 'none';
+        document.getElementById('adminLocationStatus').innerHTML = 'Click "Get Location" to set GPS coordinates';
+    }
 }
 
 </script>

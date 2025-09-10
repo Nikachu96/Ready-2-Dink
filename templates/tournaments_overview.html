@@ -482,6 +482,65 @@
                         </div>
                     </div>
                     
+                    <!-- GPS Location Section -->
+                    <div class="card mb-3" style="border: 1px solid #e0563f;">
+                        <div class="card-header" style="background-color: #f8f9fa;">
+                            <h6 class="mb-0">
+                                <i class="fas fa-map-marker-alt me-2"></i>Tournament Location Settings
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-outline-primary" id="getLocationBtn" onclick="getCurrentLocation()">
+                                            <i class="fas fa-location-arrow me-1"></i>Get My Location
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleManualLocation()">
+                                            Manual Entry
+                                        </button>
+                                    </div>
+                                    <div class="mt-2">
+                                        <div id="locationStatus" class="small text-muted">Click "Get My Location" to set tournament location</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Join Radius</label>
+                                    <select name="join_radius" class="form-control">
+                                        <option value="10">10 miles</option>
+                                        <option value="15">15 miles</option>
+                                        <option value="20">20 miles</option>
+                                        <option value="25" selected>25 miles</option>
+                                        <option value="30">30 miles</option>
+                                        <option value="50">50 miles</option>
+                                        <option value="100">100 miles</option>
+                                    </select>
+                                    <small class="text-muted">Players within this radius can join</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Manual GPS coordinates (hidden by default) -->
+                            <div id="manualLocationSection" class="row" style="display: none;">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Latitude</label>
+                                    <input type="number" name="latitude" class="form-control" step="0.000001" 
+                                           placeholder="e.g. 40.7128">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Longitude</label>
+                                    <input type="number" name="longitude" class="form-control" step="0.000001" 
+                                           placeholder="e.g. -74.0060">
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info small mb-0">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <strong>Location Privacy:</strong> Your GPS coordinates help players find tournaments near them. 
+                                Only the approximate area is shown to other players, not your exact location.
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Max Players</label>
@@ -563,6 +622,105 @@
 </div>
 
 <script>
+// GPS Location Functions
+function getCurrentLocation() {
+    const btn = document.getElementById('getLocationBtn');
+    const status = document.getElementById('locationStatus');
+    
+    if (!navigator.geolocation) {
+        status.innerHTML = '<span class="text-danger">Geolocation is not supported by this browser</span>';
+        return;
+    }
+    
+    // Update button state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting Location...';
+    status.innerHTML = '<span class="text-info">Requesting location permission...</span>';
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            
+            // Set the coordinates in the form
+            document.querySelector('input[name="latitude"]').value = latitude;
+            document.querySelector('input[name="longitude"]').value = longitude;
+            
+            // Update status
+            status.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-1"></i>Location captured: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}</span>`;
+            
+            // Try to get readable address
+            getReadableAddress(latitude, longitude);
+            
+            // Reset button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check me-1"></i>Location Set';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-success');
+        },
+        function(error) {
+            let errorMessage = '';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'Location access denied. You can enter coordinates manually.';
+                    toggleManualLocation(true);
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'Location information unavailable. Please enter coordinates manually.';
+                    toggleManualLocation(true);
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'Location request timed out. Please try again or enter manually.';
+                    break;
+                default:
+                    errorMessage = 'An unknown error occurred while retrieving location.';
+                    break;
+            }
+            
+            status.innerHTML = `<span class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>${errorMessage}</span>`;
+            
+            // Reset button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-location-arrow me-1"></i>Try Again';
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+}
+
+function getReadableAddress(latitude, longitude) {
+    // Simple reverse geocoding using a free service (you might want to use a more robust service in production)
+    fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=YOUR_API_KEY`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.results && data.results[0]) {
+                const address = data.results[0].formatted;
+                const status = document.getElementById('locationStatus');
+                status.innerHTML += `<br><small class="text-muted">Near: ${address}</small>`;
+            }
+        })
+        .catch(error => {
+            // Silently fail - address lookup is optional
+            console.log('Address lookup failed:', error);
+        });
+}
+
+function toggleManualLocation(forceShow = false) {
+    const manualSection = document.getElementById('manualLocationSection');
+    const isHidden = manualSection.style.display === 'none';
+    
+    if (forceShow || isHidden) {
+        manualSection.style.display = 'block';
+        document.getElementById('locationStatus').innerHTML = '<span class="text-info">Enter coordinates manually below</span>';
+    } else {
+        manualSection.style.display = 'none';
+        document.getElementById('locationStatus').innerHTML = 'Click "Get My Location" to set tournament location';
+    }
+}
+
 function showCreateTournamentModal() {
     const modal = new bootstrap.Modal(document.getElementById('createTournamentModal'));
     modal.show();

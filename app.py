@@ -4375,18 +4375,89 @@ def create_tournament():
     """Create a new tournament instance"""
     name = request.form.get('name')
     skill_level = request.form.get('skill_level')
-    entry_fee = float(request.form.get('entry_fee', 0))
-    max_players = int(request.form.get('max_players', 32))
     
-    conn = get_db_connection()
-    conn.execute('''
-        INSERT INTO tournament_instances (name, skill_level, entry_fee, max_players)
-        VALUES (?, ?, ?, ?)
-    ''', (name, skill_level, entry_fee, max_players))
-    conn.commit()
-    conn.close()
+    # Safely parse numeric fields with error handling
+    try:
+        entry_fee = float(request.form.get('entry_fee', 0))
+    except (ValueError, TypeError):
+        flash('Invalid entry fee format. Using $0 as default.', 'warning')
+        entry_fee = 0.0
     
-    flash(f'Tournament "{name}" created successfully!', 'success')
+    try:
+        max_players = int(request.form.get('max_players', 32))
+        if max_players < 2 or max_players > 256:
+            flash('Invalid player count. Using 32 as default.', 'warning')
+            max_players = 32
+    except (ValueError, TypeError):
+        flash('Invalid player count format. Using 32 as default.', 'warning')
+        max_players = 32
+    
+    # Get GPS coordinates and radius with robust error handling
+    latitude_str = request.form.get('latitude')
+    longitude_str = request.form.get('longitude')
+    join_radius_str = request.form.get('join_radius', '25')
+    
+    # Safely parse GPS coordinates
+    latitude = None
+    longitude = None
+    join_radius_miles = 25
+    
+    # Parse latitude with validation
+    if latitude_str and latitude_str.strip():
+        try:
+            temp_lat = float(latitude_str.strip())
+            if -90 <= temp_lat <= 90:
+                latitude = temp_lat
+            else:
+                flash('Latitude must be between -90 and 90 degrees. GPS location not set.', 'warning')
+        except (ValueError, TypeError):
+            flash('Invalid latitude format. GPS location not set.', 'warning')
+    
+    # Parse longitude with validation
+    if longitude_str and longitude_str.strip():
+        try:
+            temp_lon = float(longitude_str.strip())
+            if -180 <= temp_lon <= 180:
+                longitude = temp_lon
+            else:
+                flash('Longitude must be between -180 and 180 degrees. GPS location not set.', 'warning')
+        except (ValueError, TypeError):
+            flash('Invalid longitude format. GPS location not set.', 'warning')
+    
+    # Parse join radius with validation
+    if join_radius_str and join_radius_str.strip():
+        try:
+            temp_radius = int(join_radius_str.strip())
+            if 1 <= temp_radius <= 100:
+                join_radius_miles = temp_radius
+            else:
+                flash('Join radius must be between 1 and 100 miles. Using 25 miles as default.', 'warning')
+                join_radius_miles = 25
+        except (ValueError, TypeError):
+            flash('Invalid join radius format. Using 25 miles as default.', 'warning')
+            join_radius_miles = 25
+    
+    # Database insertion with error handling
+    try:
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT INTO tournament_instances (name, skill_level, entry_fee, max_players, latitude, longitude, join_radius_miles)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (name, skill_level, entry_fee, max_players, latitude, longitude, join_radius_miles))
+        conn.commit()
+        conn.close()
+        
+        # Check GPS location with proper None handling
+        if latitude is not None and longitude is not None:
+            flash(f'Tournament "{name}" created successfully with GPS location (lat: {latitude}, lon: {longitude})!', 'success')
+        else:
+            flash(f'Tournament "{name}" created successfully (no GPS location set)', 'warning')
+            
+    except Exception as e:
+        logging.error(f"Database error creating tournament: {e}")
+        flash(f'Error creating tournament: {str(e)}', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/create_custom_tournament', methods=['POST'])
@@ -4407,12 +4478,68 @@ def create_custom_tournament():
         start_date = request.form.get('start_date')
         registration_deadline = request.form.get('registration_deadline')
         
-        # Convert and validate numeric fields
+        # Get GPS coordinates and radius if provided
+        latitude_str = request.form.get('latitude')
+        longitude_str = request.form.get('longitude')
+        join_radius_str = request.form.get('join_radius', '25')
+        
+        # Convert and validate numeric fields with robust error handling
         if not max_players_str or not entry_fee_str:
             return jsonify({'success': False, 'message': 'Player count and entry fee are required'})
         
-        max_players = int(max_players_str)
-        entry_fee = float(entry_fee_str)
+        # Safely parse max_players
+        try:
+            max_players = int(max_players_str)
+            if max_players < 2 or max_players > 256:
+                return jsonify({'success': False, 'message': 'Player count must be between 2 and 256'})
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'message': 'Invalid player count format'})
+        
+        # Safely parse entry_fee
+        try:
+            entry_fee = float(entry_fee_str)
+            if entry_fee < 0 or entry_fee > 10000:
+                return jsonify({'success': False, 'message': 'Entry fee must be between $0 and $10,000'})
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'message': 'Invalid entry fee format'})
+        
+        # Safely parse GPS coordinates with validation
+        latitude = None
+        longitude = None
+        join_radius_miles = 25
+        
+        # Parse latitude with validation
+        if latitude_str and latitude_str.strip():
+            try:
+                temp_lat = float(latitude_str.strip())
+                if -90 <= temp_lat <= 90:
+                    latitude = temp_lat
+                else:
+                    return jsonify({'success': False, 'message': 'Latitude must be between -90 and 90 degrees'})
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'message': 'Invalid latitude format'})
+        
+        # Parse longitude with validation
+        if longitude_str and longitude_str.strip():
+            try:
+                temp_lon = float(longitude_str.strip())
+                if -180 <= temp_lon <= 180:
+                    longitude = temp_lon
+                else:
+                    return jsonify({'success': False, 'message': 'Longitude must be between -180 and 180 degrees'})
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'message': 'Invalid longitude format'})
+        
+        # Parse join radius with validation
+        if join_radius_str and join_radius_str.strip():
+            try:
+                temp_radius = int(join_radius_str.strip())
+                if 1 <= temp_radius <= 100:
+                    join_radius_miles = temp_radius
+                else:
+                    return jsonify({'success': False, 'message': 'Join radius must be between 1 and 100 miles'})
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'message': 'Invalid join radius format'})
         
         # Validate required fields
         if not all([tournament_name, location, max_players, entry_fee, format_type, start_date, registration_deadline]):
@@ -4445,11 +4572,13 @@ def create_custom_tournament():
             INSERT INTO custom_tournaments 
             (organizer_id, tournament_name, description, location, max_players, 
              entry_fee, format, house_cut, prize_pool, start_date, 
-             registration_deadline, stripe_product_id, stripe_price_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             registration_deadline, stripe_product_id, stripe_price_id,
+             latitude, longitude, join_radius_miles)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (current_player_id, tournament_name, description, location, max_players,
               entry_fee, format_type, house_cut, prize_pool, start_date,
-              registration_deadline, stripe_product.id, stripe_price.id))
+              registration_deadline, stripe_product.id, stripe_price.id,
+              latitude, longitude, join_radius_miles))
         
         tournament_id = cursor.lastrowid
         conn.commit()
