@@ -733,7 +733,7 @@
                             </small>
                         </div>
                         <div class="btn-group">
-                            <button class="btn btn-sm btn-outline-primary" onclick="challengePlayer({{ connection.opponent_id }})">
+                            <button class="btn btn-sm btn-outline-primary" onclick="showMatchDetailsForm({{ connection.opponent_id }}, '{{ connection.opponent_name }}')">
                                 <i class="fas fa-gamepad me-1"></i>Challenge
                             </button>
                             <button class="btn btn-sm btn-outline-success" onclick="openMessageModal({{ connection.opponent_id }}, '{{ connection.opponent_name }}')">
