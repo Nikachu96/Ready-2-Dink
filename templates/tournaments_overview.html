@@ -977,11 +977,20 @@ let userLongitude = null;
 let locationPermissionStatus = 'unknown'; // 'unknown', 'granted', 'denied', 'unavailable'
 let locationInitialized = false; // Prevent multiple location detection attempts
 
-// Initialize location detection on page load
+// Initialize location detection on page load - FIXED: No more infinite loops
 document.addEventListener('DOMContentLoaded', function() {
+    // Only initialize if not already on a location-filtered page to prevent loops
+    const currentUrl = new URL(window.location);
+    if (currentUrl.searchParams.get('location_filter') === 'true') {
+        console.log('Already on location-filtered page, skipping GPS initialization');
+        return;
+    }
+    
     if (!locationInitialized) {
         locationInitialized = true;
-        initializeLocationFiltering();
+        // Only initialize location detection if user explicitly wants it
+        // initializeLocationFiltering();
+        console.log('GPS location detection ready - click "Filter by Location" to enable');
     }
 });
 
@@ -1124,16 +1133,19 @@ function filterTournamentsByLocation() {
         return;
     }
     
-    // Reload page with location parameters to get filtered tournaments
+    // Check if we're already on a location-filtered page to prevent loops
     const currentUrl = new URL(window.location);
+    if (currentUrl.searchParams.get('location_filter') === 'true') {
+        console.log('Already on filtered page, skipping reload');
+        return;
+    }
+    
+    // Set location parameters for filtered tournaments
     currentUrl.searchParams.set('user_lat', userLatitude);
     currentUrl.searchParams.set('user_lng', userLongitude);
     currentUrl.searchParams.set('location_filter', 'true');
     
-    // Use replaceState to avoid adding to browser history
-    window.history.replaceState({}, '', currentUrl);
-    
-    // Navigate to filtered results without reloading
+    // Navigate to filtered results
     window.location.href = currentUrl.toString();
 }
 
