@@ -173,81 +173,56 @@
             border-radius: 12px;
         }
         
-        /* Text contrast fixes */
-        .card * {
+        /* Light surface text (only for light cards) */
+        .card:not(.surface-dark) * {
             color: #333 !important;
         }
         
-        .card h1, .card h2, .card h3, .card h4, .card h5, .card h6 {
-            color: #333 !important;
+        /* SYSTEMATIC SOLUTION: Dark surface theming */
+        /* This is the bulletproof solution for dark backgrounds */
+        .surface-dark,
+        .surface-dark :where(h1,h2,h3,h4,h5,h6,p,span,small,li,label,.form-label,.nav-link,.badge,.alert,.list-group-item,.modal-title,.modal-body,.card-body,.card-header,.card-footer) {
+            color: #fff !important;
         }
         
-        .card p, .card span, .card small, .card div {
-            color: #333 !important;
+        .surface-dark .text-muted {
+            color: rgba(255,255,255,0.7) !important;
         }
         
-        /* Fix warning card text readability */
-        .card.bg-warning .card-body *,
-        .card.border-warning .card-body *,
-        .bg-warning .card-body *,
-        .border-warning .card-body * {
-            color: #333 !important;
+        .surface-dark .btn-close {
+            filter: invert(1) grayscale(1);
         }
         
-        .bg-warning p, .bg-warning small, .bg-warning h6 {
-            color: #333 !important;
+        .surface-dark .form-control,
+        .surface-dark .form-select {
+            background: rgba(255,255,255,0.08) !important;
+            color: #fff !important;
+            border-color: rgba(255,255,255,0.35) !important;
         }
         
-        /* Fix bg-light card text readability */
-        .card.bg-light .card-body *,
-        .bg-light .card-body *,
-        .bg-light * {
-            color: #333 !important;
+        .surface-dark .list-group-item {
+            background: transparent !important;
+            color: #fff !important;
+            border-color: rgba(255,255,255,0.15) !important;
         }
         
-        .card.bg-light h5,
-        .card.bg-light p,
-        .card.bg-light small,
-        .bg-light .text-muted {
-            color: #333 !important;
+        .surface-dark .modal-content {
+            background: rgba(17,17,27,0.95) !important;
         }
         
-        /* Exception for white text badges and buttons */
-        .card .badge[style*="color: white"],
-        .card .btn[style*="color: white"] {
-            color: white !important;
+        .surface-dark .alert-info {
+            background-color: rgba(59, 130, 246, 0.2) !important;
+            border-color: #3B82F6 !important;
+            color: #fff !important;
         }
         
-        /* SYSTEMATIC RULE: ALL DARK BACKGROUNDS MUST HAVE WHITE TEXT */
-        /* This prevents readability issues across the entire app */
-        [style*="background: linear-gradient"][style*="#3F567F"],
-        [style*="background: linear-gradient"][style*="#2d1b69"], 
-        [style*="background: linear-gradient"][style*="#1a1a2e"],
-        [style*="background-color: rgba(59, 130, 246"],
-        [style*="background: rgba(255,255,255,0.05)"],
-        .card[style*="background: linear-gradient"],
-        .modal-content[style*="background: linear-gradient"],
-        div[style*="background: linear-gradient"][style*="#3F567F"],
-        div[style*="background: linear-gradient"][style*="#2d1b69"],
-        div[style*="background: linear-gradient"][style*="#1a1a2e"] {
-            color: white !important;
+        /* Gradient utility classes */
+        .gradient-primary {
+            background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%) !important;
         }
         
-        /* Force all text elements inside dark backgrounds to be white */
-        [style*="background: linear-gradient"][style*="#3F567F"] *,
-        [style*="background: linear-gradient"][style*="#2d1b69"] *, 
-        [style*="background: linear-gradient"][style*="#1a1a2e"] *,
-        .card[style*="background: linear-gradient"] *,
-        .modal-content[style*="background: linear-gradient"] *,
-        div[style*="background: linear-gradient"][style*="#3F567F"] *,
-        div[style*="background: linear-gradient"][style*="#2d1b69"] *,
-        div[style*="background: linear-gradient"][style*="#1a1a2e"] * {
-            color: white !important;
-        }
-        
-        /* Override any competing text color rules */
-        .text-muted {
-            color: white !important;
+        .gradient-secondary {
+            background: linear-gradient(135deg, #2d1b69 0%, #1a1a2e 100%) !important;
         }
         
         /* Direct over gradient text should be white */
