@@ -2,6 +2,7 @@ import os
 import sqlite3
 import json
 import requests
+import math
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, Response
 from werkzeug.utils import secure_filename
@@ -1011,6 +1012,82 @@ def get_leaderboard(limit=10, skill_level=None):
     conn.close()
     
     return leaderboard
+
+def calculate_distance_haversine(lat1, lon1, lat2, lon2):
+    """
+    Calculate the distance between two GPS coordinates using the Haversine formula.
+    
+    The Haversine formula calculates the great-circle distance between two points 
+    on a sphere given their latitude and longitude coordinates.
+    
+    Args:
+        lat1 (float): Latitude of the first point in decimal degrees
+        lon1 (float): Longitude of the first point in decimal degrees  
+        lat2 (float): Latitude of the second point in decimal degrees
+        lon2 (float): Longitude of the second point in decimal degrees
+        
+    Returns:
+        float: Distance between the two points in miles, or None if coordinates are invalid
+        
+    Example:
+        >>> distance = calculate_distance_haversine(40.7128, -74.0060, 34.0522, -118.2437)  # NYC to LA
+        >>> print(f"Distance: {distance:.2f} miles")
+        Distance: 2445.55 miles
+    """
+    try:
+        # Input validation - check for None/null values
+        if any(coord is None for coord in [lat1, lon1, lat2, lon2]):
+            logging.debug("One or more coordinates are None")
+            return None
+            
+        # Convert to float if they aren't already
+        lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
+        
+        # Validate coordinate ranges
+        if not (-90 <= lat1 <= 90) or not (-90 <= lat2 <= 90):
+            logging.warning(f"Invalid latitude values: lat1={lat1}, lat2={lat2}")
+            return None
+            
+        if not (-180 <= lon1 <= 180) or not (-180 <= lon2 <= 180):
+            logging.warning(f"Invalid longitude values: lon1={lon1}, lon2={lon2}")
+            return None
+        
+        # If coordinates are identical, distance is 0
+        if lat1 == lat2 and lon1 == lon2:
+            return 0.0
+            
+        # Earth's radius in miles
+        R = 3959.0
+        
+        # Convert decimal degrees to radians
+        lat1_rad = math.radians(lat1)
+        lon1_rad = math.radians(lon1)
+        lat2_rad = math.radians(lat2)
+        lon2_rad = math.radians(lon2)
+        
+        # Calculate differences
+        delta_lat = lat2_rad - lat1_rad
+        delta_lon = lon2_rad - lon1_rad
+        
+        # Haversine formula
+        a = (math.sin(delta_lat / 2) ** 2 + 
+             math.cos(lat1_rad) * math.cos(lat2_rad) * 
+             math.sin(delta_lon / 2) ** 2)
+        
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        
+        # Calculate distance
+        distance = R * c
+        
+        logging.debug(f"Distance calculated: {distance:.2f} miles between ({lat1}, {lon1}) and ({lat2}, {lon2})")
+        return distance
+        
+    except (ValueError, TypeError) as e:
+        logging.error(f"Error calculating distance: {e}")
+        return None
+    except Exception as e:
+        logging.error(f"Unexpected error in calculate_distance_haversine: {e}")
+        return None
 
 def is_player_birthday(player_dob):
     """Check if it's the player's birthday today"""
