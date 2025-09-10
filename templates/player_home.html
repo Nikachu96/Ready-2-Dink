@@ -344,11 +344,11 @@
                 </div>
                 
                 {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
-                    <a href="{{ url_for('browse_players') }}" class="btn btn-light btn-sm fw-bold">
+                    <a href="{{ url_for('browse_players') }}" class="btn btn-secondary btn-sm fw-bold" style="color: white !important;">
                         <i class="fas fa-search me-2"></i>Browse Players
                     </a>
                 {% else %}
-                    <button onclick="showMembershipModal('discovery')" class="btn btn-light btn-sm fw-bold">
+                    <button onclick="showMembershipModal('discovery')" class="btn btn-secondary btn-sm fw-bold" style="color: white !important;">
                         <i class="fas fa-unlock me-2"></i>Unlock Now
                     </button>
                 {% endif %}
@@ -462,7 +462,7 @@
                     <p class="small mb-3 opacity-90">Choose your competitive level</p>
                 </div>
                 
-                <a href="{{ url_for('tournaments_overview') }}" class="btn btn-light btn-sm fw-bold">
+                <a href="{{ url_for('tournaments_overview') }}" class="btn btn-secondary btn-sm fw-bold" style="color: white !important;">
                     <i class="fas fa-trophy me-2"></i>Join Tournament
                 </a>
             </div>
