@@ -676,6 +676,22 @@ def init_db():
     except Exception:
         pass  # Column already exists
     
+    # Add GPS location columns to tournament_instances for existing installations
+    try:
+        c.execute('ALTER TABLE tournament_instances ADD COLUMN latitude REAL DEFAULT NULL')
+    except Exception:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE tournament_instances ADD COLUMN longitude REAL DEFAULT NULL')
+    except Exception:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE tournament_instances ADD COLUMN join_radius_miles INTEGER DEFAULT 25')
+    except Exception:
+        pass  # Column already exists
+    
     # Enhanced tournaments table with levels and fees
     # Create tournament instances table (defines individual tournaments)
     c.execute('''
@@ -690,6 +706,9 @@ def init_db():
             start_date TEXT,
             end_date TEXT,
             winner_id INTEGER,
+            latitude REAL DEFAULT NULL,
+            longitude REAL DEFAULT NULL,
+            join_radius_miles INTEGER DEFAULT 25,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(winner_id) REFERENCES players(id)
         )
