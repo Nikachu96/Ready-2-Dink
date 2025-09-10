@@ -67,7 +67,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="color: white !important;">
                     <i class="fas fa-clock me-1"></i>I'll Do This Later
                 </button>
                 <a href="{{ url_for('profile_settings') }}" class="btn btn-primary">
@@ -178,7 +178,7 @@
                             {% if player_ranking %}
                             <span class="badge px-4 py-2" style="background-color: #FFFFFF; color: #3F567F; font-size: 0.9rem;">Rank #{{ player_ranking }}</span>
                             {% else %}
-                            <span class="badge px-4 py-2 bg-secondary" style="font-size: 0.9rem;">Unranked</span>
+                            <span class="badge px-4 py-2 bg-secondary" style="font-size: 0.9rem; color: white !important;">Unranked</span>
                             {% endif %}
                         </div>
                     </div>
@@ -283,7 +283,7 @@
                                         {% if player_ranking %}
                                         <span class="badge px-3 py-2" style="background-color: #FFFFFF; color: #3F567F;">Rank #{{ player_ranking }}</span>
                                         {% else %}
-                                        <span class="badge px-3 py-2 bg-secondary">Unranked</span>
+                                        <span class="badge px-3 py-2 bg-secondary" style="color: white !important;">Unranked</span>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -422,7 +422,7 @@
                         <p class="small mb-0">No scheduled matches</p>
                     </div>
                 </div>
-                <button class="btn btn-outline-secondary btn-sm mt-2" onclick="loadUpcomingMatches()">
+                <button class="btn btn-outline-secondary btn-sm mt-2" onclick="loadUpcomingMatches()" style="color: white !important;">
                     <i class="fas fa-refresh me-1"></i>Refresh
                 </button>
             </div>
