@@ -3321,27 +3321,53 @@ async function loadNotificationState() {
     transform: scale(1.05) !important;
 }
 
-/* Force score input styling to override Bootstrap */
+/* Force score input styling to override Bootstrap and mobile browser defaults */
 .score-input {
     background: #000 !important;
+    background-color: #000 !important;
     color: #00FF00 !important;
     border: 2px solid #333 !important;
     font-family: 'Courier New', monospace !important;
     font-size: 24px !important;
     font-weight: bold !important;
     border-radius: 8px !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: textfield !important;
+    appearance: none !important;
 }
 
 .score-input:focus {
     background: #000 !important;
+    background-color: #000 !important;
     color: #00FF00 !important;
     border-color: #00FF00 !important;
     box-shadow: 0 0 0 0.2rem rgba(0, 255, 0, 0.25) !important;
+    outline: none !important;
+}
+
+.score-input:active,
+.score-input:hover {
+    background: #000 !important;
+    background-color: #000 !important;
+    color: #00FF00 !important;
 }
 
 .score-input::placeholder {
     color: #666 !important;
     opacity: 0.8 !important;
+}
+
+/* Additional mobile browser overrides */
+input[type="number"].score-input {
+    background: #000 !important;
+    background-color: #000 !important;
+    color: #00FF00 !important;
+}
+
+input[type="number"].score-input:focus {
+    background: #000 !important;
+    background-color: #000 !important;
+    color: #00FF00 !important;
 }
 </style>
 {% endblock %}
