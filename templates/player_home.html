@@ -870,16 +870,16 @@
                             </div>
                         </div>
                         <div class="col-2 text-center">
-                            <input type="number" id="player1-set1" class="form-control text-center" min="0" max="30" placeholder="0" 
-                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                            <input type="number" id="player1-set1" class="form-control text-center score-input" min="0" max="30" placeholder="0" 
+                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important;">
                         </div>
                         <div class="col-2 text-center">
-                            <input type="number" id="player1-set2" class="form-control text-center" min="0" max="30" placeholder="0"
-                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                            <input type="number" id="player1-set2" class="form-control text-center score-input" min="0" max="30" placeholder="0"
+                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important;">
                         </div>
                         <div class="col-2 text-center">
-                            <input type="number" id="player1-set3" class="form-control text-center" min="0" max="30" placeholder="-"
-                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                            <input type="number" id="player1-set3" class="form-control text-center score-input" min="0" max="30" placeholder="-"
+                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important;">
                         </div>
                         <div class="col-3 text-center">
                             <div class="p-2 rounded" style="background: #000; border: 2px solid #333;">
@@ -896,16 +896,16 @@
                             </div>
                         </div>
                         <div class="col-2 text-center">
-                            <input type="number" id="player2-set1" class="form-control text-center" min="0" max="30" placeholder="0"
-                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                            <input type="number" id="player2-set1" class="form-control text-center score-input" min="0" max="30" placeholder="0"
+                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important;">
                         </div>
                         <div class="col-2 text-center">
-                            <input type="number" id="player2-set2" class="form-control text-center" min="0" max="30" placeholder="0"
-                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                            <input type="number" id="player2-set2" class="form-control text-center score-input" min="0" max="30" placeholder="0"
+                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important;">
                         </div>
                         <div class="col-2 text-center">
-                            <input type="number" id="player2-set3" class="form-control text-center" min="0" max="30" placeholder="-"
-                                   style="background: #000; color: #00FF00; border: 2px solid #333; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold;">
+                            <input type="number" id="player2-set3" class="form-control text-center score-input" min="0" max="30" placeholder="-"
+                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important;">
                         </div>
                         <div class="col-3 text-center">
                             <div class="p-2 rounded" style="background: #000; border: 2px solid #333;">
@@ -3182,6 +3182,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .hover-scale:hover {
     transform: scale(1.05) !important;
+}
+
+/* Force score input styling to override Bootstrap */
+.score-input {
+    background: #000 !important;
+    color: #00FF00 !important;
+    border: 2px solid #333 !important;
+    font-family: 'Courier New', monospace !important;
+    font-size: 24px !important;
+    font-weight: bold !important;
+    border-radius: 8px !important;
+}
+
+.score-input:focus {
+    background: #000 !important;
+    color: #00FF00 !important;
+    border-color: #00FF00 !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 255, 0, 0.25) !important;
+}
+
+.score-input::placeholder {
+    color: #666 !important;
+    opacity: 0.8 !important;
 }
 </style>
 {% endblock %}
