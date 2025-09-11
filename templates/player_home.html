@@ -314,11 +314,7 @@
                                 </button>
                                 {% endif %}
                                 {% if not player.membership_type and not player.preferred_court_1 %}
-                                <a href="/membership_payment/discovery"
-                                        class="btn btn-lg fw-semibold text-white"
-                                        style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; text-decoration: none;">
-                                    <i class="fas fa-star me-2"></i>Upgrade Now
-                                </a>
+                                {# Upgrade button removed - was not working properly #}
                                 {% endif %}
                             </div>
                         </div>
@@ -349,7 +345,7 @@
                     </a>
                 {% else %}
                     <a href="/membership_payment/discovery" class="btn btn-secondary btn-sm fw-bold" style="color: white !important; text-decoration: none;">
-                        <i class="fas fa-unlock me-2"></i>Unlock Now
+                        <i class="fas fa-unlock me-2"></i>Click to Unlock Now
                     </a>
                 {% endif %}
                 
