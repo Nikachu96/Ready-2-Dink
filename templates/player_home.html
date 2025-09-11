@@ -3369,5 +3369,26 @@ input[type="number"].score-input:focus {
     background-color: #000 !important;
     color: #00FF00 !important;
 }
+
+/* Force all text in score validation section to be white */
+.card .card-body,
+.card .card-body *,
+.form-check-label,
+.form-label,
+.alert,
+.alert * {
+    color: white !important;
+}
+
+/* Ensure radio buttons and checkboxes are visible */
+.form-check-input {
+    background-color: #666 !important;
+    border-color: #999 !important;
+}
+
+.form-check-input:checked {
+    background-color: #00FF00 !important;
+    border-color: #00FF00 !important;
+}
 </style>
 {% endblock %}
