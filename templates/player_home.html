@@ -143,7 +143,6 @@
                                        type="checkbox" 
                                        role="switch" 
                                        id="mobileNotificationToggle"
-                                       onclick="toggleNotifications(true, false)"
                                        {% if player.notifications_enabled %}checked{% endif %}
                                        style="width: 1.75rem; height: 0.875rem;">
                                 <label class="form-check-label text-white fw-semibold" for="mobileNotificationToggle" style="margin-left: 0.3rem; font-size: 0.8rem;">
@@ -251,7 +250,6 @@
                                                        type="checkbox" 
                                                        role="switch" 
                                                        id="desktopNotificationToggle"
-                                                       onclick="toggleNotifications(false, false)"
                                                        {% if player.notifications_enabled %}checked{% endif %}
                                                        style="width: 1.75rem; height: 0.875rem;">
                                                 <label class="form-check-label text-white fw-semibold" for="desktopNotificationToggle" style="margin-left: 0.3rem; font-size: 0.75rem;">
@@ -355,7 +353,7 @@
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="notificationToggle" 
                                {% if player.notifications_enabled %}checked{% endif %}
-                               onclick="toggleNotifications(false, false)">
+>
                         <label class="form-check-label small text-white" for="notificationToggle">
                             Notifications: <span id="notificationStatus">{{ 'ON' if player.notifications_enabled else 'OFF' }}</span>
                         </label>
@@ -3141,19 +3139,33 @@ function showCourtLocation(courtName, type) {
     });
 }
 
-// Enhanced notification toggle function with bar collapse
-async function toggleNotifications(isCompact = false, isBanner = false) {
+// Enhanced notification toggle function with proper source toggle handling
+async function toggleNotifications(sourceToggle = null) {
     let toggle, status;
     
-    if (isBanner) {
-        // No banner toggle exists, just return
-        return;
-    } else if (isCompact) {
-        toggle = document.getElementById('mobileNotificationToggle');
-        status = document.getElementById('mobileNotificationStatus');
+    // If no source toggle provided, try to get it from event.target
+    if (!sourceToggle && window.event && window.event.target) {
+        sourceToggle = window.event.target;
+    }
+    
+    // Determine which toggle was clicked and get corresponding status element
+    if (sourceToggle) {
+        toggle = sourceToggle;
+        const toggleId = toggle.id;
+        
+        if (toggleId === 'mobileNotificationToggle') {
+            status = document.getElementById('mobileNotificationStatus');
+        } else if (toggleId === 'desktopNotificationToggle') {
+            status = document.getElementById('desktopNotificationStatus');
+        } else if (toggleId === 'notificationToggle') {
+            status = document.getElementById('notificationStatus');
+        } else {
+            console.error('Unknown toggle element:', toggleId);
+            return;
+        }
     } else {
-        toggle = document.getElementById('notificationToggle');
-        status = document.getElementById('notificationStatus');
+        console.error('No source toggle provided and could not determine from event');
+        return;
     }
     
     // Check if elements exist before accessing properties
@@ -3165,16 +3177,26 @@ async function toggleNotifications(isCompact = false, isBanner = false) {
     // Update status text immediately when toggle changes
     status.textContent = toggle.checked ? 'ON' : 'OFF';
     
-    // Sync all toggles
-    const compactToggle = document.getElementById('mobileNotificationToggle');
-    const compactStatus = document.getElementById('mobileNotificationStatus');
+    // Get all toggle elements (declared here for scope in error handling)
+    const mobileToggle = document.getElementById('mobileNotificationToggle');
+    const mobileStatus = document.getElementById('mobileNotificationStatus');
+    const desktopToggle = document.getElementById('desktopNotificationToggle');
+    const desktopStatus = document.getElementById('desktopNotificationStatus');
     const mainToggle = document.getElementById('notificationToggle');
     const mainStatus = document.getElementById('notificationStatus');
-    if (compactToggle && compactStatus) {
-        compactToggle.checked = toggle.checked;
-        compactStatus.textContent = toggle.checked ? 'ON' : 'OFF';
+    
+    // Sync mobile toggle if it exists and is not the current toggle
+    if (mobileToggle && mobileStatus && mobileToggle !== toggle) {
+        mobileToggle.checked = toggle.checked;
+        mobileStatus.textContent = toggle.checked ? 'ON' : 'OFF';
     }
-    if (mainToggle && mainStatus) {
+    // Sync desktop toggle if it exists and is not the current toggle
+    if (desktopToggle && desktopStatus && desktopToggle !== toggle) {
+        desktopToggle.checked = toggle.checked;
+        desktopStatus.textContent = toggle.checked ? 'ON' : 'OFF';
+    }
+    // Sync main toggle if it exists and is not the current toggle
+    if (mainToggle && mainStatus && mainToggle !== toggle) {
         mainToggle.checked = toggle.checked;
         mainStatus.textContent = toggle.checked ? 'ON' : 'OFF';
     }
@@ -3205,15 +3227,15 @@ async function toggleNotifications(isCompact = false, isBanner = false) {
             status.textContent = wasChecked ? 'ON' : 'OFF';
             
             // Sync all other toggles
-            if (bannerToggle) {
-                bannerToggle.checked = wasChecked;
-                bannerStatus.textContent = wasChecked ? 'ON' : 'OFF';
+            if (mobileToggle && mobileToggle !== toggle) {
+                mobileToggle.checked = wasChecked;
+                mobileStatus.textContent = wasChecked ? 'ON' : 'OFF';
             }
-            if (compactToggle) {
-                compactToggle.checked = wasChecked;
-                compactStatus.textContent = wasChecked ? 'ON' : 'OFF';
+            if (desktopToggle && desktopToggle !== toggle) {
+                desktopToggle.checked = wasChecked;
+                desktopStatus.textContent = wasChecked ? 'ON' : 'OFF';
             }
-            if (mainToggle) {
+            if (mainToggle && mainToggle !== toggle) {
                 mainToggle.checked = wasChecked;
                 mainStatus.textContent = wasChecked ? 'ON' : 'OFF';
             }
@@ -3227,15 +3249,15 @@ async function toggleNotifications(isCompact = false, isBanner = false) {
         status.textContent = wasChecked ? 'ON' : 'OFF';
         
         // Sync all other toggles
-        if (bannerToggle) {
-            bannerToggle.checked = wasChecked;
-            bannerStatus.textContent = wasChecked ? 'ON' : 'OFF';
+        if (mobileToggle && mobileToggle !== toggle) {
+            mobileToggle.checked = wasChecked;
+            mobileStatus.textContent = wasChecked ? 'ON' : 'OFF';
         }
-        if (compactToggle) {
-            compactToggle.checked = wasChecked;
-            compactStatus.textContent = wasChecked ? 'ON' : 'OFF';
+        if (desktopToggle && desktopToggle !== toggle) {
+            desktopToggle.checked = wasChecked;
+            desktopStatus.textContent = wasChecked ? 'ON' : 'OFF';
         }
-        if (mainToggle) {
+        if (mainToggle && mainToggle !== toggle) {
             mainToggle.checked = wasChecked;
             mainStatus.textContent = wasChecked ? 'ON' : 'OFF';
         }
@@ -3298,13 +3320,17 @@ document.addEventListener('DOMContentLoaded', function() {
     loadNotificationState();
     
     const toggle = document.getElementById('notificationToggle');
-    const compactToggle = document.getElementById('mobileNotificationToggle');
+    const desktopToggle = document.getElementById('desktopNotificationToggle');
+    const mobileToggle = document.getElementById('mobileNotificationToggle');
     
     if (toggle) {
-        toggle.addEventListener('change', () => toggleNotifications(false));
+        toggle.addEventListener('change', (event) => toggleNotifications(event.target));
     }
-    if (compactToggle) {
-        compactToggle.addEventListener('change', () => toggleNotifications(true));
+    if (desktopToggle) {
+        desktopToggle.addEventListener('change', (event) => toggleNotifications(event.target));
+    }
+    if (mobileToggle) {
+        mobileToggle.addEventListener('change', (event) => toggleNotifications(event.target));
     }
 });
 
@@ -3317,6 +3343,7 @@ async function loadNotificationState() {
         // Update all toggle states to match server
         const toggles = [
             { element: document.getElementById('notificationToggle'), status: document.getElementById('notificationStatus') },
+            { element: document.getElementById('desktopNotificationToggle'), status: document.getElementById('desktopNotificationStatus') },
             { element: document.getElementById('mobileNotificationToggle'), status: document.getElementById('mobileNotificationStatus') }
         ];
         
