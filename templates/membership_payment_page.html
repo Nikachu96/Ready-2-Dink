@@ -13,19 +13,63 @@
                 <p class="mb-0 opacity-90">30-day free trial included</p>
             </div>
             <div class="card-body">
-                <!-- Membership Plan Summary -->
+                <!-- Show Both Membership Plans for Comparison -->
+                <div class="row mb-4">
+                    <!-- Player Discovery Plan -->
+                    <div class="col-md-6">
+                        <div class="card h-100 {% if membership_type == 'discovery' %}border-primary border-3{% else %}border-2{% endif %}">
+                            {% if membership_type == 'discovery' %}
+                            <div class="position-absolute top-0 start-50 translate-middle">
+                                <span class="badge bg-primary">Selected</span>
+                            </div>
+                            {% endif %}
+                            <div class="card-body text-center">
+                                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                                <h4 class="fw-bold">Player Discovery</h4>
+                                <h3 class="text-primary fw-bold">$4.99<small class="text-muted">/month</small></h3>
+                                <p class="mb-3">Find and match with compatible players</p>
+                                {% if membership_type != 'discovery' %}
+                                <a href="{{ url_for('membership_payment_page', membership_type='discovery') }}" class="btn btn-outline-primary">
+                                    Choose This Plan
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tournament Access Plan -->
+                    <div class="col-md-6">
+                        <div class="card h-100 {% if membership_type == 'tournament' %}border-warning border-3{% else %}border-2{% endif %}">
+                            {% if membership_type == 'tournament' %}
+                            <div class="position-absolute top-0 start-50 translate-middle">
+                                <span class="badge bg-warning">Selected</span>
+                            </div>
+                            {% endif %}
+                            <div class="card-body text-center">
+                                <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
+                                <h4 class="fw-bold">Tournament Access</h4>
+                                <h3 class="text-warning fw-bold">$9.99<small class="text-muted">/month</small></h3>
+                                <p class="mb-3">Full access including tournaments and competitive features</p>
+                                {% if membership_type != 'tournament' %}
+                                <a href="{{ url_for('membership_payment_page', membership_type='tournament') }}" class="btn btn-outline-warning">
+                                    Choose This Plan
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Selected Plan Notice -->
                 <div class="alert alert-info text-center mb-4">
+                    <h5><i class="fas fa-check-circle me-2"></i>
                     {% if membership_type == 'discovery' %}
-                        <i class="fas fa-users fa-3x text-primary mb-2"></i>
-                        <h3 class="mb-1 text-primary">Player Discovery</h3>
-                        <h4 class="mb-1" style="color: #E0563F;">$4.99<small class="text-muted">/month</small></h4>
-                        <p class="mb-0">Find and match with compatible players</p>
+                        Player Discovery Plan Selected
                     {% else %}
-                        <i class="fas fa-trophy fa-3x text-warning mb-2"></i>
-                        <h3 class="mb-1 text-warning">Tournament Access</h3>
-                        <h4 class="mb-1" style="color: #E0563F;">$9.99<small class="text-muted">/month</small></h4>
-                        <p class="mb-0">Full access including tournaments and competitive features</p>
+                        Tournament Access Plan Selected
                     {% endif %}
+                    </h5>
+                    <p class="mb-0">You can switch plans anytime from your dashboard</p>
                 </div>
 
                 <!-- Free Trial Notice -->

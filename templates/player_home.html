@@ -206,9 +206,11 @@
                                 <i class="fas fa-map-marker-alt me-2"></i>Favorite Court #2
                             </button>
                             {% endif %}
-                            {% if not player.membership_type and not player.preferred_court_1 %}
-                            {# Upgrade Now button completely removed - using Click to Unlock Now instead #}
-                            {% endif %}
+                            <!-- Profile Settings Button - Always Available -->
+                            <a href="{{ url_for('profile_settings') }}" class="btn btn-lg fw-semibold text-white"
+                               style="background: linear-gradient(45deg, #10B981, #059669); border: none; text-decoration: none;">
+                                <i class="fas fa-user-edit me-2"></i>Profile Settings
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -345,10 +347,19 @@
                     </a>
                 {% endif %}
                 
-                <div class="mt-2">
+                <div class="mt-2 d-flex justify-content-between align-items-center">
                     <small class="opacity-75">
                         <i class="fas fa-map-marker-alt me-1"></i>{{ player.location1 }}
                     </small>
+                    <!-- Notification Toggle -->
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="notificationToggle" 
+                               {% if player.notifications_enabled %}checked{% endif %}
+                               onclick="toggleNotifications(false, false)">
+                        <label class="form-check-label small text-white" for="notificationToggle">
+                            Notifications: <span id="notificationStatus">{{ 'ON' if player.notifications_enabled else 'OFF' }}</span>
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
