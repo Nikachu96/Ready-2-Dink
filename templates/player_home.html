@@ -3149,8 +3149,8 @@ async function toggleNotifications(isCompact = false, isBanner = false) {
         toggle = document.getElementById('bannerNotificationToggle');
         status = document.getElementById('bannerNotificationStatus');
     } else if (isCompact) {
-        toggle = document.getElementById('notificationToggleCompact');
-        status = document.getElementById('notificationStatusCompact');
+        toggle = document.getElementById('mobileNotificationToggle');
+        status = document.getElementById('mobileNotificationStatus');
     } else {
         toggle = document.getElementById('notificationToggle');
         status = document.getElementById('notificationStatus');
@@ -3168,8 +3168,8 @@ async function toggleNotifications(isCompact = false, isBanner = false) {
     // Sync all toggles
     const bannerToggle = document.getElementById('bannerNotificationToggle');
     const bannerStatus = document.getElementById('bannerNotificationStatus');
-    const compactToggle = document.getElementById('notificationToggleCompact');
-    const compactStatus = document.getElementById('notificationStatusCompact');
+    const compactToggle = document.getElementById('mobileNotificationToggle');
+    const compactStatus = document.getElementById('mobileNotificationStatus');
     const mainToggle = document.getElementById('notificationToggle');
     const mainStatus = document.getElementById('notificationStatus');
     
@@ -3306,7 +3306,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadNotificationState();
     
     const toggle = document.getElementById('notificationToggle');
-    const compactToggle = document.getElementById('notificationToggleCompact');
+    const compactToggle = document.getElementById('mobileNotificationToggle');
     
     if (toggle) {
         toggle.addEventListener('change', () => toggleNotifications(false));
@@ -3325,7 +3325,7 @@ async function loadNotificationState() {
         // Update all toggle states to match server
         const toggles = [
             { element: document.getElementById('notificationToggle'), status: document.getElementById('notificationStatus') },
-            { element: document.getElementById('notificationToggleCompact'), status: document.getElementById('notificationStatusCompact') },
+            { element: document.getElementById('mobileNotificationToggle'), status: document.getElementById('mobileNotificationStatus') },
             { element: document.getElementById('bannerNotificationToggle'), status: document.getElementById('bannerNotificationStatus') }
         ];
         
