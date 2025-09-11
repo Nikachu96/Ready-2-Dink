@@ -3145,6 +3145,12 @@ async function toggleNotifications(isCompact = false, isBanner = false) {
         status = document.getElementById('notificationStatus');
     }
     
+    // Check if elements exist before accessing properties
+    if (!toggle || !status) {
+        console.error('Notification toggle or status element not found');
+        return;
+    }
+    
     // Update status text immediately when toggle changes
     status.textContent = toggle.checked ? 'ON' : 'OFF';
     
