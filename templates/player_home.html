@@ -3440,6 +3440,16 @@ input[type="number"].score-input:active,
     }
 }
 
+/* Mobile consistency - ensure identical appearance to desktop */
+@media (max-width: 767px) {
+    /* Only override what's necessary for visibility - maintain desktop styling */
+    #scoreModal .score-input {
+        font-size: 24px !important;
+        font-weight: bold !important;
+        min-height: auto !important;
+    }
+}
+
 /* Force all text in SCORE MODAL validation section to be white - ONLY in scoreModal */
 #scoreModal .card .card-body,
 #scoreModal .card .card-body *,
