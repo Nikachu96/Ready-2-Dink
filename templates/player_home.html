@@ -2556,6 +2556,7 @@ function validateScore() {
 function showMembershipModal(suggestedType = 'discovery') {
     try {
         console.log('showMembershipModal called with type:', suggestedType);
+        alert(`About to create modal for: ${suggestedType}`);
     const modalHtml = `
         <div class="modal fade" id="membershipModal" tabindex="-1" aria-labelledby="membershipModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl">
@@ -2652,10 +2653,25 @@ function showMembershipModal(suggestedType = 'discovery') {
     }
     
     // Add modal to page
+    alert('Adding modal to DOM...');
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
     // Show modal
-    new bootstrap.Modal(document.getElementById('membershipModal')).show();
+    alert('About to show modal with Bootstrap...');
+    const modalElement = document.getElementById('membershipModal');
+    if (modalElement) {
+        alert('Modal element found, creating Bootstrap modal...');
+        try {
+            const modalInstance = new bootstrap.Modal(modalElement);
+            modalInstance.show();
+            alert('Modal should be visible now!');
+        } catch (modalError) {
+            alert(`Modal error: ${modalError.message}`);
+            throw modalError;
+        }
+    } else {
+        alert('Modal element not found in DOM!');
+    }
     
     } catch (error) {
         console.error('Error in showMembershipModal:', error);
