@@ -207,11 +207,7 @@
                             </button>
                             {% endif %}
                             {% if not player.membership_type and not player.preferred_court_1 %}
-                            <button onclick="showMembershipModal('discovery')" ontouchstart=""
-                                    class="btn btn-lg fw-semibold text-white"
-                                    style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
-                                <i class="fas fa-star me-2"></i>Upgrade Now
-                            </button>
+                            {# Upgrade Now button completely removed - using Click to Unlock Now instead #}
                             {% endif %}
                         </div>
                     </div>
@@ -2682,7 +2678,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle membership modal buttons  
     document.addEventListener('click', function(e) {
-        // Handle "Upgrade Now" and "Unlock Now" buttons
+        // Handle "Unlock Now" buttons
         if (e.target.closest('button[onclick*="showMembershipModal"]')) {
             e.preventDefault();
             console.log('Membership modal button clicked');
@@ -2704,7 +2700,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Also handle touch events for mobile
     document.addEventListener('touchend', function(e) {
-        // Handle "Upgrade Now" and "Unlock Now" buttons
+        // Handle "Unlock Now" buttons
         if (e.target.closest('button[onclick*="showMembershipModal"]')) {
             e.preventDefault();
             console.log('Membership modal button touched');
