@@ -143,7 +143,7 @@
                                        type="checkbox" 
                                        role="switch" 
                                        id="mobileNotificationToggle"
-                                       onclick="toggleNotifications(false, true)"
+                                       onclick="toggleNotifications(true, false)"
                                        {% if player.notifications_enabled %}checked{% endif %}
                                        style="width: 1.75rem; height: 0.875rem;">
                                 <label class="form-check-label text-white fw-semibold" for="mobileNotificationToggle" style="margin-left: 0.3rem; font-size: 0.8rem;">
@@ -251,7 +251,7 @@
                                                        type="checkbox" 
                                                        role="switch" 
                                                        id="desktopNotificationToggle"
-                                                       onclick="toggleNotifications(false, true)"
+                                                       onclick="toggleNotifications(false, false)"
                                                        {% if player.notifications_enabled %}checked{% endif %}
                                                        style="width: 1.75rem; height: 0.875rem;">
                                                 <label class="form-check-label text-white fw-semibold" for="desktopNotificationToggle" style="margin-left: 0.3rem; font-size: 0.75rem;">
