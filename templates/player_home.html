@@ -2664,14 +2664,51 @@ function showMembershipModal(suggestedType = 'discovery') {
     }
 }
 
-// Add backup event listeners for mobile devices
+// Mobile-friendly event listeners 
 document.addEventListener('DOMContentLoaded', function() {
-    // Add backup click listeners for membership buttons
+    console.log('DOM loaded, setting up event listeners');
+    
+    // Handle membership modal buttons  
     document.addEventListener('click', function(e) {
+        // Handle "Upgrade Now" and "Unlock Now" buttons
+        if (e.target.closest('button[onclick*="showMembershipModal"]')) {
+            e.preventDefault();
+            console.log('Membership modal button clicked');
+            alert('Opening membership modal...');
+            showMembershipModal('discovery');
+            return;
+        }
+        
+        // Handle "Start Free Trial" buttons in modal
         if (e.target.closest('[data-membership]')) {
+            e.preventDefault();
             const membershipType = e.target.closest('[data-membership]').dataset.membership;
-            console.log('Backup click handler triggered for:', membershipType);
+            console.log('Trial button clicked for:', membershipType);
+            alert(`Trial button clicked for: ${membershipType}`);
             startSubscription(membershipType);
+            return;
+        }
+    });
+    
+    // Also handle touch events for mobile
+    document.addEventListener('touchend', function(e) {
+        // Handle "Upgrade Now" and "Unlock Now" buttons
+        if (e.target.closest('button[onclick*="showMembershipModal"]')) {
+            e.preventDefault();
+            console.log('Membership modal button touched');
+            alert('Touch detected - opening membership modal...');
+            showMembershipModal('discovery');
+            return;
+        }
+        
+        // Handle "Start Free Trial" buttons in modal
+        if (e.target.closest('[data-membership]')) {
+            e.preventDefault();
+            const membershipType = e.target.closest('[data-membership]').dataset.membership;
+            console.log('Trial button touched for:', membershipType);
+            alert(`Touch detected for: ${membershipType}`);
+            startSubscription(membershipType);
+            return;
         }
     });
 });
