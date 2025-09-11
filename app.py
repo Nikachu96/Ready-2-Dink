@@ -4613,8 +4613,8 @@ def get_pending_matches(player_id):
     """Get matches that need score submission or validation"""
     conn = get_db_connection()
     
-    # Get matches that need score submission (status = 'pending') 
-    # OR matches that need validation from this player
+    # Get matches that need score submission OR validation from this specific player
+    # Exclude matches where this player has already validated (score should disappear from their list)
     matches = conn.execute('''
         SELECT m.*, 
                p1.full_name as player1_name,
@@ -4632,8 +4632,10 @@ def get_pending_matches(player_id):
         JOIN players p2 ON m.player2_id = p2.id
         WHERE (m.player1_id = ? OR m.player2_id = ?)
           AND (
+              -- Show if match needs score submission
               m.status = 'pending' 
               OR (
+                  -- Show only if this player hasn't validated yet
                   m.validation_status IN ('pending', 'partial')
                   AND (
                       (m.player1_id = ? AND COALESCE(m.player1_validated, 0) = 0)
@@ -4641,8 +4643,13 @@ def get_pending_matches(player_id):
                   )
               )
           )
+          -- KEY FIX: Exclude matches where this player has already validated
+          AND NOT (
+              (m.player1_id = ? AND COALESCE(m.player1_validated, 0) = 1)
+              OR (m.player2_id = ? AND COALESCE(m.player2_validated, 0) = 1)
+          )
         ORDER BY m.created_at DESC
-    ''', (player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
     
     conn.close()
     
