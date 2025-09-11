@@ -2679,6 +2679,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function startSubscription(membershipType) {
     try {
         console.log('startSubscription called with type:', membershipType);
+        alert(`Starting subscription for: ${membershipType}`); // Debug alert
         
         // Close the modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('membershipModal'));
@@ -2690,11 +2691,13 @@ function startSubscription(membershipType) {
         setTimeout(() => {
             const url = `/membership_payment/${membershipType}`;
             console.log('Redirecting to:', url);
+            alert(`About to redirect to: ${url}`); // Debug alert
             window.location.href = url;
         }, 300);
         
     } catch (error) {
         console.error('Error in startSubscription:', error);
+        alert(`Error: ${error.message}`); // Debug alert
         // Fallback direct redirect
         window.location.href = `/membership_payment/${membershipType}`;
     }
