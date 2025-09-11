@@ -314,11 +314,11 @@
                                 </button>
                                 {% endif %}
                                 {% if not player.membership_type and not player.preferred_court_1 %}
-                                <button onclick="showMembershipModal('discovery')" ontouchstart=""
+                                <a href="/membership_payment/discovery"
                                         class="btn btn-lg fw-semibold text-white"
-                                        style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
+                                        style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; text-decoration: none;">
                                     <i class="fas fa-star me-2"></i>Upgrade Now
-                                </button>
+                                </a>
                                 {% endif %}
                             </div>
                         </div>
@@ -348,9 +348,9 @@
                         <i class="fas fa-search me-2"></i>Browse Players
                     </a>
                 {% else %}
-                    <button onclick="showMembershipModal('discovery')" ontouchstart="" class="btn btn-secondary btn-sm fw-bold" style="color: white !important;">
+                    <a href="/membership_payment/discovery" class="btn btn-secondary btn-sm fw-bold" style="color: white !important; text-decoration: none;">
                         <i class="fas fa-unlock me-2"></i>Unlock Now
-                    </button>
+                    </a>
                 {% endif %}
                 
                 <div class="mt-2">
