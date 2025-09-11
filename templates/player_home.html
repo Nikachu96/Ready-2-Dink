@@ -207,7 +207,7 @@
                             </button>
                             {% endif %}
                             {% if not player.membership_type and not player.preferred_court_1 %}
-                            <button onclick="showMembershipModal('discovery')" 
+                            <button onclick="showMembershipModal('discovery')" ontouchstart=""
                                     class="btn btn-lg fw-semibold text-white"
                                     style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
                                 <i class="fas fa-star me-2"></i>Upgrade Now
@@ -314,7 +314,7 @@
                                 </button>
                                 {% endif %}
                                 {% if not player.membership_type and not player.preferred_court_1 %}
-                                <button onclick="showMembershipModal('discovery')" 
+                                <button onclick="showMembershipModal('discovery')" ontouchstart=""
                                         class="btn btn-lg fw-semibold text-white"
                                         style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
                                     <i class="fas fa-star me-2"></i>Upgrade Now
@@ -348,7 +348,7 @@
                         <i class="fas fa-search me-2"></i>Browse Players
                     </a>
                 {% else %}
-                    <button onclick="showMembershipModal('discovery')" class="btn btn-secondary btn-sm fw-bold" style="color: white !important;">
+                    <button onclick="showMembershipModal('discovery')" ontouchstart="" class="btn btn-secondary btn-sm fw-bold" style="color: white !important;">
                         <i class="fas fa-unlock me-2"></i>Unlock Now
                     </button>
                 {% endif %}
@@ -2552,8 +2552,10 @@ function validateScore() {
     });
 }
 
-// Membership modal functionality
+// Membership modal functionality with mobile-friendly event handling
 function showMembershipModal(suggestedType = 'discovery') {
+    try {
+        console.log('showMembershipModal called with type:', suggestedType);
     const modalHtml = `
         <div class="modal fade" id="membershipModal" tabindex="-1" aria-labelledby="membershipModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl">
@@ -2592,7 +2594,7 @@ function showMembershipModal(suggestedType = 'discovery') {
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Location-based player search</li>
                                         </ul>
                                         
-                                        <button type="button" class="btn btn-primary w-100 btn-lg" onclick="startSubscription('discovery')">
+                                        <button type="button" class="btn btn-primary w-100 btn-lg" onclick="startSubscription('discovery')" ontouchstart="" data-membership="discovery">
                                             <i class="fas fa-rocket me-2"></i>Start Free Trial
                                         </button>
                                         <small class="text-white text-center d-block mt-2">Cancel anytime</small>
@@ -2621,7 +2623,7 @@ function showMembershipModal(suggestedType = 'discovery') {
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Priority tournament registration</li>
                                         </ul>
                                         
-                                        <button type="button" class="btn btn-warning w-100 btn-lg" onclick="startSubscription('tournament')">
+                                        <button type="button" class="btn btn-warning w-100 btn-lg" onclick="startSubscription('tournament')" ontouchstart="" data-membership="tournament">
                                             <i class="fas fa-crown me-2"></i>Start Free Trial
                                         </button>
                                         <small class="text-white text-center d-block mt-2">Cancel anytime</small>
@@ -2654,17 +2656,48 @@ function showMembershipModal(suggestedType = 'discovery') {
     
     // Show modal
     new bootstrap.Modal(document.getElementById('membershipModal')).show();
+    
+    } catch (error) {
+        console.error('Error in showMembershipModal:', error);
+        // Fallback: redirect directly to discovery page
+        window.location.href = '/membership_payment/discovery';
+    }
 }
 
+// Add backup event listeners for mobile devices
+document.addEventListener('DOMContentLoaded', function() {
+    // Add backup click listeners for membership buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-membership]')) {
+            const membershipType = e.target.closest('[data-membership]').dataset.membership;
+            console.log('Backup click handler triggered for:', membershipType);
+            startSubscription(membershipType);
+        }
+    });
+});
+
 function startSubscription(membershipType) {
-    // Close the modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('membershipModal'));
-    if (modal) {
-        modal.hide();
+    try {
+        console.log('startSubscription called with type:', membershipType);
+        
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('membershipModal'));
+        if (modal) {
+            modal.hide();
+        }
+        
+        // Add small delay for modal to close, then redirect
+        setTimeout(() => {
+            const url = `/membership_payment/${membershipType}`;
+            console.log('Redirecting to:', url);
+            window.location.href = url;
+        }, 300);
+        
+    } catch (error) {
+        console.error('Error in startSubscription:', error);
+        // Fallback direct redirect
+        window.location.href = `/membership_payment/${membershipType}`;
     }
-    
-    // Redirect to membership payment page
-    window.location.href = `/membership_payment/${membershipType}`;
 }
 
 function showRankingInfo() {
