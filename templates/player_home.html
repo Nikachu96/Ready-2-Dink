@@ -3357,17 +3357,49 @@ async function loadNotificationState() {
     opacity: 0.8 !important;
 }
 
-/* Additional mobile browser overrides */
-input[type="number"].score-input {
+/* Comprehensive mobile browser overrides for score inputs */
+input[type="number"].score-input,
+.score-input,
+#scoreModal input[type="number"],
+#scoreModal .score-input {
     background: #000 !important;
     background-color: #000 !important;
     color: #00FF00 !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: textfield !important;
+    appearance: none !important;
+    -webkit-text-fill-color: #00FF00 !important;
+    -webkit-background-clip: padding-box !important;
+    caret-color: #00FF00 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
 }
 
-input[type="number"].score-input:focus {
+input[type="number"].score-input:focus,
+.score-input:focus,
+#scoreModal input[type="number"]:focus,
+#scoreModal .score-input:focus,
+input[type="number"].score-input:active,
+.score-input:active,
+#scoreModal input[type="number"]:active,
+#scoreModal .score-input:active {
     background: #000 !important;
     background-color: #000 !important;
     color: #00FF00 !important;
+    -webkit-text-fill-color: #00FF00 !important;
+    border-color: #00FF00 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 255, 0, 0.25) !important;
+}
+
+/* Safari iOS specific overrides */
+@supports (-webkit-touch-callout: none) {
+    input[type="number"].score-input,
+    .score-input {
+        -webkit-text-fill-color: #00FF00 !important;
+        -webkit-opacity: 1 !important;
+        opacity: 1 !important;
+    }
 }
 
 /* Force all text in SCORE MODAL validation section to be white - ONLY in scoreModal */
