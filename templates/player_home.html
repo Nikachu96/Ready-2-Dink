@@ -2905,7 +2905,7 @@ function shareOnSocial() {
     }
 }
 
-function toggleNotifications() {
+function toggleNotificationButtons() {
     const desktopBtn = document.getElementById('notificationBtn');
     const mobileBtn = document.getElementById('notificationBtnMobile');
     
@@ -3079,19 +3079,46 @@ async function toggleNotifications(isCompact = false, isBanner = false) {
             showAlert('success', message);
             
         } else {
-            // Revert both toggles if failed
-            toggle.checked = !toggle.checked;
-            status.textContent = toggle.checked ? 'ON' : 'OFF';
-            otherToggle.checked = toggle.checked;
-            otherStatus.textContent = toggle.checked ? 'ON' : 'OFF';
+            // Revert all toggles if failed
+            const wasChecked = !toggle.checked;
+            toggle.checked = wasChecked;
+            status.textContent = wasChecked ? 'ON' : 'OFF';
+            
+            // Sync all other toggles
+            if (bannerToggle) {
+                bannerToggle.checked = wasChecked;
+                bannerStatus.textContent = wasChecked ? 'ON' : 'OFF';
+            }
+            if (compactToggle) {
+                compactToggle.checked = wasChecked;
+                compactStatus.textContent = wasChecked ? 'ON' : 'OFF';
+            }
+            if (mainToggle) {
+                mainToggle.checked = wasChecked;
+                mainStatus.textContent = wasChecked ? 'ON' : 'OFF';
+            }
             showAlert('danger', '❌ Failed to update notification settings');
         }
     } catch (error) {
-        // Revert both toggles if failed
-        toggle.checked = !toggle.checked;
-        status.textContent = toggle.checked ? 'ON' : 'OFF';
-        otherToggle.checked = toggle.checked;
-        otherStatus.textContent = toggle.checked ? 'ON' : 'OFF';
+        console.error('Error updating notifications:', error);
+        // Revert all toggles if failed
+        const wasChecked = !toggle.checked;
+        toggle.checked = wasChecked;
+        status.textContent = wasChecked ? 'ON' : 'OFF';
+        
+        // Sync all other toggles
+        if (bannerToggle) {
+            bannerToggle.checked = wasChecked;
+            bannerStatus.textContent = wasChecked ? 'ON' : 'OFF';
+        }
+        if (compactToggle) {
+            compactToggle.checked = wasChecked;
+            compactStatus.textContent = wasChecked ? 'ON' : 'OFF';
+        }
+        if (mainToggle) {
+            mainToggle.checked = wasChecked;
+            mainStatus.textContent = wasChecked ? 'ON' : 'OFF';
+        }
         showAlert('danger', '❌ Error updating notifications');
     }
 }
@@ -3145,8 +3172,11 @@ function showAlert(type, message) {
     }, 5000);
 }
 
-// Set up toggle event listeners
+// Load initial notification state and set up toggle event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    // Load initial notification state
+    loadNotificationState();
+    
     const toggle = document.getElementById('notificationToggle');
     const compactToggle = document.getElementById('notificationToggleCompact');
     
@@ -3157,6 +3187,32 @@ document.addEventListener('DOMContentLoaded', function() {
         compactToggle.addEventListener('change', () => toggleNotifications(true));
     }
 });
+
+// Load current notification state from server
+async function loadNotificationState() {
+    try {
+        const response = await fetch('/notification-status');
+        const data = await response.json();
+        
+        // Update all toggle states to match server
+        const toggles = [
+            { element: document.getElementById('notificationToggle'), status: document.getElementById('notificationStatus') },
+            { element: document.getElementById('notificationToggleCompact'), status: document.getElementById('notificationStatusCompact') },
+            { element: document.getElementById('bannerNotificationToggle'), status: document.getElementById('bannerNotificationStatus') }
+        ];
+        
+        toggles.forEach(({ element, status }) => {
+            if (element && status) {
+                element.checked = data.enabled;
+                status.textContent = data.enabled ? 'ON' : 'OFF';
+            }
+        });
+        
+        console.log('Notification state loaded:', data.enabled ? 'enabled' : 'disabled');
+    } catch (error) {
+        console.error('Failed to load notification state:', error);
+    }
+}
 </script>
 
 <style>
