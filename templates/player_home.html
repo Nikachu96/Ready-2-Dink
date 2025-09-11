@@ -3146,8 +3146,8 @@ async function toggleNotifications(isCompact = false, isBanner = false) {
     let toggle, status;
     
     if (isBanner) {
-        toggle = document.getElementById('bannerNotificationToggle');
-        status = document.getElementById('bannerNotificationStatus');
+        // No banner toggle exists, just return
+        return;
     } else if (isCompact) {
         toggle = document.getElementById('mobileNotificationToggle');
         status = document.getElementById('mobileNotificationStatus');
@@ -3166,18 +3166,10 @@ async function toggleNotifications(isCompact = false, isBanner = false) {
     status.textContent = toggle.checked ? 'ON' : 'OFF';
     
     // Sync all toggles
-    const bannerToggle = document.getElementById('bannerNotificationToggle');
-    const bannerStatus = document.getElementById('bannerNotificationStatus');
     const compactToggle = document.getElementById('mobileNotificationToggle');
     const compactStatus = document.getElementById('mobileNotificationStatus');
     const mainToggle = document.getElementById('notificationToggle');
     const mainStatus = document.getElementById('notificationStatus');
-    
-    // Update all toggles and statuses
-    if (bannerToggle && bannerStatus) {
-        bannerToggle.checked = toggle.checked;
-        bannerStatus.textContent = toggle.checked ? 'ON' : 'OFF';
-    }
     if (compactToggle && compactStatus) {
         compactToggle.checked = toggle.checked;
         compactStatus.textContent = toggle.checked ? 'ON' : 'OFF';
@@ -3325,8 +3317,7 @@ async function loadNotificationState() {
         // Update all toggle states to match server
         const toggles = [
             { element: document.getElementById('notificationToggle'), status: document.getElementById('notificationStatus') },
-            { element: document.getElementById('mobileNotificationToggle'), status: document.getElementById('mobileNotificationStatus') },
-            { element: document.getElementById('bannerNotificationToggle'), status: document.getElementById('bannerNotificationStatus') }
+            { element: document.getElementById('mobileNotificationToggle'), status: document.getElementById('mobileNotificationStatus') }
         ];
         
         toggles.forEach(({ element, status }) => {
