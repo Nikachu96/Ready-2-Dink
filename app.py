@@ -2851,6 +2851,10 @@ def sign_nda():
             SELECT * FROM players WHERE id = ?
         ''', (player_id,)).fetchone()
         
+        if not player:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Player not found'})
+        
         # Update NDA status
         conn.execute('''
             UPDATE players 
