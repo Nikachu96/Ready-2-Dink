@@ -1,5 +1,6 @@
 import os
-import sqlite3
+import psycopg2
+import psycopg2.extras
 import json
 import requests
 import math
@@ -900,11 +901,13 @@ def init_db():
     conn.close()
 
 def get_db_connection():
-    """Get database connection with row factory and timeout"""
-    conn = sqlite3.connect('app.db', timeout=20.0, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    # Enable WAL mode for better concurrent access
-    conn.execute('PRAGMA journal_mode=WAL')
+    """Get database connection with dict cursor"""
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url:
+        raise ValueError("DATABASE_URL environment variable is not set")
+    conn = psycopg2.connect(database_url)
+    # Set cursor to return rows as dictionaries for compatibility
+    conn.cursor_factory = psycopg2.extras.RealDictCursor
     return conn
 
 def get_setting(key, default=None):
@@ -1763,8 +1766,8 @@ def create_direct_challenge(challenger_id, target_id, proposed_location=None, pr
         logging.error(f"Error creating direct challenge: {str(e)}")
         return None
 
-# Initialize database
-init_db()
+# Database initialization removed - tables created in PostgreSQL
+# init_db()  # Tables already exist in PostgreSQL
 
 def send_email_notification(to_email, subject, message_body, from_email=None):
     """Send email notification using SendGrid"""
