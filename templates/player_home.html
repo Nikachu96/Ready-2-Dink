@@ -4,6 +4,93 @@
 
 {% block content %}
 
+<style>
+/* Comprehensive Mobile Score Input Styling */
+.score-input {
+    background: #000 !important;
+    background-color: #000 !important;
+    color: #00FF00 !important;
+    -webkit-text-fill-color: #00FF00 !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: textfield !important;
+    appearance: none !important;
+    border: 2px solid #333 !important;
+    font-family: 'Courier New', monospace !important;
+    font-size: 24px !important;
+    font-weight: bold !important;
+    caret-color: #00FF00 !important;
+    -webkit-text-stroke: 0.5px #00FF00 !important;
+    text-shadow: 0 0 3px #00FF00 !important;
+    outline: none !important;
+}
+
+/* Mobile browser specific overrides */
+@supports (-webkit-touch-callout: none) {
+    /* iOS Safari specific */
+    .score-input {
+        -webkit-text-fill-color: #00FF00 !important;
+        -webkit-opacity: 1 !important;
+        opacity: 1 !important;
+    }
+}
+
+/* Focus and active states for mobile */
+.score-input:focus,
+.score-input:active,
+.score-input:hover {
+    background: #000 !important;
+    background-color: #000 !important;
+    color: #00FF00 !important;
+    -webkit-text-fill-color: #00FF00 !important;
+    border-color: #00FF00 !important;
+    box-shadow: 0 0 0 2px rgba(0, 255, 0, 0.3) !important;
+    outline: none !important;
+}
+
+/* Prevent autofill styling overrides */
+.score-input:-webkit-autofill,
+.score-input:-webkit-autofill:hover,
+.score-input:-webkit-autofill:focus,
+.score-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #000 inset !important;
+    -webkit-text-fill-color: #00FF00 !important;
+    color: #00FF00 !important;
+    background: #000 !important;
+    background-color: #000 !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Chrome mobile specific overrides */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    .score-input {
+        color: #00FF00 !important;
+        -webkit-text-fill-color: #00FF00 !important;
+        background: #000 !important;
+        background-color: #000 !important;
+    }
+}
+
+/* Android Chrome specific */
+@supports (display: -webkit-box) {
+    .score-input {
+        color: #00FF00 !important;
+        background: #000 !important;
+        -webkit-text-fill-color: #00FF00 !important;
+    }
+}
+
+/* Force green text on all mobile devices */
+input[type="text"].score-input,
+input[inputmode="numeric"].score-input {
+    color: #00FF00 !important;
+    -webkit-text-fill-color: #00FF00 !important;
+    background: #000 !important;
+    background-color: #000 !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+}
+</style>
+
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profileCompletionModal" tabindex="-1" aria-labelledby="profileCompletionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -872,15 +959,24 @@
                         </div>
                         <div class="col-2 text-center">
                             <input type="text" inputmode="numeric" pattern="[0-9]*" id="player1-set1" class="form-control text-center score-input" maxlength="2" placeholder="0" 
-                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important;">
+                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
+                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
                         </div>
                         <div class="col-2 text-center">
                             <input type="text" inputmode="numeric" pattern="[0-9]*" id="player1-set2" class="form-control text-center score-input" maxlength="2" placeholder="0"
-                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important;">
+                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
+                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
                         </div>
                         <div class="col-2 text-center">
                             <input type="text" inputmode="numeric" pattern="[0-9]*" id="player1-set3" class="form-control text-center score-input" maxlength="2" placeholder="-"
-                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important;">
+                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
+                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
                         </div>
                         <div class="col-3 text-center">
                             <div class="p-2 rounded" style="background: #000; border: 2px solid #333;">
@@ -898,15 +994,24 @@
                         </div>
                         <div class="col-2 text-center">
                             <input type="text" inputmode="numeric" pattern="[0-9]*" id="player2-set1" class="form-control text-center score-input" maxlength="2" placeholder="0"
-                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important;">
+                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
+                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
                         </div>
                         <div class="col-2 text-center">
                             <input type="text" inputmode="numeric" pattern="[0-9]*" id="player2-set2" class="form-control text-center score-input" maxlength="2" placeholder="0"
-                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important;">
+                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
+                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
                         </div>
                         <div class="col-2 text-center">
                             <input type="text" inputmode="numeric" pattern="[0-9]*" id="player2-set3" class="form-control text-center score-input" maxlength="2" placeholder="-"
-                                   style="background: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important;">
+                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
+                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
+                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
                         </div>
                         <div class="col-3 text-center">
                             <div class="p-2 rounded" style="background: #000; border: 2px solid #333;">
