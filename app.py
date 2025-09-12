@@ -7669,5 +7669,17 @@ def contact():
     
     return render_template('contact.html')
 
+@app.route('/download-project')
+def download_project():
+    """Download the complete project archive"""
+    from flask import send_file
+    import os
+    file_path = os.path.join('static', 'ready2dink_complete_project.tar.gz')
+    if os.path.exists(file_path):
+        return send_file(file_path, as_attachment=True, download_name='ready2dink_complete_project.tar.gz')
+    else:
+        flash('Download file not found', 'danger')
+        return redirect(url_for('index'))
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
