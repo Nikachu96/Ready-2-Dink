@@ -91,13 +91,59 @@ input[inputmode="numeric"].score-input {
 }
 
 /* Removed broken mobile transform scaling system - restored proper Bootstrap responsive design */
+
+/* Mobile gradient override fixes - eliminate large colored blocks on mobile */
+@media (max-width: 576px) {
+    /* Fix Birthday Message Alert gradient on mobile */
+    .birthday-alert-mobile-fix {
+        background: #fff !important;
+        background-color: #fff !important;
+        border: 2px solid #FFD700 !important;
+        color: #333 !important;
+    }
+    
+    .birthday-alert-mobile-fix h2,
+    .birthday-alert-mobile-fix p {
+        color: #333 !important;
+    }
+    
+    .birthday-alert-mobile-fix .birthday-icon {
+        color: #FFD700 !important;
+    }
+    
+    /* Fix Ambassador Program gradient on mobile */
+    .ambassador-card-mobile-fix {
+        background: #fff !important;
+        background-color: #fff !important;
+        border: 3px solid #667eea !important;
+        color: #333 !important;
+        min-height: auto !important;
+    }
+    
+    .ambassador-card-mobile-fix .position-absolute {
+        display: none !important;
+    }
+    
+    .ambassador-card-mobile-fix h4,
+    .ambassador-card-mobile-fix p,
+    .ambassador-card-mobile-fix li,
+    .ambassador-card-mobile-fix small {
+        color: #333 !important;
+        opacity: 1 !important;
+    }
+    
+    .ambassador-card-mobile-fix .fas.fa-globe-americas {
+        color: #667eea !important;
+        opacity: 1 !important;
+    }
+}
 </style>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profileCompletionModal" tabindex="-1" aria-labelledby="profileCompletionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content surface-dark" data-bs-theme="dark">
-            <div class="modal-header gradient-primary surface-dark" style="border: none;">
+            <div class="modal-header surface-dark" style="border: none; background-color: #f8f9fa;">
                 <h5 class="modal-title fw-bold" id="profileCompletionModalLabel">
                     <i class="fas fa-user-cog me-2"></i>Complete Your Profile
                 </h5>
@@ -170,11 +216,11 @@ input[inputmode="numeric"].score-input {
 {% if is_birthday %}
 <div class="row mb-4 animate-in">
     <div class="col-12">
-        <div class="alert alert-dismissible fade show" 
+        <div class="alert alert-dismissible fade show birthday-alert-mobile-fix" 
              style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); border: none; border-radius: 12px;">
             <div class="text-center py-3">
                 <div class="d-flex align-items-center justify-content-center mb-3">
-                    <i class="fas fa-birthday-cake fa-3x me-3" style="color: #8B4513;"></i>
+                    <i class="fas fa-birthday-cake fa-3x me-3 birthday-icon" style="color: #8B4513;"></i>
                     <div>
                         <h2 class="fw-bold mb-0" style="color: #8B4513;">🎉 Happy Birthday, {{ player.full_name.split()[0] }}! 🎉</h2>
                         <p class="mb-0 fs-5" style="color: #A0522D;">
@@ -182,7 +228,7 @@ input[inputmode="numeric"].score-input {
                             <br>Ready to celebrate with some pickleball? 🏓
                         </p>
                     </div>
-                    <i class="fas fa-gift fa-3x ms-3" style="color: #8B4513;"></i>
+                    <i class="fas fa-gift fa-3x ms-3 birthday-icon" style="color: #8B4513;"></i>
                 </div>
                 <button type="button" class="btn-close position-absolute top-0 end-0 m-3" 
                         data-bs-dismiss="alert" aria-label="Close"></button>
@@ -200,7 +246,7 @@ input[inputmode="numeric"].score-input {
 <!-- Welcome Section - New Color Scheme -->
 <div class="row mb-4 animate-in">
     <div class="col-12">
-        <div class="card gradient-primary surface-dark" data-bs-theme="dark" style="border-radius: 12px; border: none;">
+        <div class="card surface-dark" data-bs-theme="dark" style="border-radius: 12px; border: 1px solid #dee2e6; background-color: #f8f9fa;">
             <div class="card-body p-4 surface-dark">
                 
                 <!-- Content inside universal scaling canvas -->
@@ -223,7 +269,7 @@ input[inputmode="numeric"].score-input {
                                 </div>
                                 <div class="flex-grow-1">
                                     <div class="d-flex align-items-center mb-2">
-                                        <h2 class="mb-0 fw-bold text-white me-3">
+                                        <h2 class="mb-0 fw-bold text-dark me-3">
                                             Welcome back, {{ player.full_name.split()[0] }}!
                                             {% if player.tournament_wins and player.tournament_wins > 0 %}
                                             <i class="fas fa-crown ms-2" style="color: #E0563F;"></i>
@@ -250,7 +296,7 @@ input[inputmode="numeric"].score-input {
                                     </div>
                                     {% if player.player_id %}
                                     <div class="mb-2">
-                                        <span class="text-white-50 fs-6">
+                                        <span class="text-muted fs-6">
                                             <i class="fas fa-id-card me-1"></i>Player ID: <strong style="color: #E0563F;">{{ player.player_id }}</strong>
                                         </span>
                                     </div>
@@ -314,12 +360,12 @@ input[inputmode="numeric"].score-input {
     <!-- Row 1: Top 3 Cards -->
     <!-- Section 1: Ready 2 Play -->
     <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card text-white h-100" style="background: linear-gradient(135deg, #E0563F 0%, #D174D2 100%); border: none;">
+        <div class="card h-100" style="background-color: #fff; border: 1px solid #dee2e6;">
             <div class="card-body text-center d-flex flex-column justify-content-center">
                 <div class="mb-3">
-                    <i class="fas fa-users fa-3x mb-2"></i>
-                    <h5 class="fw-bold">Ready 2 Play?</h5>
-                    <p class="small mb-3">Find your next opponent</p>
+                    <i class="fas fa-users fa-3x mb-2 text-primary"></i>
+                    <h5 class="fw-bold text-dark">Ready 2 Play?</h5>
+                    <p class="small mb-3 text-muted">Find your next opponent</p>
                 </div>
                 
                 {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
@@ -333,7 +379,7 @@ input[inputmode="numeric"].score-input {
                 {% endif %}
                 
                 <div class="mt-2">
-                    <small class="opacity-75">
+                    <small class="text-muted">
                         <i class="fas fa-map-marker-alt me-1"></i>{{ player.location1 }}
                     </small>
                 </div>
@@ -343,10 +389,10 @@ input[inputmode="numeric"].score-input {
 
     <!-- Section 2: Challenges Received -->
     <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card h-100" style="border: 2px solid #10B981;">
-            <div class="card-header text-white text-center" style="background: #10B981;">
+        <div class="card h-100" style="border: 1px solid #dee2e6;">
+            <div class="card-header text-dark text-center" style="background-color: #f8f9fa; border-bottom: 3px solid #10B981;">
                 <h6 class="mb-0 fw-bold">
-                    <i class="fas fa-inbox me-2"></i>Challenges Received
+                    <i class="fas fa-inbox me-2 text-success"></i>Challenges Received
                 </h6>
             </div>
             <div class="card-body text-center">
@@ -365,10 +411,10 @@ input[inputmode="numeric"].score-input {
 
     <!-- Section 3: Challenges Sent -->
     <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card h-100" style="border: 2px solid #F59E0B;">
-            <div class="card-header text-white text-center" style="background: #F59E0B;">
+        <div class="card h-100" style="border: 1px solid #dee2e6;">
+            <div class="card-header text-dark text-center" style="background-color: #f8f9fa; border-bottom: 3px solid #F59E0B;">
                 <h6 class="mb-0 fw-bold">
-                    <i class="fas fa-paper-plane me-2"></i>Challenges Sent
+                    <i class="fas fa-paper-plane me-2 text-warning"></i>Challenges Sent
                 </h6>
             </div>
             <div class="card-body text-center">
@@ -388,10 +434,10 @@ input[inputmode="numeric"].score-input {
     <!-- Row 2: Bottom 3 Cards -->
     <!-- Section 4: Upcoming Matches -->  
     <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card h-100" style="border: 2px solid #D174D2;">
-            <div class="card-header text-white text-center" style="background: #D174D2;">
+        <div class="card h-100" style="border: 1px solid #dee2e6;">
+            <div class="card-header text-dark text-center" style="background-color: #f8f9fa; border-bottom: 3px solid #D174D2;">
                 <h6 class="mb-0 fw-bold">
-                    <i class="fas fa-calendar-check me-2"></i>Upcoming Matches
+                    <i class="fas fa-calendar-check me-2" style="color: #D174D2;"></i>Upcoming Matches
                 </h6>
             </div>
             <div class="card-body text-center">
@@ -410,10 +456,10 @@ input[inputmode="numeric"].score-input {
 
     <!-- Section 5: Submit Match Results -->
     <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card h-100" style="border: 2px solid #E0563F;">
-            <div class="card-header text-white text-center" style="background: #E0563F;">
+        <div class="card h-100" style="border: 1px solid #dee2e6;">
+            <div class="card-header text-dark text-center" style="background-color: #f8f9fa; border-bottom: 3px solid #E0563F;">
                 <h6 class="mb-0 fw-bold">
-                    <i class="fas fa-clipboard-list me-2"></i>Submit Results
+                    <i class="fas fa-clipboard-list me-2" style="color: #E0563F;"></i>Submit Results
                 </h6>
             </div>
             <div class="card-body text-center">
@@ -433,12 +479,12 @@ input[inputmode="numeric"].score-input {
     <!-- Section 6: Tournaments -->
     {% if available_tournaments %}
     <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card h-100 text-white" style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); border: none;">
+        <div class="card h-100" style="background-color: #fff; border: 1px solid #dee2e6;">
             <div class="card-body text-center d-flex flex-column justify-content-center">
                 <div class="mb-3">
-                    <i class="fas fa-fire fa-3x mb-2"></i>
-                    <h6 class="fw-bold">Tournament Levels Open!</h6>
-                    <p class="small mb-3 opacity-90">Choose your competitive level</p>
+                    <i class="fas fa-fire fa-3x mb-2 text-warning"></i>
+                    <h6 class="fw-bold text-dark">Tournament Levels Open!</h6>
+                    <p class="small mb-3 text-muted">Choose your competitive level</p>
                 </div>
                 
                 <a href="{{ url_for('tournaments_overview') }}" class="btn btn-secondary btn-sm fw-bold" style="color: white !important;">
@@ -454,15 +500,14 @@ input[inputmode="numeric"].score-input {
 <!-- Share Ready 2 Dink -->
 <div class="row mb-3 animate-in">
     <div class="col-12">
-        <div class="card text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); border: none;">
+        <div class="card position-relative overflow-hidden" style="background-color: #fff; border: 1px solid #dee2e6;">
             <div class="card-body text-center position-relative py-3">
-                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(255,255,255,0.05); backdrop-filter: blur(1px);"></div>
                 
                 <div class="position-relative">
                     <div class="mb-2">
-                        <i class="fas fa-share-alt fa-2x mb-2" style="opacity: 0.9;"></i>
-                        <h6 class="fw-bold mb-1">Share Ready 2 Dink</h6>
-                        <p class="small mb-2 opacity-90">Help your friends discover the best pickleball community!</p>
+                        <i class="fas fa-share-alt fa-2x mb-2 text-primary"></i>
+                        <h6 class="fw-bold mb-1 text-dark">Share Ready 2 Dink</h6>
+                        <p class="small mb-2 text-muted">Help your friends discover the best pickleball community!</p>
                     </div>
                     
                     <div class="row justify-content-center">
@@ -475,7 +520,7 @@ input[inputmode="numeric"].score-input {
                                          class="img-fluid"
                                          style="width: 100%; height: auto;">
                                 </div>
-                                <p class="mt-1 small opacity-90">
+                                <p class="mt-1 small text-muted">
                                     <i class="fas fa-qrcode me-1"></i>
                                     Scan to join Ready 2 Dink
                                 </p>
@@ -493,7 +538,7 @@ input[inputmode="numeric"].score-input {
                     </div>
                     
                     <div class="mt-1">
-                        <small class="opacity-75">
+                        <small class="text-muted">
                             <i class="fas fa-gift me-1"></i>
                             Help friends find their pickleball community!
                         </small>
@@ -507,7 +552,7 @@ input[inputmode="numeric"].score-input {
 <!-- Ambassador Program Call-to-Action -->
 <div class="row mb-4 animate-in">
     <div class="col-12">
-        <div class="card text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; min-height: 180px;">
+        <div class="card text-white position-relative overflow-hidden ambassador-card-mobile-fix" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; min-height: 180px;">
             <div class="card-body text-center d-flex flex-column justify-content-center position-relative">
                 <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(255,255,255,0.05); backdrop-filter: blur(1px);"></div>
                 
@@ -2560,7 +2605,7 @@ function showMembershipModal(suggestedType = 'discovery') {
         <div class="modal fade" id="membershipModal" tabindex="-1" aria-labelledby="membershipModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
-                    <div class="modal-header text-white" style="background: var(--gradient-primary);">
+                    <div class="modal-header text-dark" style="background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
                         <h5 class="modal-title" id="membershipModalLabel">
                             <i class="fas fa-star me-2"></i>Choose Your Membership
                         </h5>
@@ -2791,7 +2836,7 @@ function showRankingInfo() {
         <div class="modal fade" id="ranking-info-modal" tabindex="-1">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
-                    <div class="modal-header text-white" style="background: var(--gradient-primary);">
+                    <div class="modal-header text-dark" style="background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
                         <h5 class="modal-title">
                             <i class="fas fa-trophy me-2"></i>Ready 2 Dink Ranking System
                         </h5>
