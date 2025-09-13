@@ -261,9 +261,9 @@ input[inputmode="numeric"].score-input {
                                              style="width: 70px; height: 70px; object-fit: cover;" 
                                              alt="Player Photo">
                                     {% else %}
-                                        <div class="rounded-circle bg-white d-inline-flex align-items-center justify-content-center border border-3 border-white" 
-                                             style="width: 70px; height: 70px;">
-                                            <i class="fas fa-user fa-2x" style="color: #3F567F;"></i>
+                                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center border border-3 border-white" 
+                                             style="width: 70px; height: 70px; background: rgba(255,255,255,0.1);">
+                                            <i class="fas fa-user fa-2x" style="color: white;"></i>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -299,7 +299,7 @@ input[inputmode="numeric"].score-input {
                                 </span>
                                 {% endif %}
                                 {% if player_ranking %}
-                                <span class="badge px-3 py-2" style="background-color: #FFFFFF; color: #3F567F;">Rank #{{ player_ranking }}</span>
+                                <span class="badge px-3 py-2" style="background-color: #6c757d; color: white;">Rank #{{ player_ranking }}</span>
                                 {% else %}
                                 <span class="badge px-3 py-2 bg-secondary" style="color: white !important;">Unranked</span>
                                 {% endif %}
@@ -310,7 +310,7 @@ input[inputmode="numeric"].score-input {
                         <div class="col-12 col-md-4 text-end text-md-end text-center mt-3 mt-md-0">
                             <!-- Notification Toggle - Positioned properly -->
                             <div class="d-flex justify-content-center justify-content-md-end mb-3">
-                                <div class="d-flex align-items-center bg-white bg-opacity-20 rounded-pill px-3 py-2">
+                                <div class="d-flex align-items-center rounded-pill px-3 py-2" style="background: rgba(255,255,255,0.1);">
                                     <small class="text-white me-2 mb-0" style="font-size: 0.75rem;">Notifications</small>
                                     <div class="form-check form-switch mb-0">
                                         <input class="form-check-input" 
