@@ -283,22 +283,26 @@ input[inputmode="numeric"].score-input {
                                         </span>
                                     </div>
                                     {% endif %}
-                                    <div class="d-flex flex-wrap gap-3">
-                                        <span class="badge px-3 py-2" style="background-color: #E0563F; color: white;">{{ player.skill_level }}</span>
-                                        <span class="badge px-3 py-2" style="background-color: #3F567F; color: white;">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
-                                        <span class="badge px-3 py-2" style="background-color: #D174D2; color: white;">{{ player.ranking_points or 0 }} pts</span>
-                                        {% if player.tournament_credits and player.tournament_credits > 0 %}
-                                        <span class="badge px-3 py-2" style="background-color: #28a745; color: white;">
-                                            <i class="fas fa-wallet me-1"></i>${{ "%.2f"|format(player.tournament_credits) }} Credits
-                                        </span>
-                                        {% endif %}
-                                        {% if player_ranking %}
-                                        <span class="badge px-3 py-2" style="background-color: #FFFFFF; color: #3F567F;">Rank #{{ player_ranking }}</span>
-                                        {% else %}
-                                        <span class="badge px-3 py-2 bg-secondary" style="color: white !important;">Unranked</span>
-                                        {% endif %}
-                                    </div>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Badges Row - Full width to prevent overflow -->
+                        <div class="col-12 mt-3">
+                            <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-md-start">
+                                <span class="badge px-3 py-2" style="background-color: #E0563F; color: white;">{{ player.skill_level }}</span>
+                                <span class="badge px-3 py-2" style="background-color: #3F567F; color: white;">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
+                                <span class="badge px-3 py-2" style="background-color: #D174D2; color: white;">{{ player.ranking_points or 0 }} pts</span>
+                                {% if player.tournament_credits and player.tournament_credits > 0 %}
+                                <span class="badge px-3 py-2" style="background-color: #28a745; color: white;">
+                                    <i class="fas fa-wallet me-1"></i>${{ "%.2f"|format(player.tournament_credits) }} Credits
+                                </span>
+                                {% endif %}
+                                {% if player_ranking %}
+                                <span class="badge px-3 py-2" style="background-color: #FFFFFF; color: #3F567F;">Rank #{{ player_ranking }}</span>
+                                {% else %}
+                                <span class="badge px-3 py-2 bg-secondary" style="color: white !important;">Unranked</span>
+                                {% endif %}
                             </div>
                         </div>
                         
