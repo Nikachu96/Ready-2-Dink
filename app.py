@@ -7342,8 +7342,8 @@ def subscription_success():
         # Add player_id to session for login
         session['player_id'] = player_id
         
-        # Create a prominent success message
-        success_message = f'🎉 Payment Successful! Welcome to {membership_display} membership! Your 30-day free trial has started.'
+        # Create a celebratory success message
+        success_message = f'🎉 Payment processed, let\'s play! Welcome to {membership_display} membership! Your 30-day free trial has started - enjoy full access!'
         flash(success_message, 'success')
         
         logging.info(f"Subscription successful for player {player_id}: {membership_type}")
