@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+
+{% block title %}Referral Dashboard - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<style>
+/* Universal Referral Dashboard Styling */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --success-green: #28a745;
+    --warning-orange: #fd7e14;
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dashboard-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+}
+
+.referral-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.referral-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.progress-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: conic-gradient(var(--success-green) 0deg {{ progress_percentage * 3.6 }}deg, var(--border-subtle) {{ progress_percentage * 3.6 }}deg 360deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin: 0 auto;
+}
+
+.progress-inner {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.progress-number {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--success-green);
+    line-height: 1;
+}
+
+.progress-label {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.referral-link-card {
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    color: white;
+    margin-bottom: 2rem;
+}
+
+.referral-link {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    color: white;
+    word-break: break-all;
+    margin: 1rem 0;
+}
+
+.copy-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.copy-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent-cyan);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+}
+
+.stat-label {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.referral-table {
+    background: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 2rem;
+}
+
+.table-dark {
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.table-dark th {
+    background: rgba(0, 245, 255, 0.1);
+    border-color: var(--border-subtle);
+    color: var(--accent-cyan);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table-dark td {
+    border-color: var(--border-subtle);
+}
+
+.badge-success {
+    background: var(--success-green) !important;
+}
+
+.badge-warning {
+    background: var(--warning-orange) !important;
+}
+
+.reward-banner {
+    background: linear-gradient(135deg, var(--success-green), #20c997);
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    color: white;
+    margin-bottom: 2rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.share-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+.share-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    color: white;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    text-align: center;
+}
+
+.share-btn:hover {
+    transform: translateY(-2px);
+    color: white;
+    text-decoration: none;
+}
+
+.share-email { background: #dc3545; }
+.share-sms { background: #20c997; }
+.share-social { background: #007bff; }
+
+@media (max-width: 768px) {
+    .dashboard-container { padding: 1rem; }
+    .progress-circle { width: 150px; height: 150px; }
+    .progress-inner { width: 120px; height: 120px; }
+    .progress-number { font-size: 2rem; }
+    .stat-number { font-size: 2rem; }
+}
+</style>
+
+<div class="dashboard-container">
+    <div class="container-fluid">
+        
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="text-center">
+                    <h1 class="mb-2" style="color: var(--accent-cyan); font-weight: 700; text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);">
+                        🎯 Your Referral Dashboard
+                    </h1>
+                    <p class="mb-0" style="color: var(--text-primary); opacity: 0.8; font-size: 1.2rem;">
+                        Share Ready 2 Dink and earn amazing rewards!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reward Achievement Banner -->
+        {% if reward_granted %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="reward-banner">
+                    <h2 class="mb-3">🎉 CONGRATULATIONS! 🎉</h2>
+                    <h4 class="mb-2">You've Earned 12 Months FREE Tournament Membership!</h4>
+                    <p class="mb-0">Amazing work referring 20+ members to Ready 2 Dink! Your reward is active.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Referral Link Sharing Card -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="referral-link-card">
+                    <h3 class="mb-3">🔗 Your Personal Referral Link</h3>
+                    <p class="mb-3">Share this link with friends to earn rewards when they join with a paid membership!</p>
+                    
+                    <div class="referral-link" id="referralLink">{{ referral_link }}</div>
+                    
+                    <button class="btn copy-btn" onclick="copyReferralLink()">
+                        <i class="fas fa-copy me-2"></i>Copy Link
+                    </button>
+                    
+                    <div class="share-buttons">
+                        <a href="mailto:?subject=Join Ready 2 Dink!&body=I'm loving Ready 2 Dink for pickleball! Join me using my referral link: {{ referral_link }}" 
+                           class="share-btn share-email">
+                            <i class="fas fa-envelope me-2"></i>Email
+                        </a>
+                        <a href="sms:?body=Join me on Ready 2 Dink for amazing pickleball matches! Use my link: {{ referral_link }}" 
+                           class="share-btn share-sms">
+                            <i class="fas fa-sms me-2"></i>SMS
+                        </a>
+                        <a href="#" onclick="shareOnSocial()" class="share-btn share-social">
+                            <i class="fas fa-share-alt me-2"></i>Share
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress & Stats -->
+        <div class="row mb-4">
+            <!-- Progress Circle -->
+            <div class="col-12 col-lg-6">
+                <div class="referral-card p-4 h-100">
+                    <h4 class="text-center mb-4" style="color: var(--accent-cyan);">
+                        Progress to 12-Month FREE Membership
+                    </h4>
+                    
+                    <div class="progress-circle">
+                        <div class="progress-inner">
+                            <div class="progress-number">{{ qualified_referrals }}</div>
+                            <div class="progress-label">of 20</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <div class="mb-2">
+                            <strong style="color: var(--success-green);">{{ progress_percentage|round(1) }}%</strong> Complete
+                        </div>
+                        <p class="mb-0" style="opacity: 0.8;">
+                            {% if qualified_referrals < 20 %}
+                                {{ 20 - qualified_referrals }} more qualified referrals needed!
+                            {% else %}
+                                🎉 Goal achieved! Enjoy your rewards!
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="col-12 col-lg-6">
+                <div class="row h-100">
+                    <div class="col-6 mb-3">
+                        <div class="stat-card h-100">
+                            <div class="stat-number">{{ total_referrals }}</div>
+                            <div class="stat-label">Total Referrals</div>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stat-card h-100">
+                            <div class="stat-number">{{ qualified_referrals }}</div>
+                            <div class="stat-label">Qualified</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card h-100">
+                            <div class="stat-number">{{ ((qualified_referrals / total_referrals * 100) if total_referrals > 0 else 0)|round(0) }}%</div>
+                            <div class="stat-label">Conversion Rate</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card h-100">
+                            <div class="stat-number">
+                                {% if reward_granted %}
+                                    <i class="fas fa-trophy" style="color: gold;"></i>
+                                {% else %}
+                                    {{ 20 - qualified_referrals if qualified_referrals < 20 else 0 }}
+                                {% endif %}
+                            </div>
+                            <div class="stat-label">
+                                {% if reward_granted %}
+                                    Reward Earned
+                                {% else %}
+                                    Remaining
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Referral History -->
+        {% if referrals %}
+        <div class="row">
+            <div class="col-12">
+                <div class="referral-table">
+                    <div class="p-4">
+                        <h4 class="mb-4" style="color: var(--accent-cyan);">
+                            <i class="fas fa-users me-2"></i>Your Referral History
+                        </h4>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Membership</th>
+                                        <th>Status</th>
+                                        <th>Date Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for referral in referrals %}
+                                    <tr>
+                                        <td>{{ referral.referred_name }}</td>
+                                        <td>{{ referral.referred_email }}</td>
+                                        <td>
+                                            <span class="badge badge-{% if referral.referred_membership == 'tournament' %}success{% else %}warning{% endif %}">
+                                                {{ referral.referred_membership|title if referral.referred_membership else 'Free' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if referral.qualified %}
+                                                <span class="badge badge-success">
+                                                    <i class="fas fa-check me-1"></i>Qualified
+                                                </span>
+                                            {% else %}
+                                                <span class="badge badge-warning">
+                                                    <i class="fas fa-clock me-1"></i>Pending
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ referral.created_at[:10] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- No Referrals Message -->
+        {% if not referrals %}
+        <div class="row">
+            <div class="col-12">
+                <div class="referral-card p-5 text-center">
+                    <div style="font-size: 4rem; opacity: 0.3; margin-bottom: 1rem;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h4 class="mb-3" style="color: var(--accent-cyan);">Start Your Referral Journey!</h4>
+                    <p class="mb-4" style="opacity: 0.8;">
+                        Share your referral link above to start earning rewards. 
+                        When 20 people join with paid memberships through your link, 
+                        you'll get 12 months of FREE tournament membership!
+                    </p>
+                    <div class="text-center">
+                        <button class="btn btn-primary btn-lg" onclick="copyReferralLink()">
+                            <i class="fas fa-copy me-2"></i>Copy Your Referral Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+function copyReferralLink() {
+    const referralLink = document.getElementById('referralLink').textContent;
+    navigator.clipboard.writeText(referralLink).then(function() {
+        // Success feedback
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+        btn.style.background = 'rgba(40, 167, 69, 0.8)';
+        
+        setTimeout(function() {
+            btn.innerHTML = originalText;
+            btn.style.background = '';
+        }, 2000);
+    }, function(err) {
+        console.error('Could not copy text: ', err);
+        alert('Failed to copy link. Please copy manually.');
+    });
+}
+
+function shareOnSocial() {
+    const referralLink = '{{ referral_link }}';
+    const shareText = "Join me on Ready 2 Dink for amazing pickleball matches! Use my referral link:";
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'Join Ready 2 Dink!',
+            text: shareText,
+            url: referralLink
+        });
+    } else {
+        // Fallback for browsers that don't support Web Share API
+        const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText + ' ' + referralLink)}`;
+        window.open(shareUrl, '_blank');
+    }
+}
+</script>
+
+{% endblock %}

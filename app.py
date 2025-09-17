@@ -259,6 +259,38 @@ def require_disclaimers_accepted(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def generate_unique_referral_code():
+    """Generate a unique referral code for any user"""
+    import string
+    import random
+    return 'R2D' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+def generate_referral_codes_for_existing_users(cursor):
+    """Generate referral codes for all existing users who don't have them"""
+    # Get all users without referral codes
+    users_without_codes = cursor.execute('''
+        SELECT id, full_name FROM players WHERE referral_code IS NULL
+    ''').fetchall()
+    
+    for user in users_without_codes:
+        attempts = 0
+        max_attempts = 10
+        
+        while attempts < max_attempts:
+            code = generate_unique_referral_code()
+            try:
+                cursor.execute('''
+                    UPDATE players SET referral_code = ? WHERE id = ?
+                ''', (code, user[0]))
+                logging.info(f"Generated referral code {code} for user {user[1]} (ID: {user[0]})")
+                break
+            except sqlite3.IntegrityError:
+                # Code already exists, try again
+                attempts += 1
+                
+        if attempts >= max_attempts:
+            logging.error(f"Failed to generate unique referral code for user {user[1]} (ID: {user[0]})")
+
 def init_db():
     """Initialize SQLite database with required tables"""
     conn = sqlite3.connect('app.db')
@@ -558,6 +590,12 @@ def init_db():
         
     try:
         c.execute('ALTER TABLE players ADD COLUMN state TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    # Add universal referral code field for all users
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN referral_code TEXT DEFAULT NULL')
     except sqlite3.OperationalError:
         pass  # Column already exists
         
@@ -872,6 +910,25 @@ def init_db():
         )
     ''')
     
+    # Universal referrals tracking table for all users (not just ambassadors)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS universal_referrals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            referrer_player_id INTEGER NOT NULL,
+            referred_player_id INTEGER NOT NULL,
+            referral_code TEXT NOT NULL,
+            referrer_type TEXT DEFAULT 'regular' CHECK (referrer_type IN ('regular', 'ambassador')),
+            membership_type TEXT,
+            qualified INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            qualified_at TEXT,
+            reward_granted INTEGER DEFAULT 0,
+            reward_granted_at TEXT,
+            FOREIGN KEY(referrer_player_id) REFERENCES players(id),
+            FOREIGN KEY(referred_player_id) REFERENCES players(id)
+        )
+    ''')
+    
     # Partner invitations table for doubles tournaments
     c.execute('''
         CREATE TABLE IF NOT EXISTS partner_invitations (
@@ -928,6 +985,21 @@ def init_db():
             ''', (name, skill_level, entry_fee, max_players))
         
         print(f"Created {len(tournaments_to_create)} default tournament instances")
+    
+    # CRITICAL FIX: Create database indexes BEFORE generating referral codes
+    # This prevents failures if duplicate codes exist in the system
+    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_players_referral_code_unique ON players(referral_code) WHERE referral_code IS NOT NULL')
+    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_universal_referrals_pair_unique ON universal_referrals(referrer_player_id, referred_player_id)')
+    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_universal_referrals_referred_unique ON universal_referrals(referred_player_id)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_universal_referrals_code ON universal_referrals(referral_code)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_universal_referrals_qualified ON universal_referrals(qualified)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_universal_referrals_referrer_id ON universal_referrals(referrer_player_id)')
+    
+    # NOW generate referral codes for all existing users who don't have them
+    try:
+        generate_referral_codes_for_existing_users(c)
+    except Exception as e:
+        logging.error(f"Error generating referral codes: {e}")
     
     conn.commit()
     conn.close()
@@ -2536,19 +2608,28 @@ def register():
             else:
                 location_description = f"ZIP {zip_code}" if zip_code else "Location not provided"
             
+            # Generate referral code for new user
+            new_user_referral_code = generate_unique_referral_code()
+            
             cursor = conn.execute('''
                 INSERT INTO players 
                 (first_name, last_name, full_name, email, dob, username, password_hash, preferred_sport, 
                  guardian_email, account_status, guardian_consent_required, test_account, 
-                 address, location1, skill_level, latitude, longitude, search_radius_miles)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 address, location1, skill_level, latitude, longitude, search_radius_miles, referral_code)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['first_name'], request.form['last_name'], full_name, request.form['email'], request.form['dob'], 
                   request.form['username'], password_hash, 'Pickleball',
                   guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0, 
                   f"ZIP {zip_code}" if zip_code else "Address not provided", location_description, 'Beginner',
-                  latitude, longitude, 15))
+                  latitude, longitude, 15, new_user_referral_code))
             
             player_id = cursor.lastrowid
+            
+            # Track referral signup if this user came through a referral link
+            referrer_id=session.pop('referrer_player_id', None); code=session.pop('referral_code', None)
+            if referrer_id and referrer_id!=player_id:
+                conn.execute('INSERT OR IGNORE INTO universal_referrals (referrer_player_id, referred_player_id, referral_code) VALUES (?,?,?)',(referrer_id,player_id,code))
+            
             conn.commit()
             conn.close()
             
@@ -5363,6 +5444,9 @@ def tournament_payment_success(tournament_id):
             conn.commit()
             conn.close()
             
+            # Track referral conversion for tournament payment (counts as qualified referral)
+            track_referral_conversion(current_player_id, 'tournament')
+            
             flash('Successfully joined the tournament!', 'success')
             
         else:
@@ -7731,6 +7815,138 @@ def ambassador_dashboard():
                          qualified_count=qualified_count,
                          progress_percentage=progress_percentage)
 
+@app.route('/referral_dashboard')
+def universal_referral_dashboard():
+    """Universal referral dashboard for all users"""
+    if 'player_id' not in session:
+        flash('Please log in to access your referral dashboard.', 'warning')
+        return redirect(url_for('player_login'))
+    
+    player_id = session['player_id']
+    conn = get_db_connection()
+    
+    # Get player information and referral code
+    player = conn.execute('''
+        SELECT id, full_name, email, referral_code, membership_type, subscription_status 
+        FROM players WHERE id = ?
+    ''', (player_id,)).fetchone()
+    
+    if not player:
+        flash('Player not found.', 'danger')
+        return redirect(url_for('player_login'))
+    
+    # Get referral statistics
+    total_referrals = conn.execute('''
+        SELECT COUNT(*) as count FROM universal_referrals 
+        WHERE referrer_player_id = ?
+    ''', (player_id,)).fetchone()['count']
+    
+    qualified_referrals = conn.execute('''
+        SELECT COUNT(*) as count FROM universal_referrals 
+        WHERE referrer_player_id = ? AND qualified = 1
+    ''', (player_id,)).fetchone()['count']
+    
+    # Get detailed referral list
+    referrals = conn.execute('''
+        SELECT ur.*, p.full_name as referred_name, p.email as referred_email, 
+               p.membership_type as referred_membership
+        FROM universal_referrals ur
+        JOIN players p ON ur.referred_player_id = p.id
+        WHERE ur.referrer_player_id = ?
+        ORDER BY ur.created_at DESC
+    ''', (player_id,)).fetchall()
+    
+    # Check if 12-month reward has been granted
+    reward_granted = conn.execute('''
+        SELECT COUNT(*) as count FROM universal_referrals 
+        WHERE referrer_player_id = ? AND reward_granted = 1
+    ''', (player_id,)).fetchone()['count'] > 0
+    
+    # Calculate progress percentage
+    progress_percentage = min((qualified_referrals / 20) * 100, 100)
+    
+    # Get referral link
+    domain = request.headers.get('Host', 'localhost:5000')
+    protocol = 'https' if 'replit' in domain else 'http'
+    referral_link = f"{protocol}://{domain}/r/{player['referral_code']}"
+    
+    conn.close()
+    
+    return render_template('universal_referral_dashboard.html',
+                         player=player,
+                         total_referrals=total_referrals,
+                         qualified_referrals=qualified_referrals,
+                         referrals=referrals,
+                         reward_granted=reward_granted,
+                         progress_percentage=progress_percentage,
+                         referral_link=referral_link)
+
+@app.route('/r/<code>')
+def intake_referral(code):
+    conn = get_db_connection()
+    row = conn.execute('SELECT id FROM players WHERE referral_code=?', (code,)).fetchone()
+    conn.close()
+    
+    if not row:
+        flash('Invalid referral link', 'warning')
+        return redirect(url_for('register'))
+    
+    session['referrer_player_id'] = row['id']
+    session['referral_code'] = code
+    return redirect(url_for('register'))
+
+@app.route('/referrals')
+def referral_dashboard():
+    pid = session.get('player_id')
+    if not pid: 
+        return redirect(url_for('player_login'))
+    
+    conn = get_db_connection()
+    me = conn.execute('SELECT full_name, email, referral_code FROM players WHERE id=?', (pid,)).fetchone()
+    stats = conn.execute('SELECT COUNT(*) total, SUM(qualified) qualified FROM universal_referrals WHERE referrer_player_id=?', (pid,)).fetchone()
+    pending = (stats['total'] or 0) - (stats['qualified'] or 0)
+    link = url_for('intake_referral', code=me['referral_code'], _external=True)
+    conn.close()
+    
+    return render_template('universal_referral_dashboard.html', link=link, stats=stats, pending=pending, me=me)
+
+@app.route('/stripe/webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.data
+    sig = request.headers.get('Stripe-Signature')
+    secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
+    
+    if not secret:
+        logging.error("STRIPE_WEBHOOK_SECRET not configured - webhook security compromised!")
+        return Response(status=500)
+    
+    try:
+        # CRITICAL SECURITY: Verify Stripe webhook signature
+        event = stripe.Webhook.construct_event(payload, sig, secret)
+        logging.info(f"Stripe webhook verified successfully: {event['type']}")
+    except ValueError as e:
+        logging.error(f"Invalid payload in Stripe webhook: {e}")
+        return Response(status=400)
+    except stripe.error.SignatureVerificationError as e:
+        logging.error(f"Invalid signature in Stripe webhook: {e}")
+        return Response(status=400)
+    except Exception as e:
+        logging.error(f"Unexpected error verifying Stripe webhook: {e}")
+        return Response(status=400)
+    
+    # Process payment success events for referral conversions
+    if event['type'] in ('checkout.session.completed', 'invoice.payment_succeeded'):
+        customer_id = event['data']['object'].get('customer')
+        if customer_id:
+            conn = get_db_connection()
+            row = conn.execute('SELECT id, membership_type FROM players WHERE stripe_customer_id=?', (customer_id,)).fetchone()
+            conn.close()
+            if row:
+                logging.info(f"Processing referral conversion for player {row['id']} with membership {row['membership_type']}")
+                track_referral_conversion(row['id'], row['membership_type'] or 'membership')
+    
+    return Response(status=200)
+
 @app.route('/referral/<referral_code>')
 def referral_signup(referral_code):
     """Handle referral link sign-ups"""
@@ -7751,59 +7967,286 @@ def referral_signup(referral_code):
     flash(f'Welcome! You were referred by one of our Ambassadors. Complete registration to help them earn their lifetime membership!', 'info')
     return redirect(url_for('register'))
 
-def track_referral_conversion(player_id, membership_type):
-    """Track when a referral gets tournament membership"""
-    if 'ambassador_id' not in session:
-        return
-    
-    ambassador_id = session['ambassador_id']
-    referral_code = session.get('referral_code', '')
-    
-    # Only count tournament membership as qualified referral
-    if membership_type != 'tournament':
+def track_referral_conversion(referred_player_id, membership_type):
+    conn = get_db_connection()
+    conn.execute('UPDATE universal_referrals SET qualified=1, qualified_at=CURRENT_TIMESTAMP WHERE referred_player_id=? AND qualified=0', (referred_player_id,))
+    conn.commit()
+    conn.close()
+    check_and_grant_ambassador_reward(referrer_id_of(referred_player_id))
+
+def check_and_grant_ambassador_reward(referrer_id):
+    if not referrer_id:
         return
     
     conn = get_db_connection()
     
-    # Record the referral
-    conn.execute('''
-        INSERT INTO ambassador_referrals 
-        (ambassador_id, referred_player_id, referral_code, membership_type, qualified, qualified_at)
-        VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
-    ''', (ambassador_id, player_id, referral_code, membership_type))
+    # CRITICAL FIX: Check if reward already granted to prevent duplicates
+    already_granted = conn.execute('''
+        SELECT COUNT(*) c FROM universal_referrals 
+        WHERE referrer_player_id=? AND reward_granted=1
+    ''', (referrer_id,)).fetchone()['c']
     
-    # Update ambassador qualified count
-    conn.execute('''
-        UPDATE ambassadors 
-        SET qualified_referrals = qualified_referrals + 1,
-            referrals_count = referrals_count + 1
-        WHERE id = ?
-    ''', (ambassador_id,))
+    if already_granted > 0:
+        logging.info(f"Referral reward already granted for referrer {referrer_id}")
+        conn.close()
+        return
     
-    # Check if ambassador reached 20 qualified referrals
-    ambassador = conn.execute('''
-        SELECT qualified_referrals, player_id FROM ambassadors WHERE id = ?
-    ''', (ambassador_id,)).fetchone()
+    # Count qualified referrals
+    q = conn.execute('SELECT COUNT(*) c FROM universal_referrals WHERE referrer_player_id=? AND qualified=1', (referrer_id,)).fetchone()['c']
     
-    if ambassador['qualified_referrals'] >= 20:
-        # Grant lifetime tournament membership and 5 free tournament entries
+    if q >= 20:
+        # Grant 12-month membership reward
+        row = conn.execute('SELECT subscription_end_date FROM players WHERE id=?', (referrer_id,)).fetchone()
+        start = max(datetime.utcnow(), datetime.strptime(row['subscription_end_date'], '%Y-%m-%d') if row and row['subscription_end_date'] else datetime.utcnow())
+        new_end = (start + timedelta(days=365)).strftime('%Y-%m-%d')
+        
+        # Update player membership
+        conn.execute('UPDATE players SET membership_type="tournament", subscription_status="complimentary", subscription_end_date=? WHERE id=?', (new_end, referrer_id))
+        
+        # Mark rewards as granted to prevent duplicates
         conn.execute('''
-            UPDATE ambassadors SET lifetime_membership_granted = 1, qualification_date = CURRENT_TIMESTAMP
+            UPDATE universal_referrals 
+            SET reward_granted=1, reward_granted_at=CURRENT_TIMESTAMP 
+            WHERE referrer_player_id=? AND qualified=1 AND reward_granted=0
+        ''', (referrer_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"Granted 12-month membership reward to referrer {referrer_id} for 20 qualified referrals")
+        send_referral_reward_email(referrer_id, new_end)
+    else:
+        conn.close()
+
+def referrer_id_of(referred_player_id):
+    conn = get_db_connection()
+    row = conn.execute('SELECT referrer_player_id FROM universal_referrals WHERE referred_player_id=?', (referred_player_id,)).fetchone()
+    conn.close()
+    return row['referrer_player_id'] if row else None
+
+def send_referral_reward_email(referrer_id, end_date):
+    """Send email notification for 12-month membership reward using SendGrid"""
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        
+        sendgrid_key = os.environ.get('SENDGRID_API_KEY')
+        if not sendgrid_key:
+            logging.error("SendGrid API key not found")
+            return False
+        
+        # Get player information
+        conn = get_db_connection()
+        player = conn.execute('SELECT full_name, email FROM players WHERE id = ?', (referrer_id,)).fetchone()
+        conn.close()
+        
+        if not player:
+            logging.error(f"Player not found for reward email: {referrer_id}")
+            return False
+        
+        subject = f"🎉 Referral Achievement Unlocked - 12 Months FREE! - Ready 2 Dink"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa;">
+            <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 30px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 32px;">🎉 CONGRATULATIONS! 🎉</h1>
+                <p style="color: white; margin: 10px 0; font-size: 18px; font-weight: bold;">Referral Achievement Unlocked</p>
+            </div>
+            
+            <div style="padding: 40px; background: white;">
+                <h2 style="color: #28a745; text-align: center; margin-bottom: 20px;">You've Earned 12 Months FREE!</h2>
+                
+                <div style="background: linear-gradient(135deg, #fff3cd, #d1ecf1); padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center;">
+                    <h3 style="color: #155724; margin-top: 0;">🏆 Outstanding Achievement!</h3>
+                    <p style="color: #155724; font-size: 18px; margin: 0;">
+                        You've successfully referred <strong>20 players</strong> who joined Ready 2 Dink with paid memberships!
+                    </p>
+                </div>
+                
+                <h3 style="color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">Your Reward Package:</h3>
+                <ul style="color: #333; font-size: 16px; line-height: 1.8;">
+                    <li>✅ <strong>12 Months FREE Tournament Membership</strong></li>
+                    <li>🎫 <strong>5 FREE Tournament Entries</strong></li>
+                    <li>🏓 <strong>Full Access to All Features</strong></li>
+                    <li>🏆 <strong>Priority Support</strong></li>
+                </ul>
+                
+                <div style="background: #e8f5e8; border-left: 4px solid #28a745; padding: 20px; margin: 25px 0;">
+                    <h4 style="color: #155724; margin-top: 0;">🚀 Your Membership is Now Active!</h4>
+                    <p style="color: #155724; margin: 0;">
+                        Your 12-month free tournament membership has been automatically activated until {end_date}. 
+                        Log in to Ready 2 Dink to start enjoying all premium features!
+                    </p>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <p style="color: #333; font-size: 16px;">Thank you for being an amazing part of the Ready 2 Dink community!</p>
+                    <p style="color: #666; font-size: 14px;">Keep sharing your referral link to help grow our pickleball family!</p>
+                </div>
+            </div>
+            
+            <div style="background: #343a40; padding: 20px; text-align: center;">
+                <p style="color: #adb5bd; margin: 0; font-size: 12px;">
+                    Ready 2 Dink - Premium Pickleball Experience | Generated on {datetime.now().strftime('%Y-%m-%d at %I:%M %p')}
+                </p>
+            </div>
+        </div>
+        """
+        
+        message = Mail(
+            from_email='admin@ready2dink.com',
+            to_emails=player['email'],
+            subject=subject,
+            html_content=html_content
+        )
+        
+        sg = SendGridAPIClient(sendgrid_key)
+        response = sg.send(message)
+        
+        if response.status_code == 202:
+            logging.info(f"Referral reward email sent successfully to {player['full_name']} ({player['email']})")
+            return True
+        else:
+            logging.error(f"Failed to send referral reward email. Status: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        logging.error(f"Error sending referral reward email: {e}")
+        return False
+
+def track_referral_conversion(player_id, membership_type):
+    """Track when a referral gets paid membership (universal system for all users)"""
+    referral_code = session.get('referral_code', '')
+    ambassador_id = session.get('ambassador_id', None)
+    referrer_player_id = session.get('referrer_player_id', None)
+    
+    # Check if this is a referral (either ambassador or regular user)
+    if not referral_code and not ambassador_id and not referrer_player_id:
+        return
+    
+    # Only count paid memberships as qualified referrals (both discovery and tournament)
+    if membership_type not in ['discovery', 'tournament']:
+        return
+    
+    conn = get_db_connection()
+    
+    # Determine referrer information
+    if ambassador_id:
+        # Ambassador referral - maintain existing ambassador system
+        ambassador = conn.execute('SELECT player_id FROM ambassadors WHERE id = ?', (ambassador_id,)).fetchone()
+        referrer_id = ambassador['player_id'] if ambassador else None
+        referrer_type = 'ambassador'
+    else:
+        # Regular user referral through universal system
+        referrer_id = referrer_player_id
+        referrer_type = 'regular'
+    
+    if not referrer_id:
+        conn.close()
+        return
+    
+    # Record referral in universal tracking table
+    conn.execute('''
+        INSERT INTO universal_referrals 
+        (referrer_player_id, referred_player_id, referral_code, referrer_type, membership_type, qualified, qualified_at)
+        VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+    ''', (referrer_id, player_id, referral_code, referrer_type, membership_type))
+    
+    # Also maintain ambassador tracking for backwards compatibility
+    if ambassador_id:
+        conn.execute('''
+            INSERT INTO ambassador_referrals 
+            (ambassador_id, referred_player_id, referral_code, membership_type, qualified, qualified_at)
+            VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+        ''', (ambassador_id, player_id, referral_code, membership_type))
+        
+        conn.execute('''
+            UPDATE ambassadors 
+            SET qualified_referrals = qualified_referrals + 1,
+                referrals_count = referrals_count + 1
             WHERE id = ?
         ''', (ambassador_id,))
+    
+    # Check if referrer reached 20 qualified referrals (universal system)
+    qualified_count = conn.execute('''
+        SELECT COUNT(*) as count FROM universal_referrals 
+        WHERE referrer_player_id = ? AND qualified = 1
+    ''', (referrer_id,)).fetchone()['count']
+    
+    if qualified_count >= 20:
+        # Check if reward already granted
+        reward_granted = conn.execute('''
+            SELECT COUNT(*) as count FROM universal_referrals 
+            WHERE referrer_player_id = ? AND reward_granted = 1
+        ''', (referrer_id,)).fetchone()['count']
         
-        conn.execute('''
-            UPDATE players 
-            SET membership_type = 'tournament', 
-                subscription_status = 'ambassador_lifetime',
-                free_tournament_entries = 5
-            WHERE id = ?
-        ''', (ambassador['player_id']))
-        
-        # Send notification to ambassador
-        send_push_notification(ambassador['player_id'], 
-                             'Congratulations! You\'ve earned lifetime tournament membership + 5 FREE tournament entries by referring 20 members!',
-                             'Ambassador Achievement Unlocked!')
+        if reward_granted == 0:
+            # Grant 12-month free tournament membership
+            from datetime import datetime, timedelta
+            end_date = datetime.now() + timedelta(days=365)
+            
+            # Handle existing Stripe subscription if user has one
+            player_info = conn.execute('''
+                SELECT stripe_customer_id, subscription_status, subscription_end_date 
+                FROM players WHERE id = ?
+            ''', (referrer_id,)).fetchone()
+            
+            existing_stripe_subscription_id = None
+            
+            if player_info and player_info['stripe_customer_id']:
+                try:
+                    import stripe
+                    stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+                    
+                    # Get active subscriptions for this customer
+                    subscriptions = stripe.Subscription.list(
+                        customer=player_info['stripe_customer_id'],
+                        status='active',
+                        limit=10
+                    )
+                    
+                    # Cancel active subscriptions (they get 12 months free instead)
+                    for subscription in subscriptions.data:
+                        # Store the subscription ID for potential future reference
+                        existing_stripe_subscription_id = subscription.id
+                        
+                        # Cancel the subscription at period end (so they don't get charged again)
+                        stripe.Subscription.modify(
+                            subscription.id,
+                            cancel_at_period_end=True,
+                            metadata={
+                                'cancelled_for': 'referral_reward_12month',
+                                'referrer_player_id': str(referrer_id),
+                                'reward_date': datetime.now().isoformat()
+                            }
+                        )
+                        
+                        logging.info(f"Cancelled Stripe subscription {subscription.id} for player {referrer_id} due to referral reward")
+                        
+                except Exception as e:
+                    logging.error(f"Error handling Stripe subscription for referral reward (player {referrer_id}): {e}")
+                    # Continue with the reward even if Stripe handling fails
+            
+            conn.execute('''
+                UPDATE players 
+                SET membership_type = 'tournament', 
+                    subscription_status = 'referral_reward_12month',
+                    subscription_end_date = ?,
+                    free_tournament_entries = free_tournament_entries + 5
+                WHERE id = ?
+            ''', (end_date.isoformat(), referrer_id))
+            
+            # Mark all referrals as reward granted
+            conn.execute('''
+                UPDATE universal_referrals 
+                SET reward_granted = 1, reward_granted_at = CURRENT_TIMESTAMP
+                WHERE referrer_player_id = ?
+            ''', (referrer_id,))
+            
+            # Send email notification using SendGrid
+            send_referral_reward_email(referrer_id, referrer_type)
+            
+            logging.info(f"Granted 12-month free membership to player {referrer_id} for 20 referrals")
     
     conn.commit()
     conn.close()
@@ -7811,6 +8254,7 @@ def track_referral_conversion(player_id, membership_type):
     # Clear session referral data
     session.pop('ambassador_id', None)
     session.pop('referral_code', None)
+    session.pop('referrer_player_id', None)
 
 @app.route('/admin/create-bulk-test-accounts', methods=['POST'])
 @admin_required
