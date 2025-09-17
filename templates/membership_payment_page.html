@@ -3,175 +3,389 @@
 {% block title %}Membership Payment - Ready 2 Dink{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center animate-in">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
-                <h4 class="card-title mb-0 fw-bold">
-                    <i class="fas fa-star me-2"></i>Start Your Membership
-                </h4>
-                <p class="mb-0 opacity-90">30-day free trial included</p>
-            </div>
-            <div class="card-body">
-                <!-- Show Both Membership Plans for Comparison -->
-                <div class="row mb-4">
-                    <!-- Player Discovery Plan -->
-                    <div class="col-md-6">
-                        <div class="card h-100 {% if membership_type == 'discovery' %}border-primary border-3{% else %}border-2{% endif %}">
-                            {% if membership_type == 'discovery' %}
-                            <div class="position-absolute top-0 start-50 translate-middle">
-                                <span class="badge bg-primary">Selected</span>
-                            </div>
-                            {% endif %}
-                            <div class="card-body text-center">
-                                <i class="fas fa-users fa-3x text-primary mb-3"></i>
-                                <h4 class="fw-bold">Player Discovery</h4>
-                                <h3 class="text-primary fw-bold">$4.99<small class="text-muted">/month</small></h3>
-                                <p class="mb-3">Find and match with compatible players</p>
-                                {% if membership_type != 'discovery' %}
-                                <a href="{{ url_for('membership_payment_page', membership_type='discovery') }}" class="btn btn-outline-primary">
-                                    Choose This Plan
-                                </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Tournament Access Plan -->
-                    <div class="col-md-6">
-                        <div class="card h-100 {% if membership_type == 'tournament' %}border-warning border-3{% else %}border-2{% endif %}">
-                            {% if membership_type == 'tournament' %}
-                            <div class="position-absolute top-0 start-50 translate-middle">
-                                <span class="badge bg-warning">Selected</span>
-                            </div>
-                            {% endif %}
-                            <div class="card-body text-center">
-                                <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
-                                <h4 class="fw-bold">Tournament Access</h4>
-                                <h3 class="text-warning fw-bold">$9.99<small class="text-muted">/month</small></h3>
-                                <p class="mb-3">Full access including tournaments and competitive features</p>
-                                {% if membership_type != 'tournament' %}
-                                <a href="{{ url_for('membership_payment_page', membership_type='tournament') }}" class="btn btn-outline-warning">
-                                    Choose This Plan
-                                </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Selected Plan Notice -->
-                <div class="alert alert-info text-center mb-4">
-                    <h5><i class="fas fa-check-circle me-2"></i>
-                    {% if membership_type == 'discovery' %}
-                        Player Discovery Plan Selected
-                    {% else %}
-                        Tournament Access Plan Selected
-                    {% endif %}
-                    </h5>
-                    <p class="mb-0">You can switch plans anytime from your dashboard</p>
-                </div>
-
-                <!-- Free Trial Notice -->
-                <div class="alert alert-success text-center mb-4">
-                    <h5><i class="fas fa-gift me-2"></i>30-Day FREE Trial!</h5>
-                    <p class="mb-0">Try it free for 30 days. Cancel anytime. No charges until trial ends.</p>
-                </div>
-
-                <!-- Payment Options -->
-                <div class="mb-4">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fas fa-shield-alt me-2"></i>Choose Payment Method
-                    </h6>
-                    
-                    <!-- Stripe Checkout Button -->
-                    <div class="d-grid gap-2 mb-3">
-                        <a href="{{ stripe_checkout_url }}" class="btn btn-primary btn-lg">
-                            <i class="fab fa-cc-stripe me-2"></i>
-                            🚀 Start Trial
-                            <br><small class="opacity-75">Complete secure payment setup</small>
-                        </a>
-                    </div>
-
-                    <!-- Alternative Payment Methods -->
-                    <div class="row">
-                        <div class="col-6">
-                            <button class="btn btn-outline-primary w-100" onclick="alert('PayPal subscriptions coming soon!')">
-                                <i class="fab fa-paypal me-2"></i>PayPal
-                            </button>
-                        </div>
-                        <div class="col-6">
-                            <button class="btn btn-outline-primary w-100" onclick="alert('Apple Pay subscriptions coming soon!')">
-                                <i class="fab fa-apple-pay me-2"></i>Apple Pay
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Membership Benefits -->
-                <div class="alert alert-light">
-                    <h6 class="fw-bold">
-                        <i class="fas fa-check-circle me-2"></i>What's Included
-                    </h6>
-                    <ul class="mb-0 small">
-                        {% if membership_type == 'discovery' %}
-                            <li>Find and match with compatible players</li>
-                            <li>Chat with connected players</li>
-                            <li>Organize casual games</li>
-                            <li>View detailed player profiles</li>
-                            <li>Location-based player search</li>
-                        {% else %}
-                            <li><strong>Everything in Player Discovery</strong></li>
-                            <li>Enter paid tournaments</li>
-                            <li>Compete for cash prizes</li>
-                            <li>Tournament brackets and standings</li>
-                            <li>Advanced player statistics</li>
-                            <li>Priority tournament registration</li>
-                        {% endif %}
-                    </ul>
-                </div>
-
-                <!-- Instructions -->
-                <div class="alert alert-light">
-                    <h6 class="fw-bold">
-                        <i class="fas fa-info-circle me-2"></i>Subscription Instructions
-                    </h6>
-                    <ol class="mb-0 small">
-                        <li>Click "Click Here to Start Free Trial" above</li>
-                        <li>Complete subscription setup in the secure window</li>
-                        <li>Enjoy 30 days completely FREE</li>
-                        <li>Cancel anytime during trial - no charges!</li>
-                    </ol>
-                </div>
-
-                <!-- Security Notice -->
-                <div class="text-center mt-4">
-                    <small class="text-muted">
-                        <i class="fas fa-lock me-1"></i>
-                        Secured by Stripe • Your payment information is encrypted and never stored
-                    </small>
-                </div>
-
-                <!-- Back Button -->
-                <div class="d-grid mt-4">
-                    <button onclick="history.back()" class="btn btn-secondary" style="color: white !important;">
-                        <i class="fas fa-arrow-left me-1"></i>Back
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
-.animate-in {
-    animation: slideIn 0.5s ease-out;
+/* Neon Membership Page Design */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --accent-gold: #ffd700;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+    --purple-glow: 0 0 20px rgba(191, 0, 255, 0.4);
+    --green-glow: 0 0 20px rgba(0, 255, 65, 0.4);
+    --gold-glow: 0 0 20px rgba(255, 215, 0, 0.4);
 }
 
-@keyframes slideIn {
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.membership-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+}
+
+.membership-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.membership-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.page-title {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 15px rgba(0, 245, 255, 0.6);
+    margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    opacity: 0.9;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.pricing-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 2px solid var(--border-subtle);
+    border-radius: 20px;
+    padding: 2rem;
+    position: relative;
+    transition: all 0.4s ease;
+    height: 100%;
+    overflow: hidden;
+}
+
+.pricing-card::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, var(--accent-cyan), var(--accent-purple), var(--accent-green), var(--accent-cyan));
+    border-radius: 20px;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.pricing-card:hover::before {
+    opacity: 1;
+    animation: shimmer 2s linear infinite;
+}
+
+.pricing-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(0, 245, 255, 0.3);
+}
+
+.pricing-card.selected {
+    border-color: var(--accent-gold);
+    box-shadow: var(--gold-glow);
+}
+
+.pricing-card.selected::before {
+    background: linear-gradient(45deg, var(--accent-gold), var(--accent-cyan), var(--accent-gold));
+    opacity: 0.7;
+}
+
+.plan-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 15px currentColor;
+}
+
+.plan-name {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.plan-price {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 10px currentColor;
+}
+
+.plan-period {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-bottom: 1.5rem;
+}
+
+.plan-description {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.plan-features {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 2rem;
+}
+
+.plan-features li {
+    padding: 0.5rem 0;
+    font-size: 1rem;
+    position: relative;
+    padding-left: 2rem;
+}
+
+.plan-features li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--accent-green);
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-shadow: 0 0 8px var(--accent-green);
+}
+
+.selected-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--accent-gold), #ffed4e);
+    color: #000;
+    font-weight: 700;
+    padding: 0.5rem 1.5rem;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: var(--gold-glow);
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.trial-banner {
+    background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-cyan) 100%);
+    border: none;
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    margin-bottom: 3rem;
+    box-shadow: var(--green-glow);
+    animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.trial-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.trial-text {
+    font-size: 1.1rem;
+    color: white;
+    margin-bottom: 0;
+    opacity: 0.95;
+}
+
+.payment-section {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    padding: 2.5rem;
+    margin-top: 2rem;
+}
+
+.payment-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.main-payment-btn {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: none;
+    border-radius: 20px;
+    padding: 1.5rem 3rem;
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 15px 35px rgba(0, 245, 255, 0.4);
+    transition: all 0.3s ease;
+    width: 100%;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.main-payment-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.main-payment-btn:hover::before {
+    left: 100%;
+}
+
+.main-payment-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 45px rgba(0, 245, 255, 0.6);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
+}
+
+.alt-payment-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--border-subtle);
+    border-radius: 15px;
+    padding: 1rem 1.5rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.alt-payment-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    transform: translateY(-2px);
+}
+
+.benefits-card {
+    background: rgba(0, 245, 255, 0.05);
+    border: 1px solid rgba(0, 245, 255, 0.2);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 2rem;
+}
+
+.benefits-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 8px rgba(0, 245, 255, 0.5);
+}
+
+.benefits-list {
+    list-style: none;
+    padding: 0;
+}
+
+.benefits-list li {
+    padding: 0.75rem 0;
+    font-size: 1rem;
+    position: relative;
+    padding-left: 2rem;
+    opacity: 0.95;
+}
+
+.benefits-list li::before {
+    content: "★";
+    position: absolute;
+    left: 0;
+    color: var(--accent-gold);
+    font-size: 1.2rem;
+    text-shadow: 0 0 8px var(--accent-gold);
+}
+
+.security-notice {
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+}
+
+.security-text {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.back-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 15px;
+    padding: 1rem 2rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin-top: 2rem;
+    width: 100%;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.animate-in {
+    animation: slideInUp 0.8s ease-out;
+}
+
+@keyframes slideInUp {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(30px);
     }
     to {
         opacity: 1;
@@ -179,9 +393,291 @@
     }
 }
 
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 2.5rem;
+    }
+    
+    .pricing-card {
+        margin-bottom: 2rem;
+    }
+    
+    .plan-price {
+        font-size: 2.5rem;
+    }
+    
+    .membership-container {
+        padding: 1rem;
+    }
 }
 </style>
-{% endblock %}
+
+<div class="membership-container">
+    <div class="container">
+        
+        <!-- Page Header -->
+        <div class="page-header animate-in">
+            <h1 class="page-title">
+                <i class="fas fa-star me-3"></i>Choose Your Plan
+            </h1>
+            <p class="page-subtitle">Unlock the full Ready 2 Dink experience</p>
+        </div>
+
+        <!-- Free Trial Banner -->
+        <div class="trial-banner animate-in">
+            <div class="trial-title">
+                <i class="fas fa-gift me-2"></i>30-Day FREE Trial!
+            </div>
+            <p class="trial-text">Start your journey risk-free. Cancel anytime during trial - no charges!</p>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-xl-10">
+                
+                <!-- Pricing Cards -->
+                <div class="row mb-5">
+                    <!-- Discovery Plan -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="pricing-card {% if membership_type == 'discovery' %}selected{% endif %} animate-in" style="animation-delay: 0.2s;">
+                            {% if membership_type == 'discovery' %}
+                            <div class="selected-badge">Selected Plan</div>
+                            {% endif %}
+                            
+                            <div class="text-center">
+                                <i class="fas fa-users plan-icon" style="color: var(--accent-cyan);"></i>
+                                <h3 class="plan-name" style="color: var(--accent-cyan);">Player Discovery</h3>
+                                <div class="plan-price" style="color: var(--accent-cyan);">
+                                    $4.99
+                                    <small class="plan-period">per month</small>
+                                </div>
+                                <p class="plan-description">Perfect for finding compatible players in your area</p>
+                                
+                                <ul class="plan-features">
+                                    <li>Find and match with compatible players</li>
+                                    <li>Chat with connected players</li>
+                                    <li>Organize casual games</li>
+                                    <li>View detailed player profiles</li>
+                                    <li>Location-based player search</li>
+                                    <li>Basic game statistics</li>
+                                </ul>
+                                
+                                {% if membership_type != 'discovery' %}
+                                <a href="{{ url_for('membership_payment_page', membership_type='discovery') }}" 
+                                   class="alt-payment-btn">
+                                    <i class="fas fa-arrow-right me-2"></i>Select This Plan
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tournament Plan -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="pricing-card {% if membership_type == 'tournament' %}selected{% endif %} animate-in" style="animation-delay: 0.4s;">
+                            {% if membership_type == 'tournament' %}
+                            <div class="selected-badge">Selected Plan</div>
+                            {% endif %}
+                            
+                            <div class="text-center">
+                                <i class="fas fa-trophy plan-icon" style="color: var(--accent-gold);"></i>
+                                <h3 class="plan-name" style="color: var(--accent-gold);">Tournament Access</h3>
+                                <div class="plan-price" style="color: var(--accent-gold);">
+                                    $9.99
+                                    <small class="plan-period">per month</small>
+                                </div>
+                                <p class="plan-description">Complete access including competitive tournaments</p>
+                                
+                                <ul class="plan-features">
+                                    <li><strong>Everything in Player Discovery</strong></li>
+                                    <li>Enter paid tournaments</li>
+                                    <li>Compete for cash prizes</li>
+                                    <li>Tournament brackets and standings</li>
+                                    <li>Advanced player statistics</li>
+                                    <li>Priority tournament registration</li>
+                                    <li>Exclusive tournament features</li>
+                                </ul>
+                                
+                                {% if membership_type != 'tournament' %}
+                                <a href="{{ url_for('membership_payment_page', membership_type='tournament') }}" 
+                                   class="alt-payment-btn">
+                                    <i class="fas fa-arrow-right me-2"></i>Select This Plan
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment Section -->
+                <div class="membership-card animate-in" style="animation-delay: 0.6s;">
+                    <div class="payment-section">
+                        <div class="payment-title">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            {% if membership_type == 'discovery' %}
+                                Complete Your Player Discovery Setup
+                            {% else %}
+                                Complete Your Tournament Access Setup
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Main Payment Button -->
+                        <a href="{{ stripe_checkout_url }}" class="main-payment-btn">
+                            <i class="fab fa-cc-stripe me-3"></i>
+                            🚀 Start FREE Trial Now
+                            <div style="font-size: 0.9rem; font-weight: 500; margin-top: 0.5rem; opacity: 0.9;">
+                                Complete secure subscription setup
+                            </div>
+                        </a>
+                        
+                        <!-- Alternative Payment Methods -->
+                        <div class="row">
+                            <div class="col-6">
+                                <button class="alt-payment-btn" onclick="alert('PayPal subscriptions coming soon!')">
+                                    <i class="fab fa-paypal me-2"></i>PayPal
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="alt-payment-btn" onclick="alert('Apple Pay subscriptions coming soon!')">
+                                    <i class="fab fa-apple-pay me-2"></i>Apple Pay
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Benefits Section -->
+                        <div class="benefits-card">
+                            <div class="benefits-title">
+                                <i class="fas fa-check-circle me-2"></i>
+                                {% if membership_type == 'discovery' %}
+                                    Player Discovery Benefits
+                                {% else %}
+                                    Tournament Access Benefits
+                                {% endif %}
+                            </div>
+                            <ul class="benefits-list">
+                                {% if membership_type == 'discovery' %}
+                                    <li>Find and match with compatible players</li>
+                                    <li>Chat with connected players</li>
+                                    <li>Organize casual games</li>
+                                    <li>View detailed player profiles</li>
+                                    <li>Location-based player search</li>
+                                    <li>Basic game statistics</li>
+                                {% else %}
+                                    <li><strong>Everything in Player Discovery Plan</strong></li>
+                                    <li>Enter paid tournaments</li>
+                                    <li>Compete for cash prizes</li>
+                                    <li>Tournament brackets and standings</li>
+                                    <li>Advanced player statistics</li>
+                                    <li>Priority tournament registration</li>
+                                    <li>Exclusive tournament features</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        
+                        <!-- Instructions Card -->
+                        <div class="benefits-card" style="background: rgba(191, 0, 255, 0.05); border: 1px solid rgba(191, 0, 255, 0.2);">
+                            <div class="benefits-title" style="color: var(--accent-purple);">
+                                <i class="fas fa-info-circle me-2"></i>Quick Setup Instructions
+                            </div>
+                            <ol class="benefits-list" style="padding-left: 2rem;">
+                                <li style="list-style: decimal; padding-left: 0;">Click "Start FREE Trial Now" above</li>
+                                <li style="list-style: decimal; padding-left: 0;">Complete subscription setup in secure window</li>
+                                <li style="list-style: decimal; padding-left: 0;">Enjoy 30 days completely FREE</li>
+                                <li style="list-style: decimal; padding-left: 0;">Cancel anytime during trial - no charges!</li>
+                            </ol>
+                        </div>
+                        
+                        <!-- Security Notice -->
+                        <div class="security-notice">
+                            <div class="security-text">
+                                <i class="fas fa-lock me-2" style="color: var(--accent-green);"></i>
+                                <strong>Secured by Stripe</strong> • Your payment information is encrypted and never stored on our servers
+                            </div>
+                        </div>
+                        
+                        <!-- Back Button -->
+                        <button onclick="history.back()" class="back-btn">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add smooth scrolling and enhanced interactions
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate pricing cards on scroll
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+    
+    // Observe all pricing cards
+    document.querySelectorAll('.pricing-card').forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
+    });
+    
+    // Add click feedback to buttons
+    document.querySelectorAll('.main-payment-btn, .alt-payment-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            // Add ripple effect
+            const ripple = document.createElement('div');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple 0.6s linear;
+                pointer-events: none;
+            `;
+            
+            this.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+});
+
+// Add CSS for ripple animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes ripple {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+    
+    .main-payment-btn, .alt-payment-btn {
+        position: relative;
+        overflow: hidden;
+    }
+`;
+document.head.appendChild(style);
+</script>
