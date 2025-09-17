@@ -5,23 +5,28 @@
 {% block content %}
 
 <style>
-/* Dark Theme Tournament Design */
+/* Enhanced Neon Tournament Design */
 :root {
     --primary-bg: #0f0f23;
     --secondary-bg: #1a1a2e;
-    --card-bg: rgba(26, 26, 46, 0.8);
+    --card-bg: rgba(26, 26, 46, 0.85);
     --text-primary: #ffffff;
     --accent-cyan: #00f5ff;
     --accent-green: #00ff41;
     --accent-purple: #bf00ff;
-    --border-subtle: rgba(226, 232, 240, 0.1);
-    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+    --accent-orange: #ff6b35;
+    --border-subtle: rgba(226, 232, 240, 0.15);
+    --glow-cyan: 0 0 20px rgba(0, 245, 255, 0.4);
+    --glow-green: 0 0 20px rgba(0, 255, 65, 0.4);
+    --glow-purple: 0 0 20px rgba(191, 0, 255, 0.4);
+    --text-shadow-glow: 0 0 15px rgba(0, 245, 255, 0.6);
 }
 
 body {
     background: var(--primary-bg);
     color: var(--text-primary);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 500;
     overflow-x: hidden;
 }
 
@@ -31,64 +36,112 @@ body {
     padding: 2rem 0;
 }
 
+/* Enhanced Card Styling */
 .card {
     background: var(--card-bg) !important;
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle) !important;
+    backdrop-filter: blur(25px) saturate(1.8);
+    border: 2px solid var(--border-subtle) !important;
     border-radius: 24px !important;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
-    transition: all 0.3s ease;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
     color: var(--text-primary) !important;
 }
 
 .card:hover {
     border-color: var(--accent-cyan) !important;
-    box-shadow: var(--glow-effect) !important;
-    transform: translateY(-2px);
+    box-shadow: var(--glow-cyan), 0 30px 60px rgba(0, 0, 0, 0.5) !important;
+    transform: translateY(-8px) scale(1.02);
 }
 
 .card-header {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border-bottom: 1px solid var(--border-subtle) !important;
+    background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(191, 0, 255, 0.1)) !important;
+    border-bottom: 2px solid var(--border-subtle) !important;
     border-radius: 24px 24px 0 0 !important;
     color: var(--text-primary) !important;
+    padding: 1.5rem 2rem;
 }
 
 .card-title {
     color: var(--accent-cyan) !important;
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
-    font-weight: 700;
+    text-shadow: var(--text-shadow-glow);
+    font-weight: 800;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
+.card-body {
+    padding: 2rem;
+}
+
+/* Enhanced Tournament Cards */
 .tournament-card, .format-card {
     background: var(--card-bg) !important;
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle) !important;
-    border-radius: 16px !important;
-    transition: all 0.3s ease;
+    backdrop-filter: blur(25px) saturate(1.8);
+    border: 2px solid var(--border-subtle) !important;
+    border-radius: 20px !important;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.tournament-card::before, .format-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(0, 245, 255, 0.05) 50%, transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.tournament-card:hover::before, .format-card:hover::before {
+    opacity: 1;
 }
 
 .tournament-card:hover, .format-card:hover {
     border-color: var(--accent-cyan) !important;
-    transform: translateY(-3px);
-    box-shadow: 0 12px 32px rgba(0, 245, 255, 0.4) !important;
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: var(--glow-cyan), 0 20px 40px rgba(0, 245, 255, 0.3) !important;
 }
 
+/* Enhanced Button Styling */
 .btn-primary {
     background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
     border: none !important;
     border-radius: 16px !important;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
-    transition: all 0.3s ease;
+    letter-spacing: 1px;
+    padding: 0.8rem 2rem;
+    box-shadow: var(--glow-cyan);
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-primary:hover::before {
+    left: 100%;
 }
 
 .btn-primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5) !important;
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 15px 45px rgba(0, 245, 255, 0.6) !important;
     background: linear-gradient(135deg, var(--accent-purple), var(--accent-green)) !important;
 }
 
@@ -96,124 +149,204 @@ body {
     background: linear-gradient(135deg, var(--accent-green), #20c997) !important;
     border: none !important;
     border-radius: 16px !important;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 8px 32px rgba(0, 255, 65, 0.3);
-    transition: all 0.3s ease;
+    letter-spacing: 1px;
+    padding: 0.8rem 2rem;
+    box-shadow: var(--glow-green);
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .btn-success:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.5) !important;
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 15px 45px rgba(0, 255, 65, 0.6) !important;
+    background: linear-gradient(135deg, #20c997, var(--accent-cyan)) !important;
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid var(--border-subtle) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 2px solid var(--border-subtle) !important;
     color: var(--text-primary) !important;
     border-radius: 16px !important;
     font-weight: 600;
-    transition: all 0.3s ease;
+    padding: 0.8rem 2rem;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    backdrop-filter: blur(10px);
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
+    background: rgba(255, 255, 255, 0.15) !important;
     border-color: var(--accent-cyan) !important;
-    transform: translateY(-2px);
+    color: var(--accent-cyan) !important;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0, 245, 255, 0.3);
 }
 
+/* Enhanced Badge Styling */
 .badge {
     background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)) !important;
     color: white !important;
-    font-weight: 700;
-    padding: 0.5rem 1rem;
+    font-weight: 800;
+    padding: 0.6rem 1.2rem;
     border-radius: 25px;
-    box-shadow: 0 0 15px rgba(0, 255, 65, 0.4);
+    box-shadow: var(--glow-green);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    font-size: 0.85rem;
+    position: relative;
+    overflow: hidden;
 }
 
+.badge::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s ease;
+}
+
+.badge:hover::before {
+    left: 100%;
+}
+
+/* Enhanced Alert Styling */
 .alert {
     background: var(--card-bg) !important;
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle) !important;
-    border-radius: 16px !important;
+    backdrop-filter: blur(25px) saturate(1.8);
+    border: 2px solid var(--border-subtle) !important;
+    border-radius: 20px !important;
     color: var(--text-primary) !important;
+    font-weight: 600;
+    padding: 1.5rem 2rem;
 }
 
 .alert-info {
-    border-color: rgba(0, 245, 255, 0.3) !important;
-    background: rgba(0, 245, 255, 0.1) !important;
+    border-color: rgba(0, 245, 255, 0.4) !important;
+    background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(191, 0, 255, 0.05)) !important;
+    box-shadow: var(--glow-cyan);
 }
 
 .alert-success {
-    border-color: rgba(0, 255, 65, 0.3) !important;
-    background: rgba(0, 255, 65, 0.1) !important;
+    border-color: rgba(0, 255, 65, 0.4) !important;
+    background: linear-gradient(135deg, rgba(0, 255, 65, 0.1), rgba(0, 245, 255, 0.05)) !important;
+    box-shadow: var(--glow-green);
 }
 
+.alert-warning {
+    border-color: rgba(255, 193, 7, 0.4) !important;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 107, 53, 0.05)) !important;
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
+}
+
+/* Enhanced Modal Styling */
 .modal-content {
     background: var(--card-bg) !important;
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle) !important;
+    backdrop-filter: blur(30px) saturate(1.8);
+    border: 2px solid var(--border-subtle) !important;
     border-radius: 24px !important;
     color: var(--text-primary) !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
 }
 
 .modal-header {
-    border-bottom: 1px solid var(--border-subtle) !important;
+    border-bottom: 2px solid var(--border-subtle) !important;
+    background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(191, 0, 255, 0.1));
+    border-radius: 24px 24px 0 0;
+    padding: 1.5rem 2rem;
 }
 
 .modal-title {
     color: var(--accent-cyan) !important;
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+    text-shadow: var(--text-shadow-glow);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
+.modal-body {
+    padding: 2rem;
+}
+
+/* Enhanced Form Controls */
 .form-control, .form-select {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid var(--border-subtle) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 2px solid var(--border-subtle) !important;
     border-radius: 12px !important;
     color: var(--text-primary) !important;
+    font-weight: 600;
+    padding: 0.8rem 1rem;
     transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
 }
 
 .form-control:focus, .form-select:focus {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.12) !important;
     border-color: var(--accent-cyan) !important;
-    box-shadow: 0 0 15px rgba(0, 245, 255, 0.3) !important;
+    box-shadow: var(--glow-cyan) !important;
     color: var(--text-primary) !important;
+    transform: scale(1.02);
 }
 
 .form-label {
     color: var(--text-primary) !important;
-    font-weight: 600;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     margin-bottom: 0.75rem;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
 }
 
+/* Enhanced Typography */
 .text-muted {
-    color: rgba(255, 255, 255, 0.7) !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-weight: 500;
 }
 
 .small {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-weight: 500;
 }
 
 h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary) !important;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.4);
 }
 
-/* Tournament level specific styling */
+/* Enhanced Tournament Level Cards */
 .level-card {
     background: var(--card-bg) !important;
-    border: 2px solid var(--accent-purple) !important;
-    border-radius: 20px !important;
-    transition: all 0.3s ease;
+    border: 3px solid var(--accent-purple) !important;
+    border-radius: 24px !important;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.level-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(191, 0, 255, 0.1), rgba(0, 245, 255, 0.1));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.level-card:hover::before {
+    opacity: 1;
 }
 
 .level-card:hover {
     border-color: var(--accent-cyan) !important;
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0, 245, 255, 0.4) !important;
+    transform: translateY(-8px) scale(1.03);
+    box-shadow: var(--glow-cyan), var(--glow-purple) !important;
 }
 
 .prize-highlight {
@@ -221,8 +354,83 @@ h1, h2, h3, h4, h5, h6 {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    font-weight: 700;
+    font-weight: 800;
     text-shadow: none;
+    filter: drop-shadow(0 0 10px rgba(0, 255, 65, 0.5));
+}
+
+/* Enhanced Tournament Card Specific Styling */
+.card h5.card-title {
+    color: var(--text-primary) !important;
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card .badge {
+    font-size: 0.8rem !important;
+    font-weight: 800 !important;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+/* Enhanced Specific Badge Colors */
+.badge[style*="background-color: #3F567F"] {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
+    box-shadow: var(--glow-cyan);
+}
+
+.badge[style*="background-color: #E0563F"] {
+    background: linear-gradient(135deg, var(--accent-orange), #dc3545) !important;
+    box-shadow: 0 0 15px rgba(255, 107, 53, 0.4);
+}
+
+.badge[style*="background-color: #D174D2"] {
+    background: linear-gradient(135deg, var(--accent-purple), #e91e63) !important;
+    box-shadow: var(--glow-purple);
+}
+
+/* Enhanced Button Specific Styling */
+.btn[style*="background: linear-gradient(45deg, #10B981, #059669)"] {
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)) !important;
+    box-shadow: var(--glow-green);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn[style*="background: linear-gradient(45deg, #10B981, #059669)"]:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.5) !important;
+}
+
+.btn[style*="background-color: #D174D2"] {
+    background: linear-gradient(135deg, var(--accent-purple), #e91e63) !important;
+    box-shadow: var(--glow-purple);
+    font-weight: 700;
+}
+
+/* Enhanced Outline Buttons */
+.btn-outline-primary {
+    border: 2px solid var(--accent-cyan) !important;
+    color: var(--accent-cyan) !important;
+    background: rgba(0, 245, 255, 0.1) !important;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background: var(--accent-cyan) !important;
+    color: var(--primary-bg) !important;
+    transform: translateY(-2px);
+    box-shadow: var(--glow-cyan);
+}
+
+.btn-outline-warning {
+    border: 2px solid #ffc107 !important;
+    color: #ffc107 !important;
+    background: rgba(255, 193, 7, 0.1) !important;
+    font-weight: 600;
 }
 
 /* Mobile Responsive Design */
@@ -232,13 +440,64 @@ h1, h2, h3, h4, h5, h6 {
     }
     
     .card {
-        border-radius: 16px !important;
+        border-radius: 20px !important;
+    }
+    
+    .card-title {
+        font-size: 1.3rem;
     }
     
     .btn {
         padding: 0.75rem 1.5rem;
         font-size: 0.9rem;
     }
+    
+    .badge {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Spinner Enhancement */
+.spinner-border {
+    color: var(--accent-cyan) !important;
+    animation: spinner-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes spinner-glow {
+    from { filter: drop-shadow(0 0 5px var(--accent-cyan)); }
+    to { filter: drop-shadow(0 0 15px var(--accent-cyan)); }
+}
+
+/* Enhanced Text Colors for Better Readability */
+strong {
+    color: var(--text-primary) !important;
+    font-weight: 700;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.text-info {
+    color: var(--accent-cyan) !important;
+    font-weight: 600;
+    text-shadow: 0 0 5px rgba(0, 245, 255, 0.3);
+}
+
+.text-success {
+    color: var(--accent-green) !important;
+    font-weight: 600;
+    text-shadow: 0 0 5px rgba(0, 255, 65, 0.3);
+}
+
+.text-primary {
+    color: var(--accent-cyan) !important;
+    font-weight: 600;
+    text-shadow: 0 0 5px rgba(0, 245, 255, 0.3);
+}
+
+.text-warning {
+    color: #ffc107 !important;
+    font-weight: 600;
+    text-shadow: 0 0 5px rgba(255, 193, 7, 0.3);
 }
 </style>
 
