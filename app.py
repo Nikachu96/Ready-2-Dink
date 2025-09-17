@@ -3502,9 +3502,20 @@ def tournaments_overview():
         return redirect(url_for('player_login'))
     
     # Use player's stored GPS coordinates and search radius
-    user_lat = player.get('latitude')
-    user_lng = player.get('longitude')
-    search_radius = player.get('search_radius_miles', 15)  # Default to 15 miles
+    try:
+        user_lat = player['latitude'] if player['latitude'] is not None else None
+    except (KeyError, TypeError):
+        user_lat = None
+        
+    try:
+        user_lng = player['longitude'] if player['longitude'] is not None else None
+    except (KeyError, TypeError):
+        user_lng = None
+        
+    try:
+        search_radius = player['search_radius_miles'] if player['search_radius_miles'] is not None else 15
+    except (KeyError, TypeError):
+        search_radius = 15  # Default to 15 miles
     
     # Enable location filtering if player has GPS coordinates
     location_filter_enabled = (user_lat is not None and user_lng is not None)
