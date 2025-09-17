@@ -3,57 +3,348 @@
 {% block title %}Leaderboard - Ready 2 Dink{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
-                <div class="d-flex align-items-center">
-                    <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 40px; width: auto;" class="me-3">
-                    <div>
-                        <h4 class="card-title mb-0 fw-bold">
-                            <i class="fas fa-trophy me-2"></i>Player Rankings
-                        </h4>
-                        <p class="mb-0 opacity-90">Top competitive players by ranking points and skill level</p>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Beginner Leaderboard -->
-            <div class="card-body p-0">
-                <div class="bg-success text-white p-3">
-                    <h5 class="mb-0">
-                        <i class="fas fa-leaf me-2"></i>Beginner Division
-                    </h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-dark table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th class="text-center text-white" style="width: 80px; color: white !important;">Rank</th>
-                                <th class="text-white" style="color: white !important;">Player</th>
-                                <th class="text-center text-white" style="color: white !important;">Points</th>
-                                <th class="text-center text-white" style="color: white !important;">Match Record</th>
-                                <th class="text-center text-white" style="color: white !important;">Tournaments</th>
-                            </tr>
-                        </thead>
+<style>
+/* Dark Theme Leaderboard Design */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+}
+
+.leaderboard-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+}
+
+.leaderboard-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.leaderboard-header {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: white;
+    padding: 2rem;
+    border-radius: 24px 24px 0 0;
+    text-align: center;
+    border: none;
+}
+
+.division-header {
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+    color: white;
+    padding: 1.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 16px 16px 0 0;
+    margin: 0;
+}
+
+.division-header.intermediate {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+}
+
+.division-header.advanced {
+    background: linear-gradient(135deg, var(--accent-purple), #ff0080);
+}
+
+.leaderboard-table {
+    background: rgba(15, 15, 35, 0.9);
+    color: var(--text-primary);
+    border-radius: 0 0 16px 16px;
+    overflow: hidden;
+}
+
+.leaderboard-table th {
+    background: rgba(26, 26, 46, 0.8);
+    color: var(--accent-cyan);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    padding: 1.5rem 1rem;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+}
+
+.leaderboard-table td {
+    background: rgba(15, 15, 35, 0.6);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    padding: 1.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.leaderboard-table tr:hover td {
+    background: rgba(26, 26, 46, 0.8);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.2);
+}
+
+.rank-badge {
+    border-radius: 20px;
+    padding: 0.75rem 1.25rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.rank-badge.gold {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+}
+
+.rank-badge.silver {
+    background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
+    color: #000;
+    box-shadow: 0 0 30px rgba(192, 192, 192, 0.6);
+}
+
+.rank-badge.bronze {
+    background: linear-gradient(135deg, #CD7F32, #B8860B);
+    color: #fff;
+    box-shadow: 0 0 30px rgba(205, 127, 50, 0.6);
+}
+
+.rank-badge.regular {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: white;
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.4);
+}
+
+.player-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.4);
+    object-fit: cover;
+    transition: all 0.3s ease;
+}
+
+.player-avatar:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.6);
+}
+
+.avatar-placeholder {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid var(--accent-cyan);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.4);
+}
+
+.stat-badge {
+    border-radius: 15px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.stat-badge.points {
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+    color: white;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+}
+
+.stat-badge.record {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: white;
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.4);
+}
+
+.stat-badge.tournaments {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+.points-legend {
+    background: rgba(26, 26, 46, 0.8);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 2rem;
+}
+
+.legend-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    transition: all 0.3s ease;
+}
+
+.legend-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+}
+
+.legend-item i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.championship-banner {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    border: none;
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 2rem 0;
+    color: #000;
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.4);
+}
+
+.action-btn {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: none;
+    border-radius: 16px;
+    padding: 1rem 2rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+    margin: 0.5rem;
+}
+
+.action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
+    color: white;
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+    margin-bottom: 1rem;
+}
+
+.section-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+    }
+    
+    .leaderboard-header {
+        padding: 1.5rem;
+    }
+    
+    .player-avatar, .avatar-placeholder {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .rank-badge {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+}
+</style>
+<div class="dashboard-container">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="leaderboard-card">
+                    <div class="leaderboard-header">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 50px; width: auto;" class="me-3">
+                            <div class="text-center">
+                                <h1 class="section-title mb-0">
+                                    <i class="fas fa-trophy me-2"></i>Player Rankings
+                                </h1>
+                                <p class="section-subtitle mb-0">Top competitive players by ranking points and skill level</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Beginner Leaderboard -->
+                    <div class="division-header beginner">
+                        <h5 class="mb-0">
+                            <i class="fas fa-leaf me-2"></i>Beginner Division
+                        </h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="leaderboard-table table mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 100px;">Rank</th>
+                                    <th>Player</th>
+                                    <th class="text-center">Points</th>
+                                    <th class="text-center">Match Record</th>
+                                    <th class="text-center">Tournaments</th>
+                                </tr>
+                            </thead>
                         <tbody>
                             {% for player in beginner_leaderboard %}
                             <tr>
                                 <td class="text-center align-middle">
                                     {% if loop.index == 1 %}
-                                        <span class="badge bg-warning text-white fs-6 px-3 py-2">
+                                        <span class="rank-badge gold">
                                             <i class="fas fa-crown me-1"></i>#{{ loop.index }}
                                         </span>
                                     {% elif loop.index == 2 %}
-                                        <span class="badge bg-secondary fs-6 px-3 py-2">
+                                        <span class="rank-badge silver">
                                             <i class="fas fa-medal me-1"></i>#{{ loop.index }}
                                         </span>
                                     {% elif loop.index == 3 %}
-                                        <span class="badge bg-warning fs-6 px-3 py-2" style="background: #cd7f32 !important;">
+                                        <span class="rank-badge bronze">
                                             <i class="fas fa-award me-1"></i>#{{ loop.index }}
                                         </span>
                                     {% else %}
-                                        <span class="badge bg-primary fs-6 px-2 py-1">
+                                        <span class="rank-badge regular">
                                             #{{ loop.index }}
                                         </span>
                                     {% endif %}
@@ -62,18 +353,16 @@
                                     <div class="d-flex align-items-center">
                                         {% if player.selfie %}
                                             <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                                 class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" 
-                                                 alt="Player">
+                                                 class="player-avatar me-3" alt="Player">
                                         {% else %}
-                                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-3" 
-                                                 style="width: 50px; height: 50px;">
-                                                <i class="fas fa-user text-white"></i>
+                                            <div class="avatar-placeholder me-3">
+                                                <i class="fas fa-user"></i>
                                             </div>
                                         {% endif %}
                                         <div>
-                                            <h6 class="mb-0 text-white">{{ player.full_name }}</h6>
+                                            <h6 class="mb-0 fw-bold">{{ player.full_name }}</h6>
                                             {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                                <small class="text-warning">
+                                                <small style="color: var(--accent-green);">
                                                     {% for i in range(player.tournament_wins) %}⭐{% endfor %}
                                                     Tournament Winner{{ 's' if player.tournament_wins > 1 else '' }}
                                                 </small>
@@ -82,28 +371,28 @@
                                     </div>
                                 </td>
                                 <td class="text-center align-middle">
-                                    <span class="badge bg-success fs-6 px-3 py-2">
+                                    <span class="stat-badge points">
                                         {{ player.ranking_points or 0 }} pts
                                     </span>
                                 </td>
                                 <td class="text-center align-middle">
-                                    <span class="badge bg-info">
+                                    <span class="stat-badge record">
                                         {{ player.wins or 0 }}W-{{ player.losses or 0 }}L
                                     </span>
                                     {% if (player.wins or 0) + (player.losses or 0) > 0 %}
                                         <br>
-                                        <small class="text-light">
+                                        <small style="color: var(--accent-cyan);">
                                             {{ "%.1f"|format(((player.wins or 0) / ((player.wins or 0) + (player.losses or 0)) * 100)) }}% win rate
                                         </small>
                                     {% endif %}
                                 </td>
                                 <td class="text-center align-middle">
                                     {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                        <span class="badge bg-warning text-white">
+                                        <span class="stat-badge tournaments">
                                             <i class="fas fa-trophy me-1"></i>{{ player.tournament_wins }}
                                         </span>
                                     {% else %}
-                                        <span class="text-light">-</span>
+                                        <span style="color: rgba(255, 255, 255, 0.5);">-</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -119,42 +408,41 @@
                 </div>
             </div>
 
-            <!-- Intermediate Leaderboard -->
-            <div class="card-body p-0">
-                <div class="bg-warning text-white p-3">
-                    <h5 class="mb-0">
-                        <i class="fas fa-star me-2"></i>Intermediate Division
-                    </h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-dark table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th class="text-center text-white" style="width: 80px; color: white !important;">Rank</th>
-                                <th class="text-white" style="color: white !important;">Player</th>
-                                <th class="text-center text-white" style="color: white !important;">Points</th>
-                                <th class="text-center text-white" style="color: white !important;">Match Record</th>
-                                <th class="text-center text-white" style="color: white !important;">Tournaments</th>
-                            </tr>
-                        </thead>
+                    <!-- Intermediate Leaderboard -->
+                    <div class="division-header intermediate mt-4">
+                        <h5 class="mb-0">
+                            <i class="fas fa-star me-2"></i>Intermediate Division
+                        </h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="leaderboard-table table mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 100px;">Rank</th>
+                                    <th>Player</th>
+                                    <th class="text-center">Points</th>
+                                    <th class="text-center">Match Record</th>
+                                    <th class="text-center">Tournaments</th>
+                                </tr>
+                            </thead>
                         <tbody>
                             {% for player in intermediate_leaderboard %}
                             <tr>
                                 <td class="text-center align-middle">
                                     {% if loop.index == 1 %}
-                                        <span class="badge bg-warning text-white fs-6 px-3 py-2">
+                                        <span class="rank-badge gold">
                                             <i class="fas fa-crown me-1"></i>#{{ loop.index }}
                                         </span>
                                     {% elif loop.index == 2 %}
-                                        <span class="badge bg-secondary fs-6 px-3 py-2">
+                                        <span class="rank-badge silver">
                                             <i class="fas fa-medal me-1"></i>#{{ loop.index }}
                                         </span>
                                     {% elif loop.index == 3 %}
-                                        <span class="badge bg-warning fs-6 px-3 py-2" style="background: #cd7f32 !important;">
+                                        <span class="rank-badge bronze">
                                             <i class="fas fa-award me-1"></i>#{{ loop.index }}
                                         </span>
                                     {% else %}
-                                        <span class="badge bg-primary fs-6 px-2 py-1">
+                                        <span class="rank-badge regular">
                                             #{{ loop.index }}
                                         </span>
                                     {% endif %}
@@ -163,18 +451,16 @@
                                     <div class="d-flex align-items-center">
                                         {% if player.selfie %}
                                             <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                                 class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" 
-                                                 alt="Player">
+                                                 class="player-avatar me-3" alt="Player">
                                         {% else %}
-                                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-3" 
-                                                 style="width: 50px; height: 50px;">
-                                                <i class="fas fa-user text-white"></i>
+                                            <div class="avatar-placeholder me-3">
+                                                <i class="fas fa-user"></i>
                                             </div>
                                         {% endif %}
                                         <div>
-                                            <h6 class="mb-0 text-white">{{ player.full_name }}</h6>
+                                            <h6 class="mb-0 fw-bold">{{ player.full_name }}</h6>
                                             {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                                <small class="text-warning">
+                                                <small style="color: var(--accent-green);">
                                                     {% for i in range(player.tournament_wins) %}⭐{% endfor %}
                                                     Tournament Winner{{ 's' if player.tournament_wins > 1 else '' }}
                                                 </small>
@@ -183,28 +469,28 @@
                                     </div>
                                 </td>
                                 <td class="text-center align-middle">
-                                    <span class="badge bg-success fs-6 px-3 py-2">
+                                    <span class="stat-badge points">
                                         {{ player.ranking_points or 0 }} pts
                                     </span>
                                 </td>
                                 <td class="text-center align-middle">
-                                    <span class="badge bg-info">
+                                    <span class="stat-badge record">
                                         {{ player.wins or 0 }}W-{{ player.losses or 0 }}L
                                     </span>
                                     {% if (player.wins or 0) + (player.losses or 0) > 0 %}
                                         <br>
-                                        <small class="text-light">
+                                        <small style="color: var(--accent-cyan);">
                                             {{ "%.1f"|format(((player.wins or 0) / ((player.wins or 0) + (player.losses or 0)) * 100)) }}% win rate
                                         </small>
                                     {% endif %}
                                 </td>
                                 <td class="text-center align-middle">
                                     {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                        <span class="badge bg-warning text-white">
+                                        <span class="stat-badge tournaments">
                                             <i class="fas fa-trophy me-1"></i>{{ player.tournament_wins }}
                                         </span>
                                     {% else %}
-                                        <span class="text-light">-</span>
+                                        <span style="color: rgba(255, 255, 255, 0.5);">-</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -220,42 +506,41 @@
                 </div>
             </div>
 
-            <!-- Advanced Leaderboard -->
-            <div class="card-body p-0">
-                <div class="bg-danger text-white p-3">
-                    <h5 class="mb-0">
-                        <i class="fas fa-fire me-2"></i>Advanced Division
-                    </h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-dark table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th class="text-center text-white" style="width: 80px; color: white !important;">Rank</th>
-                                <th class="text-white" style="color: white !important;">Player</th>
-                                <th class="text-center text-white" style="color: white !important;">Points</th>
-                                <th class="text-center text-white" style="color: white !important;">Match Record</th>
-                                <th class="text-center text-white" style="color: white !important;">Tournaments</th>
-                            </tr>
-                        </thead>
+                    <!-- Advanced Leaderboard -->
+                    <div class="division-header advanced mt-4">
+                        <h5 class="mb-0">
+                            <i class="fas fa-fire me-2"></i>Advanced Division
+                        </h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="leaderboard-table table mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 100px;">Rank</th>
+                                    <th>Player</th>
+                                    <th class="text-center">Points</th>
+                                    <th class="text-center">Match Record</th>
+                                    <th class="text-center">Tournaments</th>
+                                </tr>
+                            </thead>
                         <tbody>
                             {% for player in advanced_leaderboard %}
                             <tr>
                                 <td class="text-center align-middle">
                                     {% if loop.index == 1 %}
-                                        <span class="badge bg-warning text-white fs-6 px-3 py-2">
+                                        <span class="rank-badge gold">
                                             <i class="fas fa-crown me-1"></i>#{{ loop.index }}
                                         </span>
                                     {% elif loop.index == 2 %}
-                                        <span class="badge bg-secondary fs-6 px-3 py-2">
+                                        <span class="rank-badge silver">
                                             <i class="fas fa-medal me-1"></i>#{{ loop.index }}
                                         </span>
                                     {% elif loop.index == 3 %}
-                                        <span class="badge bg-warning fs-6 px-3 py-2" style="background: #cd7f32 !important;">
+                                        <span class="rank-badge bronze">
                                             <i class="fas fa-award me-1"></i>#{{ loop.index }}
                                         </span>
                                     {% else %}
-                                        <span class="badge bg-primary fs-6 px-2 py-1">
+                                        <span class="rank-badge regular">
                                             #{{ loop.index }}
                                         </span>
                                     {% endif %}
@@ -264,18 +549,16 @@
                                     <div class="d-flex align-items-center">
                                         {% if player.selfie %}
                                             <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                                 class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" 
-                                                 alt="Player">
+                                                 class="player-avatar me-3" alt="Player">
                                         {% else %}
-                                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-3" 
-                                                 style="width: 50px; height: 50px;">
-                                                <i class="fas fa-user text-white"></i>
+                                            <div class="avatar-placeholder me-3">
+                                                <i class="fas fa-user"></i>
                                             </div>
                                         {% endif %}
                                         <div>
-                                            <h6 class="mb-0 text-white">{{ player.full_name }}</h6>
+                                            <h6 class="mb-0 fw-bold">{{ player.full_name }}</h6>
                                             {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                                <small class="text-warning">
+                                                <small style="color: var(--accent-green);">
                                                     {% for i in range(player.tournament_wins) %}⭐{% endfor %}
                                                     Tournament Winner{{ 's' if player.tournament_wins > 1 else '' }}
                                                 </small>
@@ -284,28 +567,28 @@
                                     </div>
                                 </td>
                                 <td class="text-center align-middle">
-                                    <span class="badge bg-success fs-6 px-3 py-2">
+                                    <span class="stat-badge points">
                                         {{ player.ranking_points or 0 }} pts
                                     </span>
                                 </td>
                                 <td class="text-center align-middle">
-                                    <span class="badge bg-info">
+                                    <span class="stat-badge record">
                                         {{ player.wins or 0 }}W-{{ player.losses or 0 }}L
                                     </span>
                                     {% if (player.wins or 0) + (player.losses or 0) > 0 %}
                                         <br>
-                                        <small class="text-light">
+                                        <small style="color: var(--accent-cyan);">
                                             {{ "%.1f"|format(((player.wins or 0) / ((player.wins or 0) + (player.losses or 0)) * 100)) }}% win rate
                                         </small>
                                     {% endif %}
                                 </td>
                                 <td class="text-center align-middle">
                                     {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                        <span class="badge bg-warning text-white">
+                                        <span class="stat-badge tournaments">
                                             <i class="fas fa-trophy me-1"></i>{{ player.tournament_wins }}
                                         </span>
                                     {% else %}
-                                        <span class="text-light">-</span>
+                                        <span style="color: rgba(255, 255, 255, 0.5);">-</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -321,54 +604,56 @@
                 </div>
             </div>
 
-            <div class="card-footer bg-transparent">
-                <div class="row text-center">
-                    <div class="col-md-3">
-                        <div class="d-flex flex-column">
-                            <i class="fas fa-gamepad text-primary mb-2"></i>
-                            <small class="text-muted">Match Win: <strong>10 pts</strong></small>
+                    <div class="points-legend">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="legend-item">
+                                    <i class="fas fa-gamepad" style="color: var(--accent-green);"></i>
+                                    <small style="color: var(--text-primary);">Match Win: <strong style="color: var(--accent-cyan);">10 pts</strong></small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="legend-item">
+                                    <i class="fas fa-medal" style="color: #FFD700;"></i>
+                                    <small style="color: var(--text-primary);">Quarter-final: <strong style="color: var(--accent-cyan);">40 pts</strong></small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="legend-item">
+                                    <i class="fas fa-trophy" style="color: var(--accent-cyan);"></i>
+                                    <small style="color: var(--text-primary);">Semi-final: <strong style="color: var(--accent-cyan);">100 pts</strong></small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="legend-item">
+                                    <i class="fas fa-crown" style="color: var(--accent-purple);"></i>
+                                    <small style="color: var(--text-primary);">Tournament Win: <strong style="color: var(--accent-cyan);">400 pts</strong></small>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="d-flex flex-column">
-                            <i class="fas fa-medal text-warning mb-2"></i>
-                            <small class="text-muted">Quarter-final: <strong>40 pts</strong></small>
+                        
+                        <div class="championship-banner mt-4">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <i class="fas fa-trophy fa-3x me-3"></i>
+                                <div class="text-center">
+                                    <h6 class="fw-bold mb-1">
+                                        <i class="fas fa-crown me-2"></i>Championship Invitation - Best of 5 Sets
+                                    </h6>
+                                    <p class="mb-0">
+                                        <strong>Only the top 16 players from each division will be invited to the year-end championship!</strong><br>
+                                        <small>Championship matches are best of 5 sets. Higher ranked players get court advantage during tournaments and receive perks like balls & accessories. All points reset January 1st.</small>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="d-flex flex-column">
-                            <i class="fas fa-trophy text-info mb-2"></i>
-                            <small class="text-muted">Semi-final: <strong>100 pts</strong></small>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="d-flex flex-column">
-                            <i class="fas fa-crown text-success mb-2"></i>
-                            <small class="text-muted">Tournament Win: <strong>400 pts</strong></small>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="alert alert-warning mt-3 mb-3 text-white" style="background-color: #f57c00; border-color: #f57c00;">
-                    <div class="d-flex align-items-center justify-content-center">
-                        <i class="fas fa-trophy fa-2x me-3 text-white"></i>
-                        <div class="text-center">
-                            <h6 class="alert-heading mb-1 text-white">
-                                <i class="fas fa-crown me-1"></i>Championship Invitation - Best of 5 Sets
-                            </h6>
-                            <p class="mb-0 text-white">
-                                <strong>Only the top 16 players from each division will be invited to the year-end championship!</strong><br>
-                                <small>Championship matches are best of 5 sets. Higher ranked players get court advantage during tournaments and receive perks like balls & accessories. All points reset January 1st.</small>
+                        
+                        <div class="text-center mt-4">
+                            <p style="color: rgba(255, 255, 255, 0.7);" class="mb-0">
+                                <i class="fas fa-info-circle me-2" style="color: var(--accent-cyan);"></i>
+                                Rankings are updated automatically based on match wins and tournament performance
                             </p>
                         </div>
                     </div>
-                </div>
-                
-                <div class="text-center">
-                    <p class="text-muted mb-0">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Rankings are updated automatically based on match wins and tournament performance
-                    </p>
                 </div>
             </div>
         </div>
@@ -377,7 +662,7 @@
 
 <div class="row mt-4">
     <div class="col-12 text-center">
-        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+        <a href="{{ url_for('index') }}" class="action-btn">
             <i class="fas fa-home me-2"></i>Back Home
         </a>
     </div>

@@ -3,171 +3,427 @@
 {% block title %}Ranking System - Ready 2 Dink{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-10 mx-auto">
-        <div class="card">
-            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
-                <div class="text-center">
-                    <h3 class="card-title mb-1">
-                        <i class="fas fa-trophy me-2"></i>Ready 2 Dink Ranking System
-                    </h3>
-                    <p class="mb-0 opacity-90">Compete, climb, and claim your spot among the best!</p>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="card text-white h-100" style="background-color: #2c3e50;">
-                            <div class="card-body">
-                                <h5 class="text-success">
-                                    <i class="fas fa-star me-2"></i>How to Earn Points
-                                </h5>
-                                <div class="list-group list-group-flush">
-                                    <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-0">
-                                        <div>
-                                            <i class="fas fa-gamepad text-success me-2"></i>
-                                            <strong class="text-white">Win a Regular Match</strong>
-                                        </div>
-                                        <span class="badge bg-success rounded-pill">+10 pts</span>
-                                    </div>
-                                    <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-0">
-                                        <div>
-                                            <i class="fas fa-medal text-warning me-2"></i>
-                                            <strong class="text-white">Tournament Quarter-finals</strong>
-                                        </div>
-                                        <span class="badge bg-warning text-dark rounded-pill">+40 pts</span>
-                                    </div>
-                                    <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-0">
-                                        <div>
-                                            <i class="fas fa-trophy text-info me-2"></i>
-                                            <strong class="text-white">Tournament Semi-finals</strong>
-                                        </div>
-                                        <span class="badge bg-info rounded-pill">+100 pts</span>
-                                    </div>
-                                    <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-0">
-                                        <div>
-                                            <i class="fas fa-award text-secondary me-2"></i>
-                                            <strong class="text-white">Tournament Runner-up</strong>
-                                        </div>
-                                        <span class="badge bg-secondary rounded-pill">+200 pts</span>
-                                    </div>
-                                    <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-0">
-                                        <div>
-                                            <i class="fas fa-crown text-primary me-2"></i>
-                                            <strong class="text-white">Tournament Champion</strong>
-                                        </div>
-                                        <span class="badge bg-primary rounded-pill">+400 pts</span>
-                                    </div>
-                                </div>
-                            </div>
+
+<style>
+/* Dark Theme Ranking Info Design */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+}
+
+.ranking-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+}
+
+.ranking-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.ranking-header {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: white;
+    padding: 2rem;
+    border-radius: 24px 24px 0 0;
+    text-align: center;
+    border: none;
+}
+
+.info-card {
+    background: rgba(26, 26, 46, 0.9);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.info-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.2);
+    transform: translateY(-3px);
+}
+
+.info-card.points {
+    border-left: 4px solid var(--accent-green);
+}
+
+.info-card.benefits {
+    border-left: 4px solid var(--accent-purple);
+}
+
+.point-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.point-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent-cyan);
+    transform: translateX(5px);
+}
+
+.benefit-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.benefit-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent-purple);
+    transform: translateX(5px);
+}
+
+.points-badge {
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+    color: white;
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-weight: 700;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+    font-size: 0.9rem;
+}
+
+.championship-banner {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    border: none;
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 2rem 0;
+    color: #000;
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.4);
+}
+
+.step-card {
+    background: rgba(26, 26, 46, 0.8);
+    border: 2px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.step-card.step-1 {
+    border-color: var(--accent-green);
+}
+
+.step-card.step-2 {
+    border-color: #FFD700;
+}
+
+.step-card.step-3 {
+    border-color: var(--accent-purple);
+}
+
+.step-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.3);
+}
+
+.step-card.step-1:hover {
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.4);
+}
+
+.step-card.step-2:hover {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
+}
+
+.step-card.step-3:hover {
+    box-shadow: 0 0 30px rgba(191, 0, 255, 0.4);
+}
+
+.step-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.step-1 .step-icon {
+    color: var(--accent-green);
+}
+
+.step-2 .step-icon {
+    color: #FFD700;
+}
+
+.step-3 .step-icon {
+    color: var(--accent-purple);
+}
+
+.action-btn {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: none;
+    border-radius: 16px;
+    padding: 1rem 2rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+    margin: 0.5rem;
+    text-decoration: none;
+}
+
+.action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
+    color: white;
+    text-decoration: none;
+}
+
+.action-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--accent-cyan);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn.secondary:hover {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    color: #000;
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+    margin-bottom: 1rem;
+}
+
+.section-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+.section-heading {
+    color: var(--accent-cyan);
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+    margin-bottom: 1.5rem;
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+    }
+    
+    .ranking-header {
+        padding: 1.5rem;
+    }
+    
+    .step-card {
+        margin-bottom: 2rem;
+    }
+}
+</style>
+<div class="dashboard-container">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="ranking-card">
+                    <div class="ranking-header">
+                        <div class="text-center">
+                            <h1 class="section-title mb-0">
+                                <i class="fas fa-trophy me-2"></i>Ready 2 Dink Ranking System
+                            </h1>
+                            <p class="section-subtitle mb-0">Compete, climb, and claim your spot among the best!</p>
                         </div>
                     </div>
-                    
-                    <div class="col-lg-6">
-                        <div class="card text-white h-100" style="background-color: #34495e;">
-                            <div class="card-body">
-                                <h5 class="text-primary">
-                                    <i class="fas fa-crown me-2"></i>Ranking Benefits
-                                </h5>
-                                <div class="list-group list-group-flush">
-                                    <div class="list-group-item bg-transparent border-0">
-                                        <i class="fas fa-map-marker-alt text-success me-2"></i>
-                                        <strong class="text-white">Court Advantage:</strong> <span class="text-white">Get preferred court assignments during tournaments</span>
-                                    </div>
-                                    <div class="list-group-item bg-transparent border-0">
-                                        <i class="fas fa-gift text-warning me-2"></i>
-                                        <strong class="text-white">Physical Perks:</strong> <span class="text-white">Receive balls, accessories, and premium gear</span>
-                                    </div>
-                                    <div class="list-group-item bg-transparent border-0">
-                                        <i class="fas fa-trophy text-info me-2"></i>
-                                        <strong class="text-white">Tournament Seeding:</strong> <span class="text-white">Get favorable brackets and priority placement</span>
-                                    </div>
-                                    <div class="list-group-item bg-transparent border-0">
-                                        <i class="fas fa-star text-primary me-2"></i>
-                                        <strong class="text-white">Special Recognition:</strong> <span class="text-white">Display ranking badges and achievements</span>
-                                    </div>
-                                    <div class="list-group-item bg-transparent border-0">
-                                        <i class="fas fa-crown text-danger me-2"></i>
-                                        <strong class="text-white">Championship Invitation:</strong> <span class="text-white">Top 16 players only - exclusive year-end tournament</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="alert alert-warning text-white" style="background-color: #f57c00; border-color: #f57c00;">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-calendar-alt fa-3x me-4 text-white"></i>
-                                <div>
-                                    <h5 class="alert-heading mb-2 text-white">
-                                        <i class="fas fa-refresh me-1"></i>Annual Championship & Reset
-                                    </h5>
-                                    <p class="mb-2 text-white">
-                                        <strong>All ranking points reset to zero on January 1st each year.</strong>
-                                        But first, we crown our annual champion in an exclusive tournament!
-                                    </p>
-                                    <ul class="mb-0 text-white">
-                                        <li>👑 <strong>Top 16 players only</strong> - Invitation-only championship tournament</li>
-                                        <li>🎾 <strong>Court advantage</strong> - Higher ranks get preferred courts during tournaments</li>
-                                        <li>🎁 <strong>Physical perks</strong> - Balls, accessories, and premium gear for top players</li>
-                                        <li>🔄 <strong>Fresh starts</strong> - Everyone resets to zero after the championship</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <h5 class="text-center mb-3">
-                            <i class="fas fa-chart-line me-2"></i>Start Your Ranking Journey
-                        </h5>
+                    <div class="p-4">
                         <div class="row">
-                            <div class="col-md-4 text-center">
-                                <div class="card border-success">
-                                    <div class="card-body">
-                                        <i class="fas fa-gamepad fa-3x text-success mb-3"></i>
-                                        <h6>Step 1: Play Matches</h6>
-                                        <p class="small text-muted">Win matches to earn your first 10 points and establish your ranking position.</p>
+                            <div class="col-lg-6">
+                                <div class="info-card points">
+                                    <div class="p-4">
+                                        <h5 class="section-heading">
+                                            <i class="fas fa-star me-2" style="color: var(--accent-green);"></i>How to Earn Points
+                                        </h5>
+                                        <div>
+                                            <div class="point-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-gamepad me-2" style="color: var(--accent-green);"></i>
+                                                    <strong>Win a Regular Match</strong>
+                                                </div>
+                                                <span class="points-badge">+10 pts</span>
+                                            </div>
+                                            <div class="point-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-medal me-2" style="color: #FFD700;"></i>
+                                                    <strong>Tournament Quarter-finals</strong>
+                                                </div>
+                                                <span class="points-badge">+40 pts</span>
+                                            </div>
+                                            <div class="point-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-trophy me-2" style="color: var(--accent-cyan);"></i>
+                                                    <strong>Tournament Semi-finals</strong>
+                                                </div>
+                                                <span class="points-badge">+100 pts</span>
+                                            </div>
+                                            <div class="point-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-award me-2" style="color: #C0C0C0;"></i>
+                                                    <strong>Tournament Runner-up</strong>
+                                                </div>
+                                                <span class="points-badge">+200 pts</span>
+                                            </div>
+                                            <div class="point-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-crown me-2" style="color: var(--accent-purple);"></i>
+                                                    <strong>Tournament Champion</strong>
+                                                </div>
+                                                <span class="points-badge">+400 pts</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 text-center">
-                                <div class="card border-warning">
-                                    <div class="card-body">
-                                        <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
-                                        <h6>Step 2: Enter Tournaments</h6>
-                                        <p class="small text-muted">Join tournaments to earn bigger point rewards and climb the rankings faster.</p>
+                            
+                            <div class="col-lg-6">
+                                <div class="info-card benefits">
+                                    <div class="p-4">
+                                        <h5 class="section-heading">
+                                            <i class="fas fa-crown me-2" style="color: var(--accent-purple);"></i>Ranking Benefits
+                                        </h5>
+                                        <div>
+                                            <div class="benefit-item">
+                                                <i class="fas fa-map-marker-alt me-2" style="color: var(--accent-green);"></i>
+                                                <strong>Court Advantage:</strong> <span>Get preferred court assignments during tournaments</span>
+                                            </div>
+                                            <div class="benefit-item">
+                                                <i class="fas fa-gift me-2" style="color: #FFD700;"></i>
+                                                <strong>Physical Perks:</strong> <span>Receive balls, accessories, and premium gear</span>
+                                            </div>
+                                            <div class="benefit-item">
+                                                <i class="fas fa-trophy me-2" style="color: var(--accent-cyan);"></i>
+                                                <strong>Tournament Seeding:</strong> <span>Get favorable brackets and priority placement</span>
+                                            </div>
+                                            <div class="benefit-item">
+                                                <i class="fas fa-star me-2" style="color: var(--accent-purple);"></i>
+                                                <strong>Special Recognition:</strong> <span>Display ranking badges and achievements</span>
+                                            </div>
+                                            <div class="benefit-item">
+                                                <i class="fas fa-crown me-2" style="color: #FF0080;"></i>
+                                                <strong>Championship Invitation:</strong> <span>Top 16 players only - exclusive year-end tournament</span>
+                                            </div>
+                                        </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="championship-banner">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-calendar-alt fa-3x me-4"></i>
+                                        <div>
+                                            <h5 class="fw-bold mb-2">
+                                                <i class="fas fa-refresh me-2"></i>Annual Championship & Reset
+                                            </h5>
+                                            <p class="mb-2">
+                                                <strong>All ranking points reset to zero on January 1st each year.</strong>
+                                                But first, we crown our annual champion in an exclusive tournament!
+                                            </p>
+                                            <ul class="mb-0">
+                                                <li>👑 <strong>Top 16 players only</strong> - Invitation-only championship tournament</li>
+                                                <li>🎾 <strong>Court advantage</strong> - Higher ranks get preferred courts during tournaments</li>
+                                                <li>🎁 <strong>Physical perks</strong> - Balls, accessories, and premium gear for top players</li>
+                                                <li>🔄 <strong>Fresh starts</strong> - Everyone resets to zero after the championship</li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 text-center">
-                                <div class="card border-primary">
-                                    <div class="card-body">
-                                        <i class="fas fa-crown fa-3x text-primary mb-3"></i>
-                                        <h6>Step 3: Claim Your Throne</h6>
-                                        <p class="small text-muted">Reach the top of the leaderboard and enjoy the benefits of being a ranking champion.</p>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h5 class="section-heading text-center mb-4">
+                                    <i class="fas fa-chart-line me-2"></i>Start Your Ranking Journey
+                                </h5>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <div class="step-card step-1">
+                                            <i class="fas fa-gamepad step-icon"></i>
+                                            <h6 class="fw-bold mb-3" style="color: var(--text-primary);">Step 1: Play Matches</h6>
+                                            <p style="color: rgba(255, 255, 255, 0.8);">Win matches to earn your first 10 points and establish your ranking position.</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="step-card step-2">
+                                            <i class="fas fa-trophy step-icon"></i>
+                                            <h6 class="fw-bold mb-3" style="color: var(--text-primary);">Step 2: Enter Tournaments</h6>
+                                            <p style="color: rgba(255, 255, 255, 0.8);">Join tournaments to earn bigger point rewards and climb the rankings faster.</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="step-card step-3">
+                                            <i class="fas fa-crown step-icon"></i>
+                                            <h6 class="fw-bold mb-3" style="color: var(--text-primary);">Step 3: Claim Your Throne</h6>
+                                            <p style="color: rgba(255, 255, 255, 0.8);">Reach the top of the leaderboard and enjoy the benefits of being a ranking champion.</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <div class="text-center mt-4 p-4">
+                        <a href="{{ url_for('tournaments_overview') }}" class="action-btn">
+                            <i class="fas fa-trophy me-1"></i>Join Tournament Now
+                        </a>
+                        <a href="{{ url_for('leaderboard') }}" class="action-btn secondary">
+                            <i class="fas fa-medal me-1"></i>View Current Rankings
+                        </a>
+                        <a href="{{ url_for('index') }}" class="action-btn secondary">
+                            <i class="fas fa-home me-1"></i>Back Home
+                        </a>
+                    </div>
                 </div>
-            </div>
-            <div class="card-footer text-center">
-                <a href="{{ url_for('tournaments_overview') }}" class="btn btn-primary me-2">
-                    <i class="fas fa-trophy me-1"></i>Join Tournament Now
-                </a>
-                <a href="{{ url_for('leaderboard') }}" class="btn btn-outline-primary me-2">
-                    <i class="fas fa-medal me-1"></i>View Current Rankings
-                </a>
-                <a href="{{ url_for('index') }}" class="btn btn-secondary">
-                    <i class="fas fa-home me-1"></i>Back Home
-                </a>
             </div>
         </div>
     </div>
