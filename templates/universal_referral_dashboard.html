@@ -106,19 +106,23 @@ body {
 }
 
 .copy-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: none;
     color: white;
-    border-radius: 8px;
-    padding: 0.75rem 1.5rem;
+    border-radius: 16px;
+    padding: 1rem 2rem;
     font-weight: 600;
     transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .copy-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
     color: white;
-    transform: translateY(-1px);
 }
 
 .stat-card {
@@ -209,25 +213,29 @@ body {
 }
 
 .share-btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    border-radius: 16px;
     font-weight: 600;
     text-decoration: none;
     color: white;
     transition: all 0.3s ease;
     min-width: 120px;
     text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .share-btn:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
     color: white;
     text-decoration: none;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
 }
 
-.share-email { background: #dc3545; }
-.share-sms { background: #20c997; }
-.share-social { background: #007bff; }
+.share-email { background: linear-gradient(135deg, #dc3545, #e85d75); }
+.share-sms { background: linear-gradient(135deg, #20c997, #00ff41); }
+.share-social { background: linear-gradient(135deg, #007bff, var(--accent-cyan)); }
 
 @media (max-width: 768px) {
     .dashboard-container { padding: 1rem; }

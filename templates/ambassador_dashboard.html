@@ -3,10 +3,288 @@
 {% block title %}Ambassador Dashboard - Ready 2 Dink{% endblock %}
 
 {% block content %}
+
+<style>
+/* Dark Theme Ambassador Dashboard Design */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+}
+
+.ambassador-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    color: var(--text-primary);
+}
+
+.ambassador-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.header-card {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border-radius: 24px;
+    border: none;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.btn {
+    border-radius: 16px;
+    padding: 1rem 2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-light {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    color: var(--primary-bg);
+    box-shadow: 0 8px 32px rgba(255, 255, 255, 0.3);
+}
+
+.btn-light:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 1);
+    color: var(--primary-bg);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: none;
+    color: white;
+    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
+    color: white;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, var(--accent-cyan), #17a2b8);
+    border: none;
+    color: white;
+    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+}
+
+.btn-info:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--accent-green), #20c997);
+    border: none;
+    color: white;
+    box-shadow: 0 8px 32px rgba(0, 255, 65, 0.3);
+}
+
+.btn-success:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.5);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+    color: white;
+}
+
+.btn-outline-secondary {
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    background: transparent;
+}
+
+.btn-outline-secondary:hover {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.form-control {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+    color: var(--text-primary);
+}
+
+.form-label {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.progress {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    height: 20px !important;
+}
+
+.progress-bar {
+    background: linear-gradient(135deg, var(--accent-green), #20c997) !important;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+    font-weight: 600;
+}
+
+.alert {
+    border-radius: 16px;
+    border: none;
+}
+
+.alert-success {
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid rgba(0, 255, 65, 0.3) !important;
+    color: var(--text-primary);
+}
+
+.alert-warning {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3) !important;
+    color: var(--text-primary);
+}
+
+.alert-info {
+    background: rgba(0, 245, 255, 0.1);
+    border: 1px solid rgba(0, 245, 255, 0.3) !important;
+    color: var(--text-primary);
+}
+
+.table {
+    color: var(--text-primary);
+}
+
+.table-hover tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.table th {
+    border-color: var(--border-subtle);
+    color: var(--accent-cyan);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    border-color: var(--border-subtle);
+}
+
+.badge {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+}
+
+.badge.bg-light {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: var(--primary-bg) !important;
+}
+
+.badge.bg-warning {
+    background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+    color: white !important;
+}
+
+.badge.bg-success {
+    background: linear-gradient(135deg, var(--accent-green), #20c997) !important;
+}
+
+.badge.bg-info {
+    background: linear-gradient(135deg, var(--accent-cyan), #17a2b8) !important;
+}
+
+.badge.bg-secondary {
+    background: rgba(108, 117, 125, 0.8) !important;
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.card-header {
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border-subtle);
+    border-radius: 24px 24px 0 0;
+}
+
+.card-title {
+    color: var(--accent-cyan) !important;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+}
+
+.fa-star, .fa-chart-line, .fa-share-alt, .fa-users, .fa-copy, .fa-trophy, .fa-fire, .fa-bullhorn, .fa-check, .fa-clock, .fa-user-plus {
+    text-shadow: 0 0 5px rgba(0, 245, 255, 0.3);
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem 0;
+    }
+    
+    .ambassador-card {
+        border-radius: 16px;
+        margin: 0 0.5rem;
+    }
+    
+    .header-card {
+        border-radius: 16px;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
+    }
+}
+</style>
+
+<div class="dashboard-container">
 <!-- Ambassador Header -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+        <div class="card text-white header-card">
             <div class="card-body py-4">
                 <div class="row align-items-center">
                     <div class="col-md-8">
@@ -41,7 +319,7 @@
 <!-- Progress Section -->
 <div class="row mb-4">
     <div class="col-md-8">
-        <div class="card">
+        <div class="card ambassador-card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-chart-line me-2"></i>Progress to Lifetime Membership
@@ -83,7 +361,7 @@
     </div>
     
     <div class="col-md-4">
-        <div class="card">
+        <div class="card ambassador-card">
             <div class="card-header">
                 <h6 class="card-title mb-0">
                     <i class="fas fa-share-alt me-2"></i>Share Your Link
@@ -120,7 +398,7 @@
 <!-- Referrals List -->
 <div class="row">
     <div class="col-12">
-        <div class="card">
+        <div class="card ambassador-card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-users me-2"></i>Your Referrals ({{ referrals|length }})
@@ -183,6 +461,7 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <script>

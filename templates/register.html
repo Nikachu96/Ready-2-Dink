@@ -3,10 +3,237 @@
 {% block title %}Join Ready 2 Dink - Create Your Profile{% endblock %}
 
 {% block content %}
+
+<style>
+/* Dark Theme Registration Design */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+}
+
+.registration-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    color: var(--text-primary);
+}
+
+.registration-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
+    border: none !important;
+    border-radius: 24px 24px 0 0 !important;
+    padding: 2rem;
+}
+
+.form-control, .form-select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+    color: var(--text-primary);
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.form-label {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: none;
+    border-radius: 16px;
+    padding: 1rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: white;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
+}
+
+.btn-secondary {
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    background: transparent;
+    border-radius: 16px;
+    padding: 1rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-outline-primary {
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: transparent;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background: var(--accent-cyan);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: var(--accent-green) !important;
+    border: none;
+}
+
+.form-text {
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-size: 0.875rem;
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.text-dark {
+    color: var(--text-primary) !important;
+}
+
+.alert {
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+}
+
+.alert-info {
+    background: rgba(0, 245, 255, 0.1);
+    border: 1px solid rgba(0, 245, 255, 0.3);
+    color: var(--text-primary);
+}
+
+.alert-warning {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: var(--text-primary);
+}
+
+.alert-danger {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: var(--text-primary);
+}
+
+.alert-success {
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    color: var(--text-primary);
+}
+
+.location-permission-card {
+    background: rgba(0, 245, 255, 0.1) !important;
+    border: 1px solid var(--accent-cyan) !important;
+    border-radius: 16px;
+}
+
+.location-permission-card .card-body {
+    background: transparent;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    color: var(--text-primary);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-subtle);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
+    border-radius: 16px 16px 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-subtle);
+}
+
+.btn-close {
+    filter: invert(1);
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem 0;
+    }
+    
+    .registration-card {
+        border-radius: 16px;
+        margin: 0 0.5rem;
+    }
+    
+    .card-header {
+        padding: 1.5rem;
+        border-radius: 16px 16px 0 0 !important;
+    }
+}
+</style>
+
+<div class="dashboard-container">
 <div class="row justify-content-center animate-in">
     <div class="col-md-8">
-        <div class="card">
-            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+        <div class="registration-card">
+            <div class="card-header text-white">
                 <h4 class="card-title mb-0 fw-bold">
                     <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 40px; width: auto;" class="me-2">Join the Game
                 </h4>
@@ -17,7 +244,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="first_name" class="form-label text-dark">
+                                <label for="first_name" class="form-label">
                                     <i class="fas fa-user me-1"></i>First Name *
                                 </label>
                                 <input type="text" class="form-control" id="first_name" name="first_name" 
@@ -26,7 +253,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="last_name" class="form-label text-dark">
+                                <label for="last_name" class="form-label">
                                     <i class="fas fa-user me-1"></i>Last Name *
                                 </label>
                                 <input type="text" class="form-control" id="last_name" name="last_name" 
@@ -38,7 +265,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="email" class="form-label text-dark">
+                                <label for="email" class="form-label">
                                     <i class="fas fa-envelope me-1"></i>Email Address *
                                 </label>
                                 <input type="email" class="form-control" id="email" name="email"
@@ -47,7 +274,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="username" class="form-label text-dark">
+                                <label for="username" class="form-label">
                                     <i class="fas fa-at me-1"></i>Create Username *
                                 </label>
                                 <input type="text" class="form-control" id="username" name="username" 
@@ -63,7 +290,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="dob" class="form-label text-dark">
+                                <label for="dob" class="form-label">
                                     <i class="fas fa-birthday-cake me-1"></i>Date of Birth *
                                 </label>
                                 <input type="text" class="form-control" id="dob" name="dob" 
@@ -76,7 +303,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="zip_code" class="form-label text-dark">
+                                <label for="zip_code" class="form-label">
                                     <i class="fas fa-map-marker-alt me-1"></i>ZIP Code *
                                 </label>
                                 <input type="text" class="form-control" id="zip_code" name="zip_code" 
@@ -93,7 +320,7 @@
                     <!-- Location Permission Section -->
                     <div class="row">
                         <div class="col-12">
-                            <div class="card mb-3" style="border: 1px solid #E0563F; background: #fff3cd;">
+                            <div class="card location-permission-card mb-3">
                                 <div class="card-body py-3">
                                     <div class="d-flex align-items-center">
                                         <div class="flex-grow-1">
@@ -123,7 +350,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="password" class="form-label text-dark">
+                                <label for="password" class="form-label">
                                     <i class="fas fa-lock me-1"></i>Create Password *
                                 </label>
                                 <input type="password" class="form-control" id="password" name="password" 
@@ -136,7 +363,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="confirm_password" class="form-label text-dark">
+                                <label for="confirm_password" class="form-label">
                                     <i class="fas fa-lock me-1"></i>Confirm Password *
                                 </label>
                                 <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
@@ -152,14 +379,14 @@
                     <!-- Hidden field for guardian email -->
                     <input type="hidden" id="guardian_email" name="guardian_email" value="">
                     
-                    <div class="alert mb-4" style="background-color: #2c3e50; border-color: #34495e;">
-                        <i class="fas fa-info-circle me-2" style="color: #ffffff !important;"></i>
-                        <strong style="color: #ffffff !important;">Quick Registration:</strong> 
-                        <p class="mb-0 mt-2" style="color: #ffffff !important;">Get started with just the basics! After joining, you can complete your profile with courts, skill level, and photos in your account settings.</p>
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Quick Registration:</strong> 
+                        <p class="mb-0 mt-2">Get started with just the basics! After joining, you can complete your profile with courts, skill level, and photos in your account settings.</p>
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2" style="color: white !important;">Cancel</a>
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">Cancel</a>
                         <button type="submit" class="btn btn-primary" id="register-btn">
                             <i class="fas fa-user-plus me-1"></i>Create Account
                         </button>
@@ -168,6 +395,7 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <!-- Guardian Consent Modal for Under-13 Players -->

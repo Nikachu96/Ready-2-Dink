@@ -3,14 +3,188 @@
 {% block title %}Player Login - Ready 2 Dink{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center animate-in">
+
+<style>
+/* Dark Theme Login Design */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    color: var(--text-primary);
+}
+
+.login-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.form-control {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+    color: var(--text-primary);
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.form-label {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.btn {
+    border-radius: 16px;
+    padding: 1rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-login {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: none;
+    color: white;
+    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+}
+
+.btn-login:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
+    color: white;
+}
+
+.btn-outline-primary {
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: transparent;
+}
+
+.btn-outline-primary:hover {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.text-decoration-none {
+    transition: all 0.3s ease;
+}
+
+.text-decoration-none:hover {
+    color: var(--accent-cyan) !important;
+    transform: translateX(5px);
+}
+
+.alert {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: var(--text-primary);
+    border-radius: 12px;
+}
+
+.alert-danger {
+    background: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.3);
+}
+
+.card-title {
+    color: var(--accent-cyan) !important;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+}
+
+.logo-glow {
+    filter: drop-shadow(0 0 20px rgba(0, 245, 255, 0.5));
+    transition: all 0.3s ease;
+}
+
+.logo-glow:hover {
+    filter: drop-shadow(0 0 30px rgba(0, 245, 255, 0.8));
+    transform: scale(1.05);
+}
+
+.btn-close {
+    filter: invert(1);
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+    
+    .login-card {
+        border-radius: 16px;
+        margin: 0 0.5rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+}
+</style>
+
+<div class="dashboard-container">
+<div class="row justify-content-center animate-in w-100">
     <div class="col-md-6 col-lg-5">
-        <div class="card">
+        <div class="login-card">
             <div class="card-body p-5">
                 <div class="text-center mb-4">
                     <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" 
-                         alt="Ready 2 Dink" style="height: 60px; width: auto;" class="mb-3">
-                    <h2 class="card-title mb-1" style="color: var(--primary-color);">Player Login</h2>
+                         alt="Ready 2 Dink" style="height: 60px; width: auto;" class="mb-3 logo-glow">
+                    <h2 class="card-title mb-1">Player Login</h2>
                     <p class="text-muted">Welcome back to Ready 2 Dink!</p>
                 </div>
 
@@ -27,20 +201,19 @@
 
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="username" class="form-label text-white">Username</label>
+                        <label for="username" class="form-label">Username</label>
                         <input type="text" class="form-control" id="username" name="username" 
                                placeholder="Enter your username" required>
                     </div>
                     
                     <div class="mb-4">
-                        <label for="password" class="form-label text-white">Password</label>
+                        <label for="password" class="form-label">Password</label>
                         <input type="password" class="form-control" id="password" name="password" 
                                placeholder="Enter your password" required>
                     </div>
                     
                     <div class="d-grid mb-3">
-                        <button type="submit" class="btn btn-lg text-white py-3" 
-                                style="background: linear-gradient(45deg, #10B981, #059669); border: none;">
+                        <button type="submit" class="btn btn-login btn-lg py-3">
                             <i class="fas fa-sign-in-alt me-2"></i>Login
                         </button>
                     </div>
@@ -61,5 +234,6 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 {% endblock %}

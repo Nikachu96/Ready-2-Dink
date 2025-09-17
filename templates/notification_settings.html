@@ -3,10 +3,282 @@
 {% block title %}Notification Settings - Ready 2 Dink{% endblock %}
 
 {% block content %}
+
+<style>
+/* Dark Theme Notification Settings Design */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+}
+
+.notification-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    color: var(--text-primary);
+}
+
+.notification-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
+    border: none !important;
+    border-radius: 24px 24px 0 0 !important;
+    padding: 2rem;
+}
+
+.notification-feature-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.notification-feature-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent-cyan);
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--accent-green), #20c997);
+    border: none;
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0, 255, 65, 0.3);
+}
+
+.btn-success:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.5);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+}
+
+.btn-outline-secondary {
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    background: transparent;
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-outline-primary {
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: transparent;
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background: var(--accent-cyan);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: none;
+    border-radius: 16px;
+    padding: 1rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
+}
+
+.text-primary {
+    color: var(--accent-cyan) !important;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+}
+
+.text-success {
+    color: var(--accent-green) !important;
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.text-info {
+    color: var(--accent-cyan) !important;
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.fa-mobile-alt, .fa-bell, .fa-gamepad, .fa-trophy, .fa-envelope, .fa-info-circle, .fa-paper-plane, .fa-bell-slash, .fa-medal, .fa-clipboard-check, .fa-shield-alt, .fa-exclamation-triangle {
+    text-shadow: 0 0 5px rgba(0, 245, 255, 0.3);
+}
+
+.feature-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
+}
+
+.feature-icon:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 40px rgba(0, 245, 255, 0.6);
+}
+
+.alert {
+    border-radius: 12px;
+}
+
+.alert-info {
+    background: rgba(0, 245, 255, 0.1);
+    border: 1px solid rgba(0, 245, 255, 0.3);
+    color: var(--text-primary);
+}
+
+.alert-warning {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: var(--text-primary);
+}
+
+.alert-success {
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    color: var(--text-primary);
+}
+
+.alert-danger {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: var(--text-primary);
+}
+
+.bg-warning {
+    background: rgba(255, 193, 7, 0.1) !important;
+}
+
+.bg-opacity-10 {
+    background: rgba(255, 193, 7, 0.1) !important;
+}
+
+.border-warning {
+    border-color: rgba(255, 193, 7, 0.3) !important;
+}
+
+.card-footer {
+    background: rgba(255, 255, 255, 0.03);
+    border-top: 1px solid var(--border-subtle);
+    border-radius: 0 0 24px 24px;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+.status-enabled {
+    background: var(--accent-green);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+}
+
+.status-disabled {
+    background: #6c757d;
+    animation: none;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem 0;
+    }
+    
+    .notification-card {
+        border-radius: 16px;
+        margin: 0 0.5rem;
+    }
+    
+    .card-header {
+        padding: 1.5rem;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+    }
+}
+</style>
+
+<div class="dashboard-container">
 <div class="row">
     <div class="col-lg-8 mx-auto">
-        <div class="card">
-            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
+        <div class="notification-card">
+            <div class="card-header text-white">
                 <h4 class="card-title mb-0">
                     <i class="fas fa-bell me-2"></i>Notification Settings
                 </h4>
@@ -15,7 +287,7 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="card bg-light">
+                        <div class="card notification-feature-card">
                             <div class="card-body text-center">
                                 <i class="fas fa-mobile-alt fa-3x text-primary mb-3"></i>
                                 <h5>Push Notifications</h5>
@@ -45,7 +317,7 @@
                     </div>
                     
                     <div class="col-md-6">
-                        <div class="card">
+                        <div class="card notification-feature-card">
                             <div class="card-body">
                                 <h6 class="card-title">
                                     <i class="fas fa-info-circle text-primary me-1"></i>What you'll receive:
@@ -80,7 +352,7 @@
                 
                 <div class="row mt-4">
                     <div class="col-12">
-                        <div class="card bg-warning bg-opacity-10 border-warning">
+                        <div class="card notification-feature-card bg-warning bg-opacity-10 border-warning">
                             <div class="card-body text-center">
                                 <h6 class="text-warning">
                                     <i class="fas fa-exclamation-triangle me-1"></i>Browser Support
@@ -103,6 +375,7 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <script>

@@ -3,10 +3,239 @@
 {% block title %}Become an Ambassador - Ready 2 Dink{% endblock %}
 
 {% block content %}
+
+<style>
+/* Dark Theme Become Ambassador Design */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+}
+
+.ambassador-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    color: var(--text-primary);
+}
+
+.ambassador-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.header-card {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border-radius: 24px;
+    border: none;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.benefit-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    transition: all 0.3s ease;
+}
+
+.benefit-icon.bg-primary {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
+}
+
+.benefit-icon.bg-success {
+    background: linear-gradient(135deg, var(--accent-green), #20c997) !important;
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.4);
+}
+
+.benefit-icon.bg-warning {
+    background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+    box-shadow: 0 0 30px rgba(255, 193, 7, 0.4);
+}
+
+.benefit-icon:hover {
+    transform: scale(1.1);
+}
+
+.btn {
+    border-radius: 16px;
+    padding: 1rem 2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-submit {
+    background: linear-gradient(135deg, var(--accent-green), #20c997);
+    border: none;
+    color: white;
+    box-shadow: 0 8px 32px rgba(0, 255, 65, 0.3);
+}
+
+.btn-submit:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.5);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+    color: white;
+}
+
+.btn-outline-secondary {
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    background: transparent;
+}
+
+.btn-outline-secondary:hover {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.form-select, .form-control {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-select:focus, .form-control:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+    color: var(--text-primary);
+}
+
+.form-select option {
+    background: var(--secondary-bg);
+    color: var(--text-primary);
+}
+
+.form-label {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.form-text {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.alert {
+    border-radius: 16px;
+    border: none;
+}
+
+.alert-info {
+    background: rgba(0, 245, 255, 0.1);
+    border: 1px solid rgba(0, 245, 255, 0.3) !important;
+    color: var(--text-primary);
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.text-success {
+    color: var(--accent-green) !important;
+}
+
+.text-primary {
+    color: var(--accent-cyan) !important;
+}
+
+.text-info {
+    color: var(--accent-cyan) !important;
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.card-header {
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border-subtle);
+    border-radius: 24px 24px 0 0;
+}
+
+.card-title {
+    color: var(--accent-cyan) !important;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+}
+
+.badge {
+    border-radius: 50%;
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.fas {
+    text-shadow: 0 0 5px rgba(0, 245, 255, 0.3);
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem 0;
+    }
+    
+    .ambassador-card {
+        border-radius: 16px;
+        margin: 0 0.5rem;
+    }
+    
+    .header-card {
+        border-radius: 16px;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .benefit-icon {
+        width: 50px;
+        height: 50px;
+    }
+}
+</style>
+
+<div class="dashboard-container">
 <div class="row justify-content-center">
     <div class="col-md-8">
         <!-- Header Section -->
-        <div class="card text-white mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+        <div class="card text-white mb-4 header-card">
             <div class="card-body text-center py-5">
                 <i class="fas fa-globe-americas fa-4x mb-3"></i>
                 <h1 class="fw-bold mb-3">🌟 Ready 2 Dink Ambassador Program</h1>
@@ -15,7 +244,7 @@
         </div>
 
         <!-- Benefits Card -->
-        <div class="card mb-4">
+        <div class="card ambassador-card mb-4">
             <div class="card-header">
                 <h4 class="card-title mb-0">
                     <i class="fas fa-star me-2 text-warning"></i>Ambassador Benefits
@@ -64,7 +293,7 @@
         </div>
 
         <!-- How It Works -->
-        <div class="card mb-4">
+        <div class="card ambassador-card mb-4">
             <div class="card-header">
                 <h4 class="card-title mb-0">
                     <i class="fas fa-lightbulb me-2 text-info"></i>How It Works
@@ -73,21 +302,21 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-4 text-center mb-3">
-                        <div class="badge bg-primary rounded-circle p-3 mb-2">
+                        <div class="benefit-icon bg-primary mb-2">
                             <i class="fas fa-user-plus fa-2x"></i>
                         </div>
                         <h6 class="fw-bold">1. Apply</h6>
                         <small class="text-muted">Choose your state and get your unique referral code</small>
                     </div>
                     <div class="col-md-4 text-center mb-3">
-                        <div class="badge bg-success rounded-circle p-3 mb-2">
+                        <div class="benefit-icon bg-success mb-2">
                             <i class="fas fa-share-alt fa-2x"></i>
                         </div>
                         <h6 class="fw-bold">2. Share</h6>
                         <small class="text-muted">Share your referral link with pickleball players</small>
                     </div>
                     <div class="col-md-4 text-center mb-3">
-                        <div class="badge bg-warning rounded-circle p-3 mb-2">
+                        <div class="benefit-icon bg-warning mb-2">
                             <i class="fas fa-trophy fa-2x"></i>
                         </div>
                         <h6 class="fw-bold">3. Earn</h6>
@@ -98,7 +327,7 @@
         </div>
 
         <!-- Application Form -->
-        <div class="card">
+        <div class="card ambassador-card">
             <div class="card-header">
                 <h4 class="card-title mb-0">
                     <i class="fas fa-file-alt me-2 text-success"></i>Ambassador Application
@@ -179,7 +408,7 @@
                     </div>
 
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-lg text-white" style="background: linear-gradient(45deg, #10B981, #059669); border: none;">
+                        <button type="submit" class="btn btn-lg btn-submit text-white">
                             <i class="fas fa-rocket me-2"></i>
                             Apply to Become an Ambassador
                         </button>
@@ -191,5 +420,6 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 {% endblock %}
