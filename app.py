@@ -1742,31 +1742,52 @@ def get_compatible_players(player_id):
     player_lat = player['latitude']
     player_lng = player['longitude']
     
-    # If player has no GPS coordinates, fallback to old matching logic for compatibility
+    # If player has no GPS coordinates, fallback to more inclusive matching
     if player_lat is None or player_lng is None:
-        logging.warning(f"Player {player_id} has no GPS coordinates, using fallback matching")
+        logging.warning(f"Player {player_id} has no GPS coordinates, using flexible fallback matching")
         
-        # Fallback to text-based location matching as before
-        if player['preferred_court']:
-            location_condition = "(preferred_court = ? OR location1 = ? OR location2 = ?)"
-            location_params = [player['preferred_court'], player['location1'], player['location2']]
-        else:
-            location_condition = "(location1 = ? OR location2 = ?)"
-            location_params = [player['location1'], player['location2']]
-        
-        query = f'''
+        # More flexible fallback - match by skill level and general area, not exact location
+        # This makes it easier to find matches when GPS isn't available
+        query = '''
             SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
                    wins, losses, ranking_points, selfie, latitude, longitude
             FROM players 
             WHERE id != ? 
             AND is_looking_for_match = 1
             AND skill_level = ?
-            AND {location_condition}
             ORDER BY ranking_points DESC, wins DESC, created_at ASC
         '''
         
-        params = [player_id, player['skill_level']] + location_params
+        params = [player_id, player['skill_level']]
         compatible_players = conn.execute(query, params).fetchall()
+        
+        # If no matches with same skill level, try adjacent skill levels for more options
+        if not compatible_players:
+            skill_levels = ['Beginner', 'Intermediate', 'Advanced']
+            current_skill_idx = skill_levels.index(player['skill_level']) if player['skill_level'] in skill_levels else 1
+            
+            # Try one level up or down
+            adjacent_skills = []
+            if current_skill_idx > 0:
+                adjacent_skills.append(skill_levels[current_skill_idx - 1])
+            if current_skill_idx < len(skill_levels) - 1:
+                adjacent_skills.append(skill_levels[current_skill_idx + 1])
+            
+            for skill in adjacent_skills:
+                query = '''
+                    SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
+                           wins, losses, ranking_points, selfie, latitude, longitude
+                    FROM players 
+                    WHERE id != ? 
+                    AND is_looking_for_match = 1
+                    AND skill_level = ?
+                    ORDER BY ranking_points DESC, wins DESC, created_at ASC
+                    LIMIT 5
+                '''
+                adjacent_players = conn.execute(query, [player_id, skill]).fetchall()
+                compatible_players.extend(adjacent_players)
+                if compatible_players:  # Stop if we found some matches
+                    break
         
     else:
         # GPS-based matching - get all players with same skill level and GPS coordinates
