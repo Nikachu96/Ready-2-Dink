@@ -4,68 +4,6 @@
 
 {% block content %}
 
-<style>
-.match-item {
-    border-radius: 16px;
-    margin-bottom: 1rem;
-    transition: all 0.3s ease;
-}
-
-.match-item.pending {
-    border-left: 4px solid var(--neon-orange);
-}
-
-.match-item.confirmed {
-    border-left: 4px solid var(--neon-cyan);
-}
-
-.match-item.completed {
-    border-left: 4px solid var(--neon-green);
-}
-
-.opponent-avatar {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    border: 2px solid var(--neon-cyan);
-    box-shadow: var(--shadow-neon-cyan);
-    object-fit: cover;
-    transition: var(--transition-normal);
-}
-
-.opponent-avatar:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 25px rgba(0, 245, 255, 0.5);
-}
-
-.avatar-placeholder {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    border: 2px solid var(--neon-cyan);
-    background: var(--gradient-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    box-shadow: var(--shadow-neon-cyan);
-}
-
-.player-avatar {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    border: 4px solid var(--neon-cyan);
-    box-shadow: var(--shadow-neon-cyan);
-    object-fit: cover;
-    transition: var(--transition-normal);
-}
-
-.player-avatar:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 40px rgba(0, 245, 255, 0.6);
-}
-</style>
 
 <div class="container py-4">
         <div class="row">
