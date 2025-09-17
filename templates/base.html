@@ -533,12 +533,28 @@
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
         }
         
-        /* Make sure ALL alert text is white and readable */
+        /* FORCE ALL ALERT TEXT TO BE BRIGHT WHITE - MAXIMUM READABILITY */
         .alert,
+        .alert *,
         .alert h1, .alert h2, .alert h3, .alert h4, .alert h5, .alert h6,
-        .alert p, .alert span, .alert div, .alert li, .alert small {
+        .alert p, .alert span, .alert div, .alert li, .alert small,
+        .alert a, .alert strong, .alert em, .alert i, .alert b,
+        .alert .text-muted, .alert .small, .alert .opacity-75 {
             color: #ffffff !important;
             font-size: 16px !important;
+            font-weight: 500 !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+        }
+        
+        /* Override ANY potential dark text in alerts */
+        .alert .text-dark,
+        .alert .text-secondary,
+        .alert .text-muted,
+        .alert [style*="color"],
+        .alert .opacity-50,
+        .alert .opacity-75 {
+            color: #ffffff !important;
+            opacity: 1 !important;
         }
         
         .alert h1, .alert h2, .alert h3, .alert h4, .alert h5, .alert h6 {
@@ -564,12 +580,23 @@
         
         /* NEON-ACCENTED ALERT VARIANTS */
         
-        /* INFO ALERTS - Cyan theme */
+        /* INFO ALERTS - Cyan theme with BRIGHT WHITE TEXT */
         .alert-info {
-            background: linear-gradient(135deg, rgba(0, 245, 255, 0.15), rgba(26, 26, 46, 0.9)) !important;
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.2), rgba(26, 26, 46, 0.95)) !important;
             border: 2px solid #00f5ff !important;
             color: #ffffff !important;
-            box-shadow: 0 0 25px rgba(0, 245, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 25px rgba(0, 245, 255, 0.4), 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* FORCE all text in info alerts to be white */
+        .alert-info,
+        .alert-info *,
+        .alert-info h1, .alert-info h2, .alert-info h3, .alert-info h4, .alert-info h5, .alert-info h6,
+        .alert-info p, .alert-info span, .alert-info div, .alert-info li, .alert-info small,
+        .alert-info a, .alert-info strong, .alert-info em, .alert-info i, .alert-info b {
+            color: #ffffff !important;
+            font-weight: 500 !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7) !important;
         }
         
         .alert-info:hover {
