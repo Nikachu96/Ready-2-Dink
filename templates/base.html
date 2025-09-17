@@ -1370,5 +1370,71 @@
     </script>
     
     {% block scripts %}{% endblock %}
+    
+    <!-- FINAL ALERT TEXT OVERRIDE - MAXIMUM SPECIFICITY TO WIN CASCADE WAR -->
+    <style id="final-alert-overrides">
+        /* Ultra-high specificity to override ANY card or other dark text rules */
+        html body .card .alert,
+        html body .card .alert *,
+        html body .card .alert h1, html body .card .alert h2, html body .card .alert h3,
+        html body .card .alert h4, html body .card .alert h5, html body .card .alert h6,
+        html body .card .alert p, html body .card .alert span, html body .card .alert div,
+        html body .card .alert li, html body .card .alert small, html body .card .alert a,
+        html body .card .alert strong, html body .card .alert em, html body .card .alert i,
+        html body .card .alert b, html body .card .alert .text-muted,
+        html body .alert,
+        html body .alert *,
+        html body .alert h1, html body .alert h2, html body .alert h3,
+        html body .alert h4, html body .alert h5, html body .alert h6,
+        html body .alert p, html body .alert span, html body .alert div,
+        html body .alert li, html body .alert small, html body .alert a,
+        html body .alert strong, html body .alert em, html body .alert i,
+        html body .alert b, html body .alert .text-muted {
+            color: #ffffff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7) !important;
+            font-weight: 500 !important;
+        }
+        
+        /* Specific overrides for each alert type */
+        html body .alert-info,
+        html body .alert-info *,
+        html body .card .alert-info,
+        html body .card .alert-info * {
+            color: #ffffff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+        }
+        
+        html body .alert-warning,
+        html body .alert-warning *,
+        html body .card .alert-warning,
+        html body .card .alert-warning * {
+            color: #ffffff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+        }
+        
+        html body .alert-success,
+        html body .alert-success *,
+        html body .card .alert-success,
+        html body .card .alert-success * {
+            color: #ffffff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+        }
+        
+        html body .alert-danger,
+        html body .alert-danger *,
+        html body .card .alert-danger,
+        html body .card .alert-danger * {
+            color: #ffffff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+        }
+        
+        html body .alert-light,
+        html body .alert-light *,
+        html body .card .alert-light,
+        html body .card .alert-light * {
+            color: #ffffff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+        }
+    </style>
 </body>
 </html>
