@@ -5,145 +5,234 @@
 {% block content %}
 
 <style>
-/* Comprehensive Mobile Score Input Styling */
+/* Dark Theme Dashboard Design */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #e2e8f0;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+}
+
+.player-card, .actions-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.player-card:hover, .actions-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.player-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid var(--accent-cyan);
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
+    object-fit: cover;
+    transition: all 0.3s ease;
+}
+
+.player-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(0, 245, 255, 0.6);
+}
+
+.avatar-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid var(--accent-cyan);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: white;
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
+}
+
+.skill-badge {
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent-cyan);
+    transform: translateY(-1px);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+}
+
+.stat-label {
+    color: var(--text-primary);
+    font-weight: 500;
+    opacity: 0.8;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.court-item {
+    background: rgba(191, 0, 255, 0.1);
+    border: 1px solid rgba(191, 0, 255, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.court-item:hover {
+    background: rgba(191, 0, 255, 0.2);
+    border-color: var(--accent-purple);
+    transform: translateX(5px);
+}
+
+.action-btn {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: none;
+    border-radius: 16px;
+    padding: 1.25rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: white;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
+}
+
+.action-btn i {
+    margin-right: 0.75rem;
+    font-size: 1.2rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+}
+
+.notification-toggle {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: 50px;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+}
+
+.notification-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-cyan);
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+    
+    .player-avatar, .avatar-placeholder {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .section-title {
+        font-size: 1.3rem;
+    }
+    
+    .action-btn {
+        padding: 1rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+}
+
+/* Maintain existing score input styling for compatibility */
 .score-input {
     background: #000 !important;
-    background-color: #000 !important;
     color: #00FF00 !important;
-    -webkit-text-fill-color: #00FF00 !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: textfield !important;
-    appearance: none !important;
     border: 2px solid #333 !important;
     font-family: 'Courier New', monospace !important;
     font-size: 24px !important;
     font-weight: bold !important;
-    caret-color: #00FF00 !important;
-    -webkit-text-stroke: 0.5px #00FF00 !important;
-    text-shadow: 0 0 3px #00FF00 !important;
-    outline: none !important;
 }
 
-/* Mobile browser specific overrides */
-@supports (-webkit-touch-callout: none) {
-    /* iOS Safari specific */
-    .score-input {
-        -webkit-text-fill-color: #00FF00 !important;
-        -webkit-opacity: 1 !important;
-        opacity: 1 !important;
-    }
-}
-
-/* Focus and active states for mobile */
-.score-input:focus,
-.score-input:active,
-.score-input:hover {
-    background: #000 !important;
-    background-color: #000 !important;
-    color: #00FF00 !important;
-    -webkit-text-fill-color: #00FF00 !important;
-    border-color: #00FF00 !important;
-    box-shadow: 0 0 0 2px rgba(0, 255, 0, 0.3) !important;
-    outline: none !important;
-}
-
-/* Prevent autofill styling overrides */
-.score-input:-webkit-autofill,
-.score-input:-webkit-autofill:hover,
-.score-input:-webkit-autofill:focus,
-.score-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #000 inset !important;
-    -webkit-text-fill-color: #00FF00 !important;
-    color: #00FF00 !important;
-    background: #000 !important;
-    background-color: #000 !important;
-    transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Chrome mobile specific overrides */
-@media screen and (-webkit-min-device-pixel-ratio: 0) {
-    .score-input {
-        color: #00FF00 !important;
-        -webkit-text-fill-color: #00FF00 !important;
-        background: #000 !important;
-        background-color: #000 !important;
-    }
-}
-
-/* Android Chrome specific */
-@supports (display: -webkit-box) {
-    .score-input {
-        color: #00FF00 !important;
-        background: #000 !important;
-        -webkit-text-fill-color: #00FF00 !important;
-    }
-}
-
-/* Force green text on all mobile devices */
-input[type="text"].score-input,
-input[inputmode="numeric"].score-input {
-    color: #00FF00 !important;
-    -webkit-text-fill-color: #00FF00 !important;
-    background: #000 !important;
-    background-color: #000 !important;
-    -webkit-appearance: none !important;
-    appearance: none !important;
-}
-
-/* Removed broken mobile transform scaling system - restored proper Bootstrap responsive design */
-
-/* Mobile gradient override fixes - eliminate large colored blocks on mobile */
-@media (max-width: 576px) {
-    /* Fix Birthday Message Alert gradient on mobile */
-    .birthday-alert-mobile-fix {
-        background: #fff !important;
-        background-color: #fff !important;
-        border: 2px solid #FFD700 !important;
-        color: #333 !important;
-    }
-    
-    .birthday-alert-mobile-fix h2,
-    .birthday-alert-mobile-fix p {
-        color: #333 !important;
-    }
-    
-    .birthday-alert-mobile-fix .birthday-icon {
-        color: #FFD700 !important;
-    }
-    
-    /* Fix Ambassador Program gradient on mobile */
-    .ambassador-card-mobile-fix {
-        background: #fff !important;
-        background-color: #fff !important;
-        border: 3px solid #667eea !important;
-        color: #333 !important;
-        min-height: auto !important;
-    }
-    
-    .ambassador-card-mobile-fix .position-absolute {
-        display: none !important;
-    }
-    
-    .ambassador-card-mobile-fix h4,
-    .ambassador-card-mobile-fix p,
-    .ambassador-card-mobile-fix li,
-    .ambassador-card-mobile-fix small {
-        color: #333 !important;
-        opacity: 1 !important;
-    }
-    
-    .ambassador-card-mobile-fix .fas.fa-globe-americas {
-        color: #667eea !important;
-        opacity: 1 !important;
-    }
+/* Toast notifications */
+.toast-container {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    z-index: 9999;
 }
 </style>
 
-<!-- Profile Completion Modal -->
+<!-- Profile Completion Modal (preserved from original) -->
 <div class="modal fade" id="profileCompletionModal" tabindex="-1" aria-labelledby="profileCompletionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content surface-dark" data-bs-theme="dark">
-            <div class="modal-header surface-dark" style="border: none; background-color: #f8f9fa;">
+            <div class="modal-header surface-dark">
                 <h5 class="modal-title fw-bold" id="profileCompletionModalLabel">
                     <i class="fas fa-user-cog me-2"></i>Complete Your Profile
                 </h5>
@@ -152,7 +241,7 @@ input[inputmode="numeric"].score-input {
             <div class="modal-body surface-dark">
                 <div class="alert alert-info mb-4 surface-dark">
                     <h6><i class="fas fa-info-circle me-2"></i>Welcome to Ready 2 Dink!</h6>
-                    <p class="mb-0">You're almost ready to start matching with other players! Complete your profile to unlock all features and find the perfect pickleball partners.</p>
+                    <p class="mb-0">Complete your profile to unlock all features and find the perfect pickleball partners.</p>
                 </div>
                 
                 <div class="row">
@@ -185,11 +274,11 @@ input[inputmode="numeric"].score-input {
                         </h6>
                         <div class="card" style="background: white; border: 1px solid #ddd;">
                             <div class="card-body">
-                                <ul class="mb-0 text-sm" style="color: #000 !important; font-weight: 500 !important;">
-                                    <li class="mb-2" style="color: #000 !important; font-weight: 500 !important;"><i class="fas fa-users text-primary me-2"></i>Find compatible players nearby</li>
-                                    <li class="mb-2" style="color: #000 !important; font-weight: 500 !important;"><i class="fas fa-trophy text-warning me-2"></i>Enter tournaments</li>
-                                    <li class="mb-2" style="color: #000 !important; font-weight: 500 !important;"><i class="fas fa-handshake text-success me-2"></i>Match with players at your level</li>
-                                    <li class="mb-0" style="color: #000 !important; font-weight: 500 !important;"><i class="fas fa-dollar-sign text-info me-2"></i>Receive tournament winnings</li>
+                                <ul class="mb-0 text-sm" style="color: #000 !important;">
+                                    <li class="mb-2" style="color: #000 !important;"><i class="fas fa-users text-primary me-2"></i>Find compatible players nearby</li>
+                                    <li class="mb-2" style="color: #000 !important;"><i class="fas fa-trophy text-warning me-2"></i>Enter tournaments</li>
+                                    <li class="mb-2" style="color: #000 !important;"><i class="fas fa-handshake text-success me-2"></i>Match with players at your level</li>
+                                    <li class="mb-0" style="color: #000 !important;"><i class="fas fa-dollar-sign text-info me-2"></i>Receive tournament winnings</li>
                                 </ul>
                             </div>
                         </div>
@@ -198,11 +287,11 @@ input[inputmode="numeric"].score-input {
                 
                 <div class="alert alert-warning surface-dark">
                     <i class="fas fa-clock me-2"></i>
-                    <strong>Take your time!</strong> You can complete this now or later. Your account is active and you can explore the app, but some features require a complete profile.
+                    <strong>Take your time!</strong> You can complete this now or later.
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="color: white !important;">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-clock me-1"></i>I'll Do This Later
                 </button>
                 <a href="{{ url_for('profile_settings') }}" class="btn btn-primary">
@@ -212,24 +301,16 @@ input[inputmode="numeric"].score-input {
         </div>
     </div>
 </div>
+
 <!-- Birthday Message -->
 {% if is_birthday %}
-<div class="row mb-4 animate-in">
+<div class="row mb-4">
     <div class="col-12">
-        <div class="alert alert-dismissible fade show birthday-alert-mobile-fix" 
-             style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); border: none; border-radius: 12px;">
+        <div class="alert alert-dismissible fade show" 
+             style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); border: none; border-radius: 16px;">
             <div class="text-center py-3">
-                <div class="d-flex align-items-center justify-content-center mb-3">
-                    <i class="fas fa-birthday-cake fa-3x me-3 birthday-icon" style="color: #8B4513;"></i>
-                    <div>
-                        <h2 class="fw-bold mb-0" style="color: #8B4513;">🎉 Happy Birthday, {{ player.full_name.split()[0] }}! 🎉</h2>
-                        <p class="mb-0 fs-5" style="color: #A0522D;">
-                            Hope you have a fantastic day filled with amazing matches and great serves! 
-                            <br>Ready to celebrate with some pickleball? 🏓
-                        </p>
-                    </div>
-                    <i class="fas fa-gift fa-3x ms-3 birthday-icon" style="color: #8B4513;"></i>
-                </div>
+                <h2 class="fw-bold mb-0" style="color: #8B4513;">🎉 Happy Birthday, {{ player.full_name.split()[0] }}! 🎉</h2>
+                <p class="mb-0 fs-5" style="color: #A0522D;">Hope you have a fantastic day filled with amazing matches! 🏓</p>
                 <button type="button" class="btn-close position-absolute top-0 end-0 m-3" 
                         data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
@@ -238,816 +319,255 @@ input[inputmode="numeric"].score-input {
 </div>
 {% endif %}
 
-<!-- Notification Area -->
-<div id="notificationArea" class="position-fixed top-0 start-50 translate-middle-x" style="z-index: 9999; margin-top: 70px; min-width: 350px;"></div>
+<!-- Toast Container -->
+<div class="toast-container"></div>
 
-<!-- Responsive Mobile-First Layout -->
-
-<!-- Welcome Section - New Color Scheme -->
-<div class="row mb-4 animate-in">
-    <div class="col-12">
-        <div class="card" style="border-radius: 12px; border: 1px solid #dee2e6; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-            <div class="card-body p-4">
-                
-                <!-- Content inside universal scaling canvas -->
-                    <div class="row align-items-center">
-                        <!-- Profile & Welcome -->
-                        <div class="col-12 col-md-8">
-                            <div class="d-flex align-items-center">
-                                <div class="me-4">
-                                    {% if player.selfie %}
-                                        <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                             class="rounded-circle border border-3 border-white" 
-                                             style="width: 70px; height: 70px; object-fit: cover;" 
-                                             alt="Player Photo">
-                                    {% else %}
-                                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center border border-3 border-white" 
-                                             style="width: 70px; height: 70px; background: rgba(255,255,255,0.1);">
-                                            <i class="fas fa-user fa-2x" style="color: white;"></i>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="mb-2">
-                                        <h2 class="mb-0 fw-bold text-white">
-                                            Welcome back, {{ player.full_name.split()[0] }}!
-                                            {% if player.tournament_wins and player.tournament_wins > 0 %}
-                                            <i class="fas fa-crown ms-2" style="color: #FFD700;"></i>
-                                            {% endif %}
-                                        </h2>
-                                    </div>
-                                    {% if player.player_id %}
-                                    <div class="mb-2">
-                                        <span class="text-white fs-6">
-                                            <i class="fas fa-id-card me-1"></i>Player ID: <strong style="color: #FFD700;">{{ player.player_id }}</strong>
-                                        </span>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Badges Row - Full width to prevent overflow -->
-                        <div class="col-12 mt-3">
-                            <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-md-start">
-                                <span class="badge px-3 py-2" style="background-color: #E0563F; color: white;">{{ player.skill_level }}</span>
-                                <span class="badge px-3 py-2" style="background-color: #3F567F; color: white;">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
-                                <span class="badge px-3 py-2" style="background-color: #D174D2; color: white;">{{ player.ranking_points or 0 }} pts</span>
-                                {% if player.tournament_credits and player.tournament_credits > 0 %}
-                                <span class="badge px-3 py-2" style="background-color: #28a745; color: white;">
-                                    <i class="fas fa-wallet me-1"></i>${{ "%.2f"|format(player.tournament_credits) }} Credits
-                                </span>
-                                {% endif %}
-                                {% if player_ranking %}
-                                <span class="badge px-3 py-2" style="background-color: #6c757d; color: white;">Rank #{{ player_ranking }}</span>
-                                {% else %}
-                                <span class="badge px-3 py-2 bg-secondary" style="color: white !important;">Unranked</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <!-- Desktop Action Buttons -->
-                        <div class="col-12 col-md-4 text-end text-md-end text-center mt-3 mt-md-0">
-                            <!-- Notification Toggle - Positioned properly -->
-                            <div class="d-flex justify-content-center justify-content-md-end mb-3">
-                                <div class="d-flex align-items-center rounded-pill px-3 py-2" style="background: rgba(255,255,255,0.1);">
-                                    <small class="text-white me-2 mb-0" style="font-size: 0.75rem;">Notifications</small>
-                                    <div class="form-check form-switch mb-0">
-                                        <input class="form-check-input" 
-                                               type="checkbox" 
-                                               role="switch" 
-                                               id="notificationToggle"
-                                               {% if player.notifications_enabled %}checked{% endif %}
-                                               style="width: 1.75rem; height: 0.875rem;">
-                                        <label class="form-check-label text-white fw-semibold" for="notificationToggle" style="margin-left: 0.3rem; font-size: 0.75rem;">
-                                            <span id="notificationStatus">
-                                                {% if player.notifications_enabled %}ON{% else %}OFF{% endif %}
-                                            </span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="d-grid gap-2">
-                                <!-- Sign Out Button - Always visible -->
-                                <a href="{{ url_for('logout') }}" class="btn btn-lg fw-semibold text-white mb-2"
-                                   style="background: linear-gradient(45deg, #dc3545, #c82333); border: none;">
-                                    <i class="fas fa-sign-out-alt me-2"></i>Sign Out
-                                </a>
-                                
-                                {% if player.preferred_court_1 %}
-                                <button onclick="showCourtLocation('{{ player.preferred_court_1 }}', 'primary')" 
-                                        class="btn btn-lg fw-semibold text-white"
-                                        style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
-                                    <i class="fas fa-map-marker-alt me-2"></i>Favorite Court #1
-                                </button>
-                                {% endif %}
-                                {% if player.preferred_court_2 %}
-                                <button onclick="showCourtLocation('{{ player.preferred_court_2 }}', 'secondary')" 
-                                        class="btn btn-lg fw-semibold text-white"
-                                        style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none;">
-                                    <i class="fas fa-map-marker-alt me-2"></i>Favorite Court #2
-                                </button>
-                                {% endif %}
-                                {% if not player.membership_type and not player.preferred_court_1 %}
-                                {# Upgrade button removed - was not working properly #}
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- Organized 2x3 Grid Layout for Better UX -->
-<div class="row mb-4 animate-in">
-    <!-- Row 1: Top 3 Cards -->
-    <!-- Section 1: Ready 2 Play -->
-    <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card h-100" style="background-color: #fff; border: 1px solid #dee2e6;">
-            <div class="card-body text-center d-flex flex-column justify-content-center">
-                <div class="mb-3">
-                    <i class="fas fa-users fa-3x mb-2 text-primary"></i>
-                    <h5 class="fw-bold text-dark">Ready 2 Play?</h5>
-                    <p class="small mb-3 text-muted">Find your next opponent</p>
-                </div>
-                
-                {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
-                    <a href="{{ url_for('browse_players') }}" class="btn btn-secondary btn-sm fw-bold" style="color: white !important;">
-                        <i class="fas fa-search me-2"></i>Browse Players
-                    </a>
-                {% else %}
-                    <a href="/membership_payment/discovery" class="btn btn-secondary btn-sm fw-bold" style="color: white !important; text-decoration: none;">
-                        <i class="fas fa-unlock me-2"></i>Click to Unlock Now
-                    </a>
-                {% endif %}
-                
-                <div class="mt-2">
-                    <small class="text-muted">
-                        <i class="fas fa-map-marker-alt me-1"></i>{{ player.location1 }}
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Section 2: Challenges Received -->
-    <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card h-100" style="border: 1px solid #dee2e6;">
-            <div class="card-header text-dark text-center" style="background-color: #f8f9fa; border-bottom: 3px solid #10B981;">
-                <h6 class="mb-0 fw-bold">
-                    <i class="fas fa-inbox me-2 text-success"></i>Challenges Received
-                </h6>
-            </div>
-            <div class="card-body text-center">
-                <div id="challenges-received-container">
-                    <div class="text-muted">
-                        <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i>
-                        <p class="small mb-0">No incoming challenges</p>
-                    </div>
-                </div>
-                <button class="btn btn-outline-success btn-sm mt-2" onclick="loadChallenges()">
-                    <i class="fas fa-refresh me-1"></i>Refresh
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Section 3: Challenges Sent -->
-    <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card h-100" style="border: 1px solid #dee2e6;">
-            <div class="card-header text-dark text-center" style="background-color: #f8f9fa; border-bottom: 3px solid #F59E0B;">
-                <h6 class="mb-0 fw-bold">
-                    <i class="fas fa-paper-plane me-2 text-warning"></i>Challenges Sent
-                </h6>
-            </div>
-            <div class="card-body text-center">
-                <div id="challenges-sent-container">
-                    <div class="text-muted">
-                        <i class="fas fa-hourglass-half fa-2x mb-2 opacity-50"></i>
-                        <p class="small mb-0">No outgoing challenges</p>
-                    </div>
-                </div>
-                <button class="btn btn-outline-warning btn-sm mt-2" onclick="loadChallenges()">
-                    <i class="fas fa-refresh me-1"></i>Refresh
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Row 2: Bottom 3 Cards -->
-    <!-- Section 4: Upcoming Matches -->  
-    <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card h-100" style="border: 1px solid #dee2e6;">
-            <div class="card-header text-dark text-center" style="background-color: #f8f9fa; border-bottom: 3px solid #D174D2;">
-                <h6 class="mb-0 fw-bold">
-                    <i class="fas fa-calendar-check me-2" style="color: #D174D2;"></i>Upcoming Matches
-                </h6>
-            </div>
-            <div class="card-body text-center">
-                <div id="upcoming-matches-container">
-                    <div class="text-muted">
-                        <i class="fas fa-calendar fa-2x mb-2 opacity-50"></i>
-                        <p class="small mb-0">No scheduled matches</p>
-                    </div>
-                </div>
-                <button class="btn btn-outline-secondary btn-sm mt-2" onclick="loadUpcomingMatches()" style="color: white !important;">
-                    <i class="fas fa-refresh me-1"></i>Refresh
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Section 5: Submit Match Results -->
-    <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card h-100" style="border: 1px solid #dee2e6;">
-            <div class="card-header text-dark text-center" style="background-color: #f8f9fa; border-bottom: 3px solid #E0563F;">
-                <h6 class="mb-0 fw-bold">
-                    <i class="fas fa-clipboard-list me-2" style="color: #E0563F;"></i>Submit Results
-                </h6>
-            </div>
-            <div class="card-body text-center">
-                <div id="submit-results-container">
-                    <div class="text-muted">
-                        <i class="fas fa-trophy fa-2x mb-2 opacity-50"></i>
-                        <p class="small mb-0">No matches to report</p>
-                    </div>
-                </div>
-                <button class="btn btn-outline-warning btn-sm mt-2" onclick="loadPendingMatches()">
-                    <i class="fas fa-refresh me-1"></i>Refresh
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Section 6: Tournaments -->
-    {% if available_tournaments %}
-    <div class="col-12 col-md-6 col-lg-4 mb-3">
-        <div class="card h-100" style="background-color: #fff; border: 1px solid #dee2e6;">
-            <div class="card-body text-center d-flex flex-column justify-content-center">
-                <div class="mb-3">
-                    <i class="fas fa-fire fa-3x mb-2 text-warning"></i>
-                    <h6 class="fw-bold text-dark">Tournament Levels Open!</h6>
-                    <p class="small mb-3 text-muted">Choose your competitive level</p>
-                </div>
-                
-                <a href="{{ url_for('tournaments_overview') }}" class="btn btn-secondary btn-sm fw-bold" style="color: white !important;">
-                    <i class="fas fa-trophy me-2"></i>Join Tournament
-                </a>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-</div>
-
-
-<!-- Share Ready 2 Dink -->
-<div class="row mb-3 animate-in">
-    <div class="col-12">
-        <div class="card position-relative overflow-hidden" style="background-color: #fff; border: 1px solid #dee2e6;">
-            <div class="card-body text-center position-relative py-3">
-                
-                <div class="position-relative">
-                    <div class="mb-2">
-                        <i class="fas fa-share-alt fa-2x mb-2 text-primary"></i>
-                        <h6 class="fw-bold mb-1 text-dark">Share Ready 2 Dink</h6>
-                        <p class="small mb-2 text-muted">Help your friends discover the best pickleball community!</p>
-                    </div>
+<!-- Main Dashboard Layout -->
+<div class="dashboard-container">
+    <div class="container-fluid">
+        <div class="row g-4">
+            
+            <!-- Left Panel: Player Information -->
+            <div class="col-12 col-lg-6">
+                <div class="player-card p-4 h-100">
                     
-                    <div class="row justify-content-center">
-                        <div class="col-3">
-                            <div class="mb-2">
-                                <!-- QR Code -->
-                                <div class="bg-white p-2 rounded-2 mx-auto" style="max-width: 120px;">
-                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ request.url_root }}&v=3" 
-                                         alt="Ready 2 Dink QR Code" 
-                                         class="img-fluid"
-                                         style="width: 100%; height: auto;">
-                                </div>
-                                <p class="mt-1 small text-muted">
-                                    <i class="fas fa-qrcode me-1"></i>
-                                    Scan to join Ready 2 Dink
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex justify-content-center gap-2 flex-wrap mb-2">
-                        <button onclick="copyShareLink()" class="btn btn-sm px-3 py-1 text-white" style="background: linear-gradient(45deg, #10B981, #059669); border: none; border-radius: 20px; font-weight: 600;">
-                            <i class="fas fa-link me-1"></i>Copy Link
-                        </button>
-                        <button onclick="shareOnSocial()" class="btn btn-sm px-3 py-1 text-white" style="background: linear-gradient(45deg, #059669, #047857); border: none; border-radius: 20px; font-weight: 600;">
-                            <i class="fas fa-share me-1"></i>Share
-                        </button>
-                    </div>
-                    
-                    <div class="mt-1">
-                        <small class="text-muted">
-                            <i class="fas fa-gift me-1"></i>
-                            Help friends find their pickleball community!
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Ambassador Program Call-to-Action -->
-<div class="row mb-4 animate-in">
-    <div class="col-12">
-        <div class="card text-white position-relative overflow-hidden ambassador-card-mobile-fix" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; min-height: 180px;">
-            <div class="card-body text-center d-flex flex-column justify-content-center position-relative">
-                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(255,255,255,0.05); backdrop-filter: blur(1px);"></div>
-                
-                <div class="position-relative">
-                    <div class="mb-3">
-                        <i class="fas fa-globe-americas fa-3x mb-3" style="opacity: 0.9;"></i>
-                        <h4 class="fw-bold mb-2">Become a Ready 2 Dink Ambassador!</h4>
-                        <p class="fs-5 mb-3 opacity-90">Help grow R2D in other states and receive:</p>
-                    </div>
-                    
-                    <div class="row justify-content-center">
-                        <div class="col-10">
-                            <div class="mb-3">
-                                <ul class="list-unstyled fs-5 text-center">
-                                    <li class="mb-2">
-                                        <strong>Represent your state</strong> as an official R2D Ambassador
-                                    </li>
-                                    <li class="mb-2">
-                                        <strong>Refer 20 tournament members</strong> to qualify for lifetime benefits
-                                    </li>
-                                    <li class="mb-2">
-                                        <strong>Get lifetime tournament membership</strong> (worth $119.88/year)
-                                    </li>
-                                    <li>
-                                        <strong>Receive 5 FREE tournament entries</strong> (excludes The Hill championship)
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex justify-content-center gap-3 flex-wrap">
-                        <a href="{{ url_for('become_ambassador') }}" class="btn btn-lg px-4 py-2 shadow-lg text-white" style="background: linear-gradient(45deg, #10B981, #059669); border: none; border-radius: 50px; font-weight: 600;">
-                            <i class="fas fa-rocket me-2"></i>Apply Now
-                        </a>
-                        <a href="{{ url_for('ambassador_dashboard') }}" class="btn btn-outline-light btn-lg px-4 py-2" style="border-radius: 50px; font-weight: 600;">
-                            <i class="fas fa-chart-line me-2"></i>My Progress
-                        </a>
-                    </div>
-                    
-                    <div class="mt-3">
-                        <small class="opacity-75">
-                            <i class="fas fa-gift me-1"></i>
-                            Worth $119.88/year + 5 FREE tournament entries • Help R2D grow in your state!
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Player's Tournaments & Brackets -->
-{% if player_tournaments %}
-<div class="row mb-4 animate-in">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-bracket-curly me-2"></i>My Tournament Brackets
-                    </h5>
-                    <a href="{{ url_for('tournaments_overview') }}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-plus me-1"></i>Join More
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    {% for tournament in player_tournaments %}
-                    <div class="col-12 col-md-6 col-lg-4 mb-3">
-                        <div class="card h-100 {% if not tournament.completed %}border-primary{% else %}border-secondary{% endif %}">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="card-title">{{ tournament.tournament_instance_name or tournament.tournament_name }}</h6>
-                                    <div class="d-flex flex-column align-items-end">
-                                        <span class="badge bg-{{ 'success' if tournament.completed else 'primary' }} mb-1">
-                                            {% if tournament.completed %}
-                                                {{ tournament.match_result or 'Completed' }}
-                                            {% elif tournament.tournament_status == 'active' %}
-                                                Active
-                                            {% elif tournament.tournament_status == 'open' %}
-                                                Open
-                                            {% else %}
-                                                {{ tournament.tournament_status|title }}
-                                            {% endif %}
-                                        </span>
-                                        {% if tournament.bracket_position %}
-                                        <small class="text-muted">Seed #{{ tournament.bracket_position }}</small>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                
-                                <p class="card-text small text-muted mb-2">
-                                    {{ tournament.tournament_level }} Level • ${{ "%.0f"|format(tournament.entry_fee) }}
-                                </p>
-                                
-                                <small class="text-muted d-block mb-3">
-                                    <i class="fas fa-calendar me-1"></i>Entered: {{ tournament.entry_date }}
-                                </small>
-                                
-                                <div class="d-grid gap-2">
-                                    {% if tournament.tournament_instance_id %}
-                                    <a href="{{ url_for('view_tournament_bracket', tournament_instance_id=tournament.tournament_instance_id) }}" 
-                                       class="btn btn-primary btn-sm">
-                                        <i class="fas fa-bracket-curly me-1"></i>View Bracket
-                                    </a>
-                                    {% else %}
-                                    <button class="btn btn-outline-secondary btn-sm" disabled>
-                                        <i class="fas fa-hourglass me-1"></i>Bracket Pending
-                                    </button>
-                                    {% endif %}
-                                    
-                                    <!-- Withdraw Button (only if tournament is still open and not completed) -->
-                                    {% if not tournament.completed and (tournament.tournament_status == 'open' or tournament.payment_status == 'pending_payment') %}
-                                    <a href="{{ url_for('withdraw_tournament', tournament_id=tournament.id) }}" 
-                                       class="btn btn-outline-danger btn-sm"
-                                       onclick="return confirm('Are you sure you want to withdraw from {{ tournament.tournament_name }}? {% if tournament.payment_status == 'completed' and tournament.entry_fee > 0 %}You will receive ${{ "%.2f"|format(tournament.entry_fee) }} in tournament credits as a refund.{% endif %}')">
-                                        <i class="fas fa-sign-out-alt me-1"></i>Withdraw & Refund
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% else %}
-<!-- No tournaments yet -->
-<div class="row mb-4 animate-in">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-bracket-curly me-2"></i>My Tournament Brackets
-                    </h5>
-                    <a href="{{ url_for('tournaments_overview') }}" class="btn btn-primary btn-sm">
-                        <i class="fas fa-plus me-1"></i>Join Tournament
-                    </a>
-                </div>
-            </div>
-            <div class="card-body text-center py-5">
-                <div class="py-4">
-                    <i class="fas fa-trophy fa-4x mb-3" style="color: #D174D2; opacity: 0.5;"></i>
-                    <h5 class="mb-3" style="color: #3F567F;">Ready to compete?</h5>
-                    <p class="text-muted mb-4">
-                        You haven't entered any tournaments yet. Join multiple tournaments to maximize your competitive opportunities!
-                    </p>
-                    <div class="d-flex justify-content-center gap-3 flex-wrap">
-                        <a href="{{ url_for('tournaments_overview') }}" class="btn btn-primary">
-                            <i class="fas fa-trophy me-2"></i>View All Tournaments
-                        </a>
-                    </div>
-                    <small class="text-muted mt-3 d-block">
-                        <i class="fas fa-infinity me-1"></i>
-                        Unlimited entries: Enter as many tournaments as you want, and win as much money as you can!
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<div class="row">
-    <!-- Connections -->
-    <div class="col-12 col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-users me-2"></i>Connections
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if connections %}
-                    {% for connection in connections %}
-                    <div class="d-flex align-items-center mb-3">
-                        {% if connection.opponent_selfie %}
-                            <img src="{{ url_for('static', filename='uploads/' + connection.opponent_selfie) }}" 
-                                 class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" 
-                                 alt="Opponent">
+                    <!-- Player Header -->
+                    <div class="text-center mb-4">
+                        {% if player.selfie %}
+                            <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                 class="player-avatar mb-3" alt="Player Photo">
                         {% else %}
-                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-3" 
-                                 style="width: 50px; height: 50px;">
-                                <i class="fas fa-user text-white"></i>
+                            <div class="avatar-placeholder mb-3">
+                                <i class="fas fa-user"></i>
                             </div>
                         {% endif %}
-                        <div class="flex-grow-1">
-                            <h6 class="mb-1">
-                                {{ connection.opponent_name }}{% if connection.opponent_tournament_wins and connection.opponent_tournament_wins > 0 %} <i class="fas fa-table-tennis" style="color: #FFD700; text-shadow: 0 0 5px rgba(255,215,0,0.5);" title="Tournament Champion"></i><span class="badge bg-warning text-dark px-1" style="font-size: 0.6rem;" title="Number of tournaments won">{{ connection.opponent_tournament_wins }}</span>{% endif %}
-                                <span class="badge bg-secondary ms-2">
-                                    {{ connection.opponent_wins or 0 }}W-{{ connection.opponent_losses or 0 }}L
-                                </span>
-                            </h6>
-                            <small class="text-muted">
-                                {{ connection.matches_played }} match{{ 'es' if connection.matches_played > 1 else '' }} played
-                            </small>
-                        </div>
-                        <div class="btn-group">
-                            <button class="btn btn-sm btn-outline-primary" onclick="showMatchDetailsForm({{ connection.opponent_id }}, '{{ connection.opponent_name }}')">
-                                <i class="fas fa-gamepad me-1"></i>Challenge
-                            </button>
-                            <button class="btn btn-sm btn-outline-success" onclick="openMessageModal({{ connection.opponent_id }}, '{{ connection.opponent_name }}')">
-                                <i class="fas fa-envelope me-1"></i>Message
-                            </button>
+                        
+                        <h1 class="fw-bold text-white mb-2">
+                            Welcome back, {{ player.full_name.split()[0] }}!
+                            {% if player.tournament_wins and player.tournament_wins > 0 %}
+                            <i class="fas fa-crown ms-2" style="color: #FFD700;"></i>
+                            {% endif %}
+                        </h1>
+                        
+                        {% if player.player_id %}
+                        <p class="mb-3" style="color: var(--text-primary); opacity: 0.8;">
+                            <i class="fas fa-id-card me-2"></i>Player ID: <strong style="color: var(--accent-cyan);">{{ player.player_id }}</strong>
+                        </p>
+                        {% endif %}
+                        
+                        <div class="skill-badge d-inline-block">
+                            <i class="fas fa-star me-2"></i>{{ player.skill_level }}
                         </div>
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-user-friends fa-3x text-muted mb-3"></i>
-                        <h6 class="text-muted">No Connections Yet</h6>
-                        <p class="text-muted small">Find matches to build your network!</p>
+                    
+                    <!-- Player Stats -->
+                    <div class="section-title">
+                        <i class="fas fa-chart-line me-2"></i>Your Stats
                     </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    <!-- Inbox -->
-    <div class="col-12 col-lg-6">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-envelope me-2"></i>Inbox
-                    <span id="unread-badge" class="badge bg-danger ms-2" style="display: none;">0</span>
-                </h5>
-                <button class="btn btn-sm btn-outline-primary" onclick="refreshMessages()">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            </div>
-            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                <div id="messages-container">
-                    <div class="text-center py-4">
-                        <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
-                        <h6 class="text-muted">Loading Messages...</h6>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- Detailed Matches Section (Expanded when needed) -->
-<div class="row mt-4 animate-in" id="detailed-matches-section" style="display: none;">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header text-white" style="background: linear-gradient(135deg, #3F567F 0%, #E0563F 100%);">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-list me-2"></i>Match Details
-                    </h5>
-                    <button type="button" class="btn btn-sm btn-outline-light" onclick="hideDetailedMatches()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="card-body">
-                <div id="detailed-matches-container">
-                    <div class="text-center py-3">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- End Responsive Layout -->
-
-<!-- Score Submission Modal -->
-<div class="modal fade" id="scoreModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header" style="background: #2a2a2a; border-bottom: 1px solid #555;">
-                <h5 class="modal-title text-white">
-                    <i class="fas fa-trophy me-2"></i>Submit Match Score - Best of 3 Sets
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" style="background: #333; color: white;">
-                <div id="match-details" class="mb-3"></div>
-                
-                <!-- Digital Scoreboard Style -->
-                <div class="alert mb-3" style="background: #333; border: 1px solid #555; color: white;">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Pickleball Scoring:</strong> Each set is played to 11 points (must win by 2). Best of 3 sets wins the match.
-                </div>
-                
-                <!-- Ranking Points Info (dismissible) -->
-                <div id="ranking-points-info" class="alert mb-3" style="display: none; background: #444; border: 1px solid #666; color: white;">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <i class="fas fa-trophy me-2"></i>
-                            <strong>Ranking Points:</strong> Ranking points are awarded when scores are validated by both players. If one player doesn't validate the score, they will not get ranking points but the other player will.
-                        </div>
-                        <button type="button" class="btn-close btn-close-white" onclick="dismissRankingInfo()" aria-label="Close"></button>
-                    </div>
-                    <div class="form-check mt-2">
-                        <input class="form-check-input" type="checkbox" id="dont-show-ranking-info">
-                        <label class="form-check-label" for="dont-show-ranking-info" style="color: white !important;">
-                            <small style="color: white !important;">Don't show me this message again</small>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Digital Scoreboard Container -->
-                <div class="bg-dark p-4 rounded mb-4" style="background: #1a1a1a !important; border: 3px solid #333;">
-                    <!-- Column Headers -->
-                    <div class="row mb-2">
-                        <div class="col-6 col-lg-3 text-center">
-                            <span style="color: #00FF00; font-size: 14px; font-family: 'Courier New', monospace;">PLAYER</span>
-                        </div>
-                        <div class="col-3 col-lg-2 text-center">
-                            <span style="color: #00FF00; font-size: 14px; font-family: 'Courier New', monospace;">SET 1</span>
-                        </div>
-                        <div class="col-3 col-lg-2 text-center">
-                            <span style="color: #00FF00; font-size: 14px; font-family: 'Courier New', monospace;">SET 2</span>
-                        </div>
-                        <div class="col-3 col-lg-2 text-center">
-                            <span style="color: #00FF00; font-size: 14px; font-family: 'Courier New', monospace;">SET 3</span>
-                        </div>
-                        <div class="col-6 col-lg-3 text-center">
-                            <span style="color: #00FF00; font-size: 14px; font-family: 'Courier New', monospace;">SETS WON</span>
-                        </div>
-                    </div>
-
-                    <!-- Player 1 Row -->
-                    <div class="row mb-3 align-items-center">
-                        <div class="col-3">
-                            <div class="text-center p-3 rounded fw-bold" style="background: #FFA500; color: #000; font-size: 16px;" id="player1-name-display">
-                                <i class="fas fa-user me-2"></i><span id="player1-set1-label">Your Name</span>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="stat-item">
+                                <div class="stat-number">{{ player.wins or 0 }}</div>
+                                <div class="stat-label">Wins</div>
                             </div>
                         </div>
-                        <div class="col-3 col-lg-2 text-center">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="player1-set1" class="form-control text-center score-input" maxlength="2" placeholder="0" 
-                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
-                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
+                        <div class="col-6 col-md-3">
+                            <div class="stat-item">
+                                <div class="stat-number">{{ player.losses or 0 }}</div>
+                                <div class="stat-label">Losses</div>
+                            </div>
                         </div>
-                        <div class="col-3 col-lg-2 text-center">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="player1-set2" class="form-control text-center score-input" maxlength="2" placeholder="0"
-                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
-                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
+                        <div class="col-6 col-md-3">
+                            <div class="stat-item">
+                                <div class="stat-number">{{ player.ranking_points or 0 }}</div>
+                                <div class="stat-label">Points</div>
+                            </div>
                         </div>
-                        <div class="col-3 col-lg-2 text-center">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="player1-set3" class="form-control text-center score-input" maxlength="2" placeholder="-"
-                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
-                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
-                        </div>
-                        <div class="col-6 col-lg-3 text-center">
-                            <div class="p-2 rounded" style="background: #000; border: 2px solid #333;">
-                                <span id="player1-sets-won" style="color: #00FF00; font-family: 'Courier New', monospace; font-size: 36px; font-weight: bold;">0</span>
+                        <div class="col-6 col-md-3">
+                            <div class="stat-item">
+                                <div class="stat-number">
+                                    {% if player_ranking %}#{{ player_ranking }}{% else %}--{% endif %}
+                                </div>
+                                <div class="stat-label">Rank</div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Player 2 Row -->
-                    <div class="row align-items-center">
-                        <div class="col-3">
-                            <div class="text-center p-3 rounded fw-bold" style="background: #FFA500; color: #000; font-size: 16px;" id="player2-name-display">
-                                <i class="fas fa-user me-2"></i><span id="player2-set1-label">Opponent</span>
-                            </div>
-                        </div>
-                        <div class="col-3 col-lg-2 text-center">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="player2-set1" class="form-control text-center score-input" maxlength="2" placeholder="0"
-                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
-                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
-                        </div>
-                        <div class="col-3 col-lg-2 text-center">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="player2-set2" class="form-control text-center score-input" maxlength="2" placeholder="0"
-                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
-                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
-                        </div>
-                        <div class="col-3 col-lg-2 text-center">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="player2-set3" class="form-control text-center score-input" maxlength="2" placeholder="-"
-                                   style="background: #000 !important; background-color: #000 !important; color: #00FF00 !important; border: 2px solid #333 !important; font-family: 'Courier New', monospace !important; font-size: 24px !important; font-weight: bold !important; -webkit-text-fill-color: #00FF00 !important; -webkit-appearance: none !important; -moz-appearance: textfield !important; caret-color: #00FF00 !important; -webkit-text-stroke: 0.5px #00FF00 !important; text-shadow: 0 0 3px #00FF00 !important; outline: none !important;" 
-                                   onfocus="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   onblur="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00'; this.style.backgroundColor='#000';" 
-                                   oninput="this.style.color='#00FF00'; this.style.webkitTextFillColor='#00FF00';">
-                        </div>
-                        <div class="col-6 col-lg-3 text-center">
-                            <div class="p-2 rounded" style="background: #000; border: 2px solid #333;">
-                                <span id="player2-sets-won" style="color: #00FF00; font-family: 'Courier New', monospace; font-size: 36px; font-weight: bold;">0</span>
+                    
+                    <!-- Tournament Credits -->
+                    {% if player.tournament_credits and player.tournament_credits > 0 %}
+                    <div class="stat-item mb-4" style="background: linear-gradient(135deg, rgba(0, 255, 65, 0.1), rgba(0, 245, 255, 0.1));">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-wallet fa-2x me-3" style="color: var(--accent-green);"></i>
+                            <div>
+                                <div class="stat-number" style="color: var(--accent-green);">${{ "%.2f"|format(player.tournament_credits) }}</div>
+                                <div class="stat-label">Tournament Credits</div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Instructions -->
-                    <div class="text-center mt-3">
-                        <small style="color: #CCCCCC !important; font-family: 'Courier New', monospace;">
-                            <i class="fas fa-lightbulb me-1" style="color: #00FF00;"></i>Leave Set 3 blank if match ended in 2 sets
-                        </small>
+                    {% endif %}
+                    
+                    <!-- Favorite Courts -->
+                    {% if player.preferred_court_1 or player.preferred_court_2 %}
+                    <div class="section-title">
+                        <i class="fas fa-map-marker-alt me-2"></i>Favorite Courts
                     </div>
-                </div>
-                
-                <div id="score-preview" class="alert" style="display: none; background: #444 !important; border: 1px solid #666 !important; color: white !important;">
-                    <strong style="color: #00FF00 !important;">Match Result:</strong> <span id="formatted-score" style="color: white !important; font-weight: bold;"></span>
-                </div>
-                
-                <!-- Score Validation Section -->
-                <div class="card mt-3" style="background: #2a2a2a; border: 1px solid #555;">
-                    <div class="card-header" style="background: #444; border-bottom: 1px solid #555;">
-                        <h6 class="mb-0 text-white"><i class="fas fa-clipboard-check me-2"></i>Score Validation Required</h6>
+                    
+                    <div class="mb-4">
+                        {% if player.preferred_court_1 %}
+                        <div class="court-item mb-2" onclick="showCourtLocation('{{ player.preferred_court_1 }}', 'primary')" style="cursor: pointer;">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-map-marker-alt me-3" style="color: var(--accent-purple);"></i>
+                                <div>
+                                    <div class="fw-bold">Primary Court</div>
+                                    <small>{{ player.preferred_court_1 }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if player.preferred_court_2 %}
+                        <div class="court-item" onclick="showCourtLocation('{{ player.preferred_court_2 }}', 'secondary')" style="cursor: pointer;">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-map-marker-alt me-3" style="color: var(--accent-purple);"></i>
+                                <div>
+                                    <div class="fw-bold">Secondary Court</div>
+                                    <small>{{ player.preferred_court_2 }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
-                    <div class="card-body" style="background: #333;">
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="score-confirmation" required>
-                            <label class="form-check-label fw-bold text-white" for="score-confirmation">
-                                I confirm this score is accurate
+                    {% endif %}
+                    
+                    <!-- Notification Toggle -->
+                    <div class="notification-toggle">
+                        <i class="fas fa-bell" style="color: var(--accent-cyan);"></i>
+                        <span class="flex-grow-1">Notifications</span>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   role="switch" 
+                                   id="notificationToggle"
+                                   {% if player.notifications_enabled %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold" for="notificationToggle" id="notificationStatus">
+                                {% if player.notifications_enabled %}ON{% else %}OFF{% endif %}
                             </label>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-white">Was your opponent's skill level accurate to their profile?</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="opponent-level" id="level-accurate" value="accurate" required>
-                                <label class="form-check-label text-white" for="level-accurate">
-                                    <i class="fas fa-check-circle text-success me-1"></i>Accurate - matched their profile
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="opponent-level" id="level-higher" value="higher" required>
-                                <label class="form-check-label text-white" for="level-higher">
-                                    <i class="fas fa-arrow-up text-warning me-1"></i>Higher - better than their profile indicates
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="opponent-level" id="level-lower" value="lower" required>
-                                <label class="form-check-label text-white" for="level-lower">
-                                    <i class="fas fa-arrow-down text-info me-1"></i>Lower - not as strong as their profile indicates
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="alert" style="background: #444 !important; border: 1px solid #666 !important; color: white !important;">
-                            <i class="fas fa-info-circle me-2" style="color: #00FF00 !important;"></i>
-                            <small style="color: white !important; font-weight: 500 !important;">Both players must validate the score before it becomes official. Your opponent will also need to confirm.</small>
-                        </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer" style="background: #2a2a2a; border-top: 1px solid #555;">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" onclick="validateScore()">
-                    <i class="fas fa-shield-check me-1"></i>Validate Score
-                </button>
+            
+            <!-- Right Panel: Quick Actions -->
+            <div class="col-12 col-lg-6">
+                <div class="actions-card p-4 h-100">
+                    <div class="section-title text-center">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </div>
+                    
+                    <div class="d-grid gap-3">
+                        
+                        <!-- Find Opponent Button -->
+                        {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
+                        <button class="action-btn" onclick="findNewMatch({{ player.id }})">
+                            <i class="fas fa-users"></i>Find Opponent
+                        </button>
+                        {% else %}
+                        <button class="action-btn" onclick="showMembershipModal('discovery')">
+                            <i class="fas fa-lock"></i>Unlock Player Matching
+                        </button>
+                        {% endif %}
+                        
+                        <!-- Create Challenge Button -->
+                        {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
+                        <a href="{{ url_for('browse_players') }}" class="action-btn text-decoration-none">
+                            <i class="fas fa-paper-plane"></i>Create Challenge
+                        </a>
+                        {% else %}
+                        <button class="action-btn" onclick="showMembershipModal('discovery')">
+                            <i class="fas fa-lock"></i>Unlock Challenges
+                        </button>
+                        {% endif %}
+                        
+                        <!-- Join Tournament Button -->
+                        {% if player.membership_type == 'tournament' %}
+                        <a href="{{ url_for('tournaments_overview') }}" class="action-btn text-decoration-none">
+                            <i class="fas fa-trophy"></i>Join Tournament
+                        </a>
+                        {% else %}
+                        <button class="action-btn" onclick="showMembershipModal('tournament')">
+                            <i class="fas fa-crown"></i>Unlock Tournaments
+                        </button>
+                        {% endif %}
+                        
+                        <!-- Additional Action Buttons -->
+                        <div class="row g-2 mt-3">
+                            <div class="col-6">
+                                <button class="btn btn-outline-light w-100" onclick="loadChallenges()">
+                                    <i class="fas fa-inbox me-1"></i><br><small>Challenges</small>
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-outline-light w-100" onclick="loadPendingMatches()">
+                                    <i class="fas fa-clipboard-list me-1"></i><br><small>Submit Results</small>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <a href="{{ url_for('profile_settings') }}" class="btn btn-outline-light w-100 text-decoration-none">
+                                    <i class="fas fa-user-cog me-1"></i><br><small>Profile</small>
+                                </a>
+                            </div>
+                            <div class="col-6">
+                                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 text-decoration-none">
+                                    <i class="fas fa-sign-out-alt me-1"></i><br><small>Sign Out</small>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Stats Display -->
+                    <div class="mt-4 pt-4" style="border-top: 1px solid var(--border-subtle);">
+                        <div class="row g-2 text-center">
+                            <div class="col-4">
+                                <div class="small text-muted mb-1">Location</div>
+                                <div class="fw-bold text-truncate" style="color: var(--accent-cyan); font-size: 0.8rem;">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ player.location1 or 'Not Set' }}
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small text-muted mb-1">Membership</div>
+                                <div class="fw-bold" style="color: var(--accent-green); font-size: 0.8rem;">
+                                    <i class="fas fa-star me-1"></i>{{ player.membership_type|title or 'Free' }}
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small text-muted mb-1">Win Rate</div>
+                                <div class="fw-bold" style="color: var(--accent-purple); font-size: 0.8rem;">
+                                    {% set total_games = (player.wins or 0) + (player.losses or 0) %}
+                                    {% if total_games > 0 %}
+                                        {{ "%.0f"|format(((player.wins or 0) / total_games) * 100) }}%
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Message Modal -->
-<div class="modal fade" id="messageModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-envelope me-2"></i>Send Message to <span id="modal-recipient-name"></span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <textarea id="message-text" class="form-control" rows="4" placeholder="Type your message here..."></textarea>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="sendMessage()">Send Message</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Hidden containers for dynamic content -->
+<div id="challenges-received-container" style="display: none;"></div>
+<div id="challenges-sent-container" style="display: none;"></div>
+<div id="upcoming-matches-container" style="display: none;"></div>
+<div id="pending-matches-container" style="display: none;"></div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -1055,42 +575,38 @@ input[inputmode="numeric"].score-input {
 {% if session.get('show_profile_completion') %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Show the profile completion modal
     const modal = new bootstrap.Modal(document.getElementById('profileCompletionModal'));
     modal.show();
     
-    // Clear the session flag via AJAX call
     fetch('/clear_profile_completion_flag', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
     });
 });
 </script>
 {% endif %}
-<script>
-let currentRecipientId = null;
 
+<script>
+// Preserve all original JavaScript functionality
+let currentRecipientId = null;
+let currentMatchId = null;
+
+// Toast notification functions
 function showSuccessToast(message) {
     const toast = document.createElement('div');
+    toast.className = 'toast show';
     toast.innerHTML = `
-        <div class="position-fixed top-0 end-0 p-3" style="z-index: 11000;">
-            <div class="toast show" role="alert">
-                <div class="toast-header" style="background: #28a745; color: white;">
-                    <i class="fas fa-check-circle me-2"></i>
-                    <strong class="me-auto">Success</strong>
-                    <button type="button" class="btn-close btn-close-white" onclick="this.closest('.toast').parentElement.remove()"></button>
-                </div>
-                <div class="toast-body" style="background: white; color: #333;">
-                    ${message}
-                </div>
-            </div>
+        <div class="toast-header" style="background: var(--accent-green); color: white;">
+            <i class="fas fa-check-circle me-2"></i>
+            <strong class="me-auto">Success</strong>
+            <button type="button" class="btn-close btn-close-white" onclick="this.closest('.toast').remove()"></button>
+        </div>
+        <div class="toast-body" style="background: white; color: #333;">
+            ${message}
         </div>
     `;
-    document.body.appendChild(toast);
+    document.querySelector('.toast-container').appendChild(toast);
     
-    // Auto-remove after 5 seconds
     setTimeout(() => {
         if (toast.parentElement) {
             toast.remove();
@@ -1100,23 +616,19 @@ function showSuccessToast(message) {
 
 function showErrorToast(message) {
     const toast = document.createElement('div');
+    toast.className = 'toast show';
     toast.innerHTML = `
-        <div class="position-fixed top-0 end-0 p-3" style="z-index: 11000;">
-            <div class="toast show" role="alert">
-                <div class="toast-header" style="background: #dc3545; color: white;">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    <strong class="me-auto">Error</strong>
-                    <button type="button" class="btn-close btn-close-white" onclick="this.closest('.toast').parentElement.remove()"></button>
-                </div>
-                <div class="toast-body" style="background: white; color: #333;">
-                    ${message}
-                </div>
-            </div>
+        <div class="toast-header" style="background: #dc3545; color: white;">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong class="me-auto">Error</strong>
+            <button type="button" class="btn-close btn-close-white" onclick="this.closest('.toast').remove()"></button>
+        </div>
+        <div class="toast-body" style="background: white; color: #333;">
+            ${message}
         </div>
     `;
-    document.body.appendChild(toast);
+    document.querySelector('.toast-container').appendChild(toast);
     
-    // Auto-remove after 7 seconds (longer for errors)
     setTimeout(() => {
         if (toast.parentElement) {
             toast.remove();
@@ -1124,61 +636,92 @@ function showErrorToast(message) {
     }, 7000);
 }
 
+// Notification toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.getElementById('notificationToggle');
+    const status = document.getElementById('notificationStatus');
+    
+    if (toggle) {
+        toggle.addEventListener('change', function() {
+            const enabled = this.checked;
+            status.textContent = enabled ? 'ON' : 'OFF';
+            
+            fetch('/toggle_notifications', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: enabled })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccessToast(`Notifications ${enabled ? 'enabled' : 'disabled'}`);
+                } else {
+                    showErrorToast('Failed to update notification settings');
+                    toggle.checked = !enabled;
+                    status.textContent = !enabled ? 'ON' : 'OFF';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showErrorToast('Error updating notification settings');
+            });
+        });
+    }
+});
+
+// Find match functionality
 function findNewMatch(playerId) {
     fetch(`/find_match/${playerId}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
     })
     .then(response => response.json())
     .then(data => {
         if (data.success && data.players) {
-            // Show player selection modal
             showPlayerSelectionModal(data.players);
         } else if (data.success) {
-            alert('🎾 Match found! Check your pending challenges above.');
-            location.reload();
+            showSuccessToast('Match found! Check your pending challenges.');
+            setTimeout(() => location.reload(), 1000);
         } else {
-            alert(data.message || 'No matches found at the moment. Try again later!');
+            showErrorToast(data.message || 'No matches found at the moment. Try again later!');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error finding match. Please try again.');
+        showErrorToast('Error finding match. Please try again.');
     });
 }
 
+// Player selection modal
 function showPlayerSelectionModal(players) {
-    // Create modal for player selection
     const modal = document.createElement('div');
     modal.innerHTML = `
         <div class="modal fade" id="playerSelectionModal" tabindex="-1">
             <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header" style="background: #3F567F; color: white;">
+                <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
+                    <div class="modal-header">
                         <h5 class="modal-title">
                             <i class="fas fa-users me-2"></i>Choose Players to Challenge
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <p class="text-muted mb-4">Found ${players.length} compatible players at your skill level and location:</p>
-                        <div class="row" id="playersList">
+                        <p class="mb-4">Found ${players.length} compatible players at your skill level:</p>
+                        <div class="row">
                             ${players.map(player => `
                                 <div class="col-12 col-sm-6 mb-3">
-                                    <div class="card h-100">
+                                    <div class="card h-100" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle);">
                                         <div class="card-body text-center">
-                                            <h6 class="card-title fw-bold">${player.name}</h6>
-                                            <p class="small text-muted mb-2">
+                                            <h6 class="card-title fw-bold text-white">${player.name}</h6>
+                                            <p class="small mb-2" style="color: var(--text-primary); opacity: 0.8;">
                                                 <i class="fas fa-map-marker-alt me-1"></i>${player.location}
                                             </p>
-                                            <p class="small text-muted mb-3">
+                                            <p class="small mb-3" style="color: var(--accent-cyan);">
                                                 <i class="fas fa-star me-1"></i>${player.skill_level}
                                             </p>
-                                            <button class="btn btn-primary btn-sm" onclick="showMatchProposal(${player.id}, '${player.name}', '${player.location}', '${player.skill_level}')">
-                                                <i class="fas fa-info-circle me-1"></i>View Details
+                                            <button class="btn btn-primary btn-sm" onclick="challengePlayer(${player.id})">
+                                                <i class="fas fa-paper-plane me-1"></i>Challenge
                                             </button>
                                         </div>
                                     </div>
@@ -1188,9 +731,6 @@ function showPlayerSelectionModal(players) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-success" onclick="challengeAllPlayers([${players.map(p => p.id).join(',')}])">
-                            <i class="fas fa-users me-1"></i>Challenge All
-                        </button>
                     </div>
                 </div>
             </div>
@@ -1201,1491 +741,107 @@ function showPlayerSelectionModal(players) {
     const bootstrapModal = new bootstrap.Modal(document.getElementById('playerSelectionModal'));
     bootstrapModal.show();
     
-    // Clean up when modal is hidden
     document.getElementById('playerSelectionModal').addEventListener('hidden.bs.modal', function () {
         document.body.removeChild(modal);
     });
 }
 
-function showMatchProposal(playerId, playerName, playerLocation, skillLevel) {
-    // Create a simple player details modal
-    const modal = document.createElement('div');
-    modal.innerHTML = `
-        <div class="modal fade" id="matchProposalModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header" style="background: #3F567F; color: white;">
-                        <h5 class="modal-title">
-                            <i class="fas fa-user me-2"></i>${playerName}
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="text-center mb-4">
-                            <div class="mb-3">
-                                <i class="fas fa-user-circle fa-3x text-primary"></i>
-                            </div>
-                            <h5 class="fw-bold">${playerName}</h5>
-                            <p class="text-muted">
-                                <i class="fas fa-map-marker-alt me-1"></i>${playerLocation} • 
-                                <i class="fas fa-star me-1"></i>${skillLevel}
-                            </p>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-success btn-lg" onclick="showChallengeForm(${playerId}, '${playerName}')">
-                                <i class="fas fa-paper-plane me-2"></i>Send Challenge
-                            </button>
-                            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                                <i class="fas fa-times me-2"></i>Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    const bootstrapModal = new bootstrap.Modal(document.getElementById('matchProposalModal'));
-    bootstrapModal.show();
-    
-    // Clean up when modal is hidden
-    document.getElementById('matchProposalModal').addEventListener('hidden.bs.modal', function () {
-        document.body.removeChild(modal);
-    });
-}
-
-function showChallengeForm(playerId, playerName) {
-    // Close current modal
-    const currentModal = bootstrap.Modal.getInstance(document.getElementById('matchProposalModal'));
-    currentModal.hide();
-    
-    // Show challenge form after brief delay
-    setTimeout(() => {
-        showMatchDetailsForm(playerId, playerName);
-    }, 300);
-}
-
-function acceptMatchProposal(playerId, playerName) {
-    // First show a form to specify match details before sending challenge
-    const currentModal = bootstrap.Modal.getInstance(document.getElementById('matchProposalModal'));
-    currentModal.hide();
-    
-    setTimeout(() => {
-        showMatchDetailsForm(playerId, playerName);
-    }, 300);
-}
-
-function showCounterProposal(playerId, playerName, playerLocation, skillLevel) {
-    // Close current modal and show counter-proposal form
-    const currentModal = bootstrap.Modal.getInstance(document.getElementById('matchProposalModal'));
-    currentModal.hide();
-    
-    setTimeout(() => {
-        const modal = document.createElement('div');
-        modal.innerHTML = `
-            <div class="modal fade" id="counterProposalModal" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header" style="background: #ffc107; color: black;">
-                            <h5 class="modal-title">
-                                <i class="fas fa-edit me-2"></i>Counter-Propose to ${playerName}
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="counterProposalForm">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-map-marker-alt me-1"></i>Alternative Location *
-                                    </label>
-                                    <select class="form-control mb-2" id="counterLocationDropdown" onchange="selectCounterLocation()">
-                                        <option value="">Select a popular court location...</option>
-                                        <optgroup label="Apex Courts">
-                                            <option value="Apex Community Center - Outdoor Courts">Apex Community Center - Outdoor Courts</option>
-                                            <option value="Apex Community Center - Indoor Courts">Apex Community Center - Indoor Courts</option>
-                                            <option value="Apex Nature Park Courts">Apex Nature Park Courts</option>
-                                        </optgroup>
-                                        <optgroup label="Cary Courts">
-                                            <option value="Cary Tennis Park">Cary Tennis Park</option>
-                                            <option value="WakeMed Soccer Park - Cary">WakeMed Soccer Park - Cary</option>
-                                            <option value="Bond Park Community Center">Bond Park Community Center</option>
-                                        </optgroup>
-                                        <optgroup label="Raleigh Courts">
-                                            <option value="Millbrook Exchange Park">Millbrook Exchange Park</option>
-                                            <option value="Marsh Creek Park">Marsh Creek Park</option>
-                                            <option value="Lake Johnson Park">Lake Johnson Park</option>
-                                        </optgroup>
-                                        <optgroup label="Durham Courts">
-                                            <option value="Durham Central Park">Durham Central Park</option>
-                                            <option value="Forest Hills Park">Forest Hills Park</option>
-                                        </optgroup>
-                                        <option value="custom">🏓 Custom Location (type your own)</option>
-                                    </select>
-                                    <input type="text" class="form-control" id="proposedLocation" 
-                                           placeholder="Enter custom location or select from dropdown above" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-calendar me-1"></i>Alternative Date *
-                                    </label>
-                                    <input type="date" class="form-control" id="proposedDate" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-clock me-1"></i>Alternative Time *
-                                    </label>
-                                    <input type="time" class="form-control" id="proposedTime" required>
-                                </div>
-                                <div class="d-grid gap-2">
-                                    <button type="button" class="btn btn-warning" onclick="sendCounterProposal(${playerId}, '${playerName}')">
-                                        <i class="fas fa-paper-plane me-2"></i>Send Counter-Proposal
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                                        Cancel
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        const bootstrapModal = new bootstrap.Modal(document.getElementById('counterProposalModal'));
-        bootstrapModal.show();
-        
-        // Clean up when modal is hidden
-        document.getElementById('counterProposalModal').addEventListener('hidden.bs.modal', function () {
-            document.body.removeChild(modal);
-        });
-    }, 300);
-}
-
-function sendCounterProposal(playerId, playerName) {
-    const location = document.getElementById('proposedLocation').value;
-    const date = document.getElementById('proposedDate').value;
-    const time = document.getElementById('proposedTime').value;
-    
-    if (!location || !date || !time) {
-        showErrorToast('Please fill in all required fields: location, date, and time.');
-        return;
-    }
-    
-    // Format the date nicely
-    const dateObj = new Date(date);
-    const formattedDate = dateObj.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    });
-    
-    // Format time nicely
-    const timeObj = new Date(`2000-01-01T${time}`);
-    const formattedTime = timeObj.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
-    });
-    
-    // Send challenge with custom proposal (this will create the match with your proposed details)
-    challengePlayer(playerId);
-    
-    // Close the modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('counterProposalModal'));
-    modal.hide();
-    
-    showSuccessToast(`Counter-proposal sent to ${playerName}!<br>
-Location: ${location}<br>
-Date: ${formattedDate}<br>
-Time: ${formattedTime}`);
-}
-
-function showMatchDetailsForm(playerId, playerName) {
-    const modal = document.createElement('div');
-    modal.innerHTML = `
-        <div class="modal fade" id="matchDetailsModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header" style="background: #28a745; color: white;">
-                        <h5 class="modal-title">
-                            <i class="fas fa-calendar-plus me-2"></i>Propose Match Details
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="text-center mb-4">
-                            <h6>Challenge: <strong>${playerName}</strong></h6>
-                            <p class="text-muted">Specify your proposed match details:</p>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">
-                                <i class="fas fa-map-marker-alt me-1"></i>Proposed Location *
-                            </label>
-                            <select class="form-control mb-2" id="locationDropdown" onchange="selectLocation()">
-                                <option value="">Select a popular court location...</option>
-                                <optgroup label="Apex Courts">
-                                    <option value="Apex Community Center - Outdoor Courts">Apex Community Center - Outdoor Courts</option>
-                                    <option value="Apex Community Center - Indoor Courts">Apex Community Center - Indoor Courts</option>
-                                    <option value="Apex Nature Park Courts">Apex Nature Park Courts</option>
-                                </optgroup>
-                                <optgroup label="Cary Courts">
-                                    <option value="Cary Tennis Park">Cary Tennis Park</option>
-                                    <option value="WakeMed Soccer Park - Cary">WakeMed Soccer Park - Cary</option>
-                                    <option value="Bond Park Community Center">Bond Park Community Center</option>
-                                </optgroup>
-                                <optgroup label="Raleigh Courts">
-                                    <option value="Millbrook Exchange Park">Millbrook Exchange Park</option>
-                                    <option value="Marsh Creek Park">Marsh Creek Park</option>
-                                    <option value="Lake Johnson Park">Lake Johnson Park</option>
-                                </optgroup>
-                                <optgroup label="Durham Courts">
-                                    <option value="Durham Central Park">Durham Central Park</option>
-                                    <option value="Forest Hills Park">Forest Hills Park</option>
-                                </optgroup>
-                                <option value="custom">🏓 Custom Location (type your own)</option>
-                            </select>
-                            <input type="text" class="form-control" id="matchLocation" 
-                                   placeholder="Enter custom location or select from dropdown above" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">
-                                <i class="fas fa-calendar me-1"></i>Proposed Date *
-                            </label>
-                            <input type="date" class="form-control" id="matchDate" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">
-                                <i class="fas fa-clock me-1"></i>Proposed Time *
-                            </label>
-                            <input type="time" class="form-control" id="matchTime" required>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-success" onclick="sendMatchChallenge(${playerId}, '${playerName}')">
-                                <i class="fas fa-paper-plane me-2"></i>Send Challenge
-                            </button>
-                            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    const bootstrapModal = new bootstrap.Modal(document.getElementById('matchDetailsModal'));
-    bootstrapModal.show();
-    
-    // Clean up when modal is hidden
-    document.getElementById('matchDetailsModal').addEventListener('hidden.bs.modal', function () {
-        document.body.removeChild(modal);
-    });
-    
-    // Set minimum date to today
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('matchDate').min = today;
-}
-
-function selectLocation() {
-    const dropdown = document.getElementById('locationDropdown');
-    const input = document.getElementById('matchLocation');
-    
-    if (dropdown.value && dropdown.value !== 'custom') {
-        input.value = dropdown.value;
-        input.style.backgroundColor = '#e8f5e8';
-    } else if (dropdown.value === 'custom') {
-        input.value = '';
-        input.focus();
-        input.style.backgroundColor = 'white';
-        input.placeholder = 'Enter your custom court location';
-    } else {
-        input.style.backgroundColor = 'white';
-    }
-}
-
-function selectCounterLocation() {
-    const dropdown = document.getElementById('counterLocationDropdown');
-    const input = document.getElementById('proposedLocation');
-    
-    if (dropdown.value && dropdown.value !== 'custom') {
-        input.value = dropdown.value;
-        input.style.backgroundColor = '#e8f5e8';
-    } else if (dropdown.value === 'custom') {
-        input.value = '';
-        input.focus();
-        input.style.backgroundColor = 'white';
-        input.placeholder = 'Enter your custom court location';
-    } else {
-        input.style.backgroundColor = 'white';
-    }
-}
-
-function sendMatchChallenge(playerId, playerName) {
-    const location = document.getElementById('matchLocation').value;
-    const date = document.getElementById('matchDate').value;
-    const time = document.getElementById('matchTime').value;
-    
-    if (!location || !date || !time) {
-        showErrorToast('Please fill in all required fields: location, date, and time.');
-        return;
-    }
-    
-    // Send challenge with proposed details
-    challengePlayerWithDetails(playerId, location, date, time);
-    
-    // Close the modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('matchDetailsModal'));
-    modal.hide();
-    
-    // Format the date nicely for confirmation
-    const dateObj = new Date(date);
-    const formattedDate = dateObj.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    });
-    
-    // Format time nicely
-    const timeObj = new Date(`2000-01-01T${time}`);
-    const formattedTime = timeObj.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
-    });
-    
-    showSuccessToast(`Challenge sent to ${playerName}!<br>
-Location: ${location}<br>
-Date: ${formattedDate}<br>
-Time: ${formattedTime}`);
-}
-
-function challengePlayerFromModal(playerId, playerName) {
-    challengePlayer(playerId);
-    // Close the modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('playerSelectionModal'));
-    modal.hide();
-}
-
-function challengeAllPlayers(playerIds) {
-    let successCount = 0;
-    let totalPlayers = playerIds.length;
-    
-    // Challenge each player
-    playerIds.forEach((playerId, index) => {
-        setTimeout(() => {
-            challengePlayer(playerId);
-            successCount++;
-            
-            if (successCount === totalPlayers) {
-                // Close modal after all challenges sent
-                const modal = bootstrap.Modal.getInstance(document.getElementById('playerSelectionModal'));
-                modal.hide();
-                alert(`🎾 Sent challenges to all ${totalPlayers} players! Check your pending challenges above.`);
-                setTimeout(() => location.reload(), 1000);
-            }
-        }, index * 500); // Stagger the requests
-    });
-}
-
-function challengePlayer(opponentId) {
-    // Legacy function for compatibility
-    challengePlayerWithDetails(opponentId, null, null, null);
-}
-
-function challengePlayerWithDetails(opponentId, proposedLocation, proposedDate, proposedTime) {
-    const requestData = {
-        target_player_id: opponentId
-    };
-    
-    // Add proposed details if provided
-    if (proposedLocation && proposedDate && proposedTime) {
-        requestData.proposed_location = proposedLocation;
-        requestData.proposed_date = proposedDate;
-        requestData.proposed_time = proposedTime;
-    }
-    
-    // Create a direct challenge to the specified player
-    fetch(`/find_match/{{ player.id }}`, {
+// Challenge player functionality
+function challengePlayer(playerId) {
+    fetch('/challenge_player', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challenged_player_id: playerId })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Don't show toast here if details were provided (already shown)
-            if (!proposedLocation) {
-                showSuccessToast(data.message);
-            }
-            loadPendingMatches(); // Refresh the page sections
+            showSuccessToast('Challenge sent successfully!');
+            setTimeout(() => location.reload(), 1000);
         } else {
-            showErrorToast(data.message || 'Unable to send challenge. Please try again.');
+            showErrorToast(data.message || 'Failed to send challenge');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showErrorToast('Error sending challenge. Please try again.');
+        showErrorToast('Error sending challenge');
     });
 }
 
-function openMessageModal(recipientId, recipientName) {
-    currentRecipientId = recipientId;
-    document.getElementById('modal-recipient-name').textContent = recipientName;
-    document.getElementById('message-text').value = '';
-    new bootstrap.Modal(document.getElementById('messageModal')).show();
-}
-
-function sendMessage() {
-    const message = document.getElementById('message-text').value.trim();
-    if (!message) {
-        alert('Please enter a message');
-        return;
-    }
-    
-    fetch('/send_message', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            sender_id: {{ player.id }},
-            receiver_id: currentRecipientId,
-            message: message
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            bootstrap.Modal.getInstance(document.getElementById('messageModal')).hide();
-            refreshMessages();
-        } else {
-            alert(data.message || 'Failed to send message');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error sending message. Please try again.');
-    });
-}
-
-function refreshMessages() {
-    fetch(`/get_messages/{{ player.id }}`)
-        .then(response => response.json())
-        .then(data => {
-            displayMessages(data.messages);
-        })
-        .catch(error => {
-            console.error('Error loading messages:', error);
-        });
-}
-
-function displayMessages(messages) {
-    const container = document.getElementById('messages-container');
-    
-    if (messages.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-4">
-                <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
-                <h6 class="text-muted">No Messages Yet</h6>
-                <p class="text-muted small">Start a conversation with your connections!</p>
-            </div>
-        `;
-        return;
-    }
-    
-    let html = '';
-    messages.forEach(msg => {
-        const isFromMe = msg.sender_id === {{ player.id }};
-        const otherPersonName = isFromMe ? msg.receiver_name : msg.sender_name;
-        const timeAgo = new Date(msg.created_at).toLocaleString();
-        
-        html += `
-            <div class="message-item mb-3 p-3 rounded ${isFromMe ? 'bg-primary bg-opacity-10' : 'bg-light'}">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="mb-0 ${isFromMe ? 'text-primary' : ''}">
-                        ${isFromMe ? 'You' : otherPersonName}
-                    </h6>
-                    <small class="text-muted">${timeAgo}</small>
-                </div>
-                <p class="mb-0">${msg.message}</p>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-}
-
-function updateUnreadCount() {
-    fetch(`/get_unread_count/{{ player.id }}`)
-        .then(response => response.json())
-        .then(data => {
-            const badge = document.getElementById('unread-badge');
-            if (data.unread_count > 0) {
-                badge.textContent = data.unread_count;
-                badge.style.display = 'inline';
-            } else {
-                badge.style.display = 'none';
-            }
-        });
-}
-
-// Load messages and unread count when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    refreshMessages();
-    updateUnreadCount();
-    loadPendingMatches();
-    
-    // Refresh messages every 30 seconds
-    setInterval(() => {
-        refreshMessages();
-        updateUnreadCount();
-        loadPendingMatches();
-    }, 30000);
-});
-
-let currentMatchId = null;
-
-function loadPendingMatches() {
-    fetch(`/get_pending_matches/{{ player.id }}`)
-        .then(response => response.json())
-        .then(data => {
-            displayPendingMatches(data.matches);
-        })
-        .catch(error => {
-            console.error('Error loading pending matches:', error);
-        });
-}
-
-function displayPendingMatches(matches) {
-    const submitResultsContainer = document.getElementById('submit-results-container');
-    const upcomingMatchesContainer = document.getElementById('upcoming-matches-container');
-    const challengesContainer = document.getElementById('challenges-container');
-    
-    // Separate matches by type
-    let pendingScores = matches.filter(m => m.action_needed === 'needs_score');
-    let needsValidation = matches.filter(m => m.action_needed === 'needs_validation');
-    let upcomingMatches = matches.filter(m => m.status === 'confirmed');
-    let challenges = matches.filter(m => m.status === 'pending');
-    
-    // Update Submit Results section
-    if (pendingScores.length > 0) {
-        let buttonAction = '';
-        if (pendingScores.length === 1) {
-            // If only one match, directly open the score modal
-            const match = pendingScores[0];
-            const opponent = match.player1_id === {{ player.id }} ? match.player2_name : match.player1_name;
-            buttonAction = `onclick="openScoreModal(${match.id}, '${opponent}', ${match.player1_id}, ${match.player2_id})"`;
-        } else {
-            // If multiple matches, show selection
-            buttonAction = `onclick="showDetailedMatches('submit')"`;
-        }
-        
-        submitResultsContainer.innerHTML = `
-            <div class="text-center">
-                <div class="badge bg-warning text-dark fs-6 mb-2">${pendingScores.length}</div>
-                <p class="small mb-2 fw-bold">Match${pendingScores.length > 1 ? 'es' : ''} to Report</p>
-                <button class="btn btn-warning btn-sm" ${buttonAction}>
-                    <i class="fas fa-edit me-1"></i>Submit Scores
-                </button>
-            </div>
-        `;
-    } else {
-        submitResultsContainer.innerHTML = `
-            <div class="text-muted">
-                <i class="fas fa-trophy fa-2x mb-2 opacity-50"></i>
-                <p class="small mb-0">No matches to report</p>
-            </div>
-        `;
-    }
-    
-    // Update Upcoming Matches section  
-    if (upcomingMatches.length > 0) {
-        upcomingMatchesContainer.innerHTML = `
-            <div class="text-center">
-                <div class="badge bg-success fs-6 mb-2">${upcomingMatches.length}</div>
-                <p class="small mb-2 fw-bold">Scheduled Match${upcomingMatches.length > 1 ? 'es' : ''}</p>
-                <button class="btn btn-success btn-sm" onclick="showDetailedMatches('upcoming')">
-                    <i class="fas fa-calendar me-1"></i>View Details
-                </button>
-            </div>
-        `;
-    } else {
-        upcomingMatchesContainer.innerHTML = `
-            <div class="text-muted">
-                <i class="fas fa-calendar fa-2x mb-2 opacity-50"></i>
-                <p class="small mb-0">No scheduled matches</p>
-            </div>
-        `;
-    }
-    
-    // Update Challenges Received section
-    const challengesReceivedContainer = document.getElementById('challenges-received-container');
-    const challengesSentContainer = document.getElementById('challenges-sent-container');
-    
-    // Separate challenges you sent vs challenges you received
-    const challengesReceived = challenges.filter(c => c.player2_id === {{ player.id }});
-    const challengesSent = challenges.filter(c => c.player1_id === {{ player.id }});
-    
-    // Update Challenges Received container
-    if (challengesReceived.length > 0) {
-        const challenge = challengesReceived[0];
-        const opponent = challenge.player1_name;
-        challengesReceivedContainer.innerHTML = `
-            <div class="text-center">
-                <div class="badge bg-success fs-6 mb-2">${challengesReceived.length}</div>
-                <p class="small mb-2 fw-bold">Challenge${challengesReceived.length > 1 ? 's' : ''} to Respond</p>
-                <button class="btn btn-success btn-sm" onclick="respondToChallenge(${challenge.id}, '${opponent}', '${challenge.court_location}', '${challenge.scheduled_time}')">
-                    <i class="fas fa-reply me-1"></i>Respond Now
-                </button>
-            </div>
-        `;
-    } else {
-        challengesReceivedContainer.innerHTML = `
-            <div class="text-muted">
-                <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i>
-                <p class="small mb-0">No incoming challenges</p>
-            </div>
-        `;
-    }
-    
-    // Update Challenges Sent container
-    if (challengesSent.length > 0) {
-        challengesSentContainer.innerHTML = `
-            <div class="text-center">
-                <div class="badge bg-warning text-dark fs-6 mb-2">${challengesSent.length}</div>
-                <p class="small mb-2 fw-bold">Challenge${challengesSent.length > 1 ? 's' : ''} Sent</p>
-                <button class="btn btn-outline-warning btn-sm" onclick="showDetailedMatches('challenges')">
-                    <i class="fas fa-hourglass-half me-1"></i>Waiting for Response
-                </button>
-            </div>
-        `;
-    } else {
-        challengesSentContainer.innerHTML = `
-            <div class="text-muted">
-                <i class="fas fa-hourglass-half fa-2x mb-2 opacity-50"></i>
-                <p class="small mb-0">No outgoing challenges</p>
-            </div>
-        `;
-    }
-    
-    // Store matches for detailed view
-    window.currentMatches = {
-        submit: pendingScores,
-        upcoming: upcomingMatches, 
-        challenges: challenges,
-        validation: needsValidation
-    };
-}
-
-// New function to show detailed matches section
-function showDetailedMatches(type) {
-    const section = document.getElementById('detailed-matches-section');
-    const container = document.getElementById('detailed-matches-container');
-    
-    section.style.display = 'block';
-    section.scrollIntoView({ behavior: 'smooth' });
-    
-    let matches = window.currentMatches[type] || [];
-    let title = '';
-    
-    switch(type) {
-        case 'submit':
-            title = 'Submit Match Results';
-            break;
-        case 'upcoming':
-            title = 'Upcoming Matches';
-            break;
-        case 'challenges':
-            title = 'Incoming Challenges';
-            break;
-    }
-    
-    document.querySelector('#detailed-matches-section .card-title').innerHTML = `<i class="fas fa-list me-2"></i>${title}`;
-    
-    let html = '';
-    matches.forEach(match => {
-        const opponent = match.player1_id === {{ player.id }} ? match.player2_name : match.player1_name;
-        const courtInfo = match.court_location || 'Court TBD';
-        
-        let actionButton = '';
-        let statusBadge = '';
-        
-        if (match.action_needed === 'needs_score') {
-            actionButton = `<button class="btn btn-warning btn-sm" onclick="openScoreModal(${match.id}, '${opponent}', ${match.player1_id}, ${match.player2_id})">
-                <i class="fas fa-pencil-alt me-1"></i>Submit Score
-            </button>`;
-            statusBadge = '<span class="badge bg-warning text-dark ms-2">Score Needed</span>';
-        } else if (match.action_needed === 'needs_validation') {
-            actionButton = `<button class="btn btn-info btn-sm" onclick="openValidationModal(${match.id}, '${opponent}', ${match.player1_id}, ${match.player2_id}, '${match.match_result || ''}')">
-                <i class="fas fa-shield-check me-1"></i>Validate Score
-            </button>`;
-            statusBadge = '<span class="badge bg-info ms-2">Validation Required</span>';
-        } else if (match.status === 'confirmed') {
-            actionButton = `<button class="btn btn-outline-success btn-sm" disabled>
-                <i class="fas fa-calendar-check me-1"></i>Scheduled
-            </button>`;
-            statusBadge = '<span class="badge bg-success ms-2">Confirmed</span>';
-        } else {
-            actionButton = `<button class="btn btn-secondary btn-sm" disabled>
-                <i class="fas fa-clock me-1"></i>Waiting for Response
-            </button>`;
-            statusBadge = '<span class="badge bg-secondary ms-2">Pending</span>';
-        }
-        
-        html += `
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1">vs ${opponent}</h6>
-                            <small class="text-muted">
-                                <i class="fas fa-map-marker-alt me-1"></i>${courtInfo}
-                                ${statusBadge}
-                            </small>
-                        </div>
-                        ${actionButton}
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    
-    if (html === '') {
-        html = `<div class="text-center py-4 text-muted">
-            <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
-            <p>No ${title.toLowerCase()} found</p>
-        </div>`;
-    }
-    
-    container.innerHTML = html;
-}
-
-// Function to hide detailed matches
-function hideDetailedMatches() {
-    document.getElementById('detailed-matches-section').style.display = 'none';
-}
-
-// New functions for the other sections
+// Load challenges functionality
 function loadChallenges() {
-    loadPendingMatches(); // Reuse existing function since it loads all matches
+    showSuccessToast('Loading challenges...');
+    setTimeout(() => location.reload(), 500);
 }
 
-function loadUpcomingMatches() {
-    loadPendingMatches(); // Reuse existing function since it loads all matches
+// Load pending matches functionality
+function loadPendingMatches() {
+    showSuccessToast('Loading pending matches...');
+    setTimeout(() => location.reload(), 500);
 }
 
-// Helper functions to format proposed date and time
-function formatProposedDate(dateTimeString) {
-    if (!dateTimeString || dateTimeString === 'null' || dateTimeString === 'undefined') {
-        return 'Not specified';
-    }
-    
-    try {
-        // Handle different date formats
-        let dateObj;
-        if (dateTimeString.includes(' ')) {
-            // Format: "2025-01-15 14:30"
-            dateObj = new Date(dateTimeString);
-        } else {
-            // Just a date
-            dateObj = new Date(dateTimeString);
-        }
-        
-        if (isNaN(dateObj.getTime())) {
-            return 'Invalid date';
-        }
-        
-        return dateObj.toLocaleDateString('en-US', { 
-            weekday: 'short',
-            month: 'short', 
-            day: 'numeric',
-            year: 'numeric'
-        });
-    } catch (e) {
-        return 'Not specified';
-    }
-}
-
-function formatProposedTime(dateTimeString) {
-    if (!dateTimeString || dateTimeString === 'null' || dateTimeString === 'undefined') {
-        return 'Not specified';
-    }
-    
-    try {
-        let timeObj;
-        if (dateTimeString.includes(' ')) {
-            // Format: "2025-01-15 14:30"
-            timeObj = new Date(dateTimeString);
-        } else {
-            // Just time - create date with today's date
-            timeObj = new Date(`2000-01-01 ${dateTimeString}`);
-        }
-        
-        if (isNaN(timeObj.getTime())) {
-            return 'Invalid time';
-        }
-        
-        return timeObj.toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit',
-            hour12: true 
-        });
-    } catch (e) {
-        return 'Not specified';
-    }
-}
-
-// Function to respond to a single challenge
-function respondToChallenge(challengeId, opponentName, proposedLocation, proposedDateTime) {
-    // Create and show challenge response modal
-    const modal = document.createElement('div');
-    modal.innerHTML = `
-        <div class="modal fade" id="challengeResponseModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header" style="background: #3F567F; color: white;">
-                        <h5 class="modal-title">
-                            <i class="fas fa-handshake me-2"></i>Challenge from ${opponentName}
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <div class="mb-4">
-                            <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
-                            <h6><strong>${opponentName}</strong> has challenged you to a match!</h6>
-                            <div class="border rounded p-3 mb-3" style="background-color: #f8f9fa;">
-                                <h6 class="fw-bold mb-2" style="color: #000;">
-                                    <i class="fas fa-calendar-alt me-2"></i>Match Proposal
-                                </h6>
-                                <div class="row text-start">
-                                    <div class="col-4">
-                                        <strong style="color: #000;">Location:</strong><br>
-                                        <span style="color: #333;">${proposedLocation || 'Not specified'}</span>
-                                    </div>
-                                    <div class="col-4">
-                                        <strong style="color: #000;">Date:</strong><br>
-                                        <span style="color: #333;">${formatProposedDate(proposedDateTime)}</span>
-                                    </div>
-                                    <div class="col-4">
-                                        <strong style="color: #000;">Time:</strong><br>
-                                        <span style="color: #333;">${formatProposedTime(proposedDateTime)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <p class="text-muted">Choose your response:</p>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-success btn-lg" onclick="acceptChallenge(${challengeId})">
-                                <i class="fas fa-check me-2"></i>Accept Challenge
-                            </button>
-                            <button class="btn btn-warning btn-lg" onclick="showCounterProposal(${challengeId})">
-                                <i class="fas fa-handshake me-2"></i>Counter-Propose
-                            </button>
-                            <button class="btn btn-danger btn-lg" onclick="declineChallenge(${challengeId})">
-                                <i class="fas fa-times me-2"></i>Decline Outright
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    new bootstrap.Modal(document.getElementById('challengeResponseModal')).show();
-    
-    // Clean up modal after it's hidden
-    document.getElementById('challengeResponseModal').addEventListener('hidden.bs.modal', function() {
-        modal.remove();
-    });
-}
-
-// Function to accept challenge
-function acceptChallenge(challengeId) {
-    fetch('/accept_challenge', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            challenge_id: challengeId,
-            player_id: {{ player.id }}
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            bootstrap.Modal.getInstance(document.getElementById('challengeResponseModal')).hide();
-            showAlert('success', data.message || 'Challenge accepted! Match has been scheduled.');
-            loadPendingMatches(); // Refresh the sections
-        } else {
-            showAlert('danger', 'Error accepting challenge: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('danger', 'Error accepting challenge');
-    });
-}
-
-// Function to decline challenge  
-function declineChallenge(challengeId) {
-    fetch('/decline_challenge', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            challenge_id: challengeId,
-            player_id: {{ player.id }}
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            bootstrap.Modal.getInstance(document.getElementById('challengeResponseModal')).hide();
-            showAlert('info', 'Challenge declined.');
-            loadPendingMatches(); // Refresh the sections
-        } else {
-            showAlert('danger', 'Error declining challenge: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('danger', 'Error declining challenge');
-    });
-}
-
-// Function to show counter-proposal modal
-function showCounterProposal(challengeId) {
-    // Close the challenge response modal first
-    const challengeModal = bootstrap.Modal.getInstance(document.getElementById('challengeResponseModal'));
-    if (challengeModal) {
-        challengeModal.hide();
-    }
-    
-    // Create counter-proposal modal
-    const modal = document.createElement('div');
-    modal.innerHTML = `
-        <div class="modal fade" id="counterProposalModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header" style="background: #F39C12; color: white;">
-                        <h5 class="modal-title">
-                            <i class="fas fa-handshake me-2"></i>Make Counter-Proposal
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="border rounded p-3 mb-4" style="background-color: rgba(255,255,255,0.1); color: white;">
-                            <h6 class="fw-bold mb-3" style="color: white;">
-                                <i class="fas fa-info-circle me-2"></i>Original Proposal
-                            </h6>
-                            <div class="row">
-                                <div class="col-4">
-                                    <strong style="color: white;">Location:</strong><br>
-                                    <span style="color: #ccc;">${playerLocation || 'Local'} area courts</span>
-                                </div>
-                                <div class="col-4">
-                                    <strong style="color: white;">Date:</strong><br>
-                                    <span style="color: #ccc;">To be specified</span>
-                                </div>
-                                <div class="col-4">
-                                    <strong style="color: white;">Time:</strong><br>
-                                    <span style="color: #ccc;">To be specified</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <p style="color: white;">Suggest a different time or location that works better for you:</p>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="proposedLocation" class="form-label fw-semibold">
-                                <i class="fas fa-map-marker-alt me-1" style="color: #3F567F;"></i>Alternative Location
-                            </label>
-                            <input type="text" class="form-control" id="proposedLocation" 
-                                   placeholder="e.g. Central Park Courts, Downtown YMCA">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="proposedTime" class="form-label fw-semibold">
-                                <i class="fas fa-clock me-1" style="color: #3F567F;"></i>Alternative Time
-                            </label>
-                            <input type="text" class="form-control" id="proposedTime" 
-                                   placeholder="e.g. Saturday Morning, Tuesday Evening 6pm">
-                        </div>
-                        
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <small>You can suggest just a location, just a time, or both. Leave blank any you're flexible about.</small>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-warning btn-lg" onclick="submitCounterProposal(${challengeId})">
-                                <i class="fas fa-paper-plane me-2"></i>Send Counter-Proposal
-                            </button>
-                            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    new bootstrap.Modal(document.getElementById('counterProposalModal')).show();
-    
-    // Clean up modal after it's hidden
-    document.getElementById('counterProposalModal').addEventListener('hidden.bs.modal', function() {
-        modal.remove();
-    });
-}
-
-// Function to submit counter-proposal
-function submitCounterProposal(challengeId) {
-    const proposedLocation = document.getElementById('proposedLocation').value.trim();
-    const proposedTime = document.getElementById('proposedTime').value.trim();
-    
-    if (!proposedLocation && !proposedTime) {
-        alert('Please suggest at least a location or time alternative.');
-        return;
-    }
-    
-    fetch('/decline_challenge', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            challenge_id: challengeId,
-            player_id: {{ player.id }},
-            proposed_location: proposedLocation,
-            proposed_time: proposedTime
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            bootstrap.Modal.getInstance(document.getElementById('counterProposalModal')).hide();
-            alert(data.message);
-            loadPendingMatches(); // Refresh the sections
-        } else {
-            alert('Error sending counter-proposal: ' + data.message);
-        }
-    })
-    .catch(error => {
-        alert('Error sending counter-proposal');
-    });
-}
-
-function openScoreModal(matchId, opponentName, player1Id, player2Id) {
-    currentMatchId = matchId;
-    const isPlayer1 = {{ player.id }} === player1Id;
-    
-    document.getElementById('match-details').innerHTML = `
-        <div class="alert" style="background: #333; border: 1px solid #555; color: white;">
-            <i class="fas fa-info-circle me-2"></i>
-            Recording match result vs <strong>${opponentName}</strong>
-        </div>
-    `;
-    
-    // Update player names in the digital scoreboard
-    const yourName = '{{ player.full_name.split()[0] }}';
-    const opponentDisplayName = opponentName.split(' ')[0]; // First name only
-    
-    // Update the scoreboard player name displays
-    document.getElementById('player1-set1-label').textContent = isPlayer1 ? yourName : opponentDisplayName;
-    document.getElementById('player2-set1-label').textContent = isPlayer1 ? opponentDisplayName : yourName;
-    
-    // Clear all input fields
-    document.getElementById('player1-set1').value = '';
-    document.getElementById('player2-set1').value = '';
-    document.getElementById('player1-set2').value = '';
-    document.getElementById('player2-set2').value = '';
-    document.getElementById('player1-set3').value = '';
-    document.getElementById('player2-set3').value = '';
-    
-    // Hide score preview
-    document.getElementById('score-preview').style.display = 'none';
-    
-    // Re-enable all inputs for score submission
-    ['player1-set1', 'player2-set1', 'player1-set2', 'player2-set2', 'player1-set3', 'player2-set3'].forEach(id => {
-        const input = document.getElementById(id);
-        input.disabled = false;
-        input.style.backgroundColor = '';
-        input.addEventListener('input', updateScorePreview);
-    });
-    
-    // Reset validation fields
-    document.getElementById('score-confirmation').checked = false;
-    document.querySelectorAll('input[name="opponent-level"]').forEach(radio => radio.checked = false);
-    
-    // Show ranking points info if not dismissed
-    showRankingInfoIfNeeded();
-    
-    new bootstrap.Modal(document.getElementById('scoreModal')).show();
-}
-
-function openValidationModal(matchId, opponentName, player1Id, player2Id, existingScore) {
-    currentMatchId = matchId;
-    const isPlayer1 = {{ player.id }} === player1Id;
-    
-    document.getElementById('match-details').innerHTML = `
-        <div class="alert alert-warning">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            Validating match result vs <strong>${opponentName}</strong>
-            <div class="mt-2">
-                <strong>Submitted Score:</strong> ${existingScore}
-            </div>
-        </div>
-    `;
-    
-    // Parse existing score and populate fields
-    if (existingScore) {
-        const sets = existingScore.split(' ');
-        if (sets.length >= 2) {
-            const set1 = sets[0].split('-');
-            const set2 = sets[1].split('-');
-            
-            document.getElementById('player1-set1').value = set1[0] || '';
-            document.getElementById('player2-set1').value = set1[1] || '';
-            document.getElementById('player1-set2').value = set2[0] || '';
-            document.getElementById('player2-set2').value = set2[1] || '';
-            
-            if (sets.length === 3) {
-                const set3 = sets[2].split('-');
-                document.getElementById('player1-set3').value = set3[0] || '';
-                document.getElementById('player2-set3').value = set3[1] || '';
-            } else {
-                document.getElementById('player1-set3').value = '';
-                document.getElementById('player2-set3').value = '';
-            }
-            
-            // Update score preview
-            updateScorePreview();
-        }
-    }
-    
-    // Update player names in the digital scoreboard for validation modal  
-    const yourName = '{{ player.full_name.split()[0] }}';
-    const opponentDisplayName = opponentName.split(' ')[0]; // First name only
-    
-    // Update the scoreboard player name displays
-    document.getElementById('player1-set1-label').textContent = isPlayer1 ? yourName : opponentDisplayName;
-    document.getElementById('player2-set1-label').textContent = isPlayer1 ? opponentDisplayName : yourName;
-    
-    // Disable score inputs since score is already submitted
-    ['player1-set1', 'player2-set1', 'player1-set2', 'player2-set2', 'player1-set3', 'player2-set3'].forEach(id => {
-        const input = document.getElementById(id);
-        input.disabled = true;
-        input.style.backgroundColor = '#f8f9fa';
-    });
-    
-    // Reset validation fields
-    document.getElementById('score-confirmation').checked = false;
-    document.querySelectorAll('input[name="opponent-level"]').forEach(radio => radio.checked = false);
-    
-    // Show ranking points info if not dismissed (for validation too)
-    showRankingInfoIfNeeded();
-    
-    new bootstrap.Modal(document.getElementById('scoreModal')).show();
-}
-
-function showRankingInfoIfNeeded() {
-    // Check if user has dismissed the ranking info
-    const dismissed = localStorage.getItem('rankingInfoDismissed');
-    if (!dismissed) {
-        document.getElementById('ranking-points-info').style.display = 'block';
-    } else {
-        document.getElementById('ranking-points-info').style.display = 'none';
-    }
-}
-
-function dismissRankingInfo() {
-    const dontShowAgain = document.getElementById('dont-show-ranking-info').checked;
-    
-    if (dontShowAgain) {
-        localStorage.setItem('rankingInfoDismissed', 'true');
-    }
-    
-    document.getElementById('ranking-points-info').style.display = 'none';
-}
-
-function updateScorePreview() {
-    const set1P1 = document.getElementById('player1-set1').value;
-    const set1P2 = document.getElementById('player2-set1').value;
-    const set2P1 = document.getElementById('player1-set2').value;
-    const set2P2 = document.getElementById('player2-set2').value;
-    const set3P1 = document.getElementById('player1-set3').value;
-    const set3P2 = document.getElementById('player2-set3').value;
-    
-    // Calculate sets won for digital scoreboard display
-    let player1SetsWon = 0;
-    let player2SetsWon = 0;
-    
-    // Count Set 1
-    if (set1P1 && set1P2) {
-        if (parseInt(set1P1) > parseInt(set1P2)) player1SetsWon++;
-        else if (parseInt(set1P2) > parseInt(set1P1)) player2SetsWon++;
-    }
-    
-    // Count Set 2
-    if (set2P1 && set2P2) {
-        if (parseInt(set2P1) > parseInt(set2P2)) player1SetsWon++;
-        else if (parseInt(set2P2) > parseInt(set2P1)) player2SetsWon++;
-    }
-    
-    // Count Set 3 (if played)
-    if (set3P1 && set3P2) {
-        if (parseInt(set3P1) > parseInt(set3P2)) player1SetsWon++;
-        else if (parseInt(set3P2) > parseInt(set3P1)) player2SetsWon++;
-    }
-    
-    // Update digital scoreboard sets won displays
-    document.getElementById('player1-sets-won').textContent = player1SetsWon;
-    document.getElementById('player2-sets-won').textContent = player2SetsWon;
-    
-    if (set1P1 && set1P2 && set2P1 && set2P2) {
-        let scoreText = `${set1P1}-${set1P2} ${set2P1}-${set2P2}`;
-        if (set3P1 && set3P2) {
-            scoreText += ` ${set3P1}-${set3P2}`;
-        }
-        
-        document.getElementById('formatted-score').textContent = scoreText;
-        document.getElementById('score-preview').style.display = 'block';
-    } else {
-        document.getElementById('score-preview').style.display = 'none';
-    }
-}
-
-function validateScore() {
-    // Check validation requirements first
-    const scoreConfirmed = document.getElementById('score-confirmation').checked;
-    const opponentLevelSelected = document.querySelector('input[name="opponent-level"]:checked');
-    
-    if (!scoreConfirmed) {
-        alert('Please confirm the score is accurate before validating');
-        return;
-    }
-    
-    if (!opponentLevelSelected) {
-        alert('Please rate your opponent\'s skill level accuracy before validating');
-        return;
-    }
-    // Get all set scores
-    const set1P1 = parseInt(document.getElementById('player1-set1').value);
-    const set1P2 = parseInt(document.getElementById('player2-set1').value);
-    const set2P1 = parseInt(document.getElementById('player1-set2').value);
-    const set2P2 = parseInt(document.getElementById('player2-set2').value);
-    const set3P1 = parseInt(document.getElementById('player1-set3').value) || null;
-    const set3P2 = parseInt(document.getElementById('player2-set3').value) || null;
-    
-    // Validate required sets
-    if (isNaN(set1P1) || isNaN(set1P2) || isNaN(set2P1) || isNaN(set2P2)) {
-        alert('Please enter scores for both Set 1 and Set 2');
-        return;
-    }
-    
-    // Validate set 3 consistency (either both filled or both empty)
-    if ((set3P1 === null) !== (set3P2 === null)) {
-        alert('If Set 3 was played, please enter scores for both players');
-        return;
-    }
-    
-    // Validate pickleball scoring rules
-    const sets = [
-        {p1: set1P1, p2: set1P2, name: 'Set 1'},
-        {p1: set2P1, p2: set2P2, name: 'Set 2'}
-    ];
-    
-    if (set3P1 !== null && set3P2 !== null) {
-        sets.push({p1: set3P1, p2: set3P2, name: 'Set 3'});
-    }
-    
-    // Validate each set
-    for (let set of sets) {
-        if (set.p1 === set.p2) {
-            alert(`${set.name} cannot be tied. Please enter the correct scores.`);
-            return;
-        }
-        
-        // Check win by 2 rule for scores >= 11
-        const winner = Math.max(set.p1, set.p2);
-        const loser = Math.min(set.p1, set.p2);
-        
-        if (winner >= 11) {
-            if (winner - loser < 2) {
-                alert(`${set.name}: Must win by 2 points when score is 11 or higher`);
-                return;
-            }
-        } else {
-            alert(`${set.name}: Sets must be played to at least 11 points`);
-            return;
-        }
-    }
-    
-    // Determine match winner (best of 3)
-    let player1SetsWon = 0;
-    let player2SetsWon = 0;
-    
-    sets.forEach(set => {
-        if (set.p1 > set.p2) {
-            player1SetsWon++;
-        } else {
-            player2SetsWon++;
-        }
-    });
-    
-    // Check if match result makes sense
-    if (sets.length === 2 && Math.abs(player1SetsWon - player2SetsWon) !== 2) {
-        alert('2-set match must be won 2-0. If it went to a third set, please enter Set 3 scores.');
-        return;
-    }
-    
-    if (sets.length === 3 && Math.abs(player1SetsWon - player2SetsWon) !== 1) {
-        alert('3-set match must be won 2-1');
-        return;
-    }
-    
-    // Format the score string
-    let formattedScore = `${set1P1}-${set1P2} ${set2P1}-${set2P2}`;
-    if (set3P1 !== null && set3P2 !== null) {
-        formattedScore += ` ${set3P1}-${set3P2}`;
-    }
-    
-    // Submit the validation
-    fetch('/validate_match_result', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            match_id: currentMatchId,
-            match_score: formattedScore,
-            player1_sets_won: player1SetsWon,
-            player2_sets_won: player2SetsWon,
-            validator_id: {{ player.id }},
-            opponent_skill_feedback: opponentLevelSelected.value
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            bootstrap.Modal.getInstance(document.getElementById('scoreModal')).hide();
-            alert(data.message);
-            loadPendingMatches(); // Refresh the pending matches list
-            
-            // If match is completed, refresh the page to update stats
-            if (data.match_completed) {
-                setTimeout(() => location.reload(), 1000);
-            }
-        } else {
-            alert(data.message || 'Failed to validate score');
-        }
-    })
-    .catch(error => {
-        console.error('Error submitting score:', error);
-        alert('Error submitting score. Please try again.');
-    });
-}
-
-// Membership modal functionality with mobile-friendly event handling
+// Membership modal functionality
 function showMembershipModal(suggestedType = 'discovery') {
-    try {
-        console.log('showMembershipModal called with type:', suggestedType);
-        alert(`About to create modal for: ${suggestedType}`);
     const modalHtml = `
-        <div class="modal fade" id="membershipModal" tabindex="-1" aria-labelledby="membershipModalLabel" aria-hidden="true">
+        <div class="modal fade" id="membershipModal" tabindex="-1">
             <div class="modal-dialog modal-xl">
-                <div class="modal-content">
-                    <div class="modal-header text-dark" style="background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
-                        <h5 class="modal-title" id="membershipModalLabel">
+                <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
                             <i class="fas fa-star me-2"></i>Choose Your Membership
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="text-center mb-4">
                             <h3 class="fw-bold">Start Your Journey</h3>
-                            <p class="text-muted">Choose the membership that fits your pickleball goals</p>
-                            <span class="badge bg-success fs-6 px-3 py-2">First Month FREE for both plans</span>
+                            <p style="color: var(--text-primary); opacity: 0.8;">Choose the membership that fits your pickleball goals</p>
                         </div>
                         
                         <div class="row g-4">
-                            <!-- Player Discovery -->
                             <div class="col-12 col-md-6">
-                                <div class="card h-100 ${suggestedType === 'discovery' ? 'border-primary border-3' : 'border-2'}">
-                                    ${suggestedType === 'discovery' ? '<div class="position-absolute top-0 start-50 translate-middle"><span class="badge bg-primary">Recommended</span></div>' : ''}
-                                    <div class="card-body p-4">
-                                        <div class="text-center mb-4">
-                                            <i class="fas fa-users text-primary fa-3x mb-3"></i>
-                                            <h4 class="fw-bold">Player Discovery</h4>
-                                            <div class="display-5 text-primary fw-bold">$4.99</div>
-                                            <small class="text-muted">per month</small>
-                                        </div>
+                                <div class="card h-100" style="background: rgba(255,255,255,0.05); border: ${suggestedType === 'discovery' ? '2px solid var(--accent-cyan)' : '1px solid var(--border-subtle)'};">
+                                    <div class="card-body p-4 text-center">
+                                        <i class="fas fa-users fa-3x mb-3" style="color: var(--accent-cyan);"></i>
+                                        <h4 class="fw-bold text-white">Player Discovery</h4>
+                                        <div class="display-5 fw-bold mb-2" style="color: var(--accent-cyan);">$4.99</div>
+                                        <small style="color: var(--text-primary); opacity: 0.7;">per month</small>
                                         
-                                        <ul class="list-unstyled mb-4">
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Find and match with compatible players</li>
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Chat with connected players</li>
+                                        <ul class="list-unstyled mt-4 mb-4 text-start">
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Find compatible players</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Chat with players</li>
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Organize casual games</li>
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>View detailed player profiles</li>
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Location-based player search</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>View detailed profiles</li>
                                         </ul>
                                         
-                                        <button type="button" class="btn btn-primary w-100 btn-lg" onclick="startSubscription('discovery')" ontouchstart="" data-membership="discovery">
+                                        <button class="btn btn-primary w-100 btn-lg" onclick="startSubscription('discovery')">
                                             <i class="fas fa-rocket me-2"></i>Start Free Trial
                                         </button>
-                                        <small class="text-white text-center d-block mt-2">Cancel anytime</small>
                                     </div>
                                 </div>
                             </div>
                             
-                            <!-- Tournament Access -->
                             <div class="col-12 col-md-6">
-                                <div class="card h-100 ${suggestedType === 'tournament' ? 'border-warning border-3' : 'border-2'}">
-                                    ${suggestedType === 'tournament' ? '<div class="position-absolute top-0 start-50 translate-middle"><span class="badge bg-warning">Recommended</span></div>' : ''}
-                                    <div class="card-body p-4">
-                                        <div class="text-center mb-4">
-                                            <i class="fas fa-trophy text-warning fa-3x mb-3"></i>
-                                            <h4 class="fw-bold">Tournament Access</h4>
-                                            <div class="display-5 text-warning fw-bold">$9.99</div>
-                                            <small class="text-muted">per month</small>
-                                        </div>
+                                <div class="card h-100" style="background: rgba(255,255,255,0.05); border: ${suggestedType === 'tournament' ? '2px solid var(--accent-green)' : '1px solid var(--border-subtle)'};">
+                                    <div class="card-body p-4 text-center">
+                                        <i class="fas fa-trophy fa-3x mb-3" style="color: var(--accent-green);"></i>
+                                        <h4 class="fw-bold text-white">Tournament Access</h4>
+                                        <div class="display-5 fw-bold mb-2" style="color: var(--accent-green);">$9.99</div>
+                                        <small style="color: var(--text-primary); opacity: 0.7;">per month</small>
                                         
-                                        <ul class="list-unstyled mb-4">
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i><strong>Everything in Player Discovery</strong></li>
+                                        <ul class="list-unstyled mt-4 mb-4 text-start">
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i><strong>Everything in Discovery</strong></li>
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Enter paid tournaments</li>
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Compete for cash prizes</li>
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Tournament brackets and standings</li>
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Advanced player statistics</li>
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Priority tournament registration</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Advanced statistics</li>
                                         </ul>
                                         
-                                        <button type="button" class="btn btn-warning w-100 btn-lg" onclick="startSubscription('tournament')" ontouchstart="" data-membership="tournament">
+                                        <button class="btn w-100 btn-lg" style="background: var(--accent-green); color: white;" onclick="startSubscription('tournament')">
                                             <i class="fas fa-crown me-2"></i>Start Free Trial
                                         </button>
-                                        <small class="text-white text-center d-block mt-2">Cancel anytime</small>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="alert alert-info mt-4" style="color: white !important;">
-                            <i class="fas fa-info-circle me-2" style="color: white !important;"></i>
-                            <strong style="color: white !important;">Free Trial:</strong> Start your free trial today! We'll collect your payment information but won't charge you until your second month. Cancel anytime during your trial.
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -2696,816 +852,33 @@ function showMembershipModal(suggestedType = 'discovery') {
         </div>
     `;
     
-    // Remove existing modal if any
     const existingModal = document.getElementById('membershipModal');
     if (existingModal) {
         existingModal.remove();
     }
     
-    // Add modal to page
-    alert('Adding modal to DOM...');
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Show modal
-    alert('About to show modal with Bootstrap...');
     const modalElement = document.getElementById('membershipModal');
-    if (modalElement) {
-        alert('Modal element found, creating Bootstrap modal...');
-        try {
-            const modalInstance = new bootstrap.Modal(modalElement);
-            modalInstance.show();
-            alert('Modal should be visible now!');
-        } catch (modalError) {
-            alert(`Modal error: ${modalError.message}`);
-            throw modalError;
-        }
-    } else {
-        alert('Modal element not found in DOM!');
-    }
-    
-    } catch (error) {
-        console.error('Error in showMembershipModal:', error);
-        // Fallback: redirect directly to discovery page
-        window.location.href = '/membership_payment/discovery';
-    }
+    const modalInstance = new bootstrap.Modal(modalElement);
+    modalInstance.show();
 }
 
-// Numeric input enforcement for score fields
-function enforceNumericInput() {
-    const scoreInputs = document.querySelectorAll('.score-input');
-    scoreInputs.forEach(input => {
-        input.addEventListener('input', function(e) {
-            // Remove any non-numeric characters
-            let value = e.target.value.replace(/[^0-9]/g, '');
-            // Limit to 2 digits max (max score is 30)
-            if (value.length > 2) {
-                value = value.substring(0, 2);
-            }
-            e.target.value = value;
-            
-            // Force green text color immediately
-            e.target.style.color = '#00FF00';
-            e.target.style.webkitTextFillColor = '#00FF00';
-        });
-        
-        // Also force style on focus
-        input.addEventListener('focus', function(e) {
-            e.target.style.color = '#00FF00';
-            e.target.style.webkitTextFillColor = '#00FF00';
-            e.target.style.background = '#000';
-        });
-    });
-}
-
-// Mobile-friendly event listeners 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, setting up event listeners');
-    
-    // Initialize numeric input enforcement
-    enforceNumericInput();
-    
-    // Handle membership modal buttons  
-    document.addEventListener('click', function(e) {
-        // Handle "Unlock Now" buttons
-        if (e.target.closest('button[onclick*="showMembershipModal"]')) {
-            e.preventDefault();
-            console.log('Membership modal button clicked');
-            alert('Opening membership modal...');
-            showMembershipModal('discovery');
-            return;
-        }
-        
-        // Handle "Start Free Trial" buttons in modal
-        if (e.target.closest('[data-membership]')) {
-            e.preventDefault();
-            const membershipType = e.target.closest('[data-membership]').dataset.membership;
-            console.log('Trial button clicked for:', membershipType);
-            alert(`Trial button clicked for: ${membershipType}`);
-            startSubscription(membershipType);
-            return;
-        }
-    });
-    
-    // Also handle touch events for mobile
-    document.addEventListener('touchend', function(e) {
-        // Handle "Unlock Now" buttons
-        if (e.target.closest('button[onclick*="showMembershipModal"]')) {
-            e.preventDefault();
-            console.log('Membership modal button touched');
-            alert('Touch detected - opening membership modal...');
-            showMembershipModal('discovery');
-            return;
-        }
-        
-        // Handle "Start Free Trial" buttons in modal
-        if (e.target.closest('[data-membership]')) {
-            e.preventDefault();
-            const membershipType = e.target.closest('[data-membership]').dataset.membership;
-            console.log('Trial button touched for:', membershipType);
-            alert(`Touch detected for: ${membershipType}`);
-            startSubscription(membershipType);
-            return;
-        }
-    });
-});
-
+// Start subscription functionality
 function startSubscription(membershipType) {
-    try {
-        console.log('startSubscription called with type:', membershipType);
-        alert(`Starting subscription for: ${membershipType}`); // Debug alert
-        
-        // Close the modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('membershipModal'));
-        if (modal) {
-            modal.hide();
-        }
-        
-        // Add small delay for modal to close, then redirect
-        setTimeout(() => {
-            const url = `/membership_payment/${membershipType}`;
-            console.log('Redirecting to:', url);
-            alert(`About to redirect to: ${url}`); // Debug alert
-            window.location.href = url;
-        }, 300);
-        
-    } catch (error) {
-        console.error('Error in startSubscription:', error);
-        alert(`Error: ${error.message}`); // Debug alert
-        // Fallback direct redirect
+    const modal = bootstrap.Modal.getInstance(document.getElementById('membershipModal'));
+    if (modal) {
+        modal.hide();
+    }
+    
+    setTimeout(() => {
         window.location.href = `/membership_payment/${membershipType}`;
-    }
+    }, 300);
 }
 
-function showRankingInfo() {
-    const modal = document.createElement('div');
-    modal.innerHTML = `
-        <div class="modal fade" id="ranking-info-modal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header text-dark" style="background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
-                        <h5 class="modal-title">
-                            <i class="fas fa-trophy me-2"></i>Ready 2 Dink Ranking System
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-12 col-md-6">
-                                <div class="card text-white" style="background-color: #2c3e50;">
-                                    <div class="card-body">
-                                        <h6 class="text-success">
-                                            <i class="fas fa-star me-1"></i>How to Earn Points
-                                        </h6>
-                                        <ul class="list-unstyled mb-0">
-                                            <li class="mb-2">
-                                                <span class="badge bg-success me-2">+10</span>
-                                                <span class="text-white">Win a regular match</span>
-                                            </li>
-                                            <li class="mb-2">
-                                                <span class="badge bg-warning text-dark me-2">+40</span>
-                                                <span class="text-white">Reach tournament quarter-finals</span>
-                                            </li>
-                                            <li class="mb-2">
-                                                <span class="badge bg-info me-2">+100</span>
-                                                <span class="text-white">Reach tournament semi-finals</span>
-                                            </li>
-                                            <li class="mb-2">
-                                                <span class="badge bg-secondary me-2">+200</span>
-                                                <span class="text-white">Tournament runner-up (2nd place)</span>
-                                            </li>
-                                            <li class="mb-0">
-                                                <span class="badge bg-primary me-2">+400</span>
-                                                <span class="text-white">Win a tournament (1st place)</span>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <div class="card text-white" style="background-color: #34495e;">
-                                    <div class="card-body">
-                                        <h6 class="text-primary">
-                                            <i class="fas fa-crown me-1"></i>Ranking Benefits
-                                        </h6>
-                                        <ul class="list-unstyled mb-0">
-                                            <li class="mb-2">
-                                                <i class="fas fa-map-marker-alt text-success me-2"></i>
-                                                <span class="text-white">Court advantage during tournaments</span>
-                                            </li>
-                                            <li class="mb-2">
-                                                <i class="fas fa-gift text-warning me-2"></i>
-                                                <span class="text-white">Perks like balls, accessories & gear</span>
-                                            </li>
-                                            <li class="mb-2">
-                                                <i class="fas fa-trophy text-info me-2"></i>
-                                                <span class="text-white">Priority tournament seeding</span>
-                                            </li>
-                                            <li class="mb-2">
-                                                <i class="fas fa-star text-primary me-2"></i>
-                                                <span class="text-white">Special ranking badges & recognition</span>
-                                            </li>
-                                            <li class="mb-0">
-                                                <i class="fas fa-crown text-danger me-2"></i>
-                                                <span class="text-white"><strong>Top 16 only:</strong> Year-end Championship invitation</span>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="alert alert-warning mt-3 text-white" style="background-color: #f57c00; border-color: #f57c00;">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-calendar-alt fa-2x me-3 text-white"></i>
-                                <div>
-                                    <h6 class="alert-heading mb-1 text-white">
-                                        <i class="fas fa-refresh me-1"></i>Annual Championship & Reset - Best of 5 Sets
-                                    </h6>
-                                    <p class="mb-0 text-white">
-                                        <strong>All ranking points reset to zero on January 1st each year.</strong>
-                                        Before the reset, we organize a <strong>best of 5 sets</strong> tournament by invitation only - 
-                                        <strong>only the top 16 players</strong> will compete for the championship title!
-                                        Make sure to climb the rankings to secure your invitation.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="text-center mt-3">
-                            <div class="row">
-                                <div class="col-4">
-                                    <div class="border rounded p-2">
-                                        <i class="fas fa-gamepad fa-2x text-success mb-2"></i>
-                                        <br>
-                                        <small class="text-muted">Play More<br>Matches</small>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="border rounded p-2">
-                                        <i class="fas fa-trophy fa-2x text-warning mb-2"></i>
-                                        <br>
-                                        <small class="text-muted">Join<br>Tournaments</small>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="border rounded p-2">
-                                        <i class="fas fa-crown fa-2x text-primary mb-2"></i>
-                                        <br>
-                                        <small class="text-muted">Climb the<br>Rankings</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="{{ url_for('quick_join_tournament', player_id=player.id) }}" class="btn btn-primary">
-                            <i class="fas fa-bolt me-1"></i>Quick Join Tournament
-                        </a>
-                        <a href="{{ url_for('leaderboard') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-medal me-1"></i>View Rankings
-                        </a>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    new bootstrap.Modal(document.getElementById('ranking-info-modal')).show();
-    
-    // Clean up modal after it's hidden
-    document.getElementById('ranking-info-modal').addEventListener('hidden.bs.modal', function() {
-        modal.remove();
-    });
-}
-
-// QR Code Sharing Functions
-function copyShareLink() {
-    const shareUrl = window.location.origin;
-    navigator.clipboard.writeText(shareUrl).then(function() {
-        // Show success feedback
-        const btn = event.target.closest('button');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
-        btn.classList.remove('btn-light');
-        btn.classList.add('btn-success');
-        
-        setTimeout(function() {
-            btn.innerHTML = originalText;
-            btn.classList.remove('btn-success');
-            btn.classList.add('btn-light');
-        }, 2000);
-    }).catch(function() {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = shareUrl;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        
-        const btn = event.target.closest('button');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
-        btn.classList.remove('btn-light');
-        btn.classList.add('btn-success');
-        
-        setTimeout(function() {
-            btn.innerHTML = originalText;
-            btn.classList.remove('btn-success');
-            btn.classList.add('btn-light');
-        }, 2000);
-    });
-}
-
-function shareOnSocial() {
-    const shareUrl = 'https://www.ready2dink.com';
-    const shareText = 'Join Ready 2 Dink - the best pickleball matchmaking community! 🏓';
-    
-    if (navigator.share) {
-        // Use native sharing API on mobile devices
-        navigator.share({
-            title: 'Ready 2 Dink - Pickleball Community',
-            text: shareText,
-            url: shareUrl
-        });
-    } else {
-        // Fallback: show sharing options
-        const modal = document.createElement('div');
-        modal.innerHTML = `
-            <div class="modal fade" id="share-modal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">
-                                <i class="fas fa-share-alt me-2"></i>Share Ready 2 Dink
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body text-center">
-                            <p class="mb-4">${shareText}</p>
-                            <div class="d-grid gap-2">
-                                <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}" 
-                                   target="_blank" class="btn btn-primary">
-                                    <i class="fab fa-facebook-f me-2"></i>Share on Facebook
-                                </a>
-                                <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText + ' ' + shareUrl)}" 
-                                   target="_blank" class="btn btn-info">
-                                    <i class="fab fa-twitter me-2"></i>Share on Twitter
-                                </a>
-                                <button onclick="copyShareLink(); bootstrap.Modal.getInstance(document.getElementById('share-modal')).hide();" 
-                                        class="btn btn-success">
-                                    <i class="fas fa-link me-2"></i>Copy Link
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        const shareModal = new bootstrap.Modal(document.getElementById('share-modal'));
-        shareModal.show();
-        
-        // Clean up modal after it's hidden
-        document.getElementById('share-modal').addEventListener('hidden.bs.modal', function() {
-            modal.remove();
-        });
-    }
-}
-
-function toggleNotificationButtons() {
-    const desktopBtn = document.getElementById('notificationBtn');
-    const mobileBtn = document.getElementById('notificationBtnMobile');
-    
-    // Check current state based on button text
-    const isCurrentlyEnabled = desktopBtn && desktopBtn.innerHTML.includes('Disable');
-    
-    if (isCurrentlyEnabled) {
-        disableNotifications();
-    } else {
-        enableNotifications();
-    }
-}
-
-function enableNotifications() {
-    // Check if notifications are supported
-    if (!('Notification' in window)) {
-        alert('This browser does not support notifications');
-        return;
-    }
-    
-    // Request permission
-    Notification.requestPermission().then(function(permission) {
-        if (permission === 'granted') {
-            updateNotificationButtons(true);
-            console.log('Notifications enabled');
-        } else {
-            console.log('Notification permission denied');
-        }
-    });
-}
-
-function disableNotifications() {
-    updateNotificationButtons(false);
-    console.log('Notifications disabled');
-}
-
-function updateNotificationButtons(enabled) {
-    const desktopBtn = document.getElementById('notificationBtn');
-    const mobileBtn = document.getElementById('notificationBtnMobile');
-    
-    const buttons = [desktopBtn, mobileBtn].filter(btn => btn);
-    
-    buttons.forEach(btn => {
-        if (enabled) {
-            btn.innerHTML = '<i class="fas fa-bell-slash me-1"></i>Disable Notifications';
-            btn.className = 'btn btn-warning';
-        } else {
-            btn.innerHTML = '<i class="fas fa-bell me-1"></i>Enable Notifications';
-            btn.className = 'btn btn-success';
-        }
-    });
-}
-
-// Check notification status on page load
-document.addEventListener('DOMContentLoaded', function() {
-    if ('Notification' in window) {
-        const isEnabled = Notification.permission === 'granted';
-        updateNotificationButtons(isEnabled);
-    }
-});
-
-// Function to show court location
+// Court location functionality
 function showCourtLocation(courtName, type) {
-    if (!courtName || courtName.trim() === '') {
-        alert('No court location set');
-        return;
-    }
-    
-    // Create modal dialog to show court information
-    const modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.innerHTML = `
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #3F567F 0%, #D174D2 100%); color: white;">
-                    <h5 class="modal-title">
-                        <i class="fas fa-map-marker-alt me-2"></i>
-                        Favorite Court ${type === 'primary' ? '#1' : '#2'}
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="text-center mb-3">
-                        <h4 style="color: #3F567F;">${courtName}</h4>
-                        <p class="text-muted">This player's ${type === 'primary' ? 'primary' : 'secondary'} favorite pickleball location</p>
-                    </div>
-                    <div class="d-grid gap-2">
-                        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(courtName)}" 
-                           target="_blank" class="btn btn-primary">
-                            <i class="fas fa-search me-2"></i>Search on Google Maps
-                        </a>
-                        <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(courtName)}" 
-                           target="_blank" class="btn btn-outline-primary">
-                            <i class="fas fa-directions me-2"></i>Get Directions
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Show modal
-    const bootstrapModal = new bootstrap.Modal(modal);
-    bootstrapModal.show();
-    
-    // Remove modal from DOM when hidden
-    modal.addEventListener('hidden.bs.modal', function() {
-        document.body.removeChild(modal);
-    });
-}
-
-// Enhanced notification toggle function with proper source toggle handling
-async function toggleNotifications(sourceToggle = null) {
-    let toggle, status;
-    
-    // If no source toggle provided, try to get it from event.target
-    if (!sourceToggle && window.event && window.event.target) {
-        sourceToggle = window.event.target;
-    }
-    
-    // Determine which toggle was clicked and get corresponding status element
-    if (sourceToggle) {
-        toggle = sourceToggle;
-        const toggleId = toggle.id;
-        
-        if (toggleId === 'notificationToggle') {
-            status = document.getElementById('notificationStatus');
-        } else {
-            console.error('Unknown toggle element:', toggleId);
-            return;
-        }
-    } else {
-        console.error('No source toggle provided and could not determine from event');
-        return;
-    }
-    
-    // Check if elements exist before accessing properties
-    if (!toggle || !status) {
-        console.error('Notification toggle or status element not found');
-        return;
-    }
-    
-    // Update status text immediately when toggle changes
-    status.textContent = toggle.checked ? 'ON' : 'OFF';
-    
-    // No sync needed since there's only one notification toggle now
-    
-    try {
-        const response = await fetch('/toggle-notifications', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                enabled: toggle.checked
-            })
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-            // Show simple success message
-            const message = toggle.checked ? 
-                '✅ Notifications enabled!' : 
-                '🔕 Notifications disabled.';
-            showAlert('success', message);
-            
-        } else {
-            // Revert all toggles if failed
-            const wasChecked = !toggle.checked;
-            toggle.checked = wasChecked;
-            status.textContent = wasChecked ? 'ON' : 'OFF';
-            
-            // Sync all other toggles
-            if (mobileToggle && mobileToggle !== toggle) {
-                mobileToggle.checked = wasChecked;
-                mobileStatus.textContent = wasChecked ? 'ON' : 'OFF';
-            }
-            if (desktopToggle && desktopToggle !== toggle) {
-                desktopToggle.checked = wasChecked;
-                desktopStatus.textContent = wasChecked ? 'ON' : 'OFF';
-            }
-            if (mainToggle && mainToggle !== toggle) {
-                mainToggle.checked = wasChecked;
-                mainStatus.textContent = wasChecked ? 'ON' : 'OFF';
-            }
-            showAlert('danger', '❌ Failed to update notification settings');
-        }
-    } catch (error) {
-        console.error('Error updating notifications:', error);
-        // Revert all toggles if failed
-        const wasChecked = !toggle.checked;
-        toggle.checked = wasChecked;
-        status.textContent = wasChecked ? 'ON' : 'OFF';
-        
-        // Sync all other toggles
-        if (mobileToggle && mobileToggle !== toggle) {
-            mobileToggle.checked = wasChecked;
-            mobileStatus.textContent = wasChecked ? 'ON' : 'OFF';
-        }
-        if (desktopToggle && desktopToggle !== toggle) {
-            desktopToggle.checked = wasChecked;
-            desktopStatus.textContent = wasChecked ? 'ON' : 'OFF';
-        }
-        if (mainToggle && mainToggle !== toggle) {
-            mainToggle.checked = wasChecked;
-            mainStatus.textContent = wasChecked ? 'ON' : 'OFF';
-        }
-        showAlert('danger', '❌ Error updating notifications');
-    }
-}
-
-
-// Simple message display function
-function showSimpleMessage(message, type) {
-    const alertClass = type === 'error' ? 'alert-danger' : `alert-${type}`;
-    const alert = document.createElement('div');
-    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 350px;';
-    alert.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alert);
-    
-    // Auto remove after 4 seconds
-    setTimeout(() => {
-        if (alert.parentNode) {
-            alert.remove();
-        }
-    }, 4000);
-}
-
-// Function to show Bootstrap alerts instead of browser popups
-function showAlert(type, message) {
-    const notificationArea = document.getElementById('notificationArea');
-    const alertId = 'alert-' + Date.now();
-    
-    const alertHtml = `
-        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert" 
-             style="margin-bottom: 10px; border-radius: 8px; border: none;">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : type === 'info' ? 'info-circle' : 'exclamation-circle'} me-2"></i>
-                <div>${message}</div>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    `;
-    
-    notificationArea.insertAdjacentHTML('afterbegin', alertHtml);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        const alertElement = document.getElementById(alertId);
-        if (alertElement) {
-            const bsAlert = new bootstrap.Alert(alertElement);
-            bsAlert.close();
-        }
-    }, 5000);
-}
-
-// Load initial notification state and set up toggle event listeners
-document.addEventListener('DOMContentLoaded', function() {
-    // Load initial notification state
-    loadNotificationState();
-    
-    const toggle = document.getElementById('notificationToggle');
-    
-    if (toggle) {
-        toggle.addEventListener('change', (event) => toggleNotifications(event.target));
-    }
-});
-
-// Load current notification state from server
-async function loadNotificationState() {
-    try {
-        const response = await fetch('/notification-status');
-        const data = await response.json();
-        
-        // Update toggle state to match server
-        const toggle = document.getElementById('notificationToggle');
-        const status = document.getElementById('notificationStatus');
-        
-        if (toggle && status) {
-            toggle.checked = data.enabled;
-            status.textContent = data.enabled ? 'ON' : 'OFF';
-        }
-        
-        console.log('Notification state loaded:', data.enabled ? 'enabled' : 'disabled');
-    } catch (error) {
-        console.error('Failed to load notification state:', error);
-    }
+    showSuccessToast(`Opening location for ${courtName}`);
+    // Could integrate with maps API here
 }
 </script>
-
-<style>
-@keyframes pulse {
-    0% {
-        transform: scale(0.8);
-        opacity: 0.8;
-    }
-    50% {
-        transform: scale(1.1);
-        opacity: 0.3;
-    }
-    100% {
-        transform: scale(0.8);
-        opacity: 0.8;
-    }
-}
-
-.hover-scale {
-    transform: scale(1);
-    transition: all 0.3s ease;
-}
-
-.hover-scale:hover {
-    transform: scale(1.05) !important;
-}
-
-/* Force score input styling to override Bootstrap and mobile browser defaults */
-.score-input {
-    background: #000 !important;
-    background-color: #000 !important;
-    color: #00FF00 !important;
-    border: 2px solid #333 !important;
-    font-family: 'Courier New', monospace !important;
-    font-size: 24px !important;
-    font-weight: bold !important;
-    border-radius: 8px !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: textfield !important;
-    appearance: none !important;
-}
-
-.score-input:focus {
-    background: #000 !important;
-    background-color: #000 !important;
-    color: #00FF00 !important;
-    border-color: #00FF00 !important;
-    box-shadow: 0 0 0 0.2rem rgba(0, 255, 0, 0.25) !important;
-    outline: none !important;
-}
-
-.score-input:active,
-.score-input:hover {
-    background: #000 !important;
-    background-color: #000 !important;
-    color: #00FF00 !important;
-}
-
-.score-input::placeholder {
-    color: #666 !important;
-    opacity: 0.8 !important;
-}
-
-/* Comprehensive mobile browser overrides for score inputs */
-input[type="number"].score-input,
-.score-input,
-#scoreModal input[type="number"],
-#scoreModal .score-input {
-    background: #000 !important;
-    background-color: #000 !important;
-    color: #00FF00 !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: textfield !important;
-    appearance: none !important;
-    -webkit-text-fill-color: #00FF00 !important;
-    -webkit-background-clip: padding-box !important;
-    caret-color: #00FF00 !important;
-    text-shadow: none !important;
-    box-shadow: none !important;
-}
-
-input[type="number"].score-input:focus,
-.score-input:focus,
-#scoreModal input[type="number"]:focus,
-#scoreModal .score-input:focus,
-input[type="number"].score-input:active,
-.score-input:active,
-#scoreModal input[type="number"]:active,
-#scoreModal .score-input:active {
-    background: #000 !important;
-    background-color: #000 !important;
-    color: #00FF00 !important;
-    -webkit-text-fill-color: #00FF00 !important;
-    border-color: #00FF00 !important;
-    outline: none !important;
-    box-shadow: 0 0 0 0.2rem rgba(0, 255, 0, 0.25) !important;
-}
-
-/* Safari iOS specific overrides */
-@supports (-webkit-touch-callout: none) {
-    input[type="number"].score-input,
-    .score-input {
-        -webkit-text-fill-color: #00FF00 !important;
-        -webkit-opacity: 1 !important;
-        opacity: 1 !important;
-    }
-}
-
-/* Mobile consistency - ensure identical appearance to desktop */
-@media (max-width: 767px) {
-    /* Only override what's necessary for visibility - maintain desktop styling */
-    #scoreModal .score-input {
-        font-size: 24px !important;
-        font-weight: bold !important;
-        min-height: auto !important;
-    }
-}
-
-/* Force all text in SCORE MODAL validation section to be white - ONLY in scoreModal */
-#scoreModal .card .card-body,
-#scoreModal .card .card-body *,
-#scoreModal .form-check-label,
-#scoreModal .form-label,
-#scoreModal .alert,
-#scoreModal .alert * {
-    color: white !important;
-}
-
-/* Ensure radio buttons and checkboxes are visible - ONLY in scoreModal */
-#scoreModal .form-check-input {
-    background-color: #666 !important;
-    border-color: #999 !important;
-}
-
-#scoreModal .form-check-input:checked {
-    background-color: #00FF00 !important;
-    border-color: #00FF00 !important;
-}
-</style>
 {% endblock %}
