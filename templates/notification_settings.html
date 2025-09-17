@@ -106,6 +106,223 @@
 </div>
 
 <script>
+// Check if service worker is supported
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+    navigator.serviceWorker.register('/service-worker.js')
+        .then(function(registration) {
+            console.log('Service Worker registered successfully');
+        })
+        .catch(function(error) {
+            console.log('Service Worker registration failed:', error);
+        });
+}
+
+// Update notification UI based on current status
+async function updateNotificationUI() {
+    try {
+        const statusText = document.getElementById('notification-status-text');
+        const enableBtn = document.getElementById('enable-notifications-btn');
+        const disableBtn = document.getElementById('disable-notifications-btn');
+        const testBtn = document.getElementById('test-notification-btn');
+        
+        // Reset UI
+        enableBtn.style.display = 'none';
+        disableBtn.style.display = 'none';
+        testBtn.style.display = 'none';
+        
+        // Check browser notification support
+        if (!('Notification' in window)) {
+            statusText.innerHTML = '<i class="fas fa-times-circle text-danger me-1"></i>Browser does not support notifications';
+            return;
+        }
+        
+        // Check notification permission
+        const permission = Notification.permission;
+        
+        // Get current status from server
+        const response = await fetch('/notification-status');
+        const data = await response.json();
+        
+        if (permission === 'denied') {
+            statusText.innerHTML = '<i class="fas fa-ban text-danger me-1"></i>Notifications blocked by browser';
+            return;
+        } else if (permission === 'granted' && data.enabled) {
+            statusText.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Notifications enabled';
+            disableBtn.style.display = 'block';
+            testBtn.style.display = 'block';
+        } else {
+            statusText.innerHTML = '<i class="fas fa-bell-slash text-muted me-1"></i>Notifications disabled';
+            enableBtn.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error checking notification status:', error);
+        document.getElementById('notification-status-text').innerHTML = 
+            '<i class="fas fa-exclamation-triangle text-warning me-1"></i>Error checking status';
+    }
+}
+
+// Subscribe to notifications
+async function subscribeToNotifications() {
+    try {
+        const enableBtn = document.getElementById('enable-notifications-btn');
+        enableBtn.disabled = true;
+        enableBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Enabling...';
+        
+        // Request notification permission
+        const permission = await Notification.requestPermission();
+        
+        if (permission !== 'granted') {
+            throw new Error('Notification permission denied');
+        }
+        
+        // Get service worker registration
+        const registration = await navigator.serviceWorker.ready;
+        
+        // Subscribe to push notifications
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(await getVapidPublicKey())
+        });
+        
+        // Send subscription to server
+        const response = await fetch('/subscribe-notifications', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                subscription: subscription.toJSON()
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showFlashMessage('Notifications enabled successfully!', 'success');
+            updateNotificationUI();
+        } else {
+            throw new Error(result.message || 'Failed to enable notifications');
+        }
+        
+    } catch (error) {
+        console.error('Error enabling notifications:', error);
+        showFlashMessage('Failed to enable notifications: ' + error.message, 'error');
+        
+        const enableBtn = document.getElementById('enable-notifications-btn');
+        enableBtn.disabled = false;
+        enableBtn.innerHTML = '<i class="fas fa-bell me-1"></i>Enable Notifications';
+    }
+}
+
+// Unsubscribe from notifications
+async function unsubscribeFromNotifications() {
+    try {
+        const disableBtn = document.getElementById('disable-notifications-btn');
+        disableBtn.disabled = true;
+        disableBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Disabling...';
+        
+        // Call server to disable notifications
+        const response = await fetch('/unsubscribe-notifications', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showFlashMessage('Notifications disabled successfully!', 'success');
+            updateNotificationUI();
+        } else {
+            throw new Error(result.message || 'Failed to disable notifications');
+        }
+        
+    } catch (error) {
+        console.error('Error disabling notifications:', error);
+        showFlashMessage('Failed to disable notifications: ' + error.message, 'error');
+        
+        const disableBtn = document.getElementById('disable-notifications-btn');
+        disableBtn.disabled = false;
+        disableBtn.innerHTML = '<i class="fas fa-bell-slash me-1"></i>Disable Notifications';
+    }
+}
+
+// Send test notification
+async function sendTestNotification() {
+    try {
+        const testBtn = document.getElementById('test-notification-btn');
+        testBtn.disabled = true;
+        testBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+        
+        const response = await fetch('/send-test-notification', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showFlashMessage('Test notification sent! Check your device.', 'success');
+        } else {
+            throw new Error(result.message || 'Failed to send test notification');
+        }
+        
+    } catch (error) {
+        console.error('Error sending test notification:', error);
+        showFlashMessage('Failed to send test notification: ' + error.message, 'error');
+    } finally {
+        const testBtn = document.getElementById('test-notification-btn');
+        testBtn.disabled = false;
+        testBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Test Notification';
+    }
+}
+
+// Helper function to convert VAPID key
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+    
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+// Helper function to get VAPID public key
+async function getVapidPublicKey() {
+    // For demo purposes - in production this should come from your server
+    return 'BCqX9gw8Q9LGaGzKN2WT2dKkNE_RKS8iO-rvGwlnTw8-1WL8f-4JlHJ0p8k3Jk8k3K2k3K2k3K2k3K2k3K2k3K2k3';
+}
+
+// Helper function to show flash messages
+function showFlashMessage(message, type) {
+    // Create flash message element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at the top of the content
+    const content = document.querySelector('.card-body');
+    content.insertBefore(alertDiv, content.firstChild);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     updateNotificationUI();
     
