@@ -46,8 +46,8 @@ body {
 
 .challenge-card:hover {
     border-color: var(--accent-cyan);
-    box-shadow: var(--glow-effect);
-    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.5), 0 20px 40px rgba(0, 0, 0, 0.3);
+    transform: translateY(-3px);
 }
 
 .challenge-card.incoming {
@@ -99,22 +99,25 @@ body {
 .skill-badge {
     background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
     color: white;
-    font-weight: 600;
-    font-size: 0.85rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 15px;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 .status-badge {
-    font-weight: 600;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 0.75rem 1.25rem;
+    border-radius: 25px;
+    font-size: 1rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    animation: pulse 2s infinite;
 }
 
 .status-pending {
@@ -147,37 +150,39 @@ body {
 }
 
 .action-btn {
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 14px;
-    letter-spacing: 0.025em;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
     transition: all 0.3s ease;
     border: none;
-    padding: 0.5rem 1rem;
-    min-width: 80px;
+    padding: 1rem 2rem;
+    min-width: 120px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 .btn-accept {
     background: linear-gradient(135deg, var(--accent-green), #06d6a0);
     color: white;
-    box-shadow: 0 4px 15px rgba(0, 255, 65, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 255, 65, 0.4);
 }
 
 .btn-accept:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 255, 65, 0.6);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.6);
     color: white;
 }
 
 .btn-decline {
     background: linear-gradient(135deg, var(--accent-red), #dc3545);
     color: white;
-    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+    box-shadow: 0 8px 32px rgba(255, 71, 87, 0.4);
 }
 
 .btn-decline:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(255, 71, 87, 0.6);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(255, 71, 87, 0.6);
     color: white;
 }
 
@@ -192,18 +197,22 @@ body {
 
 .form-control-dark {
     background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
+    border: 2px solid var(--border-subtle);
+    border-radius: 16px;
     color: white;
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 18px;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    transition: all 0.3s ease;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
 }
 
 .form-control-dark:focus {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.15);
     border-color: var(--accent-cyan);
-    box-shadow: 0 0 0 0.2rem rgba(0, 245, 255, 0.25);
+    box-shadow: 0 0 0 0.3rem rgba(0, 245, 255, 0.25), 0 0 20px rgba(0, 245, 255, 0.4);
     color: white;
+    transform: translateY(-2px);
 }
 
 .form-control-dark::placeholder {
@@ -218,57 +227,67 @@ body {
     font-weight: 700;
     margin-bottom: 1.5rem;
     font-size: 1.5rem;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
 }
 
 .empty-state {
     text-align: center;
-    padding: 3rem 2rem;
-    color: rgba(255, 255, 255, 0.6);
-}
-
-.empty-state i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    color: var(--accent-cyan);
-}
-
-.player-option {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 0.5rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.player-option:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--accent-cyan);
-    transform: translateY(-1px);
-}
-
-.player-option.selected {
-    background: rgba(0, 245, 255, 0.1);
-    border-color: var(--accent-cyan);
-    box-shadow: var(--glow-effect);
-}
-
-.record-badge {
-    background: rgba(255, 255, 255, 0.1);
+    padding: 4rem 2rem;
     color: rgba(255, 255, 255, 0.8);
-    padding: 0.25rem 0.5rem;
-    border-radius: 8px;
-    font-size: 0.8rem;
     font-weight: 500;
 }
 
-.match-details {
-    background: rgba(255, 255, 255, 0.05);
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 20px rgba(0, 245, 255, 0.6);
+    animation: pulse 3s infinite;
+}
+
+.player-option {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(0, 245, 255, 0.02));
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.player-option:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(0, 245, 255, 0.08));
+    border-color: var(--accent-cyan);
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+.player-option.selected {
+    background: linear-gradient(135deg, rgba(0, 245, 255, 0.15), rgba(191, 0, 255, 0.05));
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 25px rgba(0, 245, 255, 0.4), inset 0 0 20px rgba(0, 245, 255, 0.1);
+}
+
+.record-badge {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(0, 245, 255, 0.1));
+    color: #ffffff;
+    padding: 0.4rem 0.8rem;
     border-radius: 12px;
-    padding: 0.75rem;
-    margin-top: 0.5rem;
     font-size: 0.9rem;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
+    border: 1px solid rgba(0, 245, 255, 0.2);
+}
+
+.match-details {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(0, 245, 255, 0.05));
+    border-radius: 16px;
+    padding: 1rem;
+    margin-top: 0.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border: 1px solid rgba(0, 245, 255, 0.1);
 }
 
 .result-badge {
@@ -290,6 +309,17 @@ body {
     box-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
 }
 
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.02);
+    }
+}
+
 @media (max-width: 768px) {
     .challenges-container {
         padding: 1rem 0;
@@ -306,9 +336,9 @@ body {
     }
     
     .action-btn {
-        font-size: 12px;
-        padding: 0.4rem 0.8rem;
-        min-width: 70px;
+        font-size: 0.9rem;
+        padding: 0.8rem 1.5rem;
+        min-width: 100px;
     }
 }
 </style>
@@ -321,7 +351,7 @@ body {
                     <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #00f5ff, #bf00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
                         <i class="fas fa-swords me-3"></i>Challenges
                     </h1>
-                    <p class="lead text-white opacity-75">Challenge other players and manage your matches</p>
+                    <p class="lead text-white fw-semibold" style="text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);">Challenge other players and manage your matches</p>
                 </div>
             </div>
         </div>
@@ -351,7 +381,7 @@ body {
                                 <div class="col">
                                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
                                         <div>
-                                            <h5 class="mb-1 text-white fw-bold">{{ challenge.challenger_name }}</h5>
+                                            <h5 class="mb-1 text-white fw-bold" style="text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);">{{ challenge.challenger_name }}</h5>
                                             <div class="d-flex flex-wrap gap-2 mb-2">
                                                 <span class="skill-badge">{{ challenge.challenger_skill }}</span>
                                                 <span class="record-badge">{{ challenge.challenger_wins or 0 }}W-{{ challenge.challenger_losses or 0 }}L</span>
@@ -398,7 +428,7 @@ body {
                     <div class="challenge-card">
                         <div class="empty-state">
                             <i class="fas fa-inbox"></i>
-                            <h5 class="text-white mb-2">No Incoming Challenges</h5>
+                            <h5 class="text-white mb-2 fw-bold" style="text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);">No Incoming Challenges</h5>
                             <p>When other players challenge you, they'll appear here</p>
                         </div>
                     </div>
@@ -431,7 +461,7 @@ body {
                                 <div class="col">
                                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
                                         <div>
-                                            <h5 class="mb-1 text-white fw-bold">{{ challenge.opponent_name }}</h5>
+                                            <h5 class="mb-1 text-white fw-bold" style="text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);">{{ challenge.opponent_name }}</h5>
                                             <div class="d-flex flex-wrap gap-2 mb-2">
                                                 <span class="skill-badge">{{ challenge.opponent_skill }}</span>
                                                 <span class="record-badge">{{ challenge.opponent_wins or 0 }}W-{{ challenge.opponent_losses or 0 }}L</span>
@@ -464,7 +494,7 @@ body {
                     <div class="challenge-card">
                         <div class="empty-state">
                             <i class="fas fa-paper-plane"></i>
-                            <h5 class="text-white mb-2">No Sent Challenges</h5>
+                            <h5 class="text-white mb-2 fw-bold" style="text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);">No Sent Challenges</h5>
                             <p>Challenge other players below to get started</p>
                         </div>
                     </div>
@@ -544,7 +574,7 @@ body {
                                         </div>
                                         <div class="col">
                                             <label for="player_{{ player.id }}" class="form-check-label" style="cursor: pointer; width: 100%;">
-                                                <h6 class="mb-1 text-white">{{ player.full_name }}</h6>
+                                                <h6 class="mb-1 text-white fw-bold" style="text-shadow: 0 0 10px rgba(0, 245, 255, 0.4);">{{ player.full_name }}</h6>
                                                 <div class="d-flex flex-wrap gap-2">
                                                     <span class="skill-badge">{{ player.skill_level }}</span>
                                                     <span class="record-badge">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
