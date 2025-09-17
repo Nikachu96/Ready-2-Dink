@@ -10,7 +10,7 @@
     --primary-bg: #0f0f23;
     --secondary-bg: #1a1a2e;
     --card-bg: rgba(26, 26, 46, 0.8);
-    --text-primary: #e2e8f0;
+    --text-primary: #ffffff;
     --accent-cyan: #00f5ff;
     --accent-green: #00ff41;
     --accent-purple: #bf00ff;
@@ -110,10 +110,10 @@ body {
 }
 
 .stat-label {
-    color: var(--text-primary);
+    color: #ffffff !important;
     font-weight: 500;
-    opacity: 0.8;
-    font-size: 0.9rem;
+    opacity: 1.0 !important;
+    font-size: 16px !important;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -350,7 +350,7 @@ body {
                         </h1>
                         
                         {% if player.player_id %}
-                        <p class="mb-3" style="color: var(--text-primary); opacity: 0.8;">
+                        <p class="mb-3" style="color: #ffffff !important; opacity: 1.0 !important;">
                             <i class="fas fa-id-card me-2"></i>Player ID: <strong style="color: var(--accent-cyan);">{{ player.player_id }}</strong>
                         </p>
                         {% endif %}
@@ -420,7 +420,7 @@ body {
                                 <i class="fas fa-map-marker-alt me-3" style="color: var(--accent-purple);"></i>
                                 <div>
                                     <div class="fw-bold">Primary Court</div>
-                                    <small>{{ player.preferred_court_1 }}</small>
+                                    <span style="font-size: 16px !important; color: #f1f5f9 !important;">{{ player.preferred_court_1 }}</span>
                                 </div>
                             </div>
                         </div>
@@ -432,7 +432,7 @@ body {
                                 <i class="fas fa-map-marker-alt me-3" style="color: var(--accent-purple);"></i>
                                 <div>
                                     <div class="fw-bold">Secondary Court</div>
-                                    <small>{{ player.preferred_court_2 }}</small>
+                                    <span style="font-size: 16px !important; color: #f1f5f9 !important;">{{ player.preferred_court_2 }}</span>
                                 </div>
                             </div>
                         </div>
@@ -504,12 +504,12 @@ body {
                         <div class="row g-2 mt-3">
                             <div class="col-6">
                                 <button class="btn btn-outline-light w-100" onclick="loadChallenges()">
-                                    <i class="fas fa-inbox me-1"></i><br><small>Challenges</small>
+                                    <i class="fas fa-inbox me-1"></i><br><span style="font-size: 16px !important;">Challenges</span>
                                 </button>
                             </div>
                             <div class="col-6">
                                 <button class="btn btn-outline-light w-100" onclick="loadPendingMatches()">
-                                    <i class="fas fa-clipboard-list me-1"></i><br><small>Submit Results</small>
+                                    <i class="fas fa-clipboard-list me-1"></i><br><span style="font-size: 16px !important;">Submit Results</span>
                                 </button>
                             </div>
                         </div>
@@ -517,12 +517,12 @@ body {
                         <div class="row g-2">
                             <div class="col-6">
                                 <a href="{{ url_for('profile_settings') }}" class="btn btn-outline-light w-100 text-decoration-none">
-                                    <i class="fas fa-user-cog me-1"></i><br><small>Profile</small>
+                                    <i class="fas fa-user-cog me-1"></i><br><span style="font-size: 16px !important;">Profile</span>
                                 </a>
                             </div>
                             <div class="col-6">
                                 <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 text-decoration-none">
-                                    <i class="fas fa-sign-out-alt me-1"></i><br><small>Sign Out</small>
+                                    <i class="fas fa-sign-out-alt me-1"></i><br><span style="font-size: 16px !important;">Sign Out</span>
                                 </a>
                             </div>
                         </div>
@@ -532,20 +532,20 @@ body {
                     <div class="mt-4 pt-4" style="border-top: 1px solid var(--border-subtle);">
                         <div class="row g-2 text-center">
                             <div class="col-4">
-                                <div class="small text-muted mb-1">Location</div>
-                                <div class="fw-bold text-truncate" style="color: var(--accent-cyan); font-size: 0.8rem;">
+                                <div class="mb-1" style="color: #f1f5f9 !important; font-size: 16px !important; font-weight: 500 !important;">Location</div>
+                                <div class="fw-bold text-truncate" style="color: var(--accent-cyan); font-size: 16px !important;">
                                     <i class="fas fa-map-marker-alt me-1"></i>{{ player.location1 or 'Not Set' }}
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="small text-muted mb-1">Membership</div>
-                                <div class="fw-bold" style="color: var(--accent-green); font-size: 0.8rem;">
+                                <div class="mb-1" style="color: #f1f5f9 !important; font-size: 16px !important; font-weight: 500 !important;">Membership</div>
+                                <div class="fw-bold" style="color: var(--accent-green); font-size: 16px !important;">
                                     <i class="fas fa-star me-1"></i>{{ player.membership_type|title or 'Free' }}
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="small text-muted mb-1">Win Rate</div>
-                                <div class="fw-bold" style="color: var(--accent-purple); font-size: 0.8rem;">
+                                <div class="mb-1" style="color: #f1f5f9 !important; font-size: 16px !important; font-weight: 500 !important;">Win Rate</div>
+                                <div class="fw-bold" style="color: var(--accent-purple); font-size: 16px !important;">
                                     {% set total_games = (player.wins or 0) + (player.losses or 0) %}
                                     {% if total_games > 0 %}
                                         {{ "%.0f"|format(((player.wins or 0) / total_games) * 100) }}%
@@ -714,7 +714,7 @@ function showPlayerSelectionModal(players) {
                                     <div class="card h-100" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle);">
                                         <div class="card-body text-center">
                                             <h6 class="card-title fw-bold text-white">${player.name}</h6>
-                                            <p class="small mb-2" style="color: var(--text-primary); opacity: 0.8;">
+                                            <p class="mb-2" style="color: #ffffff !important; opacity: 1.0 !important; font-size: 16px !important;">
                                                 <i class="fas fa-map-marker-alt me-1"></i>${player.location}
                                             </p>
                                             <p class="small mb-3" style="color: var(--accent-cyan);">
@@ -795,7 +795,7 @@ function showMembershipModal(suggestedType = 'discovery') {
                     <div class="modal-body">
                         <div class="text-center mb-4">
                             <h3 class="fw-bold">Start Your Journey</h3>
-                            <p style="color: var(--text-primary); opacity: 0.8;">Choose the membership that fits your pickleball goals</p>
+                            <p style="color: #ffffff !important; opacity: 1.0 !important; font-size: 16px !important;">Choose the membership that fits your pickleball goals</p>
                         </div>
                         
                         <div class="row g-4">
@@ -805,7 +805,7 @@ function showMembershipModal(suggestedType = 'discovery') {
                                         <i class="fas fa-users fa-3x mb-3" style="color: var(--accent-cyan);"></i>
                                         <h4 class="fw-bold text-white">Player Discovery</h4>
                                         <div class="display-5 fw-bold mb-2" style="color: var(--accent-cyan);">$4.99</div>
-                                        <small style="color: var(--text-primary); opacity: 0.7;">per month</small>
+                                        <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">per month</span>
                                         
                                         <ul class="list-unstyled mt-4 mb-4 text-start">
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Find compatible players</li>
@@ -827,7 +827,7 @@ function showMembershipModal(suggestedType = 'discovery') {
                                         <i class="fas fa-trophy fa-3x mb-3" style="color: var(--accent-green);"></i>
                                         <h4 class="fw-bold text-white">Tournament Access</h4>
                                         <div class="display-5 fw-bold mb-2" style="color: var(--accent-green);">$9.99</div>
-                                        <small style="color: var(--text-primary); opacity: 0.7;">per month</small>
+                                        <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">per month</span>
                                         
                                         <ul class="list-unstyled mt-4 mb-4 text-start">
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i><strong>Everything in Discovery</strong></li>

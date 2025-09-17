@@ -42,13 +42,13 @@
                                 <td style="color: var(--bs-body-color);">
                                     <div>
                                         <h6 class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ tournament.tournament_name }}</h6>
-                                        <small style="color: var(--bs-body-color); opacity: 0.7;">ID: {{ tournament.id }}</small>
+                                        <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">ID: {{ tournament.id }}</span>
                                     </div>
                                 </td>
                                 <td style="color: var(--bs-body-color);">
                                     <div>
                                         <div class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ tournament.full_name }}</div>
-                                        <small style="color: var(--bs-body-color); opacity: 0.7;">{{ tournament.email }}</small>
+                                        <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">{{ tournament.email }}</span>
                                     </div>
                                 </td>
                                 <td>
@@ -63,7 +63,7 @@
                                     <div>
                                         <div class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ tournament.entry_date }}</div>
                                         {% if tournament.match_deadline %}
-                                        <small style="color: var(--bs-body-color); opacity: 0.7;">Deadline: {{ tournament.match_deadline }}</small>
+                                        <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">Deadline: {{ tournament.match_deadline }}</span>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -71,7 +71,7 @@
                                     {% if tournament.completed %}
                                         <span class="badge bg-success">Completed</span>
                                         {% if tournament.match_result %}
-                                        <br><small style="color: var(--bs-body-color); opacity: 0.7;">{{ tournament.match_result }}</small>
+                                        <br><span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">{{ tournament.match_result }}</span>
                                         {% endif %}
                                     {% else %}
                                         <span class="badge bg-warning">Active</span>
@@ -84,7 +84,7 @@
                                         <i class="fas fa-check me-1"></i>Complete
                                     </button>
                                     {% else %}
-                                    <span style="color: var(--bs-body-color); opacity: 0.7;">Completed</span>
+                                    <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">Completed</span>
                                     {% endif %}
                                 </td>
                             </tr>

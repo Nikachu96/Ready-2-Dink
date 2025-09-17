@@ -21,7 +21,38 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: #0f0f23;
             min-height: 100vh;
-            color: #e2e8f0;
+            color: #ffffff;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        /* GLOBAL MINIMUM FONT SIZE ENFORCEMENT */
+        * {
+            font-size: max(16px, 1rem);
+        }
+        
+        /* High contrast text colors for better readability */
+        p, span, div, li, td, th, label, .form-label {
+            color: #ffffff;
+            font-size: 16px;
+        }
+        
+        /* ELIMINATE ALL LOW-OPACITY TEXT */
+        .text-muted {
+            color: #f1f5f9 !important;
+            font-weight: 500 !important;
+            font-size: 16px !important;
+        }
+        
+        /* Override Bootstrap small text classes */
+        .small, small {
+            font-size: 16px !important;
+            color: #f1f5f9 !important;
+        }
+        
+        /* Remove opacity-based styling */
+        .opacity-50, .opacity-75 {
+            opacity: 1 !important;
         }
         
         /* Force admin navigation buttons to be black */
@@ -50,8 +81,9 @@
         .navbar .nav-link,
         .navbar .navbar-nav .nav-link,
         .navbar-nav .nav-link {
-            color: #e2e8f0 !important;
-            font-weight: 500;
+            color: #ffffff !important;
+            font-weight: 600;
+            font-size: 16px !important;
             padding: 0.75rem 1.5rem !important;
             border-radius: 8px;
             transition: all 0.2s ease;
@@ -109,10 +141,12 @@
         
         .btn {
             border-radius: 12px;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 16px !important;
             letter-spacing: 0.025em;
             transition: all 0.3s ease;
             border: none;
+            padding: 0.75rem 1.5rem;
         }
         
         .btn-primary {
@@ -154,6 +188,9 @@
             border-radius: 12px;
             backdrop-filter: blur(20px);
             color: #333 !important;
+            font-size: 16px !important;
+            font-weight: 500;
+            padding: 0.75rem 1rem;
         }
         
         .form-control:focus, .form-select:focus {
@@ -195,10 +232,25 @@
         .surface-dark,
         .surface-dark :where(h1,h2,h3,h4,h5,h6,p,span,small,li,label,.form-label,.nav-link,.badge,.alert,.list-group-item,.modal-title,.modal-body,.card-body,.card-header,.card-footer) {
             color: #fff !important;
+            font-size: 16px !important;
         }
         
+        /* ENHANCED HEADING READABILITY */
+        h1, h2, h3, h4, h5, h6 {
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }
+        
+        h1 { font-size: 32px !important; }
+        h2 { font-size: 28px !important; }
+        h3 { font-size: 24px !important; }
+        h4 { font-size: 20px !important; }
+        h5 { font-size: 18px !important; }
+        h6 { font-size: 16px !important; }
+        
         .surface-dark .text-muted {
-            color: rgba(255,255,255,0.7) !important;
+            color: #f1f5f9 !important;
+            font-weight: 500;
         }
         
         .surface-dark .btn-close {
@@ -210,6 +262,15 @@
             background: rgba(255,255,255,0.08) !important;
             color: #fff !important;
             border-color: rgba(255,255,255,0.35) !important;
+            font-size: 16px !important;
+            font-weight: 500;
+        }
+        
+        /* DARK BACKGROUND FORM ELEMENTS */
+        .form-control::placeholder {
+            color: #f1f5f9 !important;
+            font-size: 16px !important;
+            opacity: 1;
         }
         
         .surface-dark .list-group-item {
@@ -220,6 +281,35 @@
         
         .surface-dark .modal-content {
             background: rgba(17,17,27,0.95) !important;
+        }
+        
+        /* COMPREHENSIVE MODAL/DIALOG READABILITY */
+        .modal-content {
+            background: rgba(17,17,27,0.95) !important;
+            color: #ffffff !important;
+        }
+        
+        .modal-title {
+            font-size: 20px !important;
+            font-weight: 700 !important;
+            color: #ffffff !important;
+        }
+        
+        .modal-body {
+            font-size: 16px !important;
+            color: #ffffff !important;
+            line-height: 1.6;
+        }
+        
+        .modal-body p, .modal-body h1, .modal-body h2, .modal-body h3, .modal-body h4, .modal-body h5, .modal-body h6, .modal-body li, .modal-body span {
+            color: #ffffff !important;
+            font-size: 16px !important;
+        }
+        
+        .modal-body .form-label, .modal-body label {
+            color: #ffffff !important;
+            font-size: 16px !important;
+            font-weight: 600;
         }
         
         .surface-dark .alert-info {
@@ -260,8 +350,10 @@
         
         .badge {
             border-radius: 8px;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 16px !important;
             letter-spacing: 0.025em;
+            padding: 0.5rem 1rem;
         }
         
         .alert {
@@ -269,6 +361,26 @@
             backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
+            font-size: 16px !important;
+            font-weight: 600;
+            color: #ffffff !important;
+        }
+        
+        /* High contrast alert variants for better readability */
+        .alert-danger, .alert-error {
+            background: #ff4444 !important;
+            border: 2px solid #ff0000 !important;
+            color: #ffffff !important;
+            font-weight: 700;
+            font-size: 18px !important;
+        }
+        
+        .alert-warning {
+            background: #ff9500 !important;
+            border: 2px solid #ff7700 !important;
+            color: #ffffff !important;
+            font-weight: 700;
+            font-size: 18px !important;
         }
         
         .alert-success {
@@ -313,8 +425,9 @@
 
         .nav-link {
             white-space: nowrap;
-            padding: 0.4rem 0.6rem !important;
-            font-size: 0.85rem;
+            padding: 0.6rem 0.8rem !important;
+            font-size: 16px !important;
+            font-weight: 600;
         }
 
         /* Force two-line layout */
@@ -535,12 +648,12 @@
                                 </label>
                                 <input type="text" class="form-control" id="nda-signature" 
                                        placeholder="Enter your full legal name as digital signature"
-                                       style="background-color: rgba(255,255,255,0.9); border: 2px solid #E0563F; color: #1a1a2e; font-weight: bold; font-size: 16px;">
-                                <small class="text-muted">By typing your name, you agree to be legally bound by this agreement.</small>
+                                       style="background-color: rgba(255,255,255,0.9); border: 2px solid #E0563F; color: #1a1a2e; font-weight: bold; font-size: 18px; padding: 1rem;">
+                                <small style="color: #f1f5f9; font-size: 16px; font-weight: 500;">By typing your name, you agree to be legally bound by this agreement.</small>
                             </div>
                             <div class="col-md-4 text-end mt-3 mt-md-0">
                                 <button type="button" class="btn btn-lg fw-bold" id="sign-nda-btn" disabled
-                                        style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; color: white;">
+                                        style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; color: white; font-size: 16px; font-weight: 700;">
                                     <i class="fas fa-pen-nib me-2"></i>Sign & Continue
                                 </button>
                             </div>

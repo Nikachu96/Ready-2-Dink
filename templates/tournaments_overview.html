@@ -149,9 +149,9 @@
                                         <h5 class="card-title mb-0">{{ level_info.name }}</h5>
                                         {% if level_key == 'Invitational' %}
                                             <div class="d-flex flex-wrap gap-1 mt-1">
-                                                <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 0.65rem;">Best of 5</span>
-                                                <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 0.65rem;">Top 4 Payouts</span>
-                                                <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 0.65rem;">{{ level_info.spots_remaining }} spots available</span>
+                                                <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 16px !important;">Best of 5</span>
+                                                <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 16px !important;">Top 4 Payouts</span>
+                                                <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 16px !important;">{{ level_info.spots_remaining }} spots available</span>
                                             </div>
                                         {% endif %}
                                     </div>
@@ -455,7 +455,7 @@
                                     {% else %}
                                         <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-2" 
                                              style="width: 24px; height: 24px;">
-                                            <i class="fas fa-user text-white" style="font-size: 0.7rem;"></i>
+                                            <i class="fas fa-user text-white" style="font-size: 16px !important;"></i>
                                         </div>
                                     {% endif %}
                                     <small class="text-muted">by {{ tournament.organizer_name }}</small>
@@ -563,7 +563,7 @@
                                             {% else %}
                                                 <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-2" 
                                                      style="width: 32px; height: 32px;">
-                                                    <i class="fas fa-user text-white" style="font-size: 0.8rem;"></i>
+                                                    <i class="fas fa-user text-white" style="font-size: 16px !important;"></i>
                                                 </div>
                                             {% endif %}
                                             <strong class="text-white">{{ entry.full_name }}</strong>
