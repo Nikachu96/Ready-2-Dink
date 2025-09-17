@@ -74,8 +74,51 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6"></div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="zip_code" class="form-label text-dark">
+                                    <i class="fas fa-map-marker-alt me-1"></i>ZIP Code *
+                                </label>
+                                <input type="text" class="form-control" id="zip_code" name="zip_code" 
+                                       placeholder="12345" value="{{ form_data.zip_code if form_data else '' }}" 
+                                       pattern="[0-9]{5}" maxlength="5" required>
+                                <div class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    5-digit ZIP code for location-based matching
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    
+                    <!-- Location Permission Section -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card mb-3" style="border: 1px solid #E0563F; background: #fff3cd;">
+                                <div class="card-body py-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1" style="color: #856404;">
+                                                <i class="fas fa-crosshairs me-2"></i>Enable Precise Location Matching
+                                            </h6>
+                                            <small style="color: #856404;">
+                                                Allow GPS access for the most accurate player and tournament matching within your area
+                                            </small>
+                                        </div>
+                                        <div class="ms-3">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="gps-btn" onclick="requestLocationPermission()">
+                                                <i class="fas fa-location-dot me-1"></i>Enable GPS
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hidden GPS coordinate fields -->
+                    <input type="hidden" id="latitude" name="latitude" value="">
+                    <input type="hidden" id="longitude" name="longitude" value="">
+                    <input type="hidden" id="location_method" name="location_method" value="zip">
                     
                     <div class="row">
                         <div class="col-md-6">
@@ -399,5 +442,91 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// GPS Location handling for registration
+function requestLocationPermission() {
+    const gpsBtn = document.getElementById('gps-btn');
+    const latField = document.getElementById('latitude');
+    const lngField = document.getElementById('longitude');
+    const methodField = document.getElementById('location_method');
+    
+    gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting Location...';
+    gpsBtn.disabled = true;
+    
+    if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                // Success - got GPS coordinates
+                latField.value = position.coords.latitude;
+                lngField.value = position.coords.longitude;
+                methodField.value = 'gps';
+                
+                gpsBtn.innerHTML = '<i class="fas fa-check me-1"></i>GPS Enabled';
+                gpsBtn.className = 'btn btn-sm btn-success';
+                
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show mt-2';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>GPS Location Captured!</strong> You'll get the most accurate matches in your area.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                gpsBtn.closest('.card-body').appendChild(alertDiv);
+            },
+            function(error) {
+                // Error or permission denied
+                console.error('GPS Error:', error);
+                gpsBtn.innerHTML = '<i class="fas fa-location-dot me-1"></i>Enable GPS';
+                gpsBtn.disabled = false;
+                
+                let errorMsg = 'Unable to get your location. ';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMsg += 'Please allow location access and try again.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMsg += 'Location information is unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMsg += 'Location request timed out.';
+                        break;
+                    default:
+                        errorMsg += 'An unknown error occurred.';
+                        break;
+                }
+                
+                // Show error message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-warning alert-dismissible fade show mt-2';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>GPS Not Available:</strong> ${errorMsg} Your ZIP code will be used instead.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                gpsBtn.closest('.card-body').appendChild(alertDiv);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 300000 // 5 minutes
+            }
+        );
+    } else {
+        // Geolocation not supported
+        gpsBtn.innerHTML = '<i class="fas fa-times me-1"></i>GPS Not Available';
+        gpsBtn.className = 'btn btn-sm btn-secondary';
+        gpsBtn.disabled = true;
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-info alert-dismissible fade show mt-2';
+        alertDiv.innerHTML = `
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>GPS Not Supported:</strong> Your browser doesn't support location services. Your ZIP code will be used instead.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        gpsBtn.closest('.card-body').appendChild(alertDiv);
+    }
+}
 </script>
 {% endblock %}

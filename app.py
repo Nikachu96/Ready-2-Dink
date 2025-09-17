@@ -206,7 +206,9 @@ def send_nda_confirmation_email(player_data, signature, nda_date, ip_address):
         return False
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
+app.secret_key = os.environ.get("SESSION_SECRET")
+if not app.secret_key:
+    raise RuntimeError("SESSION_SECRET environment variable must be set")
 
 # Add custom Jinja filter for JSON parsing
 def from_json_filter(value):
@@ -525,6 +527,37 @@ def init_db():
         
     try:
         c.execute('ALTER TABLE players ADD COLUMN nda_ip_address TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    # Add GPS and location-based matching columns for players
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN latitude REAL DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN longitude REAL DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN search_radius_miles INTEGER DEFAULT 15')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN zip_code TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN city TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN state TEXT DEFAULT NULL')
     except sqlite3.OperationalError:
         pass  # Column already exists
         
@@ -1088,6 +1121,62 @@ def calculate_distance_haversine(lat1, lon1, lat2, lon2):
         logging.error(f"Unexpected error in calculate_distance_haversine: {e}")
         return None
 
+def get_coordinates_from_zip_code(zip_code):
+    """
+    Get latitude and longitude coordinates from a ZIP code using a free geocoding service.
+    
+    Args:
+        zip_code (str): US ZIP code (5 digits)
+        
+    Returns:
+        tuple: (latitude, longitude) as floats, or (None, None) if not found
+        
+    Example:
+        >>> lat, lng = get_coordinates_from_zip_code("90210")
+        >>> print(f"Beverly Hills, CA: {lat}, {lng}")
+    """
+    try:
+        if not zip_code or len(str(zip_code).strip()) != 5:
+            logging.warning(f"Invalid ZIP code format: {zip_code}")
+            return None, None
+        
+        zip_code = str(zip_code).strip()
+        
+        # Use Nominatim (OpenStreetMap) free geocoding service
+        url = f"https://nominatim.openstreetmap.org/search"
+        params = {
+            'q': f"{zip_code}, USA",
+            'format': 'json',
+            'limit': 1,
+            'countrycodes': 'us'
+        }
+        headers = {
+            'User-Agent': 'Ready2Dink/1.0 (contact@ready2dink.com)'
+        }
+        
+        response = requests.get(url, params=params, headers=headers, timeout=5)
+        response.raise_for_status()
+        
+        data = response.json()
+        if data and len(data) > 0:
+            lat = float(data[0]['lat'])
+            lng = float(data[0]['lon'])
+            logging.debug(f"ZIP {zip_code} converted to coordinates: {lat}, {lng}")
+            return lat, lng
+        else:
+            logging.warning(f"No coordinates found for ZIP code: {zip_code}")
+            return None, None
+            
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching coordinates for ZIP {zip_code}: {e}")
+        return None, None
+    except (ValueError, KeyError, TypeError) as e:
+        logging.error(f"Error parsing coordinates for ZIP {zip_code}: {e}")
+        return None, None
+    except Exception as e:
+        logging.error(f"Unexpected error converting ZIP {zip_code} to coordinates: {e}")
+        return None, None
+
 def validate_tournament_join_gps(user_latitude, user_longitude, tournament_instance, player_id=None):
     """
     Validate if user is within allowed radius to join a tournament based on GPS coordinates.
@@ -1567,47 +1656,80 @@ def suggest_match_time(player1, player2):
         return "This week - Flexible timing"
 
 def get_compatible_players(player_id):
-    """Get list of compatible players without creating matches"""
+    """Get list of compatible players using GPS-based distance filtering"""
     conn = get_db_connection()
     
-    # Get the player's preferences
+    # Get the player's preferences and location
     player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
     if not player or not player['is_looking_for_match']:
         conn.close()
         return []
     
-    # Find potential matches - simplified for pickleball-only app
-    # More flexible location matching - Triangle area cities are compatible
-    triangle_cities = ['apex', 'raleigh', 'cary', 'durham', 'wake forest', 'morrisville', 'chapel hill']
-    player_city = player['location1'].lower() if player['location1'] else ''
+    # Get player's search radius (default 15 miles if not set)
+    search_radius = player['search_radius_miles'] if player['search_radius_miles'] is not None else 15
+    player_lat = player['latitude']
+    player_lng = player['longitude']
     
-    if player_city in triangle_cities:
-        # If player is in Triangle area, match with other Triangle cities
-        location_condition = "(" + " OR ".join([f"LOWER(location1) = '{city}'" for city in triangle_cities]) + ")"
-        location_params = []
-    elif player['preferred_court']:
-        # Use preferred court matching
-        location_condition = "(preferred_court = ? OR location1 = ? OR location2 = ?)"
-        location_params = [player['preferred_court'], player['location1'], player['location2']]
+    # If player has no GPS coordinates, fallback to old matching logic for compatibility
+    if player_lat is None or player_lng is None:
+        logging.warning(f"Player {player_id} has no GPS coordinates, using fallback matching")
+        
+        # Fallback to text-based location matching as before
+        if player['preferred_court']:
+            location_condition = "(preferred_court = ? OR location1 = ? OR location2 = ?)"
+            location_params = [player['preferred_court'], player['location1'], player['location2']]
+        else:
+            location_condition = "(location1 = ? OR location2 = ?)"
+            location_params = [player['location1'], player['location2']]
+        
+        query = f'''
+            SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
+                   wins, losses, ranking_points, selfie, latitude, longitude
+            FROM players 
+            WHERE id != ? 
+            AND is_looking_for_match = 1
+            AND skill_level = ?
+            AND {location_condition}
+            ORDER BY ranking_points DESC, wins DESC, created_at ASC
+        '''
+        
+        params = [player_id, player['skill_level']] + location_params
+        compatible_players = conn.execute(query, params).fetchall()
+        
     else:
-        # Exact location match as fallback
-        location_condition = "(location1 = ? OR location2 = ?)"
-        location_params = [player['location1'], player['location2']]
-    
-    # Get all compatible players with rankings and win/loss records
-    query = f'''
-        SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
-               wins, losses, ranking_points, selfie
-        FROM players 
-        WHERE id != ? 
-        AND is_looking_for_match = 1
-        AND skill_level = ?
-        AND {location_condition}
-        ORDER BY ranking_points DESC, wins DESC, created_at ASC
-    '''
-    
-    params = [player_id, player['skill_level']] + location_params
-    compatible_players = conn.execute(query, params).fetchall()
+        # GPS-based matching - get all players with same skill level and GPS coordinates
+        query = '''
+            SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
+                   wins, losses, ranking_points, selfie, latitude, longitude
+            FROM players 
+            WHERE id != ? 
+            AND is_looking_for_match = 1
+            AND skill_level = ?
+            AND latitude IS NOT NULL 
+            AND longitude IS NOT NULL
+            ORDER BY ranking_points DESC, wins DESC, created_at ASC
+        '''
+        
+        all_players = conn.execute(query, (player_id, player['skill_level'])).fetchall()
+        
+        # Filter by distance using GPS coordinates
+        compatible_players = []
+        for candidate in all_players:
+            distance = calculate_distance_haversine(
+                player_lat, player_lng,
+                candidate['latitude'], candidate['longitude']
+            )
+            
+            if distance is not None and distance <= search_radius:
+                # Add distance to the player record for sorting
+                candidate_dict = dict(candidate)
+                candidate_dict['distance_miles'] = round(distance, 1)
+                compatible_players.append(candidate_dict)
+        
+        # Sort by distance (closest first), then by ranking
+        compatible_players.sort(key=lambda x: (x['distance_miles'], -x['ranking_points']))
+        
+        logging.info(f"GPS-based matching for player {player_id}: found {len(compatible_players)} players within {search_radius} miles")
     
     # Convert to list of dictionaries
     players_list = []
@@ -1615,7 +1737,7 @@ def get_compatible_players(player_id):
         # Use first_name if available, otherwise fall back to full_name
         display_name = p['first_name'] if p['first_name'] else p['full_name'].split()[0] if p['full_name'] else 'Unknown'
         
-        players_list.append({
+        player_data = {
             'id': p['id'],
             'name': display_name,
             'full_name': p['full_name'],
@@ -1628,52 +1750,83 @@ def get_compatible_players(player_id):
             'losses': p['losses'] or 0,
             'ranking_points': p['ranking_points'] or 0,
             'selfie': p['selfie']
-        })
+        }
+        
+        # Add distance if available (for GPS-based matches)
+        if 'distance_miles' in p:
+            player_data['distance_miles'] = p['distance_miles']
+        
+        players_list.append(player_data)
     
     conn.close()
     return players_list
 
 def find_match_for_player(player_id):
-    """Find and create a match for a player based on skill, sport, and location"""
+    """Find and create a match for a player using GPS-based distance filtering"""
     conn = get_db_connection()
     
-    # Get the player's preferences
+    # Get the player's preferences and location
     player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
     if not player or not player['is_looking_for_match']:
         conn.close()
         return None
     
-    # Find potential matches - simplified for pickleball-only app
-    # More flexible location matching - Triangle area cities are compatible
-    triangle_cities = ['apex', 'raleigh', 'cary', 'durham', 'wake forest', 'morrisville', 'chapel hill']
-    player_city = player['location1'].lower() if player['location1'] else ''
+    # Get player's search radius and GPS coordinates
+    search_radius = player.get('search_radius_miles', 15)
+    player_lat = player.get('latitude')
+    player_lng = player.get('longitude')
     
-    if player_city in triangle_cities:
-        # If player is in Triangle area, match with other Triangle cities
-        location_condition = "(" + " OR ".join([f"LOWER(location1) = '{city}'" for city in triangle_cities]) + ")"
-        location_params = []
-    elif player['preferred_court']:
-        # Use preferred court matching
-        location_condition = "(preferred_court = ? OR location1 = ? OR location2 = ?)"
-        location_params = [player['preferred_court'], player['location1'], player['location2']]
+    # If player has GPS coordinates, use GPS-based matching
+    if player_lat is not None and player_lng is not None:
+        # Get all players with same skill level and GPS coordinates
+        query = '''
+            SELECT * FROM players 
+            WHERE id != ? 
+            AND is_looking_for_match = 1
+            AND skill_level = ?
+            AND latitude IS NOT NULL 
+            AND longitude IS NOT NULL
+            ORDER BY created_at ASC
+        '''
+        
+        all_candidates = conn.execute(query, (player_id, player['skill_level'])).fetchall()
+        
+        # Filter by distance and find first match within radius
+        for candidate in all_candidates:
+            distance = calculate_distance_haversine(
+                player_lat, player_lng,
+                candidate['latitude'], candidate['longitude']
+            )
+            
+            if distance is not None and distance <= search_radius:
+                potential_matches = candidate
+                break
+        else:
+            potential_matches = None  # No matches found within radius
+    
     else:
-        # Exact location match as fallback
-        location_condition = "(location1 = ? OR location2 = ?)"
-        location_params = [player['location1'], player['location2']]
-    
-    # Simplified query since all players play Pickleball - ALLOW MULTIPLE MATCHES
-    query = f'''
-        SELECT * FROM players 
-        WHERE id != ? 
-        AND is_looking_for_match = 1
-        AND skill_level = ?
-        AND {location_condition}
-        ORDER BY created_at ASC
-        LIMIT 1
-    '''
-    
-    params = [player_id, player['skill_level']] + location_params
-    potential_matches = conn.execute(query, params).fetchone()
+        # Fallback to text-based matching for players without GPS coordinates
+        logging.warning(f"Player {player_id} has no GPS coordinates, using fallback matching for automatic match creation")
+        
+        if player['preferred_court']:
+            location_condition = "(preferred_court = ? OR location1 = ? OR location2 = ?)"
+            location_params = [player['preferred_court'], player['location1'], player['location2']]
+        else:
+            location_condition = "(location1 = ? OR location2 = ?)"
+            location_params = [player['location1'], player['location2']]
+        
+        query = f'''
+            SELECT * FROM players 
+            WHERE id != ? 
+            AND is_looking_for_match = 1
+            AND skill_level = ?
+            AND {location_condition}
+            ORDER BY created_at ASC
+            LIMIT 1
+        '''
+        
+        params = [player_id, player['skill_level']] + location_params
+        potential_matches = conn.execute(query, params).fetchone()
     
     if potential_matches:
         # Create a match
@@ -2125,7 +2278,7 @@ def player_login_post():
 def index():
     """Home page - check if user is logged in, otherwise show landing page"""
     # Debug: Log session contents
-    logging.info(f"Session contents: {dict(session)}")
+    # Session contents logging disabled for security in production
     
     # If user is already logged in, redirect to their dashboard
     if 'current_player_id' in session:
@@ -2291,7 +2444,7 @@ def register():
         logging.info(f"Form data keys: {list(request.form.keys())}")
         logging.info(f"Files: {list(request.files.keys())}")
         # Form validation for simplified registration
-        required_fields = ['first_name', 'last_name', 'email', 'dob', 'username', 'password', 'confirm_password']
+        required_fields = ['first_name', 'last_name', 'email', 'dob', 'username', 'password', 'confirm_password', 'zip_code']
         for field in required_fields:
             if not request.form.get(field):
                 flash(f'{field.replace("_", " ").title()} is required', 'danger')
@@ -2319,6 +2472,40 @@ def register():
         from werkzeug.security import generate_password_hash
         password_hash = generate_password_hash(request.form['password'])
         
+        # Process location data
+        user_latitude = request.form.get('latitude', '').strip() 
+        user_longitude = request.form.get('longitude', '').strip()
+        zip_code = request.form.get('zip_code', '').strip()
+        location_method = request.form.get('location_method', 'zip').strip()
+        
+        # Convert coordinates to float if they exist
+        latitude = None
+        longitude = None
+        location_source = 'zip'
+        
+        if location_method == 'gps' and user_latitude and user_longitude:
+            try:
+                latitude = float(user_latitude)
+                longitude = float(user_longitude)
+                location_source = 'gps'
+                logging.info(f"Registration: GPS coordinates provided - {latitude}, {longitude}")
+            except (ValueError, TypeError):
+                logging.warning(f"Registration: Invalid GPS coordinates provided, falling back to ZIP")
+        
+        # If no GPS coordinates, try to get coordinates from ZIP code
+        if latitude is None and zip_code:
+            try:
+                lat, lng = get_coordinates_from_zip_code(zip_code)
+                if lat is not None and lng is not None:
+                    latitude = lat
+                    longitude = lng
+                    location_source = 'zip'
+                    logging.info(f"Registration: Converted ZIP {zip_code} to coordinates - {latitude}, {longitude}")
+                else:
+                    logging.warning(f"Registration: Could not convert ZIP {zip_code} to coordinates")
+            except Exception as e:
+                logging.error(f"Registration: Error converting ZIP to coordinates: {e}")
+        
         # Check if guardian consent is required (COPPA compliance)
         guardian_email = request.form.get('guardian_email', '').strip()
         requires_consent = bool(guardian_email)
@@ -2341,16 +2528,25 @@ def register():
             
             conn = get_db_connection()
             full_name = f"{request.form['first_name']} {request.form['last_name']}"
+            # Create location description from ZIP code or coordinates
+            if latitude is not None and longitude is not None:
+                location_description = f"GPS Location ({latitude:.4f}, {longitude:.4f})"
+                if zip_code:
+                    location_description = f"ZIP {zip_code} Area ({latitude:.4f}, {longitude:.4f})"
+            else:
+                location_description = f"ZIP {zip_code}" if zip_code else "Location not provided"
+            
             cursor = conn.execute('''
                 INSERT INTO players 
                 (first_name, last_name, full_name, email, dob, username, password_hash, preferred_sport, 
                  guardian_email, account_status, guardian_consent_required, test_account, 
-                 address, location1, skill_level)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 address, location1, skill_level, latitude, longitude, search_radius_miles)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['first_name'], request.form['last_name'], full_name, request.form['email'], request.form['dob'], 
                   request.form['username'], password_hash, 'Pickleball',
                   guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0, 
-                  'Address not provided', 'Location not provided', 'Beginner'))
+                  f"ZIP {zip_code}" if zip_code else "Address not provided", location_description, 'Beginner',
+                  latitude, longitude, 15))
             
             player_id = cursor.lastrowid
             conn.commit()
@@ -2773,7 +2969,7 @@ def leaderboard():
 def subscribe_notifications():
     """Handle push notification subscription"""
     try:
-        logging.info(f"Notification subscription attempt - session: {session}")
+        logging.info(f"Notification subscription attempt - player_id: {session.get('player_id', 'not_found')}")
         
         if 'player_id' not in session:
             logging.warning("No player_id in session for notification subscription")
@@ -3050,7 +3246,7 @@ def withdraw_from_tournament():
 
 @app.route('/tournaments')
 def tournaments_overview():
-    """Tournament overview page - requires login with location-based filtering"""
+    """Tournament overview page - requires login with GPS-based location filtering"""
     # Check if user is logged in
     current_player_id = session.get('current_player_id')
     if not current_player_id:
@@ -3059,10 +3255,25 @@ def tournaments_overview():
     
     conn = get_db_connection()
     
-    # Get user location from request parameters for filtering
-    user_lat = request.args.get('user_lat', type=float)
-    user_lng = request.args.get('user_lng', type=float)
-    location_filter_enabled = request.args.get('location_filter', 'false').lower() == 'true'
+    # Get current player's location data from database
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (current_player_id,)).fetchone()
+    if not player:
+        flash('Player profile not found', 'danger')
+        conn.close()
+        return redirect(url_for('player_login'))
+    
+    # Use player's stored GPS coordinates and search radius
+    user_lat = player.get('latitude')
+    user_lng = player.get('longitude')
+    search_radius = player.get('search_radius_miles', 15)  # Default to 15 miles
+    
+    # Enable location filtering if player has GPS coordinates
+    location_filter_enabled = (user_lat is not None and user_lng is not None)
+    
+    if not location_filter_enabled:
+        logging.info(f"Player {current_player_id} has no GPS coordinates - showing all tournaments")
+    else:
+        logging.info(f"Player {current_player_id} location filtering: {search_radius} mile radius from ({user_lat:.4f}, {user_lng:.4f})")
     
     tournament_levels = get_tournament_levels()
     
@@ -3110,17 +3321,15 @@ def tournaments_overview():
                 logging.warning(f"Could not calculate distance for tournament {instance['name']}")
                 continue
             
-            # Check if tournament is within join radius
-            join_radius = instance['join_radius_miles'] if instance['join_radius_miles'] is not None else 25
-            
-            if distance <= join_radius:
+            # Check if tournament is within player's search radius
+            if distance <= search_radius:
                 # Convert to dict and add distance info
                 instance_dict = dict(instance)
                 instance_dict['distance_miles'] = round(distance, 1)
                 tournament_instances.append(instance_dict)
-                logging.debug(f"Including tournament {instance['name']} - {distance:.1f} miles away")
+                logging.debug(f"Including tournament {instance['name']} - {distance:.1f} miles away (within {search_radius} mi radius)")
             else:
-                logging.debug(f"Excluding tournament {instance['name']} - {distance:.1f} miles away (max: {join_radius})")
+                logging.debug(f"Excluding tournament {instance['name']} - {distance:.1f} miles away (outside {search_radius} mi radius)")
         
         # Sort by distance (closest first)
         tournament_instances.sort(key=lambda x: x.get('distance_miles', float('inf')))
@@ -3173,10 +3382,9 @@ def tournaments_overview():
             if distance is None:
                 continue
             
-            # Check if tournament is within join radius
-            join_radius = tournament['join_radius_miles'] if tournament['join_radius_miles'] is not None else 25
-            
-            if distance <= join_radius:
+            # Check if tournament is within user's search radius (not tournament's join radius)
+            # Use the user's preferred search distance for consistency
+            if distance <= search_radius:
                 tournament_dict = dict(tournament)
                 tournament_dict['distance_miles'] = round(distance, 1)
                 custom_tournaments.append(tournament_dict)
@@ -4200,6 +4408,41 @@ def update_availability(player_id):
     
     return redirect(url_for('player_home', player_id=player_id))
 
+@app.route('/api/zip-to-coordinates', methods=['POST'])
+def api_zip_to_coordinates():
+    """API endpoint to convert ZIP code to coordinates"""
+    try:
+        data = request.get_json()
+        zip_code = data.get('zip_code', '').strip()
+        
+        if not zip_code or len(zip_code) != 5 or not zip_code.isdigit():
+            return jsonify({
+                'success': False,
+                'message': 'Please provide a valid 5-digit ZIP code'
+            })
+        
+        latitude, longitude = get_coordinates_from_zip_code(zip_code)
+        
+        if latitude is not None and longitude is not None:
+            return jsonify({
+                'success': True,
+                'latitude': latitude,
+                'longitude': longitude,
+                'message': f'Successfully converted ZIP {zip_code} to coordinates'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': f'Could not find coordinates for ZIP code {zip_code}'
+            })
+            
+    except Exception as e:
+        logging.error(f"Error in ZIP-to-coordinates API: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while converting ZIP code'
+        })
+
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
     """Update player profile information"""
@@ -4255,6 +4498,30 @@ def update_profile():
                 
                 file.save(os.path.join(upload_path, selfie_filename))
     
+    # Process location data updates
+    user_latitude = request.form.get('latitude', '').strip() 
+    user_longitude = request.form.get('longitude', '').strip()
+    search_radius = request.form.get('search_radius_miles', '').strip()
+    
+    # Parse coordinates if provided
+    latitude = None
+    longitude = None
+    if user_latitude and user_longitude:
+        try:
+            latitude = float(user_latitude)
+            longitude = float(user_longitude)
+            logging.info(f"Profile update: GPS coordinates updated - {latitude}, {longitude}")
+        except (ValueError, TypeError):
+            logging.warning(f"Profile update: Invalid GPS coordinates provided")
+    
+    # Parse search radius
+    search_radius_miles = 15  # Default
+    if search_radius:
+        try:
+            search_radius_miles = max(15, min(50, int(search_radius)))  # Clamp between 15-50
+        except (ValueError, TypeError):
+            logging.warning(f"Profile update: Invalid search radius provided, using default 15")
+    
     try:
         # Update player information
         if selfie_filename:
@@ -4264,7 +4531,8 @@ def update_profile():
                     dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
                     skill_level = ?, email = ?, selfie = ?, player_id = ?, payout_preference = ?,
-                    paypal_email = ?, venmo_username = ?, zelle_info = ?
+                    paypal_email = ?, venmo_username = ?, zelle_info = ?,
+                    latitude = ?, longitude = ?, search_radius_miles = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
@@ -4272,7 +4540,8 @@ def update_profile():
                   request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
                   request.form['skill_level'], request.form['email'], selfie_filename, player_id_input, 
                   request.form.get('payout_preference', ''), request.form.get('paypal_email', ''),
-                  request.form.get('venmo_username', ''), request.form.get('zelle_info', ''), player_id))
+                  request.form.get('venmo_username', ''), request.form.get('zelle_info', ''),
+                  latitude, longitude, search_radius_miles, player_id))
         else:
             conn.execute('''
                 UPDATE players 
@@ -4280,7 +4549,8 @@ def update_profile():
                     dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
                     skill_level = ?, email = ?, player_id = ?, payout_preference = ?,
-                    paypal_email = ?, venmo_username = ?, zelle_info = ?
+                    paypal_email = ?, venmo_username = ?, zelle_info = ?,
+                    latitude = ?, longitude = ?, search_radius_miles = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
@@ -4288,7 +4558,8 @@ def update_profile():
                   request.form.get('preferred_court_1_coordinates', ''), request.form.get('preferred_court_2_coordinates', ''),
                   request.form['skill_level'], request.form['email'], player_id_input, 
                   request.form.get('payout_preference', ''), request.form.get('paypal_email', ''),
-                  request.form.get('venmo_username', ''), request.form.get('zelle_info', ''), player_id))
+                  request.form.get('venmo_username', ''), request.form.get('zelle_info', ''),
+                  latitude, longitude, search_radius_miles, player_id))
         
         conn.commit()
         conn.close()

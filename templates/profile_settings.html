@@ -286,6 +286,89 @@
                         </div>
                     </div>
                     
+                    <!-- Location Settings Section -->
+                    <div class="card mb-4" style="background-color: #f8f9fa; border: 1px solid #e9ecef;">
+                        <div class="card-header bg-transparent">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-map-marker-alt me-2"></i>Location & Search Settings
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Current Location Display -->
+                            {% if player.latitude and player.longitude %}
+                            <div class="alert alert-info mb-3">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <i class="fas fa-map-pin text-primary fa-lg"></i>
+                                    </div>
+                                    <div class="col">
+                                        <strong>Current Location:</strong> {{ "%.4f, %.4f"|format(player.latitude, player.longitude) }}
+                                        <br><small class="text-muted">GPS coordinates from your registration</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="search_radius_miles" class="form-label">
+                                            <i class="fas fa-search me-1"></i>Player & Tournament Search Radius
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="range" class="form-range" id="search_radius_range" 
+                                                   min="15" max="50" step="5" value="{{ player.search_radius_miles or 15 }}">
+                                            <input type="number" class="form-control" id="search_radius_miles" 
+                                                   name="search_radius_miles" min="15" max="50" step="5" 
+                                                   value="{{ player.search_radius_miles or 15 }}" style="width: 80px;">
+                                            <span class="input-group-text">miles</span>
+                                        </div>
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Distance to search for other players and tournaments (15-50 miles)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="location_zip_code" class="form-label">
+                                            <i class="fas fa-map-pin me-1"></i>Update Location by ZIP Code
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="location_zip_code" 
+                                                   name="location_zip_code" placeholder="Enter ZIP code" maxlength="5">
+                                            <button type="button" class="btn btn-outline-secondary" id="update_location_btn">
+                                                <i class="fas fa-sync me-1"></i>Update
+                                            </button>
+                                        </div>
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Enter ZIP code to update your location coordinates
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <button type="button" class="btn btn-outline-primary" id="gps_location_btn">
+                                        <i class="fas fa-crosshairs me-1"></i>Use My Current GPS Location
+                                    </button>
+                                    <div class="form-text mt-2">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Click to use your device's GPS for precise location matching
+                                    </div>
+                                    <div id="location_status" class="mt-2"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Hidden fields for GPS coordinates -->
+                            <input type="hidden" id="latitude" name="latitude" value="{{ player.latitude or '' }}">
+                            <input type="hidden" id="longitude" name="longitude" value="{{ player.longitude or '' }}">
+                            <input type="hidden" id="location_method" name="location_method" value="">
+                        </div>
+                    </div>
+                    
                     <div class="mb-3">
                         <label for="selfie" class="form-label">
                             <i class="fas fa-camera me-1"></i>Update Profile Photo
@@ -858,6 +941,175 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = '/';
         }, 2000);
     });
+});
+
+// Location Settings JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // Range slider sync with number input
+    const rangeSlider = document.getElementById('search_radius_range');
+    const numberInput = document.getElementById('search_radius_miles');
+    
+    if (rangeSlider && numberInput) {
+        rangeSlider.addEventListener('input', function() {
+            numberInput.value = this.value;
+        });
+        
+        numberInput.addEventListener('input', function() {
+            rangeSlider.value = this.value;
+        });
+    }
+    
+    // GPS Location Button
+    const gpsBtn = document.getElementById('gps_location_btn');
+    const locationStatus = document.getElementById('location_status');
+    
+    if (gpsBtn) {
+        gpsBtn.addEventListener('click', function() {
+            getGPSLocation();
+        });
+    }
+    
+    // ZIP Code Update Button
+    const updateLocationBtn = document.getElementById('update_location_btn');
+    const zipCodeInput = document.getElementById('location_zip_code');
+    
+    if (updateLocationBtn) {
+        updateLocationBtn.addEventListener('click', function() {
+            updateLocationFromZip();
+        });
+    }
+    
+    // GPS Location Function
+    function getGPSLocation() {
+        if (!navigator.geolocation) {
+            showLocationStatus('GPS not supported by this browser', 'danger');
+            return;
+        }
+        
+        gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting Location...';
+        gpsBtn.disabled = true;
+        
+        showLocationStatus('Requesting GPS location...', 'info');
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                // Update hidden fields
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lng;
+                document.getElementById('location_method').value = 'gps';
+                
+                showLocationStatus(`GPS location updated: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, 'success');
+                
+                // Reset button
+                gpsBtn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Use My Current GPS Location';
+                gpsBtn.disabled = false;
+            },
+            function(error) {
+                let errorMessage = 'Error getting GPS location: ';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage += 'Location access denied by user';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage += 'Location information unavailable';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage += 'Location request timed out';
+                        break;
+                    default:
+                        errorMessage += 'Unknown error occurred';
+                        break;
+                }
+                
+                showLocationStatus(errorMessage, 'danger');
+                
+                // Reset button
+                gpsBtn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Use My Current GPS Location';
+                gpsBtn.disabled = false;
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 300000
+            }
+        );
+    }
+    
+    // Update Location from ZIP Code
+    function updateLocationFromZip() {
+        const zipCode = zipCodeInput.value.trim();
+        
+        if (!zipCode || zipCode.length !== 5 || !/^\d{5}$/.test(zipCode)) {
+            showLocationStatus('Please enter a valid 5-digit ZIP code', 'danger');
+            return;
+        }
+        
+        updateLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Converting...';
+        updateLocationBtn.disabled = true;
+        
+        showLocationStatus('Converting ZIP code to coordinates...', 'info');
+        
+        // Call our backend endpoint to convert ZIP to coordinates
+        fetch('/api/zip-to-coordinates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ zip_code: zipCode })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.latitude && data.longitude) {
+                // Update hidden fields
+                document.getElementById('latitude').value = data.latitude;
+                document.getElementById('longitude').value = data.longitude;
+                document.getElementById('location_method').value = 'zip';
+                
+                showLocationStatus(`Location updated from ZIP ${zipCode}: ${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}`, 'success');
+                zipCodeInput.value = ''; // Clear the input
+            } else {
+                showLocationStatus(data.message || 'Could not convert ZIP code to coordinates', 'danger');
+            }
+            
+            // Reset button
+            updateLocationBtn.innerHTML = '<i class="fas fa-sync me-1"></i>Update';
+            updateLocationBtn.disabled = false;
+        })
+        .catch(error => {
+            showLocationStatus('Error converting ZIP code: ' + error.message, 'danger');
+            
+            // Reset button
+            updateLocationBtn.innerHTML = '<i class="fas fa-sync me-1"></i>Update';
+            updateLocationBtn.disabled = false;
+        });
+    }
+    
+    // Show location status messages
+    function showLocationStatus(message, type) {
+        if (!locationStatus) return;
+        
+        const alertClass = `alert alert-${type} alert-dismissible fade show`;
+        locationStatus.innerHTML = `
+            <div class="${alertClass}" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        // Auto-hide success messages after 5 seconds
+        if (type === 'success') {
+            setTimeout(() => {
+                const alert = locationStatus.querySelector('.alert');
+                if (alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000);
+        }
+    }
 });
 </script>
 {% endblock %}
