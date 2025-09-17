@@ -4,323 +4,31 @@
 
 {% block content %}
 
-<style>
-/* Dark Theme Browse Players Design */
-:root {
-    --primary-bg: #0f0f23;
-    --secondary-bg: #1a1a2e;
-    --card-bg: rgba(26, 26, 46, 0.8);
-    --text-primary: #ffffff;
-    --accent-cyan: #00f5ff;
-    --accent-green: #00ff41;
-    --accent-purple: #bf00ff;
-    --accent-red: #ff4757;
-    --border-subtle: rgba(226, 232, 240, 0.1);
-    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
-    --glow-green: 0 0 20px rgba(0, 255, 65, 0.3);
-    --glow-purple: 0 0 20px rgba(191, 0, 255, 0.3);
-}
 
-body {
-    background: var(--primary-bg);
-    color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    overflow-x: hidden;
-}
-
-.browse-players-container {
-    min-height: 100vh;
-    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
-    padding: 2rem 0;
-}
-
-.player-card {
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle);
-    border-radius: 24px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-    overflow: hidden;
-}
-
-.player-card:hover {
-    border-color: var(--accent-cyan);
-    box-shadow: var(--glow-effect);
-    transform: translateY(-2px);
-}
-
-.player-avatar {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    border: 2px solid var(--accent-cyan);
-    border-radius: 16px;
-    box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
-    transition: all 0.3s ease;
-}
-
-.player-avatar:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 25px rgba(0, 245, 255, 0.6);
-}
-
-.avatar-placeholder {
-    width: 100%;
-    height: 200px;
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    border: 2px solid var(--accent-cyan);
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
-    transition: all 0.3s ease;
-}
-
-.avatar-placeholder:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 25px rgba(0, 245, 255, 0.6);
-}
-
-.ranking-badge {
-    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
-    color: white;
-    font-weight: 700;
-    font-size: 1rem;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    box-shadow: var(--glow-green);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border: none;
-}
-
-.player-name-section {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    color: white;
-    padding: 1.5rem;
-    text-align: center;
-}
-
-.player-name {
-    font-size: 1.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    margin: 0;
-}
-
-.stat-badge {
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
-    color: white;
-    font-weight: 600;
-    font-size: 0.9rem;
-    padding: 0.5rem 1rem;
-    border-radius: 15px;
-    box-shadow: var(--glow-purple);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border: none;
-    width: 100%;
-    margin-bottom: 0.5rem;
-}
-
-.stat-value {
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 1.1rem;
-    text-align: center;
-    margin-top: 0.25rem;
-}
-
-.player-stats-section {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(10px);
-    color: white;
-    padding: 1.5rem;
-    border-top: 1px solid var(--border-subtle);
-}
-
-.stat-item {
-    text-align: center;
-}
-
-.stat-number {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--accent-cyan);
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
-}
-
-.stat-label {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.challenge-btn {
-    background: linear-gradient(135deg, var(--accent-green), var(--accent-purple));
-    border: none;
-    border-radius: 16px;
-    padding: 1rem 2rem;
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: white;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 8px 32px rgba(0, 255, 65, 0.3);
-    width: 100%;
-}
-
-.challenge-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.5);
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
-    color: white;
-}
-
-.page-header {
-    text-align: center;
-    margin-bottom: 3rem;
-}
-
-.page-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 1rem;
-}
-
-.page-subtitle {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 1.1rem;
-}
-
-.back-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid var(--border-subtle);
-    color: white;
-    border-radius: 12px;
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.back-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: var(--accent-cyan);
-    color: white;
-    transform: translateY(-1px);
-}
-
-.empty-state-card {
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle);
-    border-radius: 24px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    padding: 3rem 2rem;
-    text-align: center;
-}
-
-.empty-state-icon {
-    font-size: 4rem;
-    color: var(--accent-cyan);
-    margin-bottom: 2rem;
-}
-
-.empty-state-title {
-    color: var(--text-primary);
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-}
-
-.empty-state-text {
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 2rem;
-    line-height: 1.6;
-}
-
-.empty-state-btn {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    border: none;
-    border-radius: 12px;
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    color: white;
-    transition: all 0.3s ease;
-    margin: 0 0.5rem;
-}
-
-.empty-state-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 245, 255, 0.4);
-    color: white;
-}
-
-.empty-state-btn.outline {
-    background: transparent;
-    border: 1px solid var(--accent-cyan);
-}
-
-.empty-state-btn.outline:hover {
-    background: rgba(0, 245, 255, 0.1);
-    border-color: var(--accent-cyan);
-}
-
-@media (max-width: 768px) {
-    .browse-players-container {
-        padding: 1rem 0;
-    }
-    
-    .page-title {
-        font-size: 2rem;
-    }
-    
-    .player-name {
-        font-size: 1.5rem;
-    }
-    
-    .challenge-btn {
-        padding: 0.75rem 1.5rem;
-        font-size: 1rem;
-    }
-}
-</style>
-
-<div class="browse-players-container">
-<div class="container-fluid">
-    <div class="page-header">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1 class="page-title mb-0">
-                <i class="fas fa-users me-2"></i>Browse Compatible Players
-            </h1>
-            <a href="{{ url_for('index') }}" class="back-btn">
-                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-            </a>
+<div class="container py-4">
+        <div class="text-center mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1 class="text-neon text-bold mb-0">
+                    <i class="fas fa-users me-2"></i>Browse Compatible Players
+                </h1>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+            <p class="text-secondary">Find players at your skill level in your area</p>
         </div>
-        <p class="page-subtitle">Find players at your skill level in your area</p>
-    </div>
 
     {% if players %}
     <!-- Player Cards Grid -->
     <div class="row">
         {% for player in players %}
         <div class="col-md-6 col-lg-4 mb-4">
-            <div class="player-card h-100">
+            <div class="neon-frame h-100">
                 
                 <!-- Ranking Badge -->
                 <div class="position-relative">
                     <div class="position-absolute top-0 start-0 w-100 text-center" style="z-index: 10;">
-                        <div class="ranking-badge mt-3">
+                        <div class="badge badge-success mt-3">
                             {% if player.ranking_points > 0 %}
                                 RANK: {{ loop.index }}
                             {% else %}
@@ -331,8 +39,8 @@ body {
                 </div>
 
                 <!-- Player Name Section -->
-                <div class="player-name-section">
-                    <h3 class="player-name">
+                <div class="text-center py-3 mb-3" style="background: var(--gradient-primary);">
+                    <h3 class="text-bold text-white mb-0" style="text-transform: uppercase; letter-spacing: 1px;">
                         {{ player.name }}
                     </h3>
                 </div>
@@ -359,30 +67,30 @@ body {
                             <div class="ps-3">
                                 <!-- Skill Level -->
                                 <div class="mb-3">
-                                    <div class="stat-badge text-center">
+                                    <div class="badge badge-primary text-center w-100">
                                         LEVEL
                                     </div>
-                                    <div class="stat-value">
+                                    <div class="text-center text-bold text-neon mt-2">
                                         {{ player.skill_level }}
                                     </div>
                                 </div>
 
                                 <!-- Win/Loss Record -->
                                 <div class="mb-3">
-                                    <div class="stat-badge text-center">
+                                    <div class="badge badge-success text-center w-100">
                                         RECORD
                                     </div>
-                                    <div class="stat-value">
+                                    <div class="text-center text-bold text-white mt-2">
                                         {{ player.wins }}W - {{ player.losses }}L
                                     </div>
                                 </div>
 
                                 <!-- Location -->
                                 <div class="mb-3">
-                                    <div class="stat-badge text-center">
+                                    <div class="badge badge-warning text-center w-100">
                                         LOCATION
                                     </div>
-                                    <div class="stat-value text-uppercase">
+                                    <div class="text-center text-bold text-white text-uppercase mt-2">
                                         {{ player.location }}
                                     </div>
                                 </div>
@@ -392,44 +100,42 @@ body {
                 </div>
 
                 <!-- Player Highlights/Stats -->
-                <div class="player-stats-section">
-                    <div class="text-center">
-                        <div class="ranking-badge mb-3">
+                <div class="card-footer text-center">
+                        <div class="badge badge-primary mb-3">
                             PLAYER STATS
                         </div>
                         <div class="row text-center">
                             <div class="col-4">
-                                <div class="stat-item">
-                                    <div class="stat-number">{{ player.ranking_points }}</div>
-                                    <div class="stat-label">Points</div>
+                                <div class="text-center">
+                                    <div class="text-neon text-bold h5">{{ player.ranking_points }}</div>
+                                    <div class="text-secondary small">Points</div>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="stat-item">
-                                    <div class="stat-number">
+                                <div class="text-center">
+                                    <div class="text-neon-green text-bold h5">
                                         {% if (player.wins + player.losses) > 0 %}
                                             {{ "%.0f"|format((player.wins / (player.wins + player.losses)) * 100) }}%
                                         {% else %}
                                             0%
                                         {% endif %}
                                     </div>
-                                    <div class="stat-label">Win Rate</div>
+                                    <div class="text-secondary small">Win Rate</div>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="stat-item">
-                                    <div class="stat-number">{{ player.wins + player.losses }}</div>
-                                    <div class="stat-label">Total Matches</div>
+                                <div class="text-center">
+                                    <div class="text-white text-bold h5">{{ player.wins + player.losses }}</div>
+                                    <div class="text-secondary small">Total Matches</div>
                                 </div>
                             </div>
                         </div>
-                    </div>
                 </div>
 
                 <!-- Action Button -->
                 <div class="p-3">
                     <button onclick="challengePlayer({{ player.id }}, '{{ player.name }}')" 
-                            class="challenge-btn">
+                            class="btn btn-success w-100">
                         <i class="fas fa-handshake me-2"></i>Challenge Player
                     </button>
                 </div>
@@ -441,21 +147,21 @@ body {
     <!-- No Compatible Players -->
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="empty-state-card">
-                <div class="empty-state-icon">
-                    <i class="fas fa-search"></i>
+            <div class="neon-frame text-center py-5">
+                <div class="text-neon mb-4">
+                    <i class="fas fa-search fa-4x"></i>
                 </div>
-                <h3 class="empty-state-title">No Compatible Players Found</h3>
-                <p class="empty-state-text">
+                <h3 class="text-bold text-white mb-3">No Compatible Players Found</h3>
+                <p class="text-secondary mb-4">
                     We couldn't find any players at your skill level ({{ current_player.skill_level }}) 
                     in your area who are currently looking for matches.
                 </p>
                 
                 <div class="d-flex justify-content-center gap-3 flex-wrap">
-                    <a href="{{ url_for('profile_settings') }}" class="empty-state-btn outline">
+                    <a href="{{ url_for('profile_settings') }}" class="btn btn-outline-primary">
                         <i class="fas fa-cog me-2"></i>Update Profile
                     </a>
-                    <a href="{{ url_for('index') }}" class="empty-state-btn">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
                         <i class="fas fa-home me-2"></i>Back to Dashboard
                     </a>
                 </div>

@@ -4,243 +4,16 @@
 
 {% block content %}
 
-<style>
-/* Dark Theme Profile Settings Design */
-:root {
-    --primary-bg: #0f0f23;
-    --secondary-bg: #1a1a2e;
-    --card-bg: rgba(26, 26, 46, 0.8);
-    --text-primary: #ffffff;
-    --accent-cyan: #00f5ff;
-    --accent-green: #00ff41;
-    --accent-purple: #bf00ff;
-    --border-subtle: rgba(226, 232, 240, 0.1);
-    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
-}
 
-body {
-    background: var(--primary-bg);
-    color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    overflow-x: hidden;
-}
-
-.dashboard-container {
-    min-height: 100vh;
-    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
-    padding: 2rem 0;
-}
-
-.settings-card {
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle);
-    border-radius: 24px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-    color: var(--text-primary);
-}
-
-.settings-card:hover {
-    border-color: var(--accent-cyan);
-    box-shadow: var(--glow-effect);
-    transform: translateY(-2px);
-}
-
-.card-header {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
-    border: none !important;
-    border-radius: 24px 24px 0 0 !important;
-    padding: 2rem;
-}
-
-.form-control, .form-select {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
-    color: var(--text-primary);
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-.form-control:focus, .form-select:focus {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
-    color: var(--text-primary);
-}
-
-.form-control::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.form-label {
-    color: var(--text-primary) !important;
-    font-weight: 600;
-    margin-bottom: 0.75rem;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    border: none;
-    border-radius: 16px;
-    padding: 1rem 2rem;
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: white;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
-}
-
-.btn-primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
-}
-
-.btn-outline-secondary, .btn-secondary {
-    border: 1px solid var(--border-subtle);
-    color: var(--text-primary);
-    background: transparent;
-    border-radius: 16px;
-    padding: 1rem 2rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.btn-outline-secondary:hover, .btn-secondary:hover {
-    background: var(--accent-cyan);
-    border-color: var(--accent-cyan);
-    color: white;
-    transform: translateY(-2px);
-}
-
-.badge {
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.badge.bg-primary {
-    background: var(--accent-cyan) !important;
-}
-
-.badge.bg-success {
-    background: var(--accent-green) !important;
-}
-
-.text-muted {
-    color: rgba(255, 255, 255, 0.7) !important;
-}
-
-.account-info-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--border-subtle);
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
-}
-
-.account-info-card .card-header {
-    background: rgba(0, 245, 255, 0.1) !important;
-    border-bottom: 1px solid var(--border-subtle);
-    padding: 1.5rem;
-    border-radius: 16px 16px 0 0 !important;
-}
-
-.fw-bold {
-    color: var(--accent-cyan);
-}
-
-.text-success {
-    color: var(--accent-green) !important;
-}
-
-.profile-avatar {
-    border: 3px solid var(--accent-cyan);
-    box-shadow: 0 0 20px rgba(0, 245, 255, 0.4);
-}
-
-.avatar-placeholder {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    border: 3px solid var(--accent-cyan);
-}
-
-.alert-info {
-    background: rgba(0, 245, 255, 0.1);
-    border: 1px solid rgba(0, 245, 255, 0.3);
-    color: var(--text-primary);
-    border-radius: 12px;
-}
-
-.form-text {
-    color: rgba(255, 255, 255, 0.6) !important;
-}
-
-.form-range {
-    background: var(--accent-cyan);
-}
-
-.input-group-text {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-subtle);
-    color: var(--text-primary);
-}
-
-.btn-outline-primary {
-    border: 1px solid var(--accent-cyan);
-    color: var(--accent-cyan);
-    background: transparent;
-    border-radius: 12px;
-}
-
-.btn-outline-primary:hover {
-    background: var(--accent-cyan);
-    color: white;
-}
-
-.btn-outline-danger {
-    border: 1px solid #dc3545;
-    color: #dc3545;
-    background: transparent;
-    border-radius: 12px;
-}
-
-.btn-outline-danger:hover {
-    background: #dc3545;
-    color: white;
-}
-
-/* Mobile Responsive Design */
-@media (max-width: 768px) {
-    .dashboard-container {
-        padding: 1rem 0;
-    }
-    
-    .settings-card {
-        border-radius: 16px;
-        margin: 0 0.5rem;
-    }
-    
-    .card-header {
-        padding: 1.5rem;
-        border-radius: 16px 16px 0 0 !important;
-    }
-}
-</style>
-
-<div class="dashboard-container">
-<div class="row justify-content-center animate-in">
+<div class="container py-4">
+<div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="settings-card">
-            <div class="card-header text-white">
-                <h4 class="card-title mb-0 fw-bold">
+        <div class="neon-frame">
+            <div class="text-center mb-4">
+                <h4 class="card-title mb-0 text-bold text-neon">
                     <i class="fas fa-user-cog me-2"></i>Profile Settings
                 </h4>
-                <p class="mb-0 opacity-90">Update your profile information and preferences</p>
+                <p class="mb-0 text-secondary">Update your profile information and preferences</p>
             </div>
             <div class="card-body">
                 <!-- Current Profile Display -->
@@ -258,10 +31,10 @@ body {
                         {% endif %}
                     </div>
                     <div class="col">
-                        <h5 class="mb-1">{{ player.full_name }}</h5>
+                        <h5 class="mb-1 text-bold text-white">{{ player.full_name }}</h5>
                         <p class="mb-1">
-                            <span class="badge bg-primary me-2">{{ player.skill_level }}</span>
-                            <span class="badge bg-success">
+                            <span class="badge badge-primary me-2">{{ player.skill_level }}</span>
+                            <span class="badge badge-success">
                                 {{ player.wins or 0 }}W-{{ player.losses or 0 }}L
                                 {% if player.tournament_wins and player.tournament_wins > 0 %}
                                     {% for i in range(player.tournament_wins) %}⭐{% endfor %}
@@ -273,9 +46,9 @@ body {
                 </div>
 
                 <!-- Account Information -->
-                <div class="card account-info-card mb-4">
+                <div class="card mb-4">
                     <div class="card-header">
-                        <h6 class="card-title mb-0">
+                        <h6 class="card-title mb-0 text-neon text-bold">
                             <i class="fas fa-wallet me-2"></i>Account Information
                         </h6>
                     </div>
@@ -284,7 +57,7 @@ body {
                             <div class="col-md-6">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted">Tournament Credits:</span>
-                                    <span class="fw-bold text-success">
+                                    <span class="text-bold text-neon-green">
                                         {% if player.tournament_credits and player.tournament_credits > 0 %}
                                             ${{ "%.2f"|format(player.tournament_credits) }}
                                         {% else %}
@@ -301,7 +74,7 @@ body {
                                 {% if player.player_id %}
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted">Player ID:</span>
-                                    <span class="fw-bold" style="color: #E0563F;">{{ player.player_id }}</span>
+                                    <span class="text-bold text-neon">{{ player.player_id }}</span>
                                 </div>
                                 <small class="text-muted">
                                     <i class="fas fa-id-card me-1"></i>

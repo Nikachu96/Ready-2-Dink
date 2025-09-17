@@ -3,14 +3,15 @@
 {% block title %}Payment - Ready 2 Dink{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center animate-in">
+<div class="container py-4">
+<div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
-                <h4 class="card-title mb-0 fw-bold">
+        <div class="neon-frame">
+            <div class="text-center mb-4">
+                <h4 class="text-neon text-bold mb-0">
                     <i class="fas fa-credit-card me-2"></i>Complete Payment
                 </h4>
-                <p class="mb-0 opacity-90">Secure tournament entry payment</p>
+                <p class="text-secondary mb-0">Secure tournament entry payment</p>
             </div>
             <div class="card-body">
                 <!-- Payment Amount -->
@@ -83,25 +84,4 @@
     </div>
 </div>
 
-<style>
-.animate-in {
-    animation: slideIn 0.5s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-</style>
 {% endblock %}

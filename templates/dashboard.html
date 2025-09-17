@@ -5,112 +5,32 @@
 {% block content %}
 
 <style>
-/* Dark Theme Dashboard Design */
-:root {
-    --primary-bg: #0f0f23;
-    --secondary-bg: #1a1a2e;
-    --card-bg: rgba(26, 26, 46, 0.8);
-    --text-primary: #ffffff;
-    --accent-cyan: #00f5ff;
-    --accent-green: #00ff41;
-    --accent-purple: #bf00ff;
-    --border-subtle: rgba(226, 232, 240, 0.1);
-    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
-}
-
-body {
-    background: var(--primary-bg);
-    color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    overflow-x: hidden;
-}
-
-.dashboard-container {
-    min-height: 100vh;
-    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
-    padding: 2rem 0;
-}
-
-.player-card, .match-card {
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle);
-    border-radius: 24px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-    margin-bottom: 2rem;
-}
-
-.player-card:hover, .match-card:hover {
-    border-color: var(--accent-cyan);
-    box-shadow: var(--glow-effect);
-    transform: translateY(-2px);
-}
-
-.card-header {
-    background: rgba(255, 255, 255, 0.05);
-    border-bottom: 1px solid var(--border-subtle);
-    border-radius: 24px 24px 0 0;
-    color: var(--text-primary);
-    padding: 1.5rem;
-}
-
-.card-title {
-    color: var(--accent-cyan);
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
-    font-weight: 700;
-    margin-bottom: 0;
-}
-
-.player-avatar {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    border: 4px solid var(--accent-cyan);
-    box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
-    object-fit: cover;
-    transition: all 0.3s ease;
-}
-
-.player-avatar:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 40px rgba(0, 245, 255, 0.6);
-}
-
 .match-item {
-    background: rgba(26, 26, 46, 0.8);
-    border: 1px solid var(--border-subtle);
     border-radius: 16px;
     margin-bottom: 1rem;
     transition: all 0.3s ease;
 }
 
-.match-item:hover {
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 20px rgba(0, 245, 255, 0.2);
-    transform: translateY(-2px);
-}
-
 .match-item.pending {
-    border-left: 4px solid #FFD700;
+    border-left: 4px solid var(--neon-orange);
 }
 
 .match-item.confirmed {
-    border-left: 4px solid var(--accent-cyan);
+    border-left: 4px solid var(--neon-cyan);
 }
 
 .match-item.completed {
-    border-left: 4px solid var(--accent-green);
+    border-left: 4px solid var(--neon-green);
 }
 
 .opponent-avatar {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    border: 2px solid var(--accent-cyan);
-    box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
+    border: 2px solid var(--neon-cyan);
+    box-shadow: var(--shadow-neon-cyan);
     object-fit: cover;
-    transition: all 0.3s ease;
+    transition: var(--transition-normal);
 }
 
 .opponent-avatar:hover {
@@ -122,133 +42,37 @@ body {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    border: 2px solid var(--accent-cyan);
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: 2px solid var(--neon-cyan);
+    background: var(--gradient-primary);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
+    box-shadow: var(--shadow-neon-cyan);
 }
 
-.action-btn {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    border: none;
-    border-radius: 16px;
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    color: white;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
-    margin: 0.25rem;
+.player-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 4px solid var(--neon-cyan);
+    box-shadow: var(--shadow-neon-cyan);
+    object-fit: cover;
+    transition: var(--transition-normal);
 }
 
-.action-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
-    color: white;
-}
-
-.action-btn.success {
-    background: linear-gradient(135deg, var(--accent-green), #20c997);
-    box-shadow: 0 8px 32px rgba(0, 255, 65, 0.3);
-}
-
-.action-btn.success:hover {
-    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.5);
-}
-
-.status-badge {
-    border-radius: 15px;
-    padding: 0.5rem 1rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.status-badge.pending {
-    background: linear-gradient(135deg, #FFD700, #FFA500);
-    color: #000;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-}
-
-.status-badge.confirmed {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    color: white;
-    box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
-}
-
-.status-badge.completed {
-    background: linear-gradient(135deg, var(--accent-green), #20c997);
-    color: white;
-    box-shadow: 0 0 15px rgba(0, 255, 65, 0.4);
-}
-
-.stat-card {
-    background: rgba(26, 26, 46, 0.8);
-    border: 1px solid var(--border-subtle);
-    border-radius: 16px;
-    padding: 1.5rem;
-    text-align: center;
-    transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-    border-color: var(--accent-cyan);
-    transform: translateY(-2px);
-    box-shadow: 0 0 20px rgba(0, 245, 255, 0.2);
-}
-
-.stat-number {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--accent-cyan);
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
-}
-
-.stat-label {
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.info-text {
-    color: rgba(255, 255, 255, 0.8);
-}
-
-.info-text.muted {
-    color: rgba(255, 255, 255, 0.6);
-}
-
-/* Mobile Responsive Design */
-@media (max-width: 768px) {
-    .dashboard-container {
-        padding: 1rem;
-    }
-    
-    .player-avatar {
-        width: 120px;
-        height: 120px;
-    }
-    
-    .action-btn {
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-    }
+.player-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(0, 245, 255, 0.6);
 }
 </style>
 
-<div class="dashboard-container">
-    <div class="container-fluid">
+<div class="container py-4">
         <div class="row">
             <div class="col-md-4">
-                <div class="player-card">
+                <div class="neon-frame">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">
+                        <h5 class="text-neon text-bold mb-0">
                             <i class="fas fa-user me-2"></i>Player Profile
                         </h5>
                     </div>
@@ -260,15 +84,15 @@ body {
                             </div>
                         {% endif %}
                         
-                        <h5 class="fw-bold mb-3" style="color: var(--accent-cyan);">{{ player.full_name }}</h5>
-                        <p class="info-text mb-2">
-                            <i class="fas fa-envelope me-2" style="color: var(--accent-green);"></i>{{ player.email }}
+                        <h5 class="text-bold text-neon mb-3">{{ player.full_name }}</h5>
+                        <p class="text-white mb-2">
+                            <i class="fas fa-envelope me-2 text-neon-green"></i>{{ player.email }}
                         </p>
-                        <p class="info-text mb-2">
-                            <i class="fas fa-calendar me-2" style="color: var(--accent-cyan);"></i>{{ player.dob }}
+                        <p class="text-white mb-2">
+                            <i class="fas fa-calendar me-2 text-neon"></i>{{ player.dob }}
                         </p>
-                        <p class="info-text mb-2">
-                            <i class="fas fa-star me-2" style="color: var(--accent-purple);"></i>{{ player.skill_level }}
+                        <p class="text-white mb-2">
+                            <i class="fas fa-star me-2 text-neon-purple"></i>{{ player.skill_level }}
                         </p>
                         <p class="info-text mb-2">
                             <i class="fas fa-map-marker-alt me-2" style="color: #FFD700;"></i>{{ player.location1 }}
@@ -285,16 +109,16 @@ body {
             </div>
             
             <div class="col-md-8">
-                <div class="match-card">
+                <div class="neon-frame">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-gamepad me-2"></i>My Matches
                 </h5>
                     <div class="btn-group">
-                        <button onclick="findNewMatch({{ player.id }})" class="action-btn">
+                        <button onclick="findNewMatch({{ player.id }})" class="btn btn-primary">
                             <i class="fas fa-search me-1"></i>Find Match
                         </button>
-                        <a href="{{ url_for('tournament_entry', player_id=player.id) }}" class="action-btn success">
+                        <a href="{{ url_for('tournament_entry', player_id=player.id) }}" class="btn btn-success">
                             <i class="fas fa-trophy me-1"></i>Enter Tournament
                         </a>
                     </div>
@@ -335,11 +159,19 @@ body {
                                                     Schedule pending
                                                 {% endif %}
                                             </p>
-                                            <span class="status-badge {{ match.status }}">
+                                            {% if match.status == 'pending' %}
+                                            <span class="badge badge-warning">
+                                            {% elif match.status == 'confirmed' %}
+                                            <span class="badge badge-primary">
+                                            {% elif match.status == 'completed' %}
+                                            <span class="badge badge-success">
+                                            {% else %}
+                                            <span class="badge badge-secondary">
+                                            {% endif %}
                                                 {{ match.status|title }}
                                             </span>
                                             {% if match.status == 'pending' %}
-                                                <button class="action-btn success ms-2" onclick="confirmMatch({{ match.id }})">
+                                                <button class="btn btn-success btn-sm ms-2" onclick="confirmMatch({{ match.id }})">
                                                     Confirm
                                                 </button>
                                             {% endif %}
@@ -354,21 +186,27 @@ body {
                     <div class="mt-3">
                         <div class="row text-center">
                             <div class="col-md-4">
-                                <div class="stat-card">
-                                    <div class="stat-number">{{ matches|selectattr('status', 'equalto', 'pending')|list|length }}</div>
-                                    <div class="stat-label">Pending</div>
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <div class="h3 text-neon text-bold">{{ matches|selectattr('status', 'equalto', 'pending')|list|length }}</div>
+                                        <div class="text-secondary small text-uppercase">Pending</div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="stat-card">
-                                    <div class="stat-number">{{ matches|selectattr('status', 'equalto', 'confirmed')|list|length }}</div>
-                                    <div class="stat-label">Confirmed</div>
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <div class="h3 text-neon text-bold">{{ matches|selectattr('status', 'equalto', 'confirmed')|list|length }}</div>
+                                        <div class="text-secondary small text-uppercase">Confirmed</div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="stat-card">
-                                    <div class="stat-number">{{ matches|selectattr('status', 'equalto', 'completed')|list|length }}</div>
-                                    <div class="stat-label">Completed</div>
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <div class="h3 text-neon-green text-bold">{{ matches|selectattr('status', 'equalto', 'completed')|list|length }}</div>
+                                        <div class="text-secondary small text-uppercase">Completed</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
