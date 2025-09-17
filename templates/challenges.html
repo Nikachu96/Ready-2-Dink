@@ -5,61 +5,23 @@
 {% block content %}
 
 <style>
-/* Dark Theme Challenges Design */
-:root {
-    --primary-bg: #0f0f23;
-    --secondary-bg: #1a1a2e;
-    --card-bg: rgba(26, 26, 46, 0.8);
-    --text-primary: #ffffff;
-    --accent-cyan: #00f5ff;
-    --accent-green: #00ff41;
-    --accent-purple: #bf00ff;
-    --accent-red: #ff4757;
-    --border-subtle: rgba(226, 232, 240, 0.1);
-    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
-    --glow-green: 0 0 20px rgba(0, 255, 65, 0.3);
-    --glow-red: 0 0 20px rgba(255, 71, 87, 0.3);
-}
-
-body {
-    background: var(--primary-bg);
-    color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    overflow-x: hidden;
-}
-
+/* Challenge-specific styling using global CSS system */
 .challenges-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
     padding: 2rem 0;
 }
 
-.challenge-card {
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle);
-    border-radius: 24px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-    margin-bottom: 1.5rem;
-}
-
-.challenge-card:hover {
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 30px rgba(0, 245, 255, 0.5), 0 20px 40px rgba(0, 0, 0, 0.3);
-    transform: translateY(-3px);
-}
-
+/* Challenge Card Variants - Use global .neon-frame as base */
 .challenge-card.incoming {
-    border-left: 4px solid var(--accent-green);
+    border-left: 4px solid var(--neon-green);
 }
 
 .challenge-card.outgoing {
-    border-left: 4px solid var(--accent-cyan);
+    border-left: 4px solid var(--neon-cyan);
 }
 
 .challenge-card.confirmed {
-    border-left: 4px solid var(--accent-purple);
+    border-left: 4px solid var(--neon-purple);
 }
 
 .challenge-card.completed {
@@ -67,14 +29,15 @@ body {
     opacity: 0.85;
 }
 
+/* Avatar styling */
 .challenge-avatar {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    border: 2px solid var(--accent-cyan);
-    box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
+    border: 2px solid var(--neon-cyan);
+    box-shadow: var(--shadow-neon-cyan);
     object-fit: cover;
-    transition: all 0.3s ease;
+    transition: var(--transition-normal);
 }
 
 .challenge-avatar:hover {
@@ -86,227 +49,66 @@ body {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    border: 2px solid var(--accent-cyan);
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: 2px solid var(--neon-cyan);
+    background: var(--gradient-primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    color: white;
-    box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
-}
-
-.skill-badge {
-    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
-    color: white;
+    font-size: 1.5rem !important;
+    color: var(--text-primary) !important;
     font-weight: 700;
-    font-size: 1rem;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    box-shadow: var(--shadow-neon-cyan);
 }
 
-.status-badge {
-    font-weight: 700;
-    padding: 0.75rem 1.25rem;
-    border-radius: 25px;
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-    animation: pulse 2s infinite;
+/* Player selection styling */
+.player-option {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: var(--transition-normal);
+    backdrop-filter: blur(10px);
 }
 
-.status-pending {
-    background: linear-gradient(135deg, #ffc107, #fd7e14);
-    color: white;
-    box-shadow: 0 0 15px rgba(255, 193, 7, 0.4);
-}
-
-.status-confirmed {
-    background: linear-gradient(135deg, var(--accent-green), #06d6a0);
-    color: white;
-    box-shadow: var(--glow-green);
-}
-
-.status-counter_proposed {
-    background: linear-gradient(135deg, var(--accent-purple), #9c27b0);
-    color: white;
-    box-shadow: 0 0 15px rgba(191, 0, 255, 0.4);
-}
-
-.status-declined {
-    background: linear-gradient(135deg, var(--accent-red), #dc3545);
-    color: white;
-    box-shadow: var(--glow-red);
-}
-
-.status-completed {
-    background: linear-gradient(135deg, #6c757d, #495057);
-    color: white;
-}
-
-.action-btn {
-    border-radius: 16px;
-    font-weight: 700;
-    font-size: 1.1rem;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-    border: none;
-    padding: 1rem 2rem;
-    min-width: 120px;
-    text-transform: uppercase;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-}
-
-.btn-accept {
-    background: linear-gradient(135deg, var(--accent-green), #06d6a0);
-    color: white;
-    box-shadow: 0 8px 32px rgba(0, 255, 65, 0.4);
-}
-
-.btn-accept:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.6);
-    color: white;
-}
-
-.btn-decline {
-    background: linear-gradient(135deg, var(--accent-red), #dc3545);
-    color: white;
-    box-shadow: 0 8px 32px rgba(255, 71, 87, 0.4);
-}
-
-.btn-decline:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(255, 71, 87, 0.6);
-    color: white;
-}
-
-.challenge-form-card {
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle);
-    border-radius: 24px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    padding: 2rem;
-}
-
-.form-control-dark {
-    background: rgba(255, 255, 255, 0.08);
-    border: 2px solid var(--border-subtle);
-    border-radius: 16px;
-    color: white;
-    font-size: 18px;
-    font-weight: 600;
-    padding: 1rem 1.5rem;
-    transition: all 0.3s ease;
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
-}
-
-.form-control-dark:focus {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 0 0.3rem rgba(0, 245, 255, 0.25), 0 0 20px rgba(0, 245, 255, 0.4);
-    color: white;
+.player-option:hover {
+    background: rgba(0, 245, 255, 0.1);
+    border-color: var(--neon-cyan);
     transform: translateY(-2px);
+    box-shadow: var(--shadow-neon-cyan);
 }
 
-.form-control-dark::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+.player-option.selected {
+    background: rgba(0, 245, 255, 0.15);
+    border-color: var(--neon-cyan);
+    box-shadow: var(--shadow-neon-cyan), inset 0 0 20px rgba(0, 245, 255, 0.1);
 }
 
-.section-header {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+/* Match details styling */
+.match-details {
+    background: var(--glass-bg);
+    border-radius: var(--border-radius-lg);
+    padding: 1rem;
+    margin-top: 0.75rem;
+    font-weight: 600 !important;
+    border: 1px solid rgba(0, 245, 255, 0.1);
 }
 
+.match-details div {
+    font-weight: 600 !important;
+}
+
+/* Enhanced readability for empty states */
 .empty-state {
     text-align: center;
     padding: 4rem 2rem;
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 500;
 }
 
 .empty-state i {
     font-size: 4rem;
     margin-bottom: 1.5rem;
-    color: var(--accent-cyan);
-    text-shadow: 0 0 20px rgba(0, 245, 255, 0.6);
     animation: pulse 3s infinite;
-}
-
-.player-option {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(0, 245, 255, 0.02));
-    border: 1px solid var(--border-subtle);
-    border-radius: 16px;
-    padding: 1.25rem;
-    margin-bottom: 0.75rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-}
-
-.player-option:hover {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(0, 245, 255, 0.08));
-    border-color: var(--accent-cyan);
-    transform: translateY(-2px);
-    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
-}
-
-.player-option.selected {
-    background: linear-gradient(135deg, rgba(0, 245, 255, 0.15), rgba(191, 0, 255, 0.05));
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 25px rgba(0, 245, 255, 0.4), inset 0 0 20px rgba(0, 245, 255, 0.1);
-}
-
-.record-badge {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(0, 245, 255, 0.1));
-    color: #ffffff;
-    padding: 0.4rem 0.8rem;
-    border-radius: 12px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
-    border: 1px solid rgba(0, 245, 255, 0.2);
-}
-
-.match-details {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(0, 245, 255, 0.05));
-    border-radius: 16px;
-    padding: 1rem;
-    margin-top: 0.75rem;
-    font-size: 1rem;
-    font-weight: 500;
-    border: 1px solid rgba(0, 245, 255, 0.1);
-}
-
-.result-badge {
-    font-weight: 600;
-    padding: 0.25rem 0.75rem;
-    border-radius: 15px;
-    font-size: 0.8rem;
-}
-
-.result-won {
-    background: var(--accent-green);
-    color: white;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
-}
-
-.result-lost {
-    background: var(--accent-red);
-    color: white;
-    box-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
 }
 
 @keyframes pulse {
@@ -324,22 +126,6 @@ body {
     .challenges-container {
         padding: 1rem 0;
     }
-    
-    .challenge-card {
-        margin-bottom: 1rem;
-        border-radius: 16px;
-    }
-    
-    .challenge-form-card {
-        padding: 1.5rem;
-        border-radius: 16px;
-    }
-    
-    .action-btn {
-        font-size: 0.9rem;
-        padding: 0.8rem 1.5rem;
-        min-width: 100px;
-    }
 }
 </style>
 
@@ -348,10 +134,10 @@ body {
         <div class="row">
             <div class="col-12">
                 <div class="text-center mb-5">
-                    <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #00f5ff, #bf00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    <h1 class="display-4 text-bold mb-3 neon-text">
                         <i class="fas fa-swords me-3"></i>Challenges
                     </h1>
-                    <p class="lead text-white fw-semibold" style="text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);">Challenge other players and manage your matches</p>
+                    <p class="lead text-white text-bold">Challenge other players and manage your matches</p>
                 </div>
             </div>
         </div>
@@ -359,13 +145,13 @@ body {
         <!-- Incoming Challenges -->
         <div class="row mb-5">
             <div class="col-12">
-                <h2 class="section-header">
+                <h2 class="text-bold mb-4 neon-text">
                     <i class="fas fa-inbox me-2"></i>Incoming Challenges
                 </h2>
                 
                 {% if incoming_challenges %}
                     {% for challenge in incoming_challenges %}
-                    <div class="challenge-card incoming">
+                    <div class="neon-frame challenge-card incoming mb-4">
                         <div class="card-body p-4">
                             <div class="row align-items-center">
                                 <div class="col-auto">
@@ -381,38 +167,42 @@ body {
                                 <div class="col">
                                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
                                         <div>
-                                            <h5 class="mb-1 text-white fw-bold" style="text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);">{{ challenge.challenger_name }}</h5>
+                                            <h5 class="mb-1 text-white text-bold neon-text">{{ challenge.challenger_name }}</h5>
                                             <div class="d-flex flex-wrap gap-2 mb-2">
-                                                <span class="skill-badge">{{ challenge.challenger_skill }}</span>
-                                                <span class="record-badge">{{ challenge.challenger_wins or 0 }}W-{{ challenge.challenger_losses or 0 }}L</span>
-                                                <span class="status-badge status-{{ challenge.status }}">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                                <span class="badge badge-success text-bold">{{ challenge.challenger_skill }}</span>
+                                                <span class="badge badge-primary text-bold">{{ challenge.challenger_wins or 0 }}W-{{ challenge.challenger_losses or 0 }}L</span>
+                                                {% if challenge.status == 'pending' %}<span class="badge badge-warning text-bold">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                                {% elif challenge.status == 'confirmed' %}<span class="badge badge-success text-bold">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                                {% elif challenge.status == 'counter_proposed' %}<span class="badge badge-primary text-bold">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                                {% elif challenge.status == 'declined' %}<span class="badge badge-danger text-bold">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                                {% else %}<span class="badge badge-secondary text-bold">{{ challenge.status.replace('_', ' ').title() }}</span>{% endif %}
                                             </div>
                                             <div class="match-details">
-                                                <div><i class="fas fa-map-marker-alt me-2"></i>{{ challenge.court_location or 'Location TBD' }}</div>
-                                                <div><i class="fas fa-clock me-2"></i>{{ challenge.scheduled_time or 'Time TBD' }}</div>
-                                                <div><i class="fas fa-calendar me-2"></i>Challenged {{ challenge.created_at[:10] }}</div>
+                                                <div class="text-white text-bold"><i class="fas fa-map-marker-alt me-2 text-neon"></i>{{ challenge.court_location or 'Location TBD' }}</div>
+                                                <div class="text-white text-bold"><i class="fas fa-clock me-2 text-neon"></i>{{ challenge.scheduled_time or 'Time TBD' }}</div>
+                                                <div class="text-white text-bold"><i class="fas fa-calendar me-2 text-neon"></i>Challenged {{ challenge.created_at[:10] }}</div>
                                             </div>
                                         </div>
                                         <div class="mt-3 mt-md-0">
                                             {% if challenge.status == 'pending' %}
                                                 <form method="POST" action="{{ url_for('accept_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
-                                                    <button type="submit" class="btn btn-accept action-btn me-2">
+                                                    <button type="submit" class="btn btn-success text-bold me-2">
                                                         <i class="fas fa-check me-1"></i>Accept
                                                     </button>
                                                 </form>
                                                 <form method="POST" action="{{ url_for('decline_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
-                                                    <button type="submit" class="btn btn-decline action-btn" onclick="return confirm('Are you sure you want to decline this challenge?')">
+                                                    <button type="submit" class="btn btn-danger text-bold" onclick="return confirm('Are you sure you want to decline this challenge?')">
                                                         <i class="fas fa-times me-1"></i>Decline
                                                     </button>
                                                 </form>
                                             {% elif challenge.status == 'counter_proposed' %}
                                                 <form method="POST" action="{{ url_for('accept_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
-                                                    <button type="submit" class="btn btn-accept action-btn me-2">
+                                                    <button type="submit" class="btn btn-success text-bold me-2">
                                                         <i class="fas fa-handshake me-1"></i>Accept Counter
                                                     </button>
                                                 </form>
                                                 <form method="POST" action="{{ url_for('decline_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
-                                                    <button type="submit" class="btn btn-decline action-btn" onclick="return confirm('Are you sure you want to decline this challenge?')">
+                                                    <button type="submit" class="btn btn-danger text-bold" onclick="return confirm('Are you sure you want to decline this challenge?')">
                                                         <i class="fas fa-times me-1"></i>Decline
                                                     </button>
                                                 </form>
@@ -425,10 +215,10 @@ body {
                     </div>
                     {% endfor %}
                 {% else %}
-                    <div class="challenge-card">
+                    <div class="neon-frame mb-4">
                         <div class="empty-state">
-                            <i class="fas fa-inbox"></i>
-                            <h5 class="text-white mb-2 fw-bold" style="text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);">No Incoming Challenges</h5>
+                            <i class="fas fa-inbox text-neon"></i>
+                            <h5 class="text-white mb-2 text-bold neon-text">No Incoming Challenges</h5>
                             <p>When other players challenge you, they'll appear here</p>
                         </div>
                     </div>
@@ -439,13 +229,13 @@ body {
         <!-- Outgoing Challenges -->
         <div class="row mb-5">
             <div class="col-12">
-                <h2 class="section-header">
+                <h2 class="text-bold mb-4 neon-text">
                     <i class="fas fa-paper-plane me-2"></i>Sent Challenges
                 </h2>
                 
                 {% if outgoing_challenges %}
                     {% for challenge in outgoing_challenges %}
-                    <div class="challenge-card outgoing">
+                    <div class="neon-frame challenge-card outgoing mb-4">
                         <div class="card-body p-4">
                             <div class="row align-items-center">
                                 <div class="col-auto">
@@ -461,16 +251,20 @@ body {
                                 <div class="col">
                                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
                                         <div>
-                                            <h5 class="mb-1 text-white fw-bold" style="text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);">{{ challenge.opponent_name }}</h5>
+                                            <h5 class="mb-1 text-white text-bold neon-text">{{ challenge.opponent_name }}</h5>
                                             <div class="d-flex flex-wrap gap-2 mb-2">
-                                                <span class="skill-badge">{{ challenge.opponent_skill }}</span>
-                                                <span class="record-badge">{{ challenge.opponent_wins or 0 }}W-{{ challenge.opponent_losses or 0 }}L</span>
-                                                <span class="status-badge status-{{ challenge.status }}">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                                <span class="badge badge-success text-bold">{{ challenge.opponent_skill }}</span>
+                                                <span class="badge badge-primary text-bold">{{ challenge.opponent_wins or 0 }}W-{{ challenge.opponent_losses or 0 }}L</span>
+                                                {% if challenge.status == 'pending' %}<span class="badge badge-warning text-bold">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                                {% elif challenge.status == 'confirmed' %}<span class="badge badge-success text-bold">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                                {% elif challenge.status == 'counter_proposed' %}<span class="badge badge-primary text-bold">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                                {% elif challenge.status == 'declined' %}<span class="badge badge-danger text-bold">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                                {% else %}<span class="badge badge-secondary text-bold">{{ challenge.status.replace('_', ' ').title() }}</span>{% endif %}
                                             </div>
                                             <div class="match-details">
-                                                <div><i class="fas fa-map-marker-alt me-2"></i>{{ challenge.court_location or 'Location TBD' }}</div>
-                                                <div><i class="fas fa-clock me-2"></i>{{ challenge.scheduled_time or 'Time TBD' }}</div>
-                                                <div><i class="fas fa-calendar me-2"></i>Sent {{ challenge.created_at[:10] }}</div>
+                                                <div class="text-white text-bold"><i class="fas fa-map-marker-alt me-2 text-neon"></i>{{ challenge.court_location or 'Location TBD' }}</div>
+                                                <div class="text-white text-bold"><i class="fas fa-clock me-2 text-neon"></i>{{ challenge.scheduled_time or 'Time TBD' }}</div>
+                                                <div class="text-white text-bold"><i class="fas fa-calendar me-2 text-neon"></i>Sent {{ challenge.created_at[:10] }}</div>
                                             </div>
                                         </div>
                                         <div class="mt-3 mt-md-0">
@@ -491,10 +285,10 @@ body {
                     </div>
                     {% endfor %}
                 {% else %}
-                    <div class="challenge-card">
+                    <div class="neon-frame mb-4">
                         <div class="empty-state">
-                            <i class="fas fa-paper-plane"></i>
-                            <h5 class="text-white mb-2 fw-bold" style="text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);">No Sent Challenges</h5>
+                            <i class="fas fa-paper-plane text-neon"></i>
+                            <h5 class="text-white mb-2 text-bold neon-text">No Sent Challenges</h5>
                             <p>Challenge other players below to get started</p>
                         </div>
                     </div>
@@ -506,12 +300,12 @@ body {
         {% if confirmed_matches %}
         <div class="row mb-5">
             <div class="col-12">
-                <h2 class="section-header">
+                <h2 class="text-bold mb-4 neon-text">
                     <i class="fas fa-calendar-check me-2"></i>Upcoming Matches
                 </h2>
                 
                 {% for match in confirmed_matches %}
-                <div class="challenge-card confirmed">
+                <div class="neon-frame challenge-card confirmed mb-4">
                     <div class="card-body p-4">
                         <div class="row align-items-center">
                             <div class="col-auto">
@@ -525,15 +319,15 @@ body {
                                 {% endif %}
                             </div>
                             <div class="col">
-                                <h5 class="mb-1 text-white fw-bold">{{ match.opponent_name }}</h5>
+                                <h5 class="mb-1 text-white text-bold neon-text">{{ match.opponent_name }}</h5>
                                 <div class="d-flex flex-wrap gap-2 mb-2">
-                                    <span class="skill-badge">{{ match.opponent_skill }}</span>
-                                    <span class="status-badge status-confirmed">Confirmed</span>
+                                    <span class="badge badge-success text-bold">{{ match.opponent_skill }}</span>
+                                    <span class="badge badge-success text-bold">Confirmed</span>
                                 </div>
                                 <div class="match-details">
-                                    <div><i class="fas fa-map-marker-alt me-2"></i>{{ match.court_location or 'Location TBD' }}</div>
-                                    <div><i class="fas fa-clock me-2"></i>{{ match.scheduled_time or 'Time TBD' }}</div>
-                                    <div><i class="fas fa-calendar me-2"></i>Confirmed {{ match.created_at[:10] }}</div>
+                                    <div class="text-white text-bold"><i class="fas fa-map-marker-alt me-2 text-neon"></i>{{ match.court_location or 'Location TBD' }}</div>
+                                    <div class="text-white text-bold"><i class="fas fa-clock me-2 text-neon"></i>{{ match.scheduled_time or 'Time TBD' }}</div>
+                                    <div class="text-white text-bold"><i class="fas fa-calendar me-2 text-neon"></i>Confirmed {{ match.created_at[:10] }}</div>
                                 </div>
                             </div>
                         </div>
@@ -547,20 +341,20 @@ body {
         <!-- Send New Challenge -->
         <div class="row mb-5">
             <div class="col-12">
-                <h2 class="section-header">
+                <h2 class="text-bold mb-4 neon-text">
                     <i class="fas fa-plus-circle me-2"></i>Challenge a Player
                 </h2>
                 
-                <div class="challenge-form-card">
+                <div class="neon-frame">
                     <form method="POST" action="{{ url_for('send_challenge_route') }}">
                         <div class="mb-4">
-                            <label class="form-label text-white fw-bold">Select Player to Challenge:</label>
+                            <label class="form-label text-white text-bold">Select Player to Challenge:</label>
                             <div style="max-height: 400px; overflow-y: auto;">
                                 {% for player in available_players %}
                                 <div class="player-option">
                                     <div class="row align-items-center">
                                         <div class="col-auto">
-                                            <input type="radio" name="opponent_id" value="{{ player.id }}" id="player_{{ player.id }}" class="form-check-input me-2" style="background-color: rgba(0, 245, 255, 0.2); border: 1px solid var(--accent-cyan);">
+                                            <input type="radio" name="opponent_id" value="{{ player.id }}" id="player_{{ player.id }}" class="form-check-input me-2">
                                         </div>
                                         <div class="col-auto">
                                             {% if player.selfie %}
@@ -574,11 +368,11 @@ body {
                                         </div>
                                         <div class="col">
                                             <label for="player_{{ player.id }}" class="form-check-label" style="cursor: pointer; width: 100%;">
-                                                <h6 class="mb-1 text-white fw-bold" style="text-shadow: 0 0 10px rgba(0, 245, 255, 0.4);">{{ player.full_name }}</h6>
+                                                <h6 class="mb-1 text-white text-bold neon-text">{{ player.full_name }}</h6>
                                                 <div class="d-flex flex-wrap gap-2">
-                                                    <span class="skill-badge">{{ player.skill_level }}</span>
-                                                    <span class="record-badge">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
-                                                    <span class="record-badge">{{ player.ranking_points or 0 }} pts</span>
+                                                    <span class="badge badge-success text-bold">{{ player.skill_level }}</span>
+                                                    <span class="badge badge-primary text-bold">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
+                                                    <span class="badge badge-warning text-bold">{{ player.ranking_points or 0 }} pts</span>
                                                 </div>
                                             </label>
                                         </div>
@@ -594,19 +388,18 @@ body {
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label text-white fw-bold">Proposed Location (Optional):</label>
-                                <input type="text" class="form-control form-control-dark" name="court_location" 
+                                <label class="form-label text-white text-bold">Proposed Location (Optional):</label>
+                                <input type="text" class="form-control dark-input" name="court_location" 
                                        placeholder="Court or location preference">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label text-white fw-bold">Proposed Date & Time (Optional):</label>
-                                <input type="datetime-local" class="form-control form-control-dark" name="scheduled_time">
+                                <label class="form-label text-white text-bold">Proposed Date & Time (Optional):</label>
+                                <input type="datetime-local" class="form-control dark-input" name="scheduled_time">
                             </div>
                         </div>
                         
                         <div class="text-center">
-                            <button type="submit" class="btn btn-primary btn-lg" 
-                                    style="background: linear-gradient(135deg, #00f5ff, #bf00ff); border: none; padding: 0.75rem 2rem;">
+                            <button type="submit" class="btn btn-primary btn-lg text-bold">
                                 <i class="fas fa-paper-plane me-2"></i>Send Challenge
                             </button>
                         </div>
