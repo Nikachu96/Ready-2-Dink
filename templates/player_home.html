@@ -652,7 +652,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const enabled = this.checked;
             status.textContent = enabled ? 'ON' : 'OFF';
             
-            fetch('/toggle_notifications', {
+            fetch('/toggle-notifications', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ enabled: enabled })
