@@ -104,9 +104,17 @@
             z-index: 1030;
         }
         
+        /* COMPREHENSIVE NAVBAR TEXT STYLING - FORCE ALL WHITE */
         .navbar .nav-link,
         .navbar .navbar-nav .nav-link,
-        .navbar-nav .nav-link {
+        .navbar-nav .nav-link,
+        .navbar a,
+        .navbar button,
+        .navbar .btn,
+        .navbar .dropdown-item,
+        .navbar .navbar-text,
+        .navbar span,
+        .navbar .nav-item a {
             color: #ffffff !important;
             font-weight: 600;
             font-size: 16px !important;
@@ -115,13 +123,23 @@
             transition: all 0.2s ease;
         }
         
+        /* Make sure ALL navbar text elements are white */
+        .navbar * {
+            color: #ffffff !important;
+        }
+        
         .navbar .nav-link:hover,
-        .navbar .navbar-nav .nav-link:hover {
+        .navbar .navbar-nav .nav-link:hover,
+        .navbar a:hover,
+        .navbar button:hover,
+        .navbar .btn:hover {
             color: #00f5ff !important;
             background: rgba(0, 245, 255, 0.1);
         }
         
-        .navbar .nav-link.active {
+        .navbar .nav-link.active,
+        .navbar a.active,
+        .navbar button.active {
             color: #00f5ff !important;
             background: rgba(0, 245, 255, 0.2);
         }
