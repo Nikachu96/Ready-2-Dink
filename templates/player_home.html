@@ -654,22 +654,33 @@ document.addEventListener('DOMContentLoaded', function() {
             
             fetch('/toggle-notifications', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 body: JSON.stringify({ enabled: enabled })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     showSuccessToast(`Notifications ${enabled ? 'enabled' : 'disabled'}`);
                 } else {
-                    showErrorToast('Failed to update notification settings');
+                    showErrorToast(data.message || 'Failed to update notification settings');
                     toggle.checked = !enabled;
                     status.textContent = !enabled ? 'ON' : 'OFF';
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showErrorToast('Error updating notification settings');
+                console.error('Notification toggle error:', error);
+                showErrorToast(`Error: ${error.message || 'Network error'}`);
+                // Revert the toggle state
+                toggle.checked = !enabled;
+                status.textContent = !enabled ? 'ON' : 'OFF';
             });
         });
     }
