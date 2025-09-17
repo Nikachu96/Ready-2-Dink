@@ -7902,13 +7902,41 @@ def referral_dashboard():
         return redirect(url_for('player_login'))
     
     conn = get_db_connection()
-    me = conn.execute('SELECT full_name, email, referral_code FROM players WHERE id=?', (pid,)).fetchone()
-    stats = conn.execute('SELECT COUNT(*) total, SUM(qualified) qualified FROM universal_referrals WHERE referrer_player_id=?', (pid,)).fetchone()
-    pending = (stats['total'] or 0) - (stats['qualified'] or 0)
-    link = url_for('intake_referral', code=me['referral_code'], _external=True)
+    player = conn.execute('SELECT full_name, email, referral_code FROM players WHERE id=?', (pid,)).fetchone()
+    
+    # Get referral statistics
+    total_referrals = conn.execute('SELECT COUNT(*) as count FROM universal_referrals WHERE referrer_player_id=?', (pid,)).fetchone()['count']
+    qualified_referrals = conn.execute('SELECT COUNT(*) as count FROM universal_referrals WHERE referrer_player_id=? AND qualified=1', (pid,)).fetchone()['count']
+    
+    # Check if reward has been granted
+    reward_granted = conn.execute('SELECT reward_granted FROM universal_referrals WHERE referrer_player_id=? AND reward_granted IS NOT NULL LIMIT 1', (pid,)).fetchone()
+    reward_granted = reward_granted is not None
+    
+    # Get detailed referral list
+    referrals = conn.execute('''
+        SELECT ur.*, p.full_name, p.email, ur.qualified_at, ur.created_at
+        FROM universal_referrals ur
+        JOIN players p ON ur.referred_player_id = p.id
+        WHERE ur.referrer_player_id = ?
+        ORDER BY ur.created_at DESC
+    ''', (pid,)).fetchall()
+    
     conn.close()
     
-    return render_template('universal_referral_dashboard.html', link=link, stats=stats, pending=pending, me=me)
+    # Calculate progress percentage (out of 20 referrals needed)
+    progress_percentage = min((qualified_referrals / 20) * 100, 100)
+    
+    # Generate referral link
+    referral_link = url_for('intake_referral', code=player['referral_code'], _external=True)
+    
+    return render_template('universal_referral_dashboard.html',
+                         player=player,
+                         total_referrals=total_referrals,
+                         qualified_referrals=qualified_referrals,
+                         referrals=referrals,
+                         reward_granted=reward_granted,
+                         progress_percentage=progress_percentage,
+                         referral_link=referral_link)
 
 @app.route('/stripe/webhook', methods=['POST'])
 def stripe_webhook():
