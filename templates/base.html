@@ -72,7 +72,11 @@
         
         * {
             box-sizing: border-box;
-            font-size: max(16px, 1rem); /* Minimum font size enforcement */
+        }
+        
+        /* Proper base font size for rem calculations */
+        html {
+            font-size: 16px;
         }
         
         body {
@@ -273,7 +277,7 @@
             font-weight: 500;
             padding: 0.75rem 1rem;
             transition: var(--transition-normal);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(10px); /* Reduced blur for better performance */
         }
         
         .form-control:focus, .form-select:focus, .dark-input:focus {
@@ -304,7 +308,7 @@
         
         .navbar {
             background: var(--glass-dark) !important;
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(10px); /* Reduced blur for better performance */
             border-bottom: 2px solid var(--glass-border);
             box-shadow: var(--shadow-dark);
             min-height: 70px;
@@ -361,7 +365,7 @@
         
         .card {
             background: var(--glass-dark);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(10px); /* Reduced blur for better performance */
             border: 1px solid var(--glass-border);
             border-radius: var(--border-radius-lg);
             box-shadow: var(--shadow-dark);
@@ -398,7 +402,7 @@
         
         .alert {
             background: var(--glass-dark) !important;
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(10px); /* Reduced blur for better performance */
             border: 2px solid var(--glass-border);
             border-radius: var(--border-radius-lg);
             color: var(--text-primary) !important;
@@ -478,7 +482,7 @@
         
         .neon-frame {
             background: var(--glass-dark);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(10px); /* Reduced blur for better performance */
             border: 2px solid var(--glass-border);
             border-radius: var(--border-radius-lg);
             box-shadow: var(--shadow-dark);
@@ -728,7 +732,7 @@
         /* Modal Styling */
         .modal-content {
             background: var(--glass-dark);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(10px); /* Reduced blur for better performance */
             border: 2px solid var(--glass-border);
             border-radius: var(--border-radius-lg);
             box-shadow: var(--shadow-dark);
@@ -769,38 +773,399 @@
         }
         
         /* ========================================
-         * MOBILE RESPONSIVE
+         * COMPREHENSIVE MOBILE RESPONSIVE DESIGN
+         * Mobile-First Approach with Multiple Breakpoints
          * ======================================== */
         
-        @media (max-width: 768px) {
+        /* ========================================
+         * MOBILE-FIRST BASE STYLES (320px+)
+         * ======================================== */
+        
+        /* Enhanced base responsive foundations */
+        html {
+            font-size: 16px; /* Base font size for rem calculations */
+        }
+        
+        /* Enhanced base responsive foundations - removed global overflow-x hidden */
+        html, body {
+            /* Let containers handle their own overflow instead of global masking */
+        }
+        
+        /* ========================================
+         * EXTRA SMALL DEVICES (320px - 575px)
+         * ======================================== */
+        
+        @media (max-width: 575.98px) {
+            :root {
+                /* Mobile typography scaling */
+                --font-size-xs: 12px;
+                --font-size-sm: 14px;
+                --font-size-md: 16px;
+                --font-size-lg: 18px;
+                --font-size-xl: 20px;
+                --font-size-2xl: 24px;
+                --font-size-3xl: 28px;
+                
+                /* Mobile spacing adjustments */
+                --border-radius-sm: 6px;
+                --border-radius-md: 8px;
+                --border-radius-lg: 12px;
+                --border-radius-xl: 16px;
+            }
+            
+            /* Prevent iOS zoom on form inputs - apply 16px minimum only to interactive elements */
+            input, select, textarea, button {
+                font-size: 16px !important;
+            }
+            
+            body {
+                padding-top: 65px; /* Adjusted navbar height */
+                font-size: var(--font-size-sm);
+                line-height: 1.5;
+            }
+            
+            /* Container and spacing optimizations */
+            .container, .container-fluid {
+                padding-left: 12px;
+                padding-right: 12px;
+                max-width: 100vw;
+            }
+            
+            /* Typography mobile optimization */
+            h1 { font-size: var(--font-size-2xl) !important; }
+            h2 { font-size: var(--font-size-xl) !important; }
+            h3 { font-size: var(--font-size-lg) !important; }
+            h4 { font-size: var(--font-size-md) !important; }
+            h5, h6 { font-size: var(--font-size-sm) !important; }
+            
+            p, span, div, li, td, th, label, .form-label,
+            .text-sm, .small, small {
+                font-size: var(--font-size-sm) !important;
+                line-height: 1.5;
+            }
+            
+            /* Touch-friendly button system */
+            .btn {
+                min-height: 48px; /* Touch-friendly minimum */
+                padding: 12px 20px;
+                font-size: var(--font-size-sm) !important;
+                font-weight: 600 !important;
+                width: 100%;
+                margin-bottom: 8px;
+                touch-action: manipulation; /* Prevent zoom on touch */
+                border-radius: var(--border-radius-md);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+            
+            .btn:last-child {
+                margin-bottom: 0;
+            }
+            
+            /* Special handling for inline buttons */
+            .btn.d-inline-block,
+            .btn-group .btn,
+            .btn-toolbar .btn {
+                width: auto;
+                min-width: 48px;
+                margin-right: 8px;
+                margin-bottom: 8px;
+            }
+            
+            /* Action buttons mobile optimization */
+            .action-btn {
+                padding: 16px 24px !important;
+                font-size: var(--font-size-md) !important;
+                min-height: 56px;
+                font-weight: 700 !important;
+            }
+            
+            /* Cards and containers mobile optimization */
+            .card, .neon-frame {
+                margin: 8px 0;
+                border-radius: var(--border-radius-md);
+            }
+            
+            .card-body {
+                padding: 16px;
+            }
+            
+            .card-header, .card-footer {
+                padding: 12px 16px;
+            }
+            
+            /* Navigation mobile optimization */
+            .navbar {
+                min-height: 60px;
+                padding: 8px 0;
+            }
+            
+            .navbar-brand img {
+                height: 45px !important;
+                max-width: 150px;
+            }
+            
+            .navbar-toggler {
+                border: none;
+                padding: 8px 12px;
+                margin: 0;
+                font-size: 18px;
+            }
+            
+            .navbar-collapse {
+                margin-top: 12px;
+                background: var(--glass-dark);
+                border-radius: var(--border-radius-md);
+                padding: 16px;
+                border: 1px solid var(--glass-border);
+            }
+            
+            .nav-link {
+                padding: 12px 16px !important;
+                font-size: var(--font-size-sm) !important;
+                border-radius: var(--border-radius-sm);
+                margin-bottom: 4px;
+                text-align: left;
+            }
+            
+            /* Form mobile optimization */
+            .form-control, .form-select, .dark-input {
+                min-height: 48px; /* Touch-friendly */
+                padding: 12px 16px;
+                font-size: var(--font-size-sm) !important;
+                border-radius: var(--border-radius-md);
+            }
+            
+            .form-label, label {
+                font-size: var(--font-size-sm) !important;
+                font-weight: 600 !important;
+                margin-bottom: 8px;
+            }
+            
+            /* Alert and notification optimization */
+            .alert {
+                margin: 12px 0;
+                padding: 16px;
+                border-radius: var(--border-radius-md);
+                font-size: var(--font-size-sm) !important;
+            }
+            
+            .toast-container {
+                top: 70px;
+                right: 12px;
+                left: 12px;
+                max-width: none;
+            }
+            
+            .toast {
+                margin-bottom: 8px;
+                border-radius: var(--border-radius-md);
+            }
+            
+            /* Player avatar mobile sizing */
+            .player-avatar, .avatar-placeholder {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .avatar-placeholder i {
+                font-size: 2rem;
+            }
+            
+            /* Stats mobile optimization */
+            .stat-item {
+                padding: 16px 12px;
+                margin-bottom: 12px;
+                text-align: center;
+            }
+            
+            .stat-number {
+                font-size: var(--font-size-xl) !important;
+                margin-bottom: 4px;
+            }
+            
+            .stat-label {
+                font-size: var(--font-size-xs) !important;
+            }
+            
+            /* Dashboard mobile optimization */
+            .dashboard-container {
+                padding: 16px 0;
+            }
+            
+            /* Modal mobile optimization */
+            .modal-dialog {
+                margin: 12px;
+                max-width: calc(100vw - 24px);
+            }
+            
+            .modal-content {
+                border-radius: var(--border-radius-md);
+            }
+            
+            .modal-body {
+                padding: 20px 16px;
+            }
+            
+            .modal-header, .modal-footer {
+                padding: 16px;
+            }
+            
+            /* Table mobile optimization */
+            .table-responsive {
+                border: none;
+                border-radius: var(--border-radius-md);
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .table {
+                font-size: var(--font-size-xs) !important;
+                margin-bottom: 0;
+            }
+            
+            .table th,
+            .table td {
+                padding: 8px 6px;
+                font-size: var(--font-size-xs) !important;
+                white-space: nowrap;
+            }
+            
+            /* Badge mobile optimization */
+            .badge {
+                font-size: var(--font-size-xs) !important;
+                padding: 4px 8px;
+                font-weight: 600;
+            }
+            
+            /* List group mobile optimization */
+            .list-group-item {
+                padding: 12px 16px !important;
+                margin-bottom: 8px;
+                font-size: var(--font-size-sm) !important;
+            }
+            
+            /* Footer mobile optimization */
+            footer {
+                margin-top: 32px;
+                padding: 20px 0 !important;
+            }
+            
+            footer .col-md-4 {
+                text-align: center !important;
+                margin-top: 12px;
+            }
+            
+            /* Prevent text overflow */
+            * {
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+                hyphens: auto;
+            }
+            
+            /* Image responsiveness */
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+            
+            /* Grid column stacking */
+            .row > [class*="col-"] {
+                margin-bottom: 16px;
+            }
+            
+            .row > [class*="col-"]:last-child {
+                margin-bottom: 0;
+            }
+        }
+        
+        /* ========================================
+         * SMALL DEVICES (576px - 767px)
+         * ======================================== */
+        
+        @media (min-width: 576px) and (max-width: 767.98px) {
+            :root {
+                --font-size-xs: 13px;
+                --font-size-sm: 15px;
+                --font-size-md: 17px;
+                --font-size-lg: 19px;
+                --font-size-xl: 22px;
+                --font-size-2xl: 26px;
+                --font-size-3xl: 30px;
+            }
+            
             body {
                 padding-top: 70px;
-                font-size: 16px;
             }
             
-            .container {
-                padding-left: 1rem;
-                padding-right: 1rem;
-            }
-            
-            .card {
-                margin: 0.5rem;
-                padding: 1rem;
+            .container, .container-fluid {
+                padding-left: 16px;
+                padding-right: 16px;
             }
             
             .btn {
-                padding: 1rem 1.5rem;
-                font-size: var(--font-size-md) !important;
-                width: 100%;
-                margin-bottom: 0.5rem;
+                min-height: 44px;
+                padding: 10px 18px;
+                width: auto;
+                margin-right: 8px;
+                margin-bottom: 8px;
             }
             
-            .dashboard-container {
-                padding: 1rem 0;
+            .btn.btn-block,
+            .btn.w-100 {
+                width: 100% !important;
+                margin-right: 0;
             }
             
-            .neon-frame {
-                margin-bottom: 1.5rem;
+            .navbar-brand img {
+                height: 50px !important;
+            }
+            
+            .player-avatar, .avatar-placeholder {
+                width: 90px;
+                height: 90px;
+            }
+            
+            .modal-dialog {
+                margin: 16px;
+                max-width: calc(100vw - 32px);
+            }
+            
+            .stat-item {
+                padding: 20px 16px;
+            }
+            
+            .table th,
+            .table td {
+                padding: 10px 8px;
+                font-size: var(--font-size-sm) !important;
+            }
+        }
+        
+        /* ========================================
+         * MEDIUM DEVICES (768px - 991px)
+         * ======================================== */
+        
+        @media (min-width: 768px) and (max-width: 991.98px) {
+            body {
+                padding-top: 75px;
+            }
+            
+            .container, .container-fluid {
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+            
+            .btn {
+                min-height: 42px;
+                padding: 10px 20px;
+                width: auto;
+            }
+            
+            .navbar-brand img {
+                height: 55px !important;
             }
             
             .player-avatar, .avatar-placeholder {
@@ -808,24 +1173,458 @@
                 height: 100px;
             }
             
+            .modal-dialog {
+                max-width: 600px;
+            }
+            
             .stat-item {
-                padding: 1rem 0.5rem;
+                padding: 24px 20px;
+            }
+        }
+        
+        /* ========================================
+         * LARGE DEVICES (992px - 1199px)
+         * ======================================== */
+        
+        @media (min-width: 992px) and (max-width: 1199.98px) {
+            body {
+                padding-top: 80px;
             }
             
-            .stat-number {
-                font-size: var(--font-size-xl) !important;
+            .navbar-brand img {
+                height: 60px !important;
             }
             
-            .action-btn {
-                padding: 0.875rem 1.5rem !important;
-                font-size: var(--font-size-sm) !important;
+            .player-avatar, .avatar-placeholder {
+                width: 110px;
+                height: 110px;
+            }
+        }
+        
+        /* ========================================
+         * EXTRA LARGE DEVICES (1200px+)
+         * ======================================== */
+        
+        @media (min-width: 1200px) {
+            body {
+                padding-top: 85px;
+            }
+            
+            .navbar-brand img {
+                height: 65px !important;
+            }
+            
+            .player-avatar, .avatar-placeholder {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .container {
+                max-width: 1140px;
+            }
+        }
+        
+        /* ========================================
+         * ACCESSIBILITY & TOUCH IMPROVEMENTS
+         * ======================================== */
+        
+        /* Enhanced touch targets */
+        @media (pointer: coarse) {
+            .btn, .nav-link, .form-control, .dropdown-item {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Larger tap targets for mobile */
+            .btn-close {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+            }
+            
+            .navbar-toggler {
+                min-width: 44px;
+                min-height: 44px;
+            }
+        }
+        
+        /* Prevent zoom on form inputs on iOS */
+        @media screen and (-webkit-min-device-pixel-ratio: 0) {
+            input[type="text"],
+            input[type="email"],
+            input[type="password"],
+            input[type="number"],
+            textarea,
+            select {
+                font-size: 16px !important;
+            }
+        }
+        
+        /* Dark scrollbars for mobile */
+        @media (max-width: 767.98px) {
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+            
+            ::-webkit-scrollbar-track {
+                background: var(--dark-surface);
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: var(--neon-cyan);
+                border-radius: 4px;
+            }
+        }
+        
+        /* ========================================
+         * MOBILE NAVIGATION ENHANCEMENTS
+         * ======================================== */
+        
+        .mobile-nav-toggle {
+            transition: var(--transition-normal);
+            border: 2px solid var(--glass-border) !important;
+            border-radius: var(--border-radius-sm);
+        }
+        
+        .mobile-nav-toggle:focus {
+            box-shadow: var(--shadow-neon-cyan) !important;
+            border-color: var(--neon-cyan) !important;
+        }
+        
+        .mobile-nav-toggle:hover {
+            background: var(--glass-bg) !important;
+            border-color: var(--neon-cyan) !important;
+        }
+        
+        @media (max-width: 575.98px) {
+            .mobile-nav-toggle {
+                min-width: 50px;
                 min-height: 50px;
+                padding: 12px;
+                font-size: 20px;
             }
             
-            .toast-container {
-                right: 10px;
-                left: 10px;
-                max-width: none;
+            .navbar-collapse {
+                position: absolute;
+                top: 100%;
+                left: 12px;
+                right: 12px;
+                z-index: 1000;
+                backdrop-filter: blur(5px); /* Further reduced for mobile performance */
+                box-shadow: var(--shadow-dark), var(--shadow-neon-cyan);
+            }
+            
+            /* Enhanced mobile nav link styling */
+            .navbar-nav .nav-link {
+                background: var(--glass-bg);
+                margin-bottom: 8px;
+                border: 1px solid var(--glass-border);
+                transition: var(--transition-normal);
+            }
+            
+            .navbar-nav .nav-link:hover,
+            .navbar-nav .nav-link:focus {
+                background: var(--glass-dark);
+                border-color: var(--neon-cyan);
+                transform: translateX(4px);
+            }
+            
+            /* Mobile logo adjustments */
+            .d-lg-none .navbar-brand img {
+                max-height: 100px;
+                transition: var(--transition-normal);
+            }
+        }
+        
+        /* ========================================
+         * ENHANCED MOBILE TABLE/LEADERBOARD STYLING
+         * ======================================== */
+        
+        @media (max-width: 767.98px) {
+            /* Tournament and leaderboard table optimizations */
+            .table-responsive {
+                border-radius: var(--border-radius-md);
+                box-shadow: var(--shadow-dark);
+                background: var(--glass-dark);
+                backdrop-filter: blur(5px); /* Reduced blur for mobile table performance */
+                overflow-x: auto; /* Container-level overflow handling */
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .table {
+                background: transparent;
+                color: var(--text-primary) !important;
+            }
+            
+            .table th {
+                background: var(--dark-surface);
+                color: var(--text-primary) !important;
+                font-weight: 700;
+                font-size: var(--font-size-xs) !important;
+                padding: 12px 8px;
+                border-bottom: 2px solid var(--glass-border);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+            
+            .table td {
+                color: var(--text-primary) !important;
+                font-size: var(--font-size-xs) !important;
+                padding: 10px 8px;
+                border-bottom: 1px solid var(--glass-border);
+                vertical-align: middle;
+            }
+            
+            .table-hover tbody tr:hover {
+                background: var(--glass-bg);
+                transform: scale(1.01);
+            }
+            
+            /* Player avatar in tables */
+            .table .player-avatar,
+            .table .avatar-placeholder {
+                width: 40px;
+                height: 40px;
+                margin-right: 8px;
+            }
+            
+            .table .avatar-placeholder {
+                font-size: 1rem;
+            }
+            
+            /* Rank badges in tables */
+            .table .badge {
+                font-size: 10px !important;
+                padding: 3px 6px;
+                border-radius: 4px;
+            }
+            
+            /* Mobile challenge card enhancements */
+            .challenge-card {
+                margin: 8px 0;
+                padding: 16px;
+            }
+            
+            .challenge-card .btn {
+                margin: 4px 2px;
+                padding: 8px 12px;
+                font-size: var(--font-size-xs) !important;
+                min-height: 40px;
+            }
+            
+            /* Tournament card mobile optimization */
+            .tournament-card {
+                margin-bottom: 16px;
+            }
+            
+            .tournament-card .card-body {
+                padding: 20px 16px;
+            }
+            
+            .tournament-card .btn {
+                width: 100%;
+                margin-bottom: 8px;
+            }
+            
+            .tournament-card .btn:last-child {
+                margin-bottom: 0;
+            }
+        }
+        
+        /* ========================================
+         * MOBILE FORM ENHANCEMENTS
+         * ======================================== */
+        
+        @media (max-width: 575.98px) {
+            /* File input mobile optimization */
+            .form-control[type="file"] {
+                min-height: 52px;
+                padding: 14px;
+                border: 2px dashed var(--glass-border);
+                border-radius: var(--border-radius-md);
+                background: var(--glass-bg);
+                text-align: center;
+                cursor: pointer;
+            }
+            
+            .form-control[type="file"]:hover {
+                border-color: var(--neon-cyan);
+                background: var(--glass-dark);
+            }
+            
+            /* Checkbox and radio mobile optimization */
+            .form-check-input {
+                width: 20px;
+                height: 20px;
+                margin-top: 0;
+            }
+            
+            .form-check-label {
+                padding-left: 8px;
+                line-height: 1.4;
+            }
+            
+            /* Select dropdown mobile optimization */
+            .form-select {
+                background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="%2300f5ff" d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>');
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+                background-size: 16px;
+                appearance: none;
+            }
+        }
+        
+        /* ========================================
+         * MOBILE PERFORMANCE OPTIMIZATIONS
+         * ======================================== */
+        
+        @media (max-width: 767.98px) {
+            /* Mobile performance optimization - reduce animation/transition costs */
+            * {
+                animation-duration: 0.1s !important;
+                transition-duration: 0.1s !important;
+            }
+            
+            /* Disable expensive hover effects on mobile */
+            .card:hover,
+            .neon-frame:hover,
+            .btn:hover,
+            .stat-item:hover,
+            .court-item:hover {
+                transform: none !important;
+                box-shadow: var(--shadow-dark) !important;
+                filter: none !important;
+            }
+            
+            /* Remove text shadows on mobile for performance */
+            h1, h2, h3, h4, h5, h6 {
+                text-shadow: none !important;
+            }
+            
+            .text-neon,
+            .text-neon-green,
+            .text-neon-purple {
+                text-shadow: none !important;
+            }
+            
+            /* Reduce backdrop blur on very small screens for performance */
+            @media (max-width: 400px) {
+                .card,
+                .neon-frame,
+                .modal-content,
+                .navbar,
+                .form-control,
+                .form-select,
+                .alert {
+                    backdrop-filter: blur(3px); /* Minimal blur for very small screens */
+                }
+            }
+        }
+        
+        /* ========================================
+         * LANDSCAPE ORIENTATION OPTIMIZATIONS
+         * ======================================== */
+        
+        @media screen and (orientation: landscape) and (max-height: 600px) {
+            body {
+                padding-top: 50px;
+            }
+            
+            .navbar {
+                min-height: 45px;
+            }
+            
+            .navbar-brand img {
+                height: 35px !important;
+            }
+            
+            .d-lg-none .navbar-brand img {
+                height: 80px !important;
+                top: -35px;
+            }
+            
+            .modal-dialog {
+                margin: 8px;
+                max-height: calc(100vh - 16px);
+            }
+            
+            .modal-body {
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+        }
+        
+        /* ========================================
+         * ACCESSIBILITY - REDUCED MOTION PREFERENCE
+         * ======================================== */
+        
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            
+            /* Disable transform animations for reduced motion users */
+            .btn:hover,
+            .card:hover,
+            .neon-frame:hover,
+            .stat-item:hover,
+            .alert:hover {
+                transform: none !important;
+            }
+            
+            /* Remove parallax and complex animations */
+            .animate-in {
+                animation: none !important;
+            }
+        }
+        
+        /* ========================================
+         * CONTAINER-LEVEL OVERFLOW HANDLING
+         * ======================================== */
+        
+        /* Specific component overflow handling instead of global masking */
+        .table-wrapper,
+        .modal-body,
+        .card-body,
+        .navbar-collapse {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Prevent layout overflow issues */
+        .container,
+        .container-fluid {
+            width: 100%;
+            max-width: 100%;
+            overflow-wrap: break-word;
+        }
+        
+        /* Print styles */
+        @media print {
+            .navbar,
+            .btn,
+            .toast-container,
+            .modal {
+                display: none !important;
+            }
+            
+            body {
+                padding-top: 0;
+                background: white;
+                color: black;
+            }
+            
+            .card, .neon-frame {
+                border: 1px solid #333;
+                box-shadow: none;
             }
         }
     </style>
@@ -841,12 +1640,12 @@
             
             <!-- Mobile Logo (Centered) -->
             <div class="d-lg-none w-100 text-center position-relative">
-                <a class="navbar-brand mx-auto" href="{{ url_for('index') }}" style="position: absolute; left: 50%; transform: translateX(-50%); top: -50px;">
-                    <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 130px; width: auto;">
+                <a class="navbar-brand mx-auto" href="{{ url_for('index') }}" style="position: absolute; left: 50%; transform: translateX(-50%); top: -45px; z-index: 999;">
+                    <img src="{{ url_for('static', filename='images/ready2dink-logo.png') }}" alt="Ready 2 Dink" style="height: 110px; width: auto;">
                 </a>
             </div>
             
-            <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="z-index: 1000;">
+            <button class="navbar-toggler ms-auto mobile-nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="z-index: 1000;" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -938,7 +1737,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="text-light py-4 mt-5" style="background: var(--glass-bg); backdrop-filter: blur(20px); border-top: 1px solid var(--glass-border);">
+    <footer class="text-light py-4 mt-5" style="background: var(--glass-bg); backdrop-filter: blur(10px); border-top: 1px solid var(--glass-border);">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-8">
