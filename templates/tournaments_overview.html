@@ -4,505 +4,8 @@
 
 {% block content %}
 
-<style>
-/* Enhanced Neon Tournament Design */
-:root {
-    --primary-bg: #0f0f23;
-    --secondary-bg: #1a1a2e;
-    --card-bg: rgba(26, 26, 46, 0.85);
-    --text-primary: #ffffff;
-    --accent-cyan: #00f5ff;
-    --accent-green: #00ff41;
-    --accent-purple: #bf00ff;
-    --accent-orange: #ff6b35;
-    --border-subtle: rgba(226, 232, 240, 0.15);
-    --glow-cyan: 0 0 20px rgba(0, 245, 255, 0.4);
-    --glow-green: 0 0 20px rgba(0, 255, 65, 0.4);
-    --glow-purple: 0 0 20px rgba(191, 0, 255, 0.4);
-    --text-shadow-glow: 0 0 15px rgba(0, 245, 255, 0.6);
-}
 
-body {
-    background: var(--primary-bg);
-    color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-weight: 500;
-    overflow-x: hidden;
-}
-
-.tournaments-container {
-    min-height: 100vh;
-    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
-    padding: 2rem 0;
-}
-
-/* Enhanced Card Styling */
-.card {
-    background: var(--card-bg) !important;
-    backdrop-filter: blur(25px) saturate(1.8);
-    border: 2px solid var(--border-subtle) !important;
-    border-radius: 24px !important;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-    color: var(--text-primary) !important;
-}
-
-.card:hover {
-    border-color: var(--accent-cyan) !important;
-    box-shadow: var(--glow-cyan), 0 30px 60px rgba(0, 0, 0, 0.5) !important;
-    transform: translateY(-8px) scale(1.02);
-}
-
-.card-header {
-    background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(191, 0, 255, 0.1)) !important;
-    border-bottom: 2px solid var(--border-subtle) !important;
-    border-radius: 24px 24px 0 0 !important;
-    color: var(--text-primary) !important;
-    padding: 1.5rem 2rem;
-}
-
-.card-title {
-    color: var(--accent-cyan) !important;
-    text-shadow: var(--text-shadow-glow);
-    font-weight: 800;
-    font-size: 1.5rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.card-body {
-    padding: 2rem;
-}
-
-/* Enhanced Tournament Cards */
-.tournament-card, .format-card {
-    background: var(--card-bg) !important;
-    backdrop-filter: blur(25px) saturate(1.8);
-    border: 2px solid var(--border-subtle) !important;
-    border-radius: 20px !important;
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-}
-
-.tournament-card::before, .format-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, transparent 0%, rgba(0, 245, 255, 0.05) 50%, transparent 100%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-}
-
-.tournament-card:hover::before, .format-card:hover::before {
-    opacity: 1;
-}
-
-.tournament-card:hover, .format-card:hover {
-    border-color: var(--accent-cyan) !important;
-    transform: translateY(-6px) scale(1.03);
-    box-shadow: var(--glow-cyan), 0 20px 40px rgba(0, 245, 255, 0.3) !important;
-}
-
-/* Enhanced Button Styling */
-.btn-primary {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
-    border: none !important;
-    border-radius: 16px !important;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 0.8rem 2rem;
-    box-shadow: var(--glow-cyan);
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-primary::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s ease;
-}
-
-.btn-primary:hover::before {
-    left: 100%;
-}
-
-.btn-primary:hover {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 15px 45px rgba(0, 245, 255, 0.6) !important;
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green)) !important;
-}
-
-.btn-success {
-    background: linear-gradient(135deg, var(--accent-green), #20c997) !important;
-    border: none !important;
-    border-radius: 16px !important;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 0.8rem 2rem;
-    box-shadow: var(--glow-green);
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.btn-success:hover {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 15px 45px rgba(0, 255, 65, 0.6) !important;
-    background: linear-gradient(135deg, #20c997, var(--accent-cyan)) !important;
-}
-
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 2px solid var(--border-subtle) !important;
-    color: var(--text-primary) !important;
-    border-radius: 16px !important;
-    font-weight: 600;
-    padding: 0.8rem 2rem;
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-    backdrop-filter: blur(10px);
-}
-
-.btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border-color: var(--accent-cyan) !important;
-    color: var(--accent-cyan) !important;
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(0, 245, 255, 0.3);
-}
-
-/* Enhanced Badge Styling */
-.badge {
-    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)) !important;
-    color: white !important;
-    font-weight: 800;
-    padding: 0.6rem 1.2rem;
-    border-radius: 25px;
-    box-shadow: var(--glow-green);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.85rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.badge::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transition: left 0.6s ease;
-}
-
-.badge:hover::before {
-    left: 100%;
-}
-
-/* Enhanced Alert Styling */
-.alert {
-    background: var(--card-bg) !important;
-    backdrop-filter: blur(25px) saturate(1.8);
-    border: 2px solid var(--border-subtle) !important;
-    border-radius: 20px !important;
-    color: var(--text-primary) !important;
-    font-weight: 600;
-    padding: 1.5rem 2rem;
-}
-
-.alert-info {
-    border-color: rgba(0, 245, 255, 0.4) !important;
-    background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(191, 0, 255, 0.05)) !important;
-    box-shadow: var(--glow-cyan);
-}
-
-.alert-success {
-    border-color: rgba(0, 255, 65, 0.4) !important;
-    background: linear-gradient(135deg, rgba(0, 255, 65, 0.1), rgba(0, 245, 255, 0.05)) !important;
-    box-shadow: var(--glow-green);
-}
-
-.alert-warning {
-    border-color: rgba(255, 193, 7, 0.4) !important;
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 107, 53, 0.05)) !important;
-    box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
-}
-
-/* Enhanced Modal Styling */
-.modal-content {
-    background: var(--card-bg) !important;
-    backdrop-filter: blur(30px) saturate(1.8);
-    border: 2px solid var(--border-subtle) !important;
-    border-radius: 24px !important;
-    color: var(--text-primary) !important;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-}
-
-.modal-header {
-    border-bottom: 2px solid var(--border-subtle) !important;
-    background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(191, 0, 255, 0.1));
-    border-radius: 24px 24px 0 0;
-    padding: 1.5rem 2rem;
-}
-
-.modal-title {
-    color: var(--accent-cyan) !important;
-    text-shadow: var(--text-shadow-glow);
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.modal-body {
-    padding: 2rem;
-}
-
-/* Enhanced Form Controls */
-.form-control, .form-select {
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 2px solid var(--border-subtle) !important;
-    border-radius: 12px !important;
-    color: var(--text-primary) !important;
-    font-weight: 600;
-    padding: 0.8rem 1rem;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-}
-
-.form-control:focus, .form-select:focus {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border-color: var(--accent-cyan) !important;
-    box-shadow: var(--glow-cyan) !important;
-    color: var(--text-primary) !important;
-    transform: scale(1.02);
-}
-
-.form-label {
-    color: var(--text-primary) !important;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.75rem;
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
-}
-
-/* Enhanced Typography */
-.text-muted {
-    color: rgba(255, 255, 255, 0.8) !important;
-    font-weight: 500;
-}
-
-.small {
-    color: rgba(255, 255, 255, 0.85) !important;
-    font-weight: 500;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    color: var(--text-primary) !important;
-    font-weight: 700;
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.4);
-}
-
-/* Enhanced Tournament Level Cards */
-.level-card {
-    background: var(--card-bg) !important;
-    border: 3px solid var(--accent-purple) !important;
-    border-radius: 24px !important;
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.level-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(191, 0, 255, 0.1), rgba(0, 245, 255, 0.1));
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-}
-
-.level-card:hover::before {
-    opacity: 1;
-}
-
-.level-card:hover {
-    border-color: var(--accent-cyan) !important;
-    transform: translateY(-8px) scale(1.03);
-    box-shadow: var(--glow-cyan), var(--glow-purple) !important;
-}
-
-.prize-highlight {
-    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-weight: 800;
-    text-shadow: none;
-    filter: drop-shadow(0 0 10px rgba(0, 255, 65, 0.5));
-}
-
-/* Enhanced Tournament Card Specific Styling */
-.card h5.card-title {
-    color: var(--text-primary) !important;
-    font-weight: 800;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.card .badge {
-    font-size: 0.8rem !important;
-    font-weight: 800 !important;
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-}
-
-/* Enhanced Specific Badge Colors */
-.badge[style*="background-color: #3F567F"] {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
-    box-shadow: var(--glow-cyan);
-}
-
-.badge[style*="background-color: #E0563F"] {
-    background: linear-gradient(135deg, var(--accent-orange), #dc3545) !important;
-    box-shadow: 0 0 15px rgba(255, 107, 53, 0.4);
-}
-
-.badge[style*="background-color: #D174D2"] {
-    background: linear-gradient(135deg, var(--accent-purple), #e91e63) !important;
-    box-shadow: var(--glow-purple);
-}
-
-/* Enhanced Button Specific Styling */
-.btn[style*="background: linear-gradient(45deg, #10B981, #059669)"] {
-    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)) !important;
-    box-shadow: var(--glow-green);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.btn[style*="background: linear-gradient(45deg, #10B981, #059669)"]:hover {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.5) !important;
-}
-
-.btn[style*="background-color: #D174D2"] {
-    background: linear-gradient(135deg, var(--accent-purple), #e91e63) !important;
-    box-shadow: var(--glow-purple);
-    font-weight: 700;
-}
-
-/* Enhanced Outline Buttons */
-.btn-outline-primary {
-    border: 2px solid var(--accent-cyan) !important;
-    color: var(--accent-cyan) !important;
-    background: rgba(0, 245, 255, 0.1) !important;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.btn-outline-primary:hover {
-    background: var(--accent-cyan) !important;
-    color: var(--primary-bg) !important;
-    transform: translateY(-2px);
-    box-shadow: var(--glow-cyan);
-}
-
-.btn-outline-warning {
-    border: 2px solid #ffc107 !important;
-    color: #ffc107 !important;
-    background: rgba(255, 193, 7, 0.1) !important;
-    font-weight: 600;
-}
-
-/* Mobile Responsive Design */
-@media (max-width: 768px) {
-    .tournaments-container {
-        padding: 1rem;
-    }
-    
-    .card {
-        border-radius: 20px !important;
-    }
-    
-    .card-title {
-        font-size: 1.3rem;
-    }
-    
-    .btn {
-        padding: 0.75rem 1.5rem;
-        font-size: 0.9rem;
-    }
-    
-    .badge {
-        padding: 0.5rem 1rem;
-        font-size: 0.75rem;
-    }
-}
-
-/* Spinner Enhancement */
-.spinner-border {
-    color: var(--accent-cyan) !important;
-    animation: spinner-glow 1.5s ease-in-out infinite alternate;
-}
-
-@keyframes spinner-glow {
-    from { filter: drop-shadow(0 0 5px var(--accent-cyan)); }
-    to { filter: drop-shadow(0 0 15px var(--accent-cyan)); }
-}
-
-/* Enhanced Text Colors for Better Readability */
-strong {
-    color: var(--text-primary) !important;
-    font-weight: 700;
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-}
-
-.text-info {
-    color: var(--accent-cyan) !important;
-    font-weight: 600;
-    text-shadow: 0 0 5px rgba(0, 245, 255, 0.3);
-}
-
-.text-success {
-    color: var(--accent-green) !important;
-    font-weight: 600;
-    text-shadow: 0 0 5px rgba(0, 255, 65, 0.3);
-}
-
-.text-primary {
-    color: var(--accent-cyan) !important;
-    font-weight: 600;
-    text-shadow: 0 0 5px rgba(0, 245, 255, 0.3);
-}
-
-.text-warning {
-    color: #ffc107 !important;
-    font-weight: 600;
-    text-shadow: 0 0 5px rgba(255, 193, 7, 0.3);
-}
-</style>
-
-<div class="tournaments-container">
-    <div class="container-fluid">
+<div class="container-fluid py-4">
 <!-- Location Status Banner -->
 <div class="row mb-3">
     <div class="col-12">
@@ -583,19 +86,19 @@ strong {
                         <label class="form-label">
                             <i class="fas fa-globe-americas me-1"></i>Latitude
                         </label>
-                        <input type="number" id="manualLatitude" class="form-control" 
+                        <input type="number" id="manualLatitude" class="dark-input" 
                                step="0.000001" placeholder="e.g. 40.7128" 
                                title="Your latitude coordinate">
-                        <small class="text-muted">North: positive, South: negative</small>
+                        <small class="text-bold">North: positive, South: negative</small>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">
                             <i class="fas fa-globe-americas me-1"></i>Longitude
                         </label>
-                        <input type="number" id="manualLongitude" class="form-control" 
+                        <input type="number" id="manualLongitude" class="dark-input" 
                                step="0.000001" placeholder="e.g. -74.0060"
                                title="Your longitude coordinate">
-                        <small class="text-muted">East: positive, West: negative</small>
+                        <small class="text-bold">East: positive, West: negative</small>
                     </div>
                 </div>
                 
@@ -628,13 +131,13 @@ strong {
 
 <div class="row">
     <div class="col-12">
-        <div class="card mb-4">
+        <div class="neon-frame mb-4">
             <div class="card-header">
-                <h4 class="card-title mb-0">
+                <h4 class="neon-text text-bold mb-0">
                     <i class="fas fa-trophy me-2"></i>Tournament Levels
                 </h4>
             </div>
-            <div class="alert alert-info mx-3 mt-3 mb-0" style="background-color: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6;">
+            <div class="alert alert-info mx-3 mt-3 mb-0">
                 <i class="fas fa-infinity me-2"></i>
                 <strong>Unlimited Access:</strong> Enter as many tournaments as you want, and win as much money as you can.
             </div>
@@ -642,21 +145,21 @@ strong {
                 <div class="row">
                     {% for level_key, level_info in tournament_levels.items() %}
                     <div class="col-md-4 mb-3">
-                        <div class="card h-100" style="border: 2px solid #E0563F;">
+                        <div class="neon-frame h-100">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div class="flex-grow-1">
                                         <h5 class="card-title mb-0">{{ level_info.name }}</h5>
                                         {% if level_key == 'Invitational' %}
                                             <div class="d-flex flex-wrap gap-1 mt-1">
-                                                <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 16px !important;">Best of 5</span>
-                                                <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 16px !important;">Top 4 Payouts</span>
-                                                <span class="badge badge-sm" style="background-color: #3F567F; color: white; font-size: 16px !important;">{{ level_info.spots_remaining }} spots available</span>
+                                                <span class="badge badge-primary">Best of 5</span>
+                                                <span class="badge badge-primary">Top 4 Payouts</span>
+                                                <span class="badge badge-success">{{ level_info.spots_remaining }} spots available</span>
                                             </div>
                                         {% endif %}
                                     </div>
                                     {% if level_key != 'Invitational' %}
-                                        <span class="badge fs-6" style="background-color: #3F567F; color: white;">${{ "%.0f"|format(level_info.entry_fee) }}</span>
+                                        <span class="badge badge-primary neon-text">${{ "%.0f"|format(level_info.entry_fee) }}</span>
                                     {% endif %}
                                 </div>
                                 
@@ -666,11 +169,11 @@ strong {
                                     </small>
                                     {% if level_key != 'Invitational' %}
                                         {% if level_info.spots_remaining <= 0 %}
-                                            <span class="badge" style="background-color: #E0563F; color: white;">Full</span>
+                                            <span class="badge badge-danger">Full</span>
                                         {% elif level_info.spots_remaining <= 5 %}
-                                            <span class="badge" style="background-color: #D174D2; color: white;">{{ level_info.spots_remaining }} spots left</span>
+                                            <span class="badge badge-warning">{{ level_info.spots_remaining }} spots left</span>
                                         {% else %}
-                                            <span class="badge" style="background-color: #3F567F; color: white;">{{ level_info.spots_remaining }} spots available</span>
+                                            <span class="badge badge-primary">{{ level_info.spots_remaining }} spots available</span>
                                         {% endif %}
                                     {% endif %}
                                 </div>
@@ -715,7 +218,7 @@ strong {
                                 
                                 <div class="mt-auto pt-2">
                                     {% if level_key == 'Invitational' %}
-                                        <button class="btn btn-sm w-100 text-white" style="background-color: #D174D2; border: none;" disabled>
+                                        <button class="btn btn-secondary btn-sm w-100" disabled>
                                             <i class="fas fa-envelope me-1"></i>Invitation Only
                                         </button>
                                     {% elif level_info.spots_remaining <= 0 %}
@@ -724,7 +227,7 @@ strong {
                                         </button>
                                     {% else %}
                                         <a href="{{ url_for('quick_join_tournament', player_id=current_player_id) }}?level={{ level_key }}" 
-                                           class="btn btn-sm w-100 text-white" style="background: linear-gradient(45deg, #10B981, #059669); border: none;">
+                                           class="btn btn-success btn-sm w-100">
                                             <i class="fas fa-bolt me-1"></i>Quick Join
                                         </a>
                                     {% endif %}
@@ -759,7 +262,7 @@ strong {
                                 </p>
                                 
                                 <div class="mt-auto pt-2">
-                                    <button onclick="showCreateTournamentModal()" class="btn btn-sm w-100 text-white" style="background: linear-gradient(45deg, #10B981, #059669); border: none;">
+                                    <button onclick="showCreateTournamentModal()" class="btn btn-success btn-sm w-100">
                                         <i class="fas fa-plus me-1"></i>Create Tournament
                                     </button>
                                 </div>
@@ -1128,12 +631,12 @@ strong {
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Tournament Name</label>
-                            <input type="text" name="tournament_name" class="form-control" required 
+                            <input type="text" name="tournament_name" class="dark-input" required 
                                    placeholder="e.g. Summer Showdown 2024">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Location</label>
-                            <input type="text" name="location" class="form-control" required 
+                            <input type="text" name="location" class="dark-input" required 
                                    placeholder="e.g. Central Park Courts">
                         </div>
                     </div>
@@ -1162,7 +665,7 @@ strong {
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Join Radius</label>
-                                    <select name="join_radius" class="form-control">
+                                    <select name="join_radius" class="dark-input"
                                         <option value="10">10 miles</option>
                                         <option value="15">15 miles</option>
                                         <option value="20">20 miles</option>
@@ -1179,12 +682,12 @@ strong {
                             <div id="manualLocationSection" class="row" style="display: none;">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Latitude</label>
-                                    <input type="number" name="latitude" class="form-control" step="0.000001" 
+                                    <input type="number" name="latitude" class="dark-input" step="0.000001" 
                                            placeholder="e.g. 40.7128">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Longitude</label>
-                                    <input type="number" name="longitude" class="form-control" step="0.000001" 
+                                    <input type="number" name="longitude" class="dark-input" step="0.000001" 
                                            placeholder="e.g. -74.0060">
                                 </div>
                             </div>
@@ -1200,7 +703,7 @@ strong {
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Max Players</label>
-                            <select name="max_players" class="form-control" required>
+                            <select name="max_players" class="dark-input" required>
                                 <option value="">Select players</option>
                                 <option value="4">4 Players</option>
                                 <option value="8">8 Players</option>
@@ -1213,13 +716,13 @@ strong {
                             <label class="form-label">Entry Fee</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
-                                <input type="number" name="entry_fee" class="form-control" required 
+                                <input type="number" name="entry_fee" class="dark-input" required 
                                        min="1" max="500" step="1" placeholder="25">
                             </div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Format</label>
-                            <select name="format" class="form-control" required>
+                            <select name="format" class="dark-input" required>
                                 <option value="">Choose format</option>
                                 <option value="singles">Singles</option>
                                 <option value="doubles">Doubles</option>
@@ -1229,18 +732,18 @@ strong {
                     
                     <div class="mb-3">
                         <label class="form-label">Description (Optional)</label>
-                        <textarea name="description" class="form-control" rows="3" 
+                        <textarea name="description" class="dark-input" rows="3" 
                                   placeholder="Tell players about your tournament..."></textarea>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Start Date</label>
-                            <input type="datetime-local" name="start_date" class="form-control" required>
+                            <input type="datetime-local" name="start_date" class="dark-input" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Registration Deadline</label>
-                            <input type="datetime-local" name="registration_deadline" class="form-control" required>
+                            <input type="datetime-local" name="registration_deadline" class="dark-input" required>
                         </div>
                     </div>
                     
@@ -1251,16 +754,16 @@ strong {
                         <div id="payoutCalculation">
                             <div class="row text-center">
                                 <div class="col-4">
-                                    <strong>Prize Pool (70%)</strong>
-                                    <br><span id="prizePool" class="text-success">$0</span>
+                                    <strong class="neon-text">Prize Pool (70%)</strong>
+                                    <br><span id="prizePool" class="text-success neon-text">$0</span>
                                 </div>
                                 <div class="col-4">
                                     <strong>House Cut (30%)</strong>
                                     <br><span id="houseCut" class="text-primary">$0</span>
                                 </div>
                                 <div class="col-4">
-                                    <strong>Total Collected</strong>
-                                    <br><span id="totalCollected" class="text-warning">$0</span>
+                                    <strong class="neon-text">Total Collected</strong>
+                                    <br><span id="totalCollected" class="text-warning neon-text">$0</span>
                                 </div>
                             </div>
                         </div>
