@@ -5,154 +5,152 @@
 {% block content %}
 
 <style>
-/* Dark Theme Dashboard Design */
-:root {
-    --primary-bg: #0f0f23;
-    --secondary-bg: #1a1a2e;
-    --card-bg: rgba(26, 26, 46, 0.8);
-    --text-primary: #ffffff;
-    --accent-cyan: #00f5ff;
-    --accent-green: #00ff41;
-    --accent-purple: #bf00ff;
-    --border-subtle: rgba(226, 232, 240, 0.1);
-    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
-}
-
-body {
-    background: var(--primary-bg);
-    color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    overflow-x: hidden;
-}
-
+/* Dashboard Container - Uses global dark theme */
 .dashboard-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    background: var(--dark-bg);
     padding: 2rem 0;
 }
 
-.player-card, .actions-card {
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle);
-    border-radius: 24px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-}
-
-.player-card:hover, .actions-card:hover {
-    border-color: var(--accent-cyan);
-    box-shadow: var(--glow-effect);
-    transform: translateY(-2px);
+.dashboard-container::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(0, 245, 255, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(191, 0, 255, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
 }
 
 .player-avatar {
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    border: 4px solid var(--accent-cyan);
-    box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
+    border: 4px solid var(--neon-cyan);
+    box-shadow: var(--shadow-neon-cyan);
     object-fit: cover;
-    transition: all 0.3s ease;
+    transition: var(--transition-normal);
 }
 
 .player-avatar:hover {
     transform: scale(1.05);
-    box-shadow: 0 0 40px rgba(0, 245, 255, 0.6);
+    box-shadow: var(--shadow-hover), var(--shadow-neon-cyan);
 }
 
 .avatar-placeholder {
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    border: 4px solid var(--accent-cyan);
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    border: 4px solid var(--neon-cyan);
+    background: var(--gradient-primary);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 3rem;
-    color: white;
-    box-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-neon-cyan);
 }
 
 .skill-badge {
-    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
-    color: white;
-    font-weight: 700;
-    font-size: 1.1rem;
+    background: var(--gradient-secondary);
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
     padding: 0.75rem 1.5rem;
     border-radius: 25px;
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+    box-shadow: var(--shadow-neon-green);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    border: 2px solid var(--neon-green);
+    transition: var(--transition-normal);
+}
+
+.skill-badge:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+    box-shadow: var(--shadow-hover), var(--shadow-neon-green);
 }
 
 .stat-item {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--border-subtle);
-    border-radius: 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-lg);
     padding: 1.5rem;
     text-align: center;
-    transition: all 0.3s ease;
+    transition: var(--transition-normal);
+    backdrop-filter: blur(10px);
 }
 
 .stat-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: var(--accent-cyan);
+    background: var(--glass-dark);
+    border-color: var(--neon-cyan);
     transform: translateY(-1px);
+    box-shadow: var(--shadow-neon-cyan);
 }
 
 .stat-number {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--accent-cyan);
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    color: var(--neon-cyan) !important;
+    text-shadow: 0 0 10px var(--neon-cyan);
 }
 
 .stat-label {
-    color: #ffffff !important;
-    font-weight: 500;
-    opacity: 1.0 !important;
-    font-size: 16px !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    font-size: var(--font-size-sm) !important;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    margin-top: 0.5rem;
 }
 
 .court-item {
     background: rgba(191, 0, 255, 0.1);
     border: 1px solid rgba(191, 0, 255, 0.3);
-    border-radius: 12px;
+    border-radius: var(--border-radius-md);
     padding: 1rem;
-    color: var(--text-primary);
-    transition: all 0.3s ease;
+    color: var(--text-primary) !important;
+    transition: var(--transition-normal);
+    backdrop-filter: blur(10px);
 }
 
 .court-item:hover {
     background: rgba(191, 0, 255, 0.2);
-    border-color: var(--accent-purple);
+    border-color: var(--neon-purple);
     transform: translateX(5px);
+    box-shadow: var(--shadow-neon-purple);
 }
 
 .action-btn {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    border: none;
-    border-radius: 16px;
+    background: var(--gradient-primary);
+    border: 2px solid var(--neon-cyan);
+    border-radius: var(--border-radius-lg);
     padding: 1.25rem 2rem;
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: white;
-    transition: all 0.3s ease;
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+    color: var(--text-primary) !important;
+    transition: var(--transition-normal);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+    box-shadow: var(--shadow-neon-cyan);
     width: 100%;
     margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
 }
 
 .action-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
+    box-shadow: var(--shadow-hover), var(--shadow-neon-cyan);
+    filter: brightness(1.2);
+    color: var(--text-primary) !important;
+    text-decoration: none;
 }
 
 .action-btn i {
@@ -161,27 +159,29 @@ body {
 }
 
 .section-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--accent-cyan);
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    color: var(--neon-cyan) !important;
     margin-bottom: 1.5rem;
-    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+    text-shadow: 0 0 10px var(--neon-cyan);
 }
 
 .notification-toggle {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-subtle);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: 50px;
     padding: 0.75rem 1.5rem;
     display: flex;
     align-items: center;
     gap: 1rem;
-    transition: all 0.3s ease;
+    transition: var(--transition-normal);
+    backdrop-filter: blur(10px);
 }
 
 .notification-toggle:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--accent-cyan);
+    background: var(--glass-dark);
+    border-color: var(--neon-cyan);
+    box-shadow: var(--shadow-neon-cyan);
 }
 
 /* Mobile Responsive Design */
@@ -329,7 +329,7 @@ body {
             
             <!-- Left Panel: Player Information -->
             <div class="col-12 col-lg-6">
-                <div class="player-card p-4 h-100">
+                <div class="neon-frame p-4 h-100">
                     
                     <!-- Player Header -->
                     <div class="text-center mb-4">
@@ -351,11 +351,11 @@ body {
                         
                         {% if player.player_id %}
                         <p class="mb-3" style="color: #ffffff !important; opacity: 1.0 !important;">
-                            <i class="fas fa-id-card me-2"></i>Player ID: <strong style="color: var(--accent-cyan);">{{ player.player_id }}</strong>
+                            <i class="fas fa-id-card me-2"></i>Player ID: <strong class="text-neon">{{ player.player_id }}</strong>
                         </p>
                         {% endif %}
                         
-                        <div class="skill-badge d-inline-block">
+                        <div class="badge badge-success d-inline-block skill-badge">
                             <i class="fas fa-star me-2"></i>{{ player.skill_level }}
                         </div>
                     </div>
@@ -398,9 +398,9 @@ body {
                     {% if player.tournament_credits and player.tournament_credits > 0 %}
                     <div class="stat-item mb-4" style="background: linear-gradient(135deg, rgba(0, 255, 65, 0.1), rgba(0, 245, 255, 0.1));">
                         <div class="d-flex align-items-center justify-content-center">
-                            <i class="fas fa-wallet fa-2x me-3" style="color: var(--accent-green);"></i>
+                            <i class="fas fa-wallet fa-2x me-3 text-neon-green"></i>
                             <div>
-                                <div class="stat-number" style="color: var(--accent-green);">${{ "%.2f"|format(player.tournament_credits) }}</div>
+                                <div class="stat-number text-neon-green">${{ "%.2f"|format(player.tournament_credits) }}</div>
                                 <div class="stat-label">Tournament Credits</div>
                             </div>
                         </div>
@@ -417,7 +417,7 @@ body {
                         {% if player.preferred_court_1 %}
                         <div class="court-item mb-2" onclick="showCourtLocation('{{ player.preferred_court_1 }}', 'primary')" style="cursor: pointer;">
                             <div class="d-flex align-items-center">
-                                <i class="fas fa-map-marker-alt me-3" style="color: var(--accent-purple);"></i>
+                                <i class="fas fa-map-marker-alt me-3 text-neon-purple"></i>
                                 <div>
                                     <div class="fw-bold">Primary Court</div>
                                     <span style="font-size: 16px !important; color: #f1f5f9 !important;">{{ player.preferred_court_1 }}</span>
@@ -429,7 +429,7 @@ body {
                         {% if player.preferred_court_2 %}
                         <div class="court-item" onclick="showCourtLocation('{{ player.preferred_court_2 }}', 'secondary')" style="cursor: pointer;">
                             <div class="d-flex align-items-center">
-                                <i class="fas fa-map-marker-alt me-3" style="color: var(--accent-purple);"></i>
+                                <i class="fas fa-map-marker-alt me-3 text-neon-purple"></i>
                                 <div>
                                     <div class="fw-bold">Secondary Court</div>
                                     <span style="font-size: 16px !important; color: #f1f5f9 !important;">{{ player.preferred_court_2 }}</span>
@@ -442,7 +442,7 @@ body {
                     
                     <!-- Notification Toggle -->
                     <div class="notification-toggle">
-                        <i class="fas fa-bell" style="color: var(--accent-cyan);"></i>
+                        <i class="fas fa-bell text-neon"></i>
                         <span class="flex-grow-1">Notifications</span>
                         <div class="form-check form-switch mb-0">
                             <input class="form-check-input" 
@@ -460,7 +460,7 @@ body {
             
             <!-- Right Panel: Quick Actions -->
             <div class="col-12 col-lg-6">
-                <div class="actions-card p-4 h-100">
+                <div class="neon-frame p-4 h-100">
                     <div class="section-title text-center">
                         <i class="fas fa-bolt me-2"></i>Quick Actions
                     </div>
@@ -469,89 +469,88 @@ body {
                         
                         <!-- Find Opponent Button -->
                         {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
-                        <button class="action-btn" onclick="findNewMatch({{ player.id }})">
+                        <button class="btn btn-primary action-btn" onclick="findNewMatch({{ player.id }})">
                             <i class="fas fa-users"></i>Find Opponent
                         </button>
                         {% else %}
-                        <button class="action-btn" onclick="showMembershipModal('discovery')">
+                        <button class="btn btn-primary action-btn" onclick="showMembershipModal('discovery')">
                             <i class="fas fa-lock"></i>Unlock Player Matching
                         </button>
                         {% endif %}
                         
                         <!-- Create Challenge Button -->
                         {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
-                        <a href="{{ url_for('browse_players') }}" class="action-btn text-decoration-none">
+                        <a href="{{ url_for('browse_players') }}" class="btn btn-primary action-btn text-decoration-none">
                             <i class="fas fa-paper-plane"></i>Create Challenge
                         </a>
                         {% else %}
-                        <button class="action-btn" onclick="showMembershipModal('discovery')">
+                        <button class="btn btn-primary action-btn" onclick="showMembershipModal('discovery')">
                             <i class="fas fa-lock"></i>Unlock Challenges
                         </button>
                         {% endif %}
                         
                         <!-- Join Tournament Button -->
                         {% if player.membership_type == 'tournament' %}
-                        <a href="{{ url_for('tournaments_overview') }}" class="action-btn text-decoration-none">
+                        <a href="{{ url_for('tournaments_overview') }}" class="btn btn-primary action-btn text-decoration-none">
                             <i class="fas fa-trophy"></i>Join Tournament
                         </a>
                         {% else %}
-                        <button class="action-btn" onclick="showMembershipModal('tournament')">
+                        <button class="btn btn-primary action-btn" onclick="showMembershipModal('tournament')">
                             <i class="fas fa-crown"></i>Unlock Tournaments
                         </button>
                         {% endif %}
                         
                         <!-- Referral Button - Available to all users -->
-                        <a href="{{ url_for('universal_referral_dashboard') }}" class="action-btn text-decoration-none" 
-                           style="background: linear-gradient(135deg, var(--accent-green), #20c997); box-shadow: 0 8px 32px rgba(0, 255, 65, 0.3);">
+                        <a href="{{ url_for('universal_referral_dashboard') }}" class="btn btn-success action-btn text-decoration-none">
                             <i class="fas fa-share-alt"></i>Share & Earn Rewards
                         </a>
                         
                         <!-- Additional Action Buttons -->
                         <div class="row g-2 mt-3">
                             <div class="col-6">
-                                <button class="btn btn-outline-light w-100" onclick="loadChallenges()">
-                                    <i class="fas fa-inbox me-1"></i><br><span style="font-size: 16px !important;">Challenges</span>
+                                <button class="btn btn-outline-primary w-100" onclick="loadChallenges()">
+                                    <i class="fas fa-inbox me-1"></i><br><span class="text-white">Challenges</span>
                                 </button>
                             </div>
                             <div class="col-6">
-                                <button class="btn btn-outline-light w-100" onclick="loadPendingMatches()">
-                                    <i class="fas fa-clipboard-list me-1"></i><br><span style="font-size: 16px !important;">Submit Results</span>
+                                <button class="btn btn-outline-primary w-100" onclick="loadPendingMatches()">
+                                    <i class="fas fa-clipboard-list me-1"></i><br><span class="text-white">Submit Results</span>
                                 </button>
                             </div>
                         </div>
                         
                         <div class="row g-2">
                             <div class="col-6">
-                                <a href="{{ url_for('profile_settings') }}" class="btn btn-outline-light w-100 text-decoration-none">
-                                    <i class="fas fa-user-cog me-1"></i><br><span style="font-size: 16px !important;">Profile</span>
+                                <a href="{{ url_for('profile_settings') }}" class="btn btn-outline-primary w-100 text-decoration-none">
+                                    <i class="fas fa-user-cog me-1"></i><br><span class="text-white">Profile</span>
                                 </a>
                             </div>
                             <div class="col-6">
                                 <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 text-decoration-none">
-                                    <i class="fas fa-sign-out-alt me-1"></i><br><span style="font-size: 16px !important;">Sign Out</span>
+                                    <i class="fas fa-sign-out-alt me-1"></i><br><span class="text-white">Sign Out</span>
                                 </a>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Quick Stats Display -->
-                    <div class="mt-4 pt-4" style="border-top: 1px solid var(--border-subtle);">
+                    <div class="mt-4 pt-4" style="border-top: 1px solid var(--glass-border);">
                         <div class="row g-2 text-center">
                             <div class="col-4">
-                                <div class="mb-1" style="color: #f1f5f9 !important; font-size: 16px !important; font-weight: 500 !important;">Location</div>
-                                <div class="fw-bold text-truncate" style="color: var(--accent-cyan); font-size: 16px !important;">
+                                <div class="mb-1 text-secondary text-bold">Location</div>
+                                <div class="fw-bold text-truncate text-neon">
                                     <i class="fas fa-map-marker-alt me-1"></i>{{ player.location1 or 'Not Set' }}
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="mb-1" style="color: #f1f5f9 !important; font-size: 16px !important; font-weight: 500 !important;">Membership</div>
-                                <div class="fw-bold" style="color: var(--accent-green); font-size: 16px !important;">
+                                <div class="mb-1 text-secondary text-bold">Membership</div>
+                                <div class="fw-bold text-neon-green">
                                     <i class="fas fa-star me-1"></i>{{ player.membership_type|title or 'Free' }}
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="mb-1" style="color: #f1f5f9 !important; font-size: 16px !important; font-weight: 500 !important;">Win Rate</div>
-                                <div class="fw-bold" style="color: var(--accent-purple); font-size: 16px !important;">
+                                <div class="mb-1 text-secondary text-bold">Win Rate</div>
+                                <div class="fw-bold text-neon-purple">
                                     {% set total_games = (player.wins or 0) + (player.losses or 0) %}
                                     {% if total_games > 0 %}
                                         {{ "%.0f"|format(((player.wins or 0) / total_games) * 100) }}%
@@ -602,7 +601,7 @@ function showSuccessToast(message) {
     const toast = document.createElement('div');
     toast.className = 'toast show';
     toast.innerHTML = `
-        <div class="toast-header" style="background: var(--accent-green); color: white;">
+        <div class="toast-header" style="background: var(--neon-green); color: white;">
             <i class="fas fa-check-circle me-2"></i>
             <strong class="me-auto">Success</strong>
             <button type="button" class="btn-close btn-close-white" onclick="this.closest('.toast').remove()"></button>
@@ -728,13 +727,13 @@ function showPlayerSelectionModal(players) {
                         <div class="row">
                             ${players.map(player => `
                                 <div class="col-12 col-sm-6 mb-3">
-                                    <div class="card h-100" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle);">
+                                    <div class="card h-100" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);">
                                         <div class="card-body text-center">
                                             <h6 class="card-title fw-bold text-white">${player.name}</h6>
                                             <p class="mb-2" style="color: #ffffff !important; opacity: 1.0 !important; font-size: 16px !important;">
                                                 <i class="fas fa-map-marker-alt me-1"></i>${player.location}
                                             </p>
-                                            <p class="small mb-3" style="color: var(--accent-cyan);">
+                                            <p class="small mb-3 text-neon">
                                                 <i class="fas fa-star me-1"></i>${player.skill_level}
                                             </p>
                                             <button class="btn btn-primary btn-sm" onclick="challengePlayer(${player.id})">
@@ -817,11 +816,11 @@ function showMembershipModal(suggestedType = 'discovery') {
                         
                         <div class="row g-4">
                             <div class="col-12 col-md-6">
-                                <div class="card h-100" style="background: rgba(255,255,255,0.05); border: ${suggestedType === 'discovery' ? '2px solid var(--accent-cyan)' : '1px solid var(--border-subtle)'};">
+                                <div class="card h-100" style="background: rgba(255,255,255,0.05); border: ${suggestedType === 'discovery' ? '2px solid var(--neon-cyan)' : '1px solid var(--glass-border)'};">
                                     <div class="card-body p-4 text-center">
-                                        <i class="fas fa-users fa-3x mb-3" style="color: var(--accent-cyan);"></i>
+                                        <i class="fas fa-users fa-3x mb-3" style="color: var(--neon-cyan);"></i>
                                         <h4 class="fw-bold text-white">Player Discovery</h4>
-                                        <div class="display-5 fw-bold mb-2" style="color: var(--accent-cyan);">$4.99</div>
+                                        <div class="display-5 fw-bold mb-2" style="color: var(--neon-cyan);">$4.99</div>
                                         <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">per month</span>
                                         
                                         <ul class="list-unstyled mt-4 mb-4 text-start">
@@ -839,11 +838,11 @@ function showMembershipModal(suggestedType = 'discovery') {
                             </div>
                             
                             <div class="col-12 col-md-6">
-                                <div class="card h-100" style="background: rgba(255,255,255,0.05); border: ${suggestedType === 'tournament' ? '2px solid var(--accent-green)' : '1px solid var(--border-subtle)'};">
+                                <div class="card h-100" style="background: rgba(255,255,255,0.05); border: ${suggestedType === 'tournament' ? '2px solid var(--neon-green)' : '1px solid var(--glass-border)'};">
                                     <div class="card-body p-4 text-center">
-                                        <i class="fas fa-trophy fa-3x mb-3" style="color: var(--accent-green);"></i>
+                                        <i class="fas fa-trophy fa-3x mb-3" style="color: var(--neon-green);"></i>
                                         <h4 class="fw-bold text-white">Tournament Access</h4>
-                                        <div class="display-5 fw-bold mb-2" style="color: var(--accent-green);">$9.99</div>
+                                        <div class="display-5 fw-bold mb-2" style="color: var(--neon-green);">$9.99</div>
                                         <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">per month</span>
                                         
                                         <ul class="list-unstyled mt-4 mb-4 text-start">
@@ -853,7 +852,7 @@ function showMembershipModal(suggestedType = 'discovery') {
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Advanced statistics</li>
                                         </ul>
                                         
-                                        <button class="btn w-100 btn-lg" style="background: var(--accent-green); color: white;" onclick="startSubscription('tournament')">
+                                        <button class="btn w-100 btn-lg" style="background: var(--neon-green); color: white;" onclick="startSubscription('tournament')">
                                             <i class="fas fa-crown me-2"></i>Start Free Trial
                                         </button>
                                     </div>
