@@ -37,7 +37,7 @@
             font-size: 16px;
         }
         
-        /* ELIMINATE ALL LOW-OPACITY TEXT */
+        /* ELIMINATE ALL LOW-OPACITY TEXT - Complete Coverage */
         .text-muted {
             color: #f1f5f9 !important;
             font-weight: 500 !important;
@@ -48,11 +48,37 @@
         .small, small {
             font-size: 16px !important;
             color: #f1f5f9 !important;
+            font-weight: 500 !important;
         }
         
-        /* Remove opacity-based styling */
-        .opacity-50, .opacity-75 {
+        /* Remove ALL opacity-based styling for better readability */
+        .opacity-10, .opacity-25, .opacity-50, .opacity-75, .opacity-90 {
             opacity: 1 !important;
+        }
+        
+        /* Make all badge text readable */
+        .badge {
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            padding: 0.5rem 0.75rem !important;
+        }
+        
+        /* Improve alert readability */
+        .alert {
+            color: #333 !important;
+            font-size: 16px !important;
+            font-weight: 500 !important;
+        }
+        
+        .alert * {
+            color: #333 !important;
+            font-size: 16px !important;
+        }
+        
+        .alert-light, .alert-info {
+            background-color: #f8f9fa !important;
+            border-color: #dee2e6 !important;
+            color: #333 !important;
         }
         
         /* Force admin navigation buttons to be black */
@@ -139,6 +165,44 @@
             color: #333 !important;
         }
         
+        /* Enhanced card readability - all text in cards should be dark and readable */
+        .card * {
+            color: #333 !important;
+            font-size: 16px !important;
+        }
+        
+        /* Make sure card headers have proper contrast */
+        .card-header {
+            color: #fff !important;
+            font-weight: 600 !important;
+        }
+        
+        .card-header * {
+            color: #fff !important;
+        }
+        
+        /* Subscription card specific improvements */
+        .card .text-primary {
+            color: #0d6efd !important;
+            font-weight: 600 !important;
+        }
+        
+        .card .text-warning {
+            color: #fd7e14 !important;
+            font-weight: 600 !important;
+        }
+        
+        .card .text-success {
+            color: #198754 !important;
+            font-weight: 600 !important;
+        }
+        
+        /* Make sure price text is very readable */
+        .card h3, .card h4, .card h5 {
+            color: #333 !important;
+            font-weight: 700 !important;
+        }
+        
         .btn {
             border-radius: 12px;
             font-weight: 600;
@@ -147,6 +211,47 @@
             transition: all 0.3s ease;
             border: none;
             padding: 0.75rem 1.5rem;
+            color: #fff !important;
+        }
+        
+        /* Improve button outline variants for better visibility */
+        .btn-outline-primary {
+            color: #0d6efd !important;
+            border: 2px solid #0d6efd !important;
+            background: rgba(13, 110, 253, 0.1) !important;
+            font-weight: 600 !important;
+        }
+        
+        .btn-outline-primary:hover {
+            color: #fff !important;
+            background: #0d6efd !important;
+            border-color: #0d6efd !important;
+        }
+        
+        .btn-outline-warning {
+            color: #fd7e14 !important;
+            border: 2px solid #fd7e14 !important;
+            background: rgba(253, 126, 20, 0.1) !important;
+            font-weight: 600 !important;
+        }
+        
+        .btn-outline-warning:hover {
+            color: #fff !important;
+            background: #fd7e14 !important;
+            border-color: #fd7e14 !important;
+        }
+        
+        .btn-outline-success {
+            color: #198754 !important;
+            border: 2px solid #198754 !important;
+            background: rgba(25, 135, 84, 0.1) !important;
+            font-weight: 600 !important;
+        }
+        
+        .btn-outline-success:hover {
+            color: #fff !important;
+            background: #198754 !important;
+            border-color: #198754 !important;
         }
         
         .btn-primary {
@@ -220,6 +325,53 @@
             color: #333 !important;
             border: 1px solid rgba(0, 0, 0, 0.15);
             border-radius: 12px;
+        }
+        
+        /* COMPREHENSIVE FORM AND LABEL READABILITY */
+        .form-label, label {
+            color: #fff !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Card form labels should be dark */
+        .card .form-label, .card label {
+            color: #333 !important;
+        }
+        
+        /* List group items */
+        .list-group-item {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            color: #333 !important;
+            font-size: 16px !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        /* Table readability */
+        .table {
+            color: #333 !important;
+        }
+        
+        .table th, .table td {
+            color: #333 !important;
+            font-size: 16px !important;
+            padding: 1rem !important;
+        }
+        
+        /* Modal content */
+        .modal-content {
+            background: rgba(255, 255, 255, 0.98) !important;
+            color: #333 !important;
+        }
+        
+        .modal-header, .modal-body, .modal-footer {
+            color: #333 !important;
+        }
+        
+        .modal-header *, .modal-body *, .modal-footer * {
+            color: #333 !important;
+            font-size: 16px !important;
         }
         
         /* Light surface text (only for light cards) */
