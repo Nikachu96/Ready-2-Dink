@@ -2529,6 +2529,143 @@ def player_home(player_id):
                          leaderboard=leaderboard,
                          is_birthday=is_birthday)
 
+@app.route('/challenges')
+def challenges():
+    """Display challenges page for the current player"""
+    # Check if user is logged in
+    if 'current_player_id' not in session:
+        flash('Please log in to view challenges', 'warning')
+        return redirect(url_for('player_login'))
+    
+    player_id = session['current_player_id']
+    conn = get_db_connection()
+    
+    # Verify player exists
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    if not player:
+        flash('Player not found', 'danger')
+        return redirect(url_for('player_login'))
+    
+    # Get incoming challenges (matches where this player is player2 and status is pending/counter_proposed)
+    incoming_challenges = conn.execute('''
+        SELECT m.*, 
+               p1.full_name as challenger_name, 
+               p1.selfie as challenger_selfie,
+               p1.skill_level as challenger_skill,
+               p1.wins as challenger_wins,
+               p1.losses as challenger_losses
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        WHERE m.player2_id = ? 
+        AND m.status IN ('pending', 'counter_proposed')
+        ORDER BY m.created_at DESC
+    ''', (player_id,)).fetchall()
+    
+    # Get outgoing challenges (matches where this player is player1 and status is pending/counter_proposed)
+    outgoing_challenges = conn.execute('''
+        SELECT m.*, 
+               p2.full_name as opponent_name, 
+               p2.selfie as opponent_selfie,
+               p2.skill_level as opponent_skill,
+               p2.wins as opponent_wins,
+               p2.losses as opponent_losses
+        FROM matches m
+        JOIN players p2 ON m.player2_id = p2.id
+        WHERE m.player1_id = ? 
+        AND m.status IN ('pending', 'counter_proposed')
+        ORDER BY m.created_at DESC
+    ''', (player_id,)).fetchall()
+    
+    # Get confirmed matches (upcoming confirmed matches)
+    confirmed_matches = conn.execute('''
+        SELECT m.*, 
+               CASE 
+                   WHEN m.player1_id = ? THEN p2.full_name
+                   ELSE p1.full_name 
+               END as opponent_name,
+               CASE 
+                   WHEN m.player1_id = ? THEN p2.selfie
+                   ELSE p1.selfie 
+               END as opponent_selfie,
+               CASE 
+                   WHEN m.player1_id = ? THEN p2.skill_level
+                   ELSE p1.skill_level 
+               END as opponent_skill
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        WHERE (m.player1_id = ? OR m.player2_id = ?)
+        AND m.status = 'confirmed'
+        ORDER BY m.created_at DESC
+        LIMIT 10
+    ''', (player_id, player_id, player_id, player_id, player_id)).fetchall()
+    
+    # Get completed matches (match history)
+    completed_matches = conn.execute('''
+        SELECT m.*, 
+               CASE 
+                   WHEN m.player1_id = ? THEN p2.full_name
+                   ELSE p1.full_name 
+               END as opponent_name,
+               CASE 
+                   WHEN m.player1_id = ? THEN p2.selfie
+                   ELSE p1.selfie 
+               END as opponent_selfie,
+               CASE 
+                   WHEN m.player1_id = ? THEN p2.skill_level
+                   ELSE p1.skill_level 
+               END as opponent_skill,
+               CASE 
+                   WHEN m.winner_id = ? THEN 'won'
+                   ELSE 'lost'
+               END as result
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        WHERE (m.player1_id = ? OR m.player2_id = ?)
+        AND m.status = 'completed'
+        ORDER BY m.created_at DESC
+        LIMIT 20
+    ''', (player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
+    
+    # Get all available players for challenging (excluding current player and those with pending challenges)
+    existing_challenges_query = '''
+        SELECT DISTINCT 
+            CASE 
+                WHEN player1_id = ? THEN player2_id
+                ELSE player1_id
+            END as opponent_id
+        FROM matches 
+        WHERE (player1_id = ? OR player2_id = ?)
+        AND status IN ('pending', 'counter_proposed', 'confirmed')
+    '''
+    
+    existing_challenge_ids = [row[0] for row in conn.execute(existing_challenges_query, (player_id, player_id, player_id)).fetchall()]
+    
+    # Build exclusion list
+    exclude_ids = [player_id] + existing_challenge_ids
+    placeholders = ','.join(['?'] * len(exclude_ids))
+    
+    available_players = conn.execute(f'''
+        SELECT id, full_name, skill_level, selfie, wins, losses, ranking_points,
+               preferred_court, location1
+        FROM players 
+        WHERE id NOT IN ({placeholders})
+        AND is_looking_for_match = 1
+        ORDER BY skill_level, ranking_points DESC, wins DESC
+        LIMIT 50
+    ''', exclude_ids).fetchall()
+    
+    conn.close()
+    
+    return render_template('challenges.html',
+                         player=player,
+                         incoming_challenges=incoming_challenges,
+                         outgoing_challenges=outgoing_challenges,
+                         confirmed_matches=confirmed_matches,
+                         completed_matches=completed_matches,
+                         available_players=available_players)
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """Player registration form"""
@@ -4393,6 +4530,158 @@ def decline_challenge():
         challenge_id_str = challenge_id if 'challenge_id' in locals() else 'unknown'
         logging.error(f"Error declining challenge {challenge_id_str}: {str(e)}")
         return jsonify({'success': False, 'message': f'Error declining challenge: {str(e)}'})
+
+# Form-based challenge endpoints (non-JSON)
+@app.route('/challenges/send', methods=['POST'])
+def send_challenge_route():
+    """Send a new challenge to another player using HTML form"""
+    if 'current_player_id' not in session:
+        flash('Please log in to send challenges', 'warning')
+        return redirect(url_for('player_login'))
+    
+    challenger_id = session['current_player_id']
+    opponent_id = request.form.get('opponent_id')
+    court_location = request.form.get('court_location', '').strip()
+    scheduled_time = request.form.get('scheduled_time', '').strip()
+    
+    if not opponent_id:
+        flash('Please select an opponent to challenge', 'danger')
+        return redirect(url_for('challenges'))
+    
+    try:
+        opponent_id = int(opponent_id)
+    except ValueError:
+        flash('Invalid opponent selected', 'danger')
+        return redirect(url_for('challenges'))
+    
+    # Prevent self-challenges
+    if challenger_id == opponent_id:
+        flash('You cannot challenge yourself!', 'warning')
+        return redirect(url_for('challenges'))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Check if challenger exists and get their info
+        challenger = conn.execute('SELECT * FROM players WHERE id = ?', (challenger_id,)).fetchone()
+        if not challenger:
+            flash('Player not found', 'danger')
+            return redirect(url_for('challenges'))
+        
+        # Check if opponent exists
+        opponent = conn.execute('SELECT * FROM players WHERE id = ?', (opponent_id,)).fetchone()
+        if not opponent:
+            flash('Opponent not found', 'danger')
+            return redirect(url_for('challenges'))
+        
+        # Check for existing pending challenges between these players
+        existing_challenge = conn.execute('''
+            SELECT id FROM matches 
+            WHERE ((player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?))
+            AND status IN ('pending', 'counter_proposed')
+        ''', (challenger_id, opponent_id, opponent_id, challenger_id)).fetchone()
+        
+        if existing_challenge:
+            flash(f'You already have a pending challenge with {opponent["full_name"]}', 'warning')
+            return redirect(url_for('challenges'))
+        
+        # Create the challenge
+        conn.execute('''
+            INSERT INTO matches (player1_id, player2_id, sport, court_location, scheduled_time, status, created_at)
+            VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))
+        ''', (challenger_id, opponent_id, 'Pickleball', court_location or 'TBD', scheduled_time or 'Flexible'))
+        
+        conn.commit()
+        flash(f'Challenge sent to {opponent["full_name"]}! 🎾', 'success')
+        
+    except Exception as e:
+        logging.error(f"Error sending challenge: {e}")
+        flash('Failed to send challenge. Please try again.', 'danger')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('challenges'))
+
+@app.route('/challenges/<int:challenge_id>/accept', methods=['POST'])
+def accept_challenge_route(challenge_id):
+    """Accept an incoming challenge using HTML form"""
+    if 'current_player_id' not in session:
+        flash('Please log in to accept challenges', 'warning')
+        return redirect(url_for('player_login'))
+    
+    player_id = session['current_player_id']
+    conn = get_db_connection()
+    
+    try:
+        # Get challenge details and verify ownership
+        challenge = conn.execute('''
+            SELECT m.*, p1.full_name as challenger_name
+            FROM matches m
+            JOIN players p1 ON m.player1_id = p1.id
+            WHERE m.id = ? AND m.player2_id = ? AND m.status IN ('pending', 'counter_proposed')
+        ''', (challenge_id, player_id)).fetchone()
+        
+        if not challenge:
+            flash('Challenge not found or you are not authorized to accept it', 'danger')
+            return redirect(url_for('challenges'))
+        
+        # Accept the challenge by updating status
+        conn.execute('UPDATE matches SET status = ? WHERE id = ?', ('confirmed', challenge_id))
+        conn.commit()
+        
+        # Format success message
+        location = challenge['court_location'] or 'TBD'
+        time = challenge['scheduled_time'] or 'Flexible'
+        flash(f'Challenge accepted! 🎾 Match with {challenge["challenger_name"]} confirmed at {location} for {time}', 'success')
+        
+    except Exception as e:
+        logging.error(f"Error accepting challenge {challenge_id}: {e}")
+        flash('Failed to accept challenge. Please try again.', 'danger')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('challenges'))
+
+@app.route('/challenges/<int:challenge_id>/decline', methods=['POST'])
+def decline_challenge_route(challenge_id):
+    """Decline an incoming challenge using HTML form"""
+    if 'current_player_id' not in session:
+        flash('Please log in to decline challenges', 'warning')
+        return redirect(url_for('player_login'))
+    
+    player_id = session['current_player_id']
+    conn = get_db_connection()
+    
+    try:
+        # Get challenge details and verify ownership
+        challenge = conn.execute('''
+            SELECT m.*, p1.full_name as challenger_name
+            FROM matches m
+            JOIN players p1 ON m.player1_id = p1.id
+            WHERE m.id = ? AND m.player2_id = ? AND m.status IN ('pending', 'counter_proposed')
+        ''', (challenge_id, player_id)).fetchone()
+        
+        if not challenge:
+            flash('Challenge not found or you are not authorized to decline it', 'danger')
+            return redirect(url_for('challenges'))
+        
+        # Decline the challenge
+        conn.execute('UPDATE matches SET status = ? WHERE id = ?', ('declined', challenge_id))
+        
+        # Mark both players as available for matching again
+        conn.execute('UPDATE players SET is_looking_for_match = 1 WHERE id IN (?, ?)', 
+                    (challenge['player1_id'], challenge['player2_id']))
+        
+        conn.commit()
+        flash(f'Challenge from {challenge["challenger_name"]} declined', 'info')
+        
+    except Exception as e:
+        logging.error(f"Error declining challenge {challenge_id}: {e}")
+        flash('Failed to decline challenge. Please try again.', 'danger')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('challenges'))
 
 @app.route('/players')
 def players():

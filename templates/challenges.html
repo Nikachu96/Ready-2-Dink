@@ -1,0 +1,640 @@
+{% extends "base.html" %}
+
+{% block title %}Challenges - Ready 2 Dink{% endblock %}
+
+{% block content %}
+
+<style>
+/* Dark Theme Challenges Design */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --accent-red: #ff4757;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+    --glow-green: 0 0 20px rgba(0, 255, 65, 0.3);
+    --glow-red: 0 0 20px rgba(255, 71, 87, 0.3);
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.challenges-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+}
+
+.challenge-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+.challenge-card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.challenge-card.incoming {
+    border-left: 4px solid var(--accent-green);
+}
+
+.challenge-card.outgoing {
+    border-left: 4px solid var(--accent-cyan);
+}
+
+.challenge-card.confirmed {
+    border-left: 4px solid var(--accent-purple);
+}
+
+.challenge-card.completed {
+    border-left: 4px solid #6c757d;
+    opacity: 0.85;
+}
+
+.challenge-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid var(--accent-cyan);
+    box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
+    object-fit: cover;
+    transition: all 0.3s ease;
+}
+
+.challenge-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.6);
+}
+
+.avatar-placeholder {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid var(--accent-cyan);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
+}
+
+.skill-badge {
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge {
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-pending {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: white;
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.4);
+}
+
+.status-confirmed {
+    background: linear-gradient(135deg, var(--accent-green), #06d6a0);
+    color: white;
+    box-shadow: var(--glow-green);
+}
+
+.status-counter_proposed {
+    background: linear-gradient(135deg, var(--accent-purple), #9c27b0);
+    color: white;
+    box-shadow: 0 0 15px rgba(191, 0, 255, 0.4);
+}
+
+.status-declined {
+    background: linear-gradient(135deg, var(--accent-red), #dc3545);
+    color: white;
+    box-shadow: var(--glow-red);
+}
+
+.status-completed {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: white;
+}
+
+.action-btn {
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.025em;
+    transition: all 0.3s ease;
+    border: none;
+    padding: 0.5rem 1rem;
+    min-width: 80px;
+}
+
+.btn-accept {
+    background: linear-gradient(135deg, var(--accent-green), #06d6a0);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 255, 65, 0.4);
+}
+
+.btn-accept:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 255, 65, 0.6);
+    color: white;
+}
+
+.btn-decline {
+    background: linear-gradient(135deg, var(--accent-red), #dc3545);
+    color: white;
+    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+}
+
+.btn-decline:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 71, 87, 0.6);
+    color: white;
+}
+
+.challenge-form-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    padding: 2rem;
+}
+
+.form-control-dark {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.form-control-dark:focus {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 0.2rem rgba(0, 245, 255, 0.25);
+    color: white;
+}
+
+.form-control-dark::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.section-header {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--accent-cyan);
+}
+
+.player-option {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.player-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-cyan);
+    transform: translateY(-1px);
+}
+
+.player-option.selected {
+    background: rgba(0, 245, 255, 0.1);
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+}
+
+.record-badge {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.25rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.match-details {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.result-badge {
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+}
+
+.result-won {
+    background: var(--accent-green);
+    color: white;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.result-lost {
+    background: var(--accent-red);
+    color: white;
+    box-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+}
+
+@media (max-width: 768px) {
+    .challenges-container {
+        padding: 1rem 0;
+    }
+    
+    .challenge-card {
+        margin-bottom: 1rem;
+        border-radius: 16px;
+    }
+    
+    .challenge-form-card {
+        padding: 1.5rem;
+        border-radius: 16px;
+    }
+    
+    .action-btn {
+        font-size: 12px;
+        padding: 0.4rem 0.8rem;
+        min-width: 70px;
+    }
+}
+</style>
+
+<div class="challenges-container">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center mb-5">
+                    <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #00f5ff, #bf00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        <i class="fas fa-swords me-3"></i>Challenges
+                    </h1>
+                    <p class="lead text-white opacity-75">Challenge other players and manage your matches</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Incoming Challenges -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h2 class="section-header">
+                    <i class="fas fa-inbox me-2"></i>Incoming Challenges
+                </h2>
+                
+                {% if incoming_challenges %}
+                    {% for challenge in incoming_challenges %}
+                    <div class="challenge-card incoming">
+                        <div class="card-body p-4">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    {% if challenge.challenger_selfie %}
+                                        <img src="{{ url_for('static', filename='uploads/' + challenge.challenger_selfie) }}" 
+                                             class="challenge-avatar" alt="Challenger">
+                                    {% else %}
+                                        <div class="avatar-placeholder">
+                                            {{ challenge.challenger_name[0].upper() }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="mb-1 text-white fw-bold">{{ challenge.challenger_name }}</h5>
+                                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                                <span class="skill-badge">{{ challenge.challenger_skill }}</span>
+                                                <span class="record-badge">{{ challenge.challenger_wins or 0 }}W-{{ challenge.challenger_losses or 0 }}L</span>
+                                                <span class="status-badge status-{{ challenge.status }}">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                            </div>
+                                            <div class="match-details">
+                                                <div><i class="fas fa-map-marker-alt me-2"></i>{{ challenge.court_location or 'Location TBD' }}</div>
+                                                <div><i class="fas fa-clock me-2"></i>{{ challenge.scheduled_time or 'Time TBD' }}</div>
+                                                <div><i class="fas fa-calendar me-2"></i>Challenged {{ challenge.created_at[:10] }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 mt-md-0">
+                                            {% if challenge.status == 'pending' %}
+                                                <form method="POST" action="{{ url_for('accept_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
+                                                    <button type="submit" class="btn btn-accept action-btn me-2">
+                                                        <i class="fas fa-check me-1"></i>Accept
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ url_for('decline_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
+                                                    <button type="submit" class="btn btn-decline action-btn" onclick="return confirm('Are you sure you want to decline this challenge?')">
+                                                        <i class="fas fa-times me-1"></i>Decline
+                                                    </button>
+                                                </form>
+                                            {% elif challenge.status == 'counter_proposed' %}
+                                                <form method="POST" action="{{ url_for('accept_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
+                                                    <button type="submit" class="btn btn-accept action-btn me-2">
+                                                        <i class="fas fa-handshake me-1"></i>Accept Counter
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ url_for('decline_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
+                                                    <button type="submit" class="btn btn-decline action-btn" onclick="return confirm('Are you sure you want to decline this challenge?')">
+                                                        <i class="fas fa-times me-1"></i>Decline
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="challenge-card">
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <h5 class="text-white mb-2">No Incoming Challenges</h5>
+                            <p>When other players challenge you, they'll appear here</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Outgoing Challenges -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h2 class="section-header">
+                    <i class="fas fa-paper-plane me-2"></i>Sent Challenges
+                </h2>
+                
+                {% if outgoing_challenges %}
+                    {% for challenge in outgoing_challenges %}
+                    <div class="challenge-card outgoing">
+                        <div class="card-body p-4">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    {% if challenge.opponent_selfie %}
+                                        <img src="{{ url_for('static', filename='uploads/' + challenge.opponent_selfie) }}" 
+                                             class="challenge-avatar" alt="Opponent">
+                                    {% else %}
+                                        <div class="avatar-placeholder">
+                                            {{ challenge.opponent_name[0].upper() }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="mb-1 text-white fw-bold">{{ challenge.opponent_name }}</h5>
+                                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                                <span class="skill-badge">{{ challenge.opponent_skill }}</span>
+                                                <span class="record-badge">{{ challenge.opponent_wins or 0 }}W-{{ challenge.opponent_losses or 0 }}L</span>
+                                                <span class="status-badge status-{{ challenge.status }}">{{ challenge.status.replace('_', ' ').title() }}</span>
+                                            </div>
+                                            <div class="match-details">
+                                                <div><i class="fas fa-map-marker-alt me-2"></i>{{ challenge.court_location or 'Location TBD' }}</div>
+                                                <div><i class="fas fa-clock me-2"></i>{{ challenge.scheduled_time or 'Time TBD' }}</div>
+                                                <div><i class="fas fa-calendar me-2"></i>Sent {{ challenge.created_at[:10] }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 mt-md-0">
+                                            {% if challenge.status == 'pending' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-hourglass-half me-1"></i>Waiting for Response
+                                                </span>
+                                            {% elif challenge.status == 'counter_proposed' %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-exchange-alt me-1"></i>Counter-Proposed
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="challenge-card">
+                        <div class="empty-state">
+                            <i class="fas fa-paper-plane"></i>
+                            <h5 class="text-white mb-2">No Sent Challenges</h5>
+                            <p>Challenge other players below to get started</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Confirmed Matches -->
+        {% if confirmed_matches %}
+        <div class="row mb-5">
+            <div class="col-12">
+                <h2 class="section-header">
+                    <i class="fas fa-calendar-check me-2"></i>Upcoming Matches
+                </h2>
+                
+                {% for match in confirmed_matches %}
+                <div class="challenge-card confirmed">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                {% if match.opponent_selfie %}
+                                    <img src="{{ url_for('static', filename='uploads/' + match.opponent_selfie) }}" 
+                                         class="challenge-avatar" alt="Opponent">
+                                {% else %}
+                                    <div class="avatar-placeholder">
+                                        {{ match.opponent_name[0].upper() }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col">
+                                <h5 class="mb-1 text-white fw-bold">{{ match.opponent_name }}</h5>
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <span class="skill-badge">{{ match.opponent_skill }}</span>
+                                    <span class="status-badge status-confirmed">Confirmed</span>
+                                </div>
+                                <div class="match-details">
+                                    <div><i class="fas fa-map-marker-alt me-2"></i>{{ match.court_location or 'Location TBD' }}</div>
+                                    <div><i class="fas fa-clock me-2"></i>{{ match.scheduled_time or 'Time TBD' }}</div>
+                                    <div><i class="fas fa-calendar me-2"></i>Confirmed {{ match.created_at[:10] }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Send New Challenge -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h2 class="section-header">
+                    <i class="fas fa-plus-circle me-2"></i>Challenge a Player
+                </h2>
+                
+                <div class="challenge-form-card">
+                    <form method="POST" action="{{ url_for('send_challenge_route') }}">
+                        <div class="mb-4">
+                            <label class="form-label text-white fw-bold">Select Player to Challenge:</label>
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                {% for player in available_players %}
+                                <div class="player-option">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <input type="radio" name="opponent_id" value="{{ player.id }}" id="player_{{ player.id }}" class="form-check-input me-2" style="background-color: rgba(0, 245, 255, 0.2); border: 1px solid var(--accent-cyan);">
+                                        </div>
+                                        <div class="col-auto">
+                                            {% if player.selfie %}
+                                                <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                                     class="challenge-avatar" style="width: 40px; height: 40px;" alt="Player">
+                                            {% else %}
+                                                <div class="avatar-placeholder" style="width: 40px; height: 40px; font-size: 1rem;">
+                                                    {{ player.full_name[0].upper() }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col">
+                                            <label for="player_{{ player.id }}" class="form-check-label" style="cursor: pointer; width: 100%;">
+                                                <h6 class="mb-1 text-white">{{ player.full_name }}</h6>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <span class="skill-badge">{{ player.skill_level }}</span>
+                                                    <span class="record-badge">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
+                                                    <span class="record-badge">{{ player.ranking_points or 0 }} pts</span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="text-center py-4">
+                                    <p class="text-white-50">No available players to challenge at the moment</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-white fw-bold">Proposed Location (Optional):</label>
+                                <input type="text" class="form-control form-control-dark" name="court_location" 
+                                       placeholder="Court or location preference">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-white fw-bold">Proposed Date & Time (Optional):</label>
+                                <input type="datetime-local" class="form-control form-control-dark" name="scheduled_time">
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg" 
+                                    style="background: linear-gradient(135deg, #00f5ff, #bf00ff); border: none; padding: 0.75rem 2rem;">
+                                <i class="fas fa-paper-plane me-2"></i>Send Challenge
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Match History -->
+        {% if completed_matches %}
+        <div class="row">
+            <div class="col-12">
+                <h2 class="section-header">
+                    <i class="fas fa-history me-2"></i>Match History
+                </h2>
+                
+                {% for match in completed_matches %}
+                <div class="challenge-card completed">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                {% if match.opponent_selfie %}
+                                    <img src="{{ url_for('static', filename='uploads/' + match.opponent_selfie) }}" 
+                                         class="challenge-avatar" alt="Opponent">
+                                {% else %}
+                                    <div class="avatar-placeholder">
+                                        {{ match.opponent_name[0].upper() }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col">
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-1 text-white fw-bold">{{ match.opponent_name }}</h5>
+                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                            <span class="skill-badge">{{ match.opponent_skill }}</span>
+                                            <span class="result-badge result-{{ match.result }}">{{ match.result.title() }}</span>
+                                            {% if match.match_result %}
+                                                <span class="record-badge">{{ match.match_result }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="match-details">
+                                            <div><i class="fas fa-map-marker-alt me-2"></i>{{ match.court_location or 'Various locations' }}</div>
+                                            <div><i class="fas fa-calendar me-2"></i>Completed {{ match.created_at[:10] }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- All JavaScript replaced with HTML forms for better Flask integration -->
+
+{% endblock %}
