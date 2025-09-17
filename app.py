@@ -7641,7 +7641,7 @@ def withdraw_tournament(tournament_id):
     """Allow player to withdraw from tournament and get refund"""
     if 'player_id' not in session:
         flash('Please log in to withdraw from tournaments.', 'warning')
-        return redirect(url_for('login'))
+        return redirect(url_for('player_login'))
     
     player_id = session['player_id']
     conn = get_db_connection()
@@ -7817,7 +7817,7 @@ def membership_payment_page(membership_type):
     """Display membership payment page"""
     if 'player_id' not in session:
         flash('Please log in to access memberships.', 'warning')
-        return redirect(url_for('login'))
+        return redirect(url_for('player_login'))
     
     if membership_type not in ['discovery', 'tournament']:
         flash('Invalid membership type.', 'warning')

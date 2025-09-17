@@ -63,23 +63,7 @@
             padding: 0.5rem 0.75rem !important;
         }
         
-        /* Improve alert readability */
-        .alert {
-            color: #333 !important;
-            font-size: 16px !important;
-            font-weight: 500 !important;
-        }
-        
-        .alert * {
-            color: #333 !important;
-            font-size: 16px !important;
-        }
-        
-        .alert-light, .alert-info {
-            background-color: #f8f9fa !important;
-            border-color: #dee2e6 !important;
-            color: #333 !important;
-        }
+        /* Legacy alert styles removed - using comprehensive dark theme alert system below */
         
         /* Force admin navigation buttons to be black */
         .btn-outline-dark {
@@ -526,51 +510,202 @@
             padding: 0.5rem 1rem;
         }
         
+        /* COMPREHENSIVE DARK THEME ALERT SYSTEM */
+        /* Using neon-accented dark theme colors from player_home.html */
+        
         .alert {
-            background: var(--glass-bg);
+            background: rgba(26, 26, 46, 0.85) !important;
             backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
+            border: 1px solid rgba(226, 232, 240, 0.15);
+            border-radius: 16px;
             font-size: 16px !important;
             font-weight: 600;
             color: #ffffff !important;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            animation: alertFadeIn 0.4s ease-out;
         }
         
-        /* High contrast alert variants for better readability */
-        .alert-danger, .alert-error {
-            background: #ff4444 !important;
-            border: 2px solid #ff0000 !important;
+        .alert:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Make sure ALL alert text is white and readable */
+        .alert,
+        .alert h1, .alert h2, .alert h3, .alert h4, .alert h5, .alert h6,
+        .alert p, .alert span, .alert div, .alert li, .alert small {
             color: #ffffff !important;
-            font-weight: 700;
-            font-size: 18px !important;
+            font-size: 16px !important;
         }
         
-        .alert-warning {
-            background: #ff9500 !important;
-            border: 2px solid #ff7700 !important;
+        .alert h1, .alert h2, .alert h3, .alert h4, .alert h5, .alert h6 {
+            font-weight: 700 !important;
+            margin-bottom: 0.75rem;
+        }
+        
+        .alert .alert-heading {
             color: #ffffff !important;
-            font-weight: 700;
+            font-weight: 700 !important;
             font-size: 18px !important;
+            margin-bottom: 0.75rem;
         }
         
+        .alert .btn-close {
+            filter: invert(1) grayscale(1) brightness(2);
+            opacity: 0.8;
+        }
+        
+        .alert .btn-close:hover {
+            opacity: 1;
+        }
+        
+        /* NEON-ACCENTED ALERT VARIANTS */
+        
+        /* INFO ALERTS - Cyan theme */
+        .alert-info {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.15), rgba(26, 26, 46, 0.9)) !important;
+            border: 2px solid #00f5ff !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 25px rgba(0, 245, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .alert-info:hover {
+            box-shadow: 0 0 35px rgba(0, 245, 255, 0.5), 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: #33f7ff;
+        }
+        
+        .alert-info .fas, .alert-info .fa {
+            color: #00f5ff !important;
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
+        
+        /* SUCCESS ALERTS - Green theme */
         .alert-success {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
-            border: 2px solid #38ef7d !important;
-            color: white !important;
-            font-weight: 600;
-            font-size: 1.1rem;
-            box-shadow: 0 8px 25px rgba(17, 153, 142, 0.4);
-            animation: slideInSuccess 0.5s ease-out;
+            background: linear-gradient(135deg, rgba(0, 255, 65, 0.15), rgba(26, 26, 46, 0.9)) !important;
+            border: 2px solid #00ff41 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 25px rgba(0, 255, 65, 0.3), 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: alertSuccessSlide 0.5s ease-out;
         }
         
-        @keyframes slideInSuccess {
+        .alert-success:hover {
+            box-shadow: 0 0 35px rgba(0, 255, 65, 0.5), 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: #33ff5c;
+        }
+        
+        .alert-success .fas, .alert-success .fa {
+            color: #00ff41 !important;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+        }
+        
+        /* WARNING ALERTS - Orange theme */
+        .alert-warning {
+            background: linear-gradient(135deg, rgba(255, 149, 0, 0.15), rgba(26, 26, 46, 0.9)) !important;
+            border: 2px solid #ff9500 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 25px rgba(255, 149, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .alert-warning:hover {
+            box-shadow: 0 0 35px rgba(255, 149, 0, 0.5), 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: #ffaa33;
+        }
+        
+        .alert-warning .fas, .alert-warning .fa {
+            color: #ff9500 !important;
+            text-shadow: 0 0 10px rgba(255, 149, 0, 0.5);
+        }
+        
+        /* DANGER/ERROR ALERTS - Red/Pink theme */
+        .alert-danger, .alert-error {
+            background: linear-gradient(135deg, rgba(255, 68, 68, 0.15), rgba(26, 26, 46, 0.9)) !important;
+            border: 2px solid #ff4444 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 25px rgba(255, 68, 68, 0.3), 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: alertDangerPulse 0.6s ease-out;
+        }
+        
+        .alert-danger:hover, .alert-error:hover {
+            box-shadow: 0 0 35px rgba(255, 68, 68, 0.5), 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: #ff6666;
+        }
+        
+        .alert-danger .fas, .alert-danger .fa,
+        .alert-error .fas, .alert-error .fa {
+            color: #ff4444 !important;
+            text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+        }
+        
+        /* LIGHT ALERTS - Purple theme for general info */
+        .alert-light {
+            background: linear-gradient(135deg, rgba(191, 0, 255, 0.1), rgba(26, 26, 46, 0.9)) !important;
+            border: 2px solid rgba(191, 0, 255, 0.4) !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 20px rgba(191, 0, 255, 0.2), 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .alert-light:hover {
+            box-shadow: 0 0 30px rgba(191, 0, 255, 0.3), 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(191, 0, 255, 0.6);
+        }
+        
+        .alert-light .fas, .alert-light .fa {
+            color: #bf00ff !important;
+            text-shadow: 0 0 10px rgba(191, 0, 255, 0.5);
+        }
+        
+        /* ALERT ANIMATIONS */
+        @keyframes alertFadeIn {
             0% {
                 opacity: 0;
-                transform: translateY(-20px);
+                transform: translateY(-10px);
             }
             100% {
                 opacity: 1;
                 transform: translateY(0);
+            }
+        }
+        
+        @keyframes alertSuccessSlide {
+            0% {
+                opacity: 0;
+                transform: translateX(-20px) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+        
+        @keyframes alertDangerPulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.9;
+                transform: scale(1.02);
+            }
+        }
+        
+        /* MOBILE RESPONSIVE ALERTS */
+        @media (max-width: 768px) {
+            .alert {
+                padding: 1rem;
+                font-size: 14px !important;
+                border-radius: 12px;
+                margin-bottom: 1rem;
+            }
+            
+            .alert h1, .alert h2, .alert h3, .alert h4, .alert h5, .alert h6 {
+                font-size: 16px !important;
+            }
+            
+            .alert .alert-heading {
+                font-size: 16px !important;
             }
         }
         
@@ -720,11 +855,13 @@
                 {% for category, message in messages %}
                     <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show d-flex align-items-center auto-dismiss" role="alert">
                         {% if category == 'success' %}
-                            <i class="fas fa-check-circle fa-2x me-3" style="color: white;"></i>
+                            <i class="fas fa-check-circle fa-2x me-3" style="color: #00ff41; text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);"></i>
                         {% elif category == 'error' or category == 'danger' %}
-                            <i class="fas fa-exclamation-triangle fa-2x me-3" style="color: #ff6b6b;"></i>
+                            <i class="fas fa-exclamation-triangle fa-2x me-3" style="color: #ff4444; text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);"></i>
+                        {% elif category == 'warning' %}
+                            <i class="fas fa-exclamation-circle fa-2x me-3" style="color: #ff9500; text-shadow: 0 0 10px rgba(255, 149, 0, 0.5);"></i>
                         {% else %}
-                            <i class="fas fa-info-circle fa-2x me-3" style="color: #4ecdc4;"></i>
+                            <i class="fas fa-info-circle fa-2x me-3" style="color: #00f5ff; text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);"></i>
                         {% endif %}
                         <div class="flex-grow-1">
                             <strong>{{ message }}</strong>
