@@ -2533,11 +2533,11 @@ def player_home(player_id):
 def challenges():
     """Display challenges page for the current player"""
     # Check if user is logged in
-    if 'current_player_id' not in session:
+    if 'player_id' not in session:
         flash('Please log in to view challenges', 'warning')
         return redirect(url_for('player_login'))
     
-    player_id = session['current_player_id']
+    player_id = session['player_id']
     conn = get_db_connection()
     
     # Verify player exists
@@ -4535,11 +4535,11 @@ def decline_challenge():
 @app.route('/challenges/send', methods=['POST'])
 def send_challenge_route():
     """Send a new challenge to another player using HTML form"""
-    if 'current_player_id' not in session:
+    if 'player_id' not in session:
         flash('Please log in to send challenges', 'warning')
         return redirect(url_for('player_login'))
     
-    challenger_id = session['current_player_id']
+    challenger_id = session['player_id']
     opponent_id = request.form.get('opponent_id')
     court_location = request.form.get('court_location', '').strip()
     scheduled_time = request.form.get('scheduled_time', '').strip()
@@ -4605,11 +4605,11 @@ def send_challenge_route():
 @app.route('/challenges/<int:challenge_id>/accept', methods=['POST'])
 def accept_challenge_route(challenge_id):
     """Accept an incoming challenge using HTML form"""
-    if 'current_player_id' not in session:
+    if 'player_id' not in session:
         flash('Please log in to accept challenges', 'warning')
         return redirect(url_for('player_login'))
     
-    player_id = session['current_player_id']
+    player_id = session['player_id']
     conn = get_db_connection()
     
     try:
@@ -4645,11 +4645,11 @@ def accept_challenge_route(challenge_id):
 @app.route('/challenges/<int:challenge_id>/decline', methods=['POST'])
 def decline_challenge_route(challenge_id):
     """Decline an incoming challenge using HTML form"""
-    if 'current_player_id' not in session:
+    if 'player_id' not in session:
         flash('Please log in to decline challenges', 'warning')
         return redirect(url_for('player_login'))
     
-    player_id = session['current_player_id']
+    player_id = session['player_id']
     conn = get_db_connection()
     
     try:
