@@ -1,8 +1,320 @@
 {% extends "base.html" %}
 
-{% block title %}Tournament Management - MatchSpark Admin{% endblock %}
+{% block title %}Tournament Management - Ready 2 Dink Admin{% endblock %}
 
 {% block content %}
+
+<style>
+/* Admin Dark Theme Design - Tournament Management */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+    --gradient-primary: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    --gradient-success: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+    --gradient-warning: linear-gradient(135deg, #FFD700, #FFA500);
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.admin-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    padding: 2rem 0;
+}
+
+/* Card Styling */
+.card {
+    background: var(--card-bg) !important;
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    color: var(--text-primary) !important;
+}
+
+.card:hover {
+    border-color: var(--accent-cyan) !important;
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.card-body {
+    background: transparent !important;
+    color: var(--text-primary) !important;
+}
+
+/* Button Styling */
+.btn {
+    border-radius: 16px !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    border: 2px solid transparent !important;
+}
+
+.btn-outline-secondary {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 2px solid var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+}
+
+.btn-outline-secondary:hover {
+    background: var(--gradient-primary) !important;
+    border-color: var(--accent-cyan) !important;
+    color: white !important;
+    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-outline-success {
+    background: rgba(0, 255, 65, 0.1) !important;
+    border: 2px solid var(--accent-green) !important;
+    color: var(--accent-green) !important;
+}
+
+.btn-outline-success:hover {
+    background: var(--gradient-success) !important;
+    border-color: var(--accent-green) !important;
+    color: white !important;
+    box-shadow: 0 8px 32px rgba(0, 255, 65, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: var(--gradient-success) !important;
+    border: none !important;
+    color: white !important;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green)) !important;
+    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.5);
+    transform: translateY(-3px);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 2px solid var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+}
+
+.btn-sm {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+}
+
+/* Form Styling */
+.form-select {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 2px solid var(--border-subtle) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+    font-weight: 500;
+}
+
+.form-select:focus {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: var(--accent-cyan) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3) !important;
+}
+
+.form-label {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+}
+
+/* Text Styling */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary) !important;
+    font-weight: 700;
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+p {
+    color: var(--text-primary) !important;
+}
+
+/* Badge Styling */
+.badge {
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 1rem;
+}
+
+.bg-success {
+    background: var(--gradient-success) !important;
+}
+
+.bg-warning {
+    background: var(--gradient-warning) !important;
+    color: #000 !important;
+}
+
+.bg-primary {
+    background: var(--gradient-primary) !important;
+}
+
+/* Table Styling */
+.table {
+    color: var(--text-primary) !important;
+    background: transparent !important;
+}
+
+.table th {
+    color: var(--text-primary) !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-color: var(--border-subtle) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    font-size: 0.9rem;
+}
+
+.table td {
+    color: var(--text-primary) !important;
+    border-color: var(--border-subtle) !important;
+    font-weight: 500;
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background: rgba(0, 245, 255, 0.1) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Tournament Specific Styling */
+.tournament-name {
+    color: var(--text-primary) !important;
+    font-weight: 700;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.tournament-id {
+    color: var(--accent-cyan) !important;
+    font-weight: 600;
+    text-shadow: 0 0 5px rgba(0, 245, 255, 0.4);
+}
+
+.player-name {
+    color: var(--text-primary) !important;
+    font-weight: 700;
+}
+
+.player-email {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-weight: 500;
+}
+
+.entry-fee {
+    color: var(--accent-green) !important;
+    font-weight: 700;
+    font-size: 1.1em !important;
+    text-shadow: 0 0 5px rgba(0, 255, 65, 0.4);
+}
+
+.date-info {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+}
+
+.deadline-info {
+    color: var(--accent-purple) !important;
+    font-weight: 500;
+}
+
+.result-info {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+}
+
+/* Modal Styling */
+.modal-content {
+    background: var(--card-bg) !important;
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 24px !important;
+    color: var(--text-primary) !important;
+}
+
+.modal-header {
+    background: var(--gradient-primary) !important;
+    border: none !important;
+    border-radius: 24px 24px 0 0 !important;
+    color: white !important;
+}
+
+.modal-body {
+    background: transparent !important;
+    color: var(--text-primary) !important;
+}
+
+.modal-footer {
+    background: transparent !important;
+    border: none !important;
+}
+
+.btn-close {
+    filter: brightness(0) invert(1);
+}
+
+/* Empty State Styling */
+.text-center .fa-3x {
+    color: var(--accent-cyan) !important;
+    text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+}
+
+/* Animation */
+.animate-in {
+    animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .table-responsive {
+        border-radius: 16px;
+    }
+    
+    .btn {
+        margin: 0.25rem 0;
+    }
+}
+</style>
+
+<div class="admin-container">
 <div class="row animate-in">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -24,31 +336,31 @@
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover" style="color: var(--bs-body-color); --bs-table-hover-bg: rgba(255,255,255,0.075);">
+                    <table class="table table-hover">
                         <thead>
-                            <tr style="color: var(--bs-body-color);">
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Tournament</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Player</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Level</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Entry Fee</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Date</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Status</th>
-                                <th style="color: var(--bs-body-color); font-weight: 600;">Actions</th>
+                            <tr>
+                                <th>Tournament</th>
+                                <th>Player</th>
+                                <th>Level</th>
+                                <th>Entry Fee</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for tournament in tournaments %}
-                            <tr style="color: var(--bs-body-color);">
-                                <td style="color: var(--bs-body-color);">
+                            <tr>
+                                <td>
                                     <div>
-                                        <h6 class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ tournament.tournament_name }}</h6>
-                                        <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">ID: {{ tournament.id }}</span>
+                                        <h6 class="mb-1 tournament-name">{{ tournament.tournament_name }}</h6>
+                                        <span class="tournament-id">ID: {{ tournament.id }}</span>
                                     </div>
                                 </td>
-                                <td style="color: var(--bs-body-color);">
+                                <td>
                                     <div>
-                                        <div class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ tournament.full_name }}</div>
-                                        <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">{{ tournament.email }}</span>
+                                        <div class="mb-1 player-name">{{ tournament.full_name }}</div>
+                                        <span class="player-email">{{ tournament.email }}</span>
                                     </div>
                                 </td>
                                 <td>
@@ -56,14 +368,14 @@
                                         {{ tournament.tournament_level }}
                                     </span>
                                 </td>
-                                <td style="color: var(--bs-body-color);">
-                                    <strong style="color: var(--bs-body-color); font-size: 1.1em;">${{ "%.0f"|format(tournament.entry_fee or 0) }}</strong>
+                                <td>
+                                    <strong class="entry-fee">${{ "%.0f"|format(tournament.entry_fee or 0) }}</strong>
                                 </td>
-                                <td style="color: var(--bs-body-color);">
+                                <td>
                                     <div>
-                                        <div class="mb-1" style="color: var(--bs-body-color); font-weight: bold;">{{ tournament.entry_date }}</div>
+                                        <div class="mb-1 date-info">{{ tournament.entry_date }}</div>
                                         {% if tournament.match_deadline %}
-                                        <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">Deadline: {{ tournament.match_deadline }}</span>
+                                        <span class="deadline-info">Deadline: {{ tournament.match_deadline }}</span>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -71,7 +383,7 @@
                                     {% if tournament.completed %}
                                         <span class="badge bg-success">Completed</span>
                                         {% if tournament.match_result %}
-                                        <br><span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">{{ tournament.match_result }}</span>
+                                        <br><span class="result-info">{{ tournament.match_result }}</span>
                                         {% endif %}
                                     {% else %}
                                         <span class="badge bg-warning">Active</span>
@@ -84,7 +396,7 @@
                                         <i class="fas fa-check me-1"></i>Complete
                                     </button>
                                     {% else %}
-                                    <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">Completed</span>
+                                    <span class="result-info">Completed</span>
                                     {% endif %}
                                 </td>
                             </tr>

@@ -3,6 +3,211 @@
 {% block title %}System Settings - MatchSpark Admin{% endblock %}
 
 {% block content %}
+
+<style>
+/* Dark Theme Admin Design */
+:root {
+    --primary-bg: #0f0f23;
+    --secondary-bg: #1a1a2e;
+    --card-bg: rgba(26, 26, 46, 0.8);
+    --text-primary: #ffffff;
+    --accent-cyan: #00f5ff;
+    --accent-green: #00ff41;
+    --accent-purple: #bf00ff;
+    --border-subtle: rgba(226, 232, 240, 0.1);
+    --glow-effect: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+}
+
+.container, .container-fluid {
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+    min-height: 100vh;
+    padding-top: 2rem;
+}
+
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-effect);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
+    border: none !important;
+    border-radius: 24px 24px 0 0 !important;
+    padding: 1.5rem;
+}
+
+.card-body {
+    color: var(--text-primary);
+    background: transparent;
+}
+
+.card-title, .card h5, .card h6 {
+    color: white !important;
+    font-weight: 700;
+}
+
+.form-control {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    color: var(--text-primary);
+}
+
+.form-control:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--accent-cyan);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 0.2rem rgba(0, 245, 255, 0.25);
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.form-label {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.btn {
+    border-radius: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    box-shadow: 0 8px 32px rgba(0, 245, 255, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-green));
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 245, 255, 0.5);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+    box-shadow: 0 8px 32px rgba(0, 255, 65, 0.3);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 255, 65, 0.5);
+}
+
+.btn-outline-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+}
+
+.btn-outline-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--accent-cyan);
+    color: var(--text-primary);
+    box-shadow: var(--glow-effect);
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.text-primary {
+    color: var(--accent-cyan) !important;
+}
+
+.text-success {
+    color: var(--accent-green) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary) !important;
+}
+
+.fw-bold {
+    font-weight: 700 !important;
+}
+
+.badge {
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bg-primary {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+.bg-warning {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+}
+
+.bg-success {
+    background: linear-gradient(135deg, var(--accent-green), #10b981) !important;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+}
+
+hr {
+    border-color: var(--border-subtle);
+    opacity: 0.3;
+}
+
+.animate-in {
+    animation: slideInUp 0.8s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .container, .container-fluid {
+        padding: 1rem;
+    }
+    
+    .card {
+        border-radius: 16px;
+    }
+    
+    .card-header {
+        border-radius: 16px 16px 0 0 !important;
+        padding: 1rem;
+    }
+}
+</style>
 <div class="row animate-in">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
