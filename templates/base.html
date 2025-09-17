@@ -19,9 +19,9 @@
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #3F567F 0%, #D174D2 30%, #E0563F 100%);
+            background: #0f0f23;
             min-height: 100vh;
-            color: #fff;
+            color: #e2e8f0;
         }
         
         /* Force admin navigation buttons to be black */
@@ -37,28 +37,40 @@
         }
         
         .navbar {
-            background: rgba(255, 255, 255, 0.95) !important;
+            background: rgba(15, 15, 35, 0.95) !important;
             backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            min-height: 120px; /* Accommodate larger logo */
+            border-bottom: 1px solid #2d3748;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            min-height: 70px;
+            position: sticky;
+            top: 0;
+            z-index: 1030;
         }
         
         .navbar .nav-link,
         .navbar .navbar-nav .nav-link,
         .navbar-nav .nav-link {
-            color: #333 !important;
+            color: #e2e8f0 !important;
             font-weight: 500;
+            padding: 0.75rem 1.5rem !important;
+            border-radius: 8px;
+            transition: all 0.2s ease;
         }
         
         .navbar .nav-link:hover,
         .navbar .navbar-nav .nav-link:hover {
-            color: #3F567F !important;
+            color: #00f5ff !important;
+            background: rgba(0, 245, 255, 0.1);
+        }
+        
+        .navbar .nav-link.active {
+            color: #00f5ff !important;
+            background: rgba(0, 245, 255, 0.2);
         }
         
         /* Adjust body padding to prevent overlap with fixed navbar */
         body {
-            padding-top: 130px; /* Space for navbar + margin */
+            padding-top: 80px; /* Space for navbar + margin */
         }
         
         /* Make navbar fixed on mobile for better app-like experience */
@@ -361,34 +373,32 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav w-100 justify-content-center" style="flex-wrap: wrap;">
+                <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('index') }}">
-                            <i class="fas fa-home me-1"></i>Home
+                            <i class="fas fa-home me-2"></i>Home
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('tournaments_overview') }}">
-                            <i class="fas fa-trophy me-1"></i>Tournaments
+                            <i class="fas fa-trophy me-2"></i>Tournaments
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('leaderboard') }}">
-                            <i class="fas fa-medal me-1"></i>Rankings
+                            <i class="fas fa-ranking-star me-2"></i>Rankings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="alert('Challenges feature coming soon!')">
+                            <i class="fas fa-fist-raised me-2"></i>Challenges
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('profile_settings') }}">
-                            <i class="fas fa-user-cog me-1"></i>Profile Settings
+                            <i class="fas fa-user me-2"></i>Profile
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('notification_settings') }}">
-                            <i class="fas fa-bell me-1"></i>Notifications
-                        </a>
-                    </li>
-                    
-                    <!-- Force line break after 5 items -->
                     <div class="w-100"></div>
                     
                     <li class="nav-item">
