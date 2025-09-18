@@ -239,9 +239,9 @@
                                         <div class="col-auto">
                                             {% if player.selfie %}
                                                 <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                                     class="challenge-avatar" style="width: 40px; height: 40px;" alt="Player">
+                                                     class="challenge-avatar" alt="Player">
                                             {% else %}
-                                                <div class="avatar-placeholder" style="width: 40px; height: 40px; font-size: 1rem;">
+                                                <div class="avatar-placeholder" style="font-size: 1rem;">
                                                     {{ player.full_name[0].upper() }}
                                                 </div>
                                             {% endif %}
