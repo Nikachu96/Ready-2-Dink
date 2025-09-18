@@ -546,6 +546,26 @@
             box-shadow: var(--shadow-hover), var(--shadow-neon-cyan);
         }
         
+        /* Challenge Avatar - Fixed sizing for challenges page */
+        .challenge-avatar {
+            max-width: 150px;
+            max-height: 150px;
+            width: auto;
+            height: auto;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--neon-cyan);
+            box-shadow: var(--shadow-neon-cyan);
+            display: block;
+            margin: 0 auto;
+            transition: var(--transition-normal);
+        }
+        
+        .challenge-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-hover), var(--shadow-neon-cyan);
+        }
+        
         /* Section Titles */
         .section-title {
             font-size: var(--font-size-lg) !important;
