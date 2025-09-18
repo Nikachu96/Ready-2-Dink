@@ -109,31 +109,40 @@
                 <div class="neon-frame p-4 h-100">
                     
                     <!-- Player Header -->
-                    <div class="text-center mb-4">
-                        {% if player.selfie %}
-                            <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                 class="player-avatar mb-3" alt="Player Photo">
-                        {% else %}
-                            <div class="avatar-placeholder mb-3">
-                                <i class="fas fa-user"></i>
-                            </div>
-                        {% endif %}
-                        
-                        <h1 class="fw-bold text-white mb-2">
-                            Welcome back, {{ player.full_name.split()[0] }}!
-                            {% if player.tournament_wins and player.tournament_wins > 0 %}
-                            <i class="fas fa-crown ms-2" style="color: #FFD700;"></i>
+                    <div class="d-flex align-items-center mb-4">
+                        <!-- Small profile image on the left -->
+                        <div class="me-3">
+                            {% if player.selfie %}
+                                <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                     style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-cyan);" 
+                                     alt="Player Photo">
+                            {% else %}
+                                <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; border: 2px solid var(--accent-cyan);">
+                                    <i class="fas fa-user" style="color: var(--accent-cyan);"></i>
+                                </div>
                             {% endif %}
-                        </h1>
+                        </div>
                         
-                        {% if player.player_id %}
-                        <p class="mb-3" style="color: #ffffff !important; opacity: 1.0 !important;">
-                            <i class="fas fa-id-card me-2"></i>Player ID: <strong class="text-neon">{{ player.player_id }}</strong>
-                        </p>
-                        {% endif %}
-                        
-                        <div class="badge badge-success d-inline-block skill-badge">
-                            <i class="fas fa-star me-2"></i>{{ player.skill_level }}
+                        <!-- Welcome message and info -->
+                        <div class="flex-grow-1">
+                            <h1 class="fw-bold text-white mb-1" style="font-size: 1.8rem;">
+                                Welcome back, {{ player.full_name.split()[0] }}!
+                                {% if player.tournament_wins and player.tournament_wins > 0 %}
+                                <i class="fas fa-crown ms-2" style="color: #FFD700;"></i>
+                                {% endif %}
+                            </h1>
+                            
+                            <div class="d-flex align-items-center flex-wrap gap-3">
+                                {% if player.player_id %}
+                                <span style="color: #ffffff; opacity: 0.9;">
+                                    <i class="fas fa-id-card me-1"></i>ID: <strong class="text-neon">{{ player.player_id }}</strong>
+                                </span>
+                                {% endif %}
+                                
+                                <div class="badge badge-success skill-badge">
+                                    <i class="fas fa-star me-1"></i>{{ player.skill_level }}
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
