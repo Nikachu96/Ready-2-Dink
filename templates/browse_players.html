@@ -172,31 +172,116 @@
 </div>
 </div>
 
+<!-- Challenge Modal -->
+<div class="modal fade" id="challengeModal" tabindex="-1" aria-labelledby="challengeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: var(--dark-surface); border: 1px solid var(--glass-border);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--glass-border);">
+                <h5 class="modal-title text-white text-bold neon-text" id="challengeModalLabel">
+                    <i class="fas fa-handshake me-2"></i>Challenge Player
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6 class="text-white text-bold">Challenging: <span id="challengePlayerName"></span></h6>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label text-white text-bold">Proposed Location (Optional):</label>
+                    <input type="text" class="form-control dark-input" id="proposedLocation" 
+                           placeholder="Court or location preference">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label text-white text-bold">Proposed Date & Time (Optional):</label>
+                    <input type="datetime-local" class="form-control dark-input" id="proposedDateTime">
+                </div>
+                
+                <div class="text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Leave fields empty to let the system suggest optimal match details.
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid var(--glass-border);">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success text-bold" onclick="sendChallenge()">
+                    <i class="fas fa-paper-plane me-1"></i>Send Challenge
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+let currentChallengePlayerId = null;
+
 function challengePlayer(playerId, playerName) {
-    if (confirm(`Send a challenge to ${playerName}?`)) {
-        fetch(`/challenge-player/${playerId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({})
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                // Optionally reload page to update player availability
-                window.location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to send challenge. Please try again.');
-        });
+    currentChallengePlayerId = playerId;
+    document.getElementById('challengePlayerName').textContent = playerName;
+    
+    // Reset form fields
+    document.getElementById('proposedLocation').value = '';
+    document.getElementById('proposedDateTime').value = '';
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('challengeModal'));
+    modal.show();
+}
+
+function sendChallenge() {
+    if (!currentChallengePlayerId) {
+        alert('Error: No player selected');
+        return;
     }
+    
+    const location = document.getElementById('proposedLocation').value.trim();
+    const dateTime = document.getElementById('proposedDateTime').value;
+    
+    // Prepare the challenge data
+    const challengeData = {
+        target_player_id: currentChallengePlayerId
+    };
+    
+    if (location) {
+        challengeData.proposed_location = location;
+    }
+    
+    if (dateTime) {
+        // Split datetime-local into date and time components
+        const [date, time] = dateTime.split('T');
+        challengeData.proposed_date = date;
+        challengeData.proposed_time = time;
+    }
+    
+    // Send the challenge
+    fetch('/find_match', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(challengeData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal and show success message
+            const modal = bootstrap.Modal.getInstance(document.getElementById('challengeModal'));
+            modal.hide();
+            
+            // Show success message (you can customize this)
+            alert('Challenge sent successfully! 🎾');
+            
+            // Optionally redirect to challenges page
+            window.location.href = '/challenges';
+        } else {
+            alert('Failed to send challenge: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error sending challenge:', error);
+        alert('Failed to send challenge. Please try again.');
+    });
 }
 </script>
 
