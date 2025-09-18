@@ -2412,10 +2412,6 @@ def player_home(player_id):
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
     
-    # DEBUG: Log the actual player data
-    print(f"DEBUG: Player data for ID {player_id}: wins={player['wins']}, losses={player['losses']}, ranking_points={player['ranking_points']}, tournament_wins={player['tournament_wins']}")
-    logging.info(f"Player stats - ID: {player_id}, Wins: {player['wins']}, Losses: {player['losses']}, Points: {player['ranking_points']}, Tournament Wins: {player['tournament_wins']}")
-    
     # Get connections (players they've played against)
     connections = conn.execute('''
         SELECT DISTINCT 
