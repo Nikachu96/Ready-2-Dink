@@ -1028,9 +1028,20 @@ def update_setting(key, value):
     conn.commit()
     conn.close()
 
-def award_points(player_id, points, reason):
-    """Award points to a player and log the reason"""
-    conn = get_db_connection()
+def award_points(player_id, points, reason, conn=None):
+    """Award points to a player and log the reason
+    
+    Args:
+        player_id: Player ID to award points to
+        points: Number of points to award
+        reason: Reason for awarding points (for logging)
+        conn: Optional database connection to use (for transaction atomicity)
+    """
+    should_close_conn = False
+    
+    if conn is None:
+        conn = get_db_connection()
+        should_close_conn = True
     
     # Update player's points
     conn.execute('''
@@ -1039,37 +1050,243 @@ def award_points(player_id, points, reason):
         WHERE id = ?
     ''', (points, player_id))
     
-    conn.commit()
-    conn.close()
+    # Only commit and close if we created the connection
+    if should_close_conn:
+        conn.commit()
+        conn.close()
     
     # Log the point award for debugging
     logging.info(f"Awarded {points} points to player {player_id} for {reason}")
 
-def get_tournament_points(result):
-    """Get points based on tournament result"""
+def get_tournament_round_name(round_number, total_rounds):
+    """Map round number to tournament stage name"""
+    if total_rounds == 1:
+        return "Final"
+    elif round_number == total_rounds:
+        return "Final"
+    elif round_number == total_rounds - 1:
+        return "Semi-final"
+    elif round_number == total_rounds - 2:
+        return "Quarter-final"
+    else:
+        return "First round"
+
+def get_progressive_tournament_points(round_number, total_rounds, include_first_round=False):
+    """Get points for winning a specific tournament round in progressive system"""
+    stage = get_tournament_round_name(round_number, total_rounds)
+    
+    # Progressive point system
     points_map = {
-        'Winner (1st Place)': 400,
-        'Runner-up (2nd Place)': 200,
-        'Semi-finalist (3rd/4th Place)': 100,
-        'Quarter-finalist': 40
+        'Final': 400,
+        'Semi-final': 100,
+        'Quarter-final': 40,
+        'First round': 10 if include_first_round else 0
     }
     
-    # Handle variations in result strings
-    for key, points in points_map.items():
-        if key.lower() in result.lower():
-            return points
+    points = points_map.get(stage, 0)
+    logging.info(f"Round {round_number}/{total_rounds} ({stage}): {points} points")
+    return points
+
+def submit_tournament_match_result(tournament_match_id, player1_sets_won, player2_sets_won, match_score, submitter_id):
+    """Submit result for a tournament match and award progressive points with transaction safety"""
+    try:
+        # Validate input
+        if player1_sets_won == player2_sets_won:
+            return {'success': False, 'message': 'Tournament matches cannot be tied.'}
+        
+        conn = get_db_connection()
+        
+        # Start transaction for race condition protection
+        conn.execute('BEGIN IMMEDIATE')  # IMMEDIATE lock prevents concurrent modifications
+        logging.info(f"Started transaction for tournament match {tournament_match_id} submission by player {submitter_id}")
+        
+        # Get tournament match details with lock to prevent race conditions
+        match = conn.execute('''
+            SELECT tm.*, ti.name as tournament_name
+            FROM tournament_matches tm
+            JOIN tournament_instances ti ON tm.tournament_instance_id = ti.id
+            WHERE tm.id = ?
+        ''', (tournament_match_id,)).fetchone()
+        
+        if not match:
+            conn.rollback()
+            conn.close()
+            return {'success': False, 'message': 'Tournament match not found'}
+        
+        # Check if submitter is part of this match
+        if submitter_id not in [match['player1_id'], match['player2_id']]:
+            conn.rollback()
+            conn.close()
+            return {'success': False, 'message': 'You are not part of this match'}
+        
+        # Idempotency check: Prevent double submissions
+        if match['status'] == 'completed':
+            conn.rollback()
+            conn.close()
+            logging.warning(f"Attempted double submission for completed match {tournament_match_id} by player {submitter_id}")
+            return {'success': False, 'message': 'This match has already been completed'}
+        
+        # Determine winner
+        winner_id = match['player1_id'] if player1_sets_won > player2_sets_won else match['player2_id']
+        loser_id = match['player2_id'] if player1_sets_won > player2_sets_won else match['player1_id']
+        
+        # ROUND CLASSIFICATION FIX: Calculate total rounds using bracket size and math.log2
+        # Get tournament instance details and actual number of players
+        tournament_info = conn.execute('''
+            SELECT ti.max_players, COUNT(DISTINCT p.id) as actual_players
+            FROM tournament_instances ti
+            LEFT JOIN tournament_participants tp ON ti.id = tp.tournament_instance_id
+            LEFT JOIN players p ON tp.player_id = p.id
+            WHERE ti.id = ?
+            GROUP BY ti.id, ti.max_players
+        ''', (match['tournament_instance_id'],)).fetchone()
+        
+        if tournament_info and tournament_info['actual_players'] > 0:
+            import math
+            # Use actual players for accurate round calculation
+            num_players = tournament_info['actual_players']
+            total_rounds = math.ceil(math.log2(num_players)) if num_players > 1 else 1
+            logging.info(f"Tournament {match['tournament_instance_id']}: {num_players} players, calculated {total_rounds} total rounds")
+        else:
+            # Fallback to MAX(round_number) if tournament info unavailable
+            max_round = conn.execute('''
+                SELECT MAX(round_number) as max_round
+                FROM tournament_matches 
+                WHERE tournament_instance_id = ?
+            ''', (match['tournament_instance_id'],)).fetchone()
+            total_rounds = max_round['max_round'] if max_round else 1
+            logging.warning(f"Using fallback round calculation for tournament {match['tournament_instance_id']}: {total_rounds} rounds")
+        
+        # Update tournament match with results
+        conn.execute('''
+            UPDATE tournament_matches 
+            SET player1_score = ?, player2_score = ?, winner_id = ?, 
+                status = 'completed', completed_date = datetime('now')
+            WHERE id = ?
+        ''', (f"{player1_sets_won} sets", f"{player2_sets_won} sets", winner_id, tournament_match_id))
+        
+        # Update player win/loss records
+        conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (winner_id,))
+        conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (loser_id,))
+        
+        # FIRST ROUND POINTS POLICY DECISION: Set include_first_round=True
+        # Champions will now get 550 points (Final 400 + Semi 100 + Quarter 40 + First 10)
+        # instead of 540 points, rewarding players for every tournament round victory
+        points_awarded = get_progressive_tournament_points(match['round_number'], total_rounds, include_first_round=True)
+        
+        if points_awarded > 0:
+            round_name = get_tournament_round_name(match['round_number'], total_rounds)
+            # TRANSACTION ATOMICITY FIX: Pass connection to award_points
+            award_points(winner_id, points_awarded, f'{round_name} win in {match["tournament_name"]}', conn)
+        
+        # Advance winner to next round if not final
+        if match['round_number'] < total_rounds:
+            advance_tournament_bracket(match['tournament_instance_id'], match['round_number'], match['match_number'], winner_id)
+        
+        # Commit transaction - all database operations successful
+        conn.commit()
+        logging.info(f"Successfully submitted tournament match {tournament_match_id}, winner: {winner_id}, points awarded: {points_awarded}")
+        conn.close()
+        
+        # Get winner name for notifications (separate connection for notifications)
+        conn = get_db_connection()
+        winner = conn.execute('SELECT full_name FROM players WHERE id = ?', (winner_id,)).fetchone()
+        loser = conn.execute('SELECT full_name FROM players WHERE id = ?', (loser_id,)).fetchone()
+        conn.close()
+        
+        # Send notifications
+        if winner and loser:
+            round_name = get_tournament_round_name(match['round_number'], total_rounds)
+            sets_result = f"{player1_sets_won}-{player2_sets_won}" if winner_id == match['player1_id'] else f"{player2_sets_won}-{player1_sets_won}"
+            
+            if points_awarded > 0:
+                winner_message = f"🏆 {round_name} Victory! You beat {loser['full_name']} ({sets_result}) and earned {points_awarded} ranking points!"
+            else:
+                winner_message = f"🏆 {round_name} Victory! You beat {loser['full_name']} ({sets_result}) and advance to the next round!"
+            
+            loser_message = f"Good match against {winner['full_name']} in the {round_name} ({match_score})! Keep training for the next tournament!"
+            
+            send_push_notification(winner_id, winner_message, "Tournament Match Result")
+            send_push_notification(loser_id, loser_message, "Tournament Match Result")
+        
+        return {
+            'success': True, 
+            'message': f'Tournament match result submitted! {winner["full_name"] if winner else "Winner"} advances to next round.',
+            'points_awarded': points_awarded,
+            'round_name': get_tournament_round_name(match['round_number'], total_rounds)
+        }
+        
+    except Exception as e:
+        # Rollback transaction on any error
+        try:
+            conn.rollback()
+            conn.close()
+            logging.error(f"Transaction rolled back for tournament match {tournament_match_id} due to error: {e}")
+        except:
+            pass  # Connection might already be closed
+        logging.error(f"Error in submit_tournament_match_result: {e}")
+        return {'success': False, 'message': f'Server error: {str(e)}'}
+
+def advance_tournament_bracket(tournament_instance_id, current_round, current_match_number, winner_id):
+    """Advance winner to next round in tournament bracket"""
+    try:
+        conn = get_db_connection()
+        
+        # Calculate next round and match position
+        next_round = current_round + 1
+        next_match_number = (current_match_number + 1) // 2
+        
+        # Check if next round match exists
+        next_match = conn.execute('''
+            SELECT * FROM tournament_matches 
+            WHERE tournament_instance_id = ? AND round_number = ? AND match_number = ?
+        ''', (tournament_instance_id, next_round, next_match_number)).fetchone()
+        
+        if next_match:
+            # Determine if winner goes to player1 or player2 slot
+            if current_match_number % 2 == 1:  # Odd match numbers go to player1
+                conn.execute('''
+                    UPDATE tournament_matches 
+                    SET player1_id = ? 
+                    WHERE id = ?
+                ''', (winner_id, next_match['id']))
+            else:  # Even match numbers go to player2
+                conn.execute('''
+                    UPDATE tournament_matches 
+                    SET player2_id = ? 
+                    WHERE id = ?
+                ''', (winner_id, next_match['id']))
+            
+            # Check if both players are now assigned to next match
+            updated_match = conn.execute('''
+                SELECT * FROM tournament_matches 
+                WHERE id = ?
+            ''', (next_match['id'],)).fetchone()
+            
+            if updated_match['player1_id'] and updated_match['player2_id']:
+                # Both players assigned, match is ready
+                conn.execute('''
+                    UPDATE tournament_matches 
+                    SET status = 'ready' 
+                    WHERE id = ?
+                ''', (next_match['id'],))
+                logging.info(f"Tournament match {next_match['id']} is now ready with both players assigned")
+        
+        conn.commit()
+        conn.close()
+        
+    except Exception as e:
+        logging.error(f"Error advancing tournament bracket: {e}")
+
+def get_tournament_points(result):
+    """Get points based on tournament result - DEPRECATED in favor of progressive system"""
+    # This function is now deprecated since we award points progressively
+    # However, keeping it for backward compatibility with existing tournament completion logic
     
-    # Handle specific result formats
-    if '1st' in result or 'winner' in result.lower() or 'won' in result.lower():
-        return 400
-    elif '2nd' in result or 'runner' in result.lower():
-        return 200
-    elif '3rd' in result or '4th' in result or 'semi' in result.lower():
-        return 100
-    elif 'quarter' in result.lower():
-        return 40
-    
-    return 0  # No points for early elimination
+    # If using progressive system, players should already have their points
+    # This function now returns 0 to avoid double-awarding points
+    logging.warning(f"get_tournament_points called with result '{result}' - this function is deprecated in favor of progressive point system")
+    return 0
 
 def get_player_ranking(player_id):
     """Get player's current ranking position"""
@@ -4186,15 +4403,13 @@ def complete_tournament(tournament_id):
                         first_place_prize
                     )
     
-    # Award tournament points based on result
-    tournament_points = get_tournament_points(result)
-    if tournament_points > 0:
-        award_points(tournament['player_id'], tournament_points, f'Tournament result: {result}')
+    # Note: Points are now awarded progressively during matches via submit_tournament_match_result
+    # No need to award points here to prevent double-awarding
+    logging.info(f"Tournament {tournament_id} completed with result: {result}. Points already awarded progressively.")
     
-    # Send notification about tournament completion and points earned
-    if tournament_points > 0:
-        points_message = f"🏆 Tournament complete! You finished as {result.lower()} and earned {tournament_points} ranking points!"
-        send_push_notification(tournament['player_id'], points_message, "Tournament Results")
+    # Send notification about tournament completion 
+    completion_message = f"🏆 Tournament complete! You finished as {result.lower()}. Great job!"
+    send_push_notification(tournament['player_id'], completion_message, "Tournament Results")
     
     conn.commit()
     conn.close()
@@ -5139,6 +5354,54 @@ def submit_match_result():
         'success': True, 
         'message': f'Match result submitted successfully! Final score: {match_score}'
     })
+
+@app.route('/submit_tournament_match_result', methods=['POST'])
+def submit_tournament_match_result_route():
+    """Submit result for a tournament match with progressive points"""
+    data = request.get_json()
+    tournament_match_id = data.get('tournament_match_id')
+    match_score = data.get('match_score')  # Format: "11-5 6-11 11-9"
+    player1_sets_won = int(data.get('player1_sets_won', 0))
+    player2_sets_won = int(data.get('player2_sets_won', 0))
+    
+    # SECURITY FIX: Get submitter_id from server-side session, not client input
+    submitter_id = session.get('current_player_id') or session.get('player_id')
+    if not submitter_id:
+        return jsonify({'success': False, 'message': 'Authentication required. Please login.'})
+    
+    # Enhanced logging for submission tracking
+    logging.info(f"Tournament match submission received - Match ID: {tournament_match_id}, "
+                f"Submitter: {submitter_id}, Score: {match_score}, "
+                f"Sets: P1={player1_sets_won} P2={player2_sets_won}")
+    
+    # Validate input
+    if not match_score or not tournament_match_id:
+        logging.warning(f"Invalid submission attempt - missing required data. Match ID: {tournament_match_id}, Score: {match_score}")
+        return jsonify({'success': False, 'message': 'Match score and tournament match ID are required.'})
+    
+    # Validate best of 3 format
+    if (player1_sets_won + player2_sets_won) < 2 or (player1_sets_won + player2_sets_won) > 3:
+        logging.warning(f"Invalid match format - total sets: {player1_sets_won + player2_sets_won} for match {tournament_match_id}")
+        return jsonify({'success': False, 'message': 'Invalid pickleball match format.'})
+    
+    # Call the tournament match submission function
+    result = submit_tournament_match_result(
+        tournament_match_id, 
+        player1_sets_won, 
+        player2_sets_won, 
+        match_score, 
+        submitter_id
+    )
+    
+    # Log the result for monitoring
+    if result.get('success'):
+        logging.info(f"Tournament match {tournament_match_id} submitted successfully. "
+                    f"Points awarded: {result.get('points_awarded', 0)}, "
+                    f"Round: {result.get('round_name', 'Unknown')}")
+    else:
+        logging.error(f"Tournament match {tournament_match_id} submission failed: {result.get('message', 'Unknown error')}")
+    
+    return jsonify(result)
 
 @app.route('/validate_match_result', methods=['POST'])
 def validate_match_result():
