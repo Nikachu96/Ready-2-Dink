@@ -1058,6 +1058,35 @@
                 margin-top: 12px;
             }
             
+            /* Enhanced responsive text using relative units */
+            h1, h2, h3 {
+                font-size: 5vw !important; /* scales with screen width */
+                max-width: 100%;
+                word-wrap: break-word;
+            }
+
+            p, span, button {
+                font-size: 1.2rem !important; /* scales with root font size */
+            }
+
+            /* Ensure layout adapts to smaller screens */
+            .referral-box, .stats-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                align-items: center;
+                max-width: 100%;
+                word-break: break-word;
+                padding: 20px;
+            }
+
+            /* Prevent overflow and improve readability */
+            .container, .referral-box {
+                overflow-wrap: break-word;
+                word-wrap: break-word;
+                hyphens: auto;
+            }
+
             /* Prevent text overflow */
             * {
                 word-wrap: break-word;
@@ -1078,6 +1107,26 @@
             
             .row > [class*="col-"]:last-child {
                 margin-bottom: 0;
+            }
+
+            /* Mobile-specific adjustments for enhanced responsiveness */
+            h1, h2 {
+                font-size: 6vw !important; /* Larger on mobile for better readability */
+            }
+
+            p, span, button {
+                font-size: 1rem !important; /* More readable on small screens */
+            }
+
+            .referral-box {
+                flex-direction: column;
+                align-items: center;
+                padding: 10px;
+            }
+
+            .stats-container {
+                flex-direction: column;
+                gap: 10px;
             }
         }
         
