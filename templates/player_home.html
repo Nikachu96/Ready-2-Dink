@@ -255,23 +255,12 @@
                         
                         <!-- Find Opponent Button -->
                         {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
-                        <button class="btn btn-primary action-btn" onclick="findNewMatch({{ player.id }})">
-                            <i class="fas fa-users"></i>Find Opponent
-                        </button>
-                        {% else %}
-                        <button class="btn btn-primary action-btn" onclick="showMembershipModal('discovery')">
-                            <i class="fas fa-lock"></i>Unlock Player Matching
-                        </button>
-                        {% endif %}
-                        
-                        <!-- Create Challenge Button -->
-                        {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
                         <a href="{{ url_for('browse_players') }}" class="btn btn-primary action-btn text-decoration-none">
-                            <i class="fas fa-paper-plane"></i>Create Challenge
+                            <i class="fas fa-users"></i>Find Opponent
                         </a>
                         {% else %}
                         <button class="btn btn-primary action-btn" onclick="showMembershipModal('discovery')">
-                            <i class="fas fa-lock"></i>Unlock Challenges
+                            <i class="fas fa-lock"></i>Unlock Player Matching
                         </button>
                         {% endif %}
                         
