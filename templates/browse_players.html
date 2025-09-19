@@ -263,9 +263,9 @@ function sendChallenge() {
         return;
     }
     
-    // Debug the URL being called  
+    // Debug the URL being called - v2 (cache busting)
     const findMatchUrl = '/find_match/' + playerId;
-    console.log('Calling URL:', findMatchUrl);
+    console.log('*** UPDATED VERSION - Calling URL:', findMatchUrl);
     console.log('Challenge data:', challengeData);
     
     // Send the challenge
