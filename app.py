@@ -10,8 +10,11 @@ from functools import wraps
 import logging
 import stripe
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Configure logging - only enable debug logging in development
+if os.environ.get('FLASK_ENV') == 'development' or os.environ.get('DEBUG') == '1':
+    logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
 
 # Email configuration for SendGrid
 def send_admin_credentials_email(full_name, email, username, password, login_url):
@@ -195,7 +198,7 @@ def send_nda_confirmation_email(player_data, signature, nda_date, ip_address):
         response = sg.send(message)
         
         if response.status_code == 202:
-            logging.info(f"NDA confirmation email sent successfully for {player_data['full_name']}")
+            logging.info(f"NDA confirmation email sent successfully for player {player_data.get('username', 'unknown')}")
             return True
         else:
             logging.error(f"Failed to send NDA email. Status: {response.status_code}")
@@ -1723,7 +1726,7 @@ def send_push_notification(player_id, message, title="Ready 2 Dink"):
         
         # For demo purposes, we'll simulate sending a notification
         # In production, you would use a service like Firebase Cloud Messaging
-        logging.info(f"Sending push notification to {player['full_name']}: {message}")
+        logging.debug(f"Sending push notification to player ID {player['id']}: {message}")
         
         # Here you would implement actual push notification sending
         # using a service like Firebase, OneSignal, or Web Push Protocol
@@ -2494,7 +2497,9 @@ def inject_user_context():
     is_admin = False
     
     # Debug logging
-    logging.info(f"Context processor: current_player_id from session = {current_player_id}")
+    # Only log session info in debug mode for development
+    if app.debug and os.environ.get('FLASK_ENV') == 'development':
+        logging.debug(f"Context processor: user authenticated: {bool(current_player_id)}")
     
     if current_player_id:
         conn = get_db_connection()
@@ -3028,7 +3033,7 @@ def register():
             email_sent = send_new_registration_notification(player_data)
             
             if email_sent:
-                logging.info(f"New registration email notification sent successfully for {player_data['full_name']}")
+                logging.info(f"New registration email notification sent successfully for player {player_data.get('username', 'unknown')}")
             else:
                 logging.warning(f"Failed to send email notification for new registration: {player_data['full_name']}")
             
@@ -3036,7 +3041,7 @@ def register():
             if requires_consent and guardian_email:
                 consent_sent = send_guardian_consent_email(guardian_email, full_name, player_id)
                 if consent_sent:
-                    logging.info(f"Guardian consent email sent to {guardian_email} for player {full_name}")
+                    logging.info(f"Guardian consent email sent to {guardian_email} for underage player registration")
                     flash('Registration submitted! A consent form has been sent to your guardian for approval. Your account will be activated once they complete the authorization.', 'info')
                 else:
                     logging.warning(f"Failed to send guardian consent email to {guardian_email}")
@@ -3705,6 +3710,10 @@ def tournaments_overview():
     """Tournament overview page - requires login with GPS-based location filtering"""
     # Check if user is logged in
     current_player_id = session.get('current_player_id')
+    # Only log session info in debug mode for development
+    if app.debug and os.environ.get('FLASK_ENV') == 'development':
+        logging.debug(f"User authentication check - player_id present: {bool(current_player_id)}")
+    
     if not current_player_id:
         flash('Please log in to view tournaments', 'warning')
         return redirect(url_for('player_login'))
@@ -3876,20 +3885,26 @@ def tournaments_overview():
             
             custom_tournaments.append(tournament_dict)
     
-    # Get recent tournament entries
+    # Get recent tournament entries - FIXED TO SHOW ONLY CURRENT USER'S ENTRIES
+    logging.info(f"DEBUG: Fetching recent tournament entries for current user {current_player_id}")
     recent_entries = conn.execute('''
         SELECT t.*, p.full_name, p.selfie
         FROM tournaments t
         JOIN players p ON t.player_id = p.id
-        WHERE t.tournament_level IS NOT NULL
+        WHERE t.tournament_level IS NOT NULL 
+        AND t.player_id = ?
         ORDER BY t.created_at DESC
         LIMIT 10
-    ''').fetchall()
+    ''', (current_player_id,)).fetchall()
+    logging.info(f"DEBUG: Found {len(recent_entries)} recent tournament entries for current user")
+    for entry in recent_entries:
+        logging.debug(f"Tournament entry details - ID: {entry['id']}, Player ID: {entry['player_id']}, Tournament: {entry['tournament_name']}, Level: {entry['tournament_level']}")
     
     # Get all registered players for quick access
     players = conn.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name').fetchall()
     
-    # Get tournament brackets for the current player
+    # Get tournament brackets for the current player - ADD DEBUG LOGGING
+    logging.info(f"DEBUG: Fetching tournament brackets for current_player_id: {current_player_id}")
     my_tournament_brackets = conn.execute('''
         SELECT DISTINCT 
             ti.id as tournament_instance_id,
@@ -3936,6 +3951,9 @@ def tournaments_overview():
     ''', (current_player_id, current_player_id, current_player_id, 
           current_player_id, current_player_id, current_player_id,
           current_player_id, current_player_id, current_player_id)).fetchall()
+    logging.info(f"DEBUG: Found {len(my_tournament_brackets)} tournament brackets for player {current_player_id}")
+    for bracket in my_tournament_brackets:
+        logging.info(f"DEBUG: Bracket - Tournament: {bracket['tournament_name']}, Status: {bracket['tournament_status']}, Player Status: {bracket['player_status']}")
     
     conn.close()
     
@@ -6306,7 +6324,7 @@ def admin_delete_player(player_id):
         conn.execute('DELETE FROM players WHERE id = ?', (player_id,))
         conn.commit()
         flash(f'Player "{player["full_name"]}" deleted successfully', 'success')
-        logging.info(f"Player {player_id} ({player['full_name']}) deleted by admin")
+        logging.info(f"Player {player_id} deleted by admin")
     except Exception as e:
         logging.error(f"Error deleting player {player_id}: {str(e)}")
         flash(f'Error deleting player: {str(e)}', 'danger')
@@ -6508,7 +6526,7 @@ def create_test_player():
         email_sent = send_new_registration_notification(player_data)
         
         if email_sent:
-            logging.info(f"New test player registration email notification sent successfully for {full_name}")
+            logging.info(f"New test player registration email notification sent successfully")
         else:
             logging.warning(f"Failed to send email notification for new test player: {full_name}")
         
@@ -8765,7 +8783,7 @@ def send_referral_reward_email(referrer_id, end_date):
         response = sg.send(message)
         
         if response.status_code == 202:
-            logging.info(f"Referral reward email sent successfully to {player['full_name']} ({player['email']})")
+            logging.info(f"Referral reward email sent successfully to player {player['id']}")
             return True
         else:
             logging.error(f"Failed to send referral reward email. Status: {response.status_code}")
