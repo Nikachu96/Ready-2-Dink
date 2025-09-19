@@ -190,183 +190,169 @@
                 </div>
                 {% endif %}
 
-                <!-- Enhanced Mobile-First Bracket Visualization -->
-                <div class="tournament-bracket-wrapper">
-                    <!-- Bracket Controls -->
-                    <div class="bracket-controls">
-                        <div class="bracket-zoom-controls">
-                            <button class="bracket-zoom-btn" id="zoomOut" title="Zoom Out">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <button class="bracket-zoom-btn" id="zoomIn" title="Zoom In">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                            <button class="bracket-zoom-btn" id="resetZoom" title="Reset View">
-                                <i class="fas fa-expand-arrows-alt"></i>
-                            </button>
-                        </div>
-                        
-                        {% if player_entry %}
-                        <button class="find-me-btn" id="findMe">
-                            <i class="fas fa-crosshairs"></i>
-                            Find Me
-                        </button>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Loading State -->
-                    <div class="bracket-loading d-none" id="bracketLoading">
-                        <div class="loading-spinner"></div>
-                        <p class="text-white">Loading tournament bracket...</p>
-                    </div>
-                    
-                    <!-- Bracket Viewport -->
-                    <div class="bracket-container" id="bracketContainer">
-                        <div class="bracket-viewport" id="bracketViewport">
+                <!-- Clean Tennis Bracket Layout -->
+                <div class="tennis-bracket-container">
+                    <div class="bracket-wrapper">
+                        <!-- Desktop Horizontal Layout / Mobile Vertical Layout -->
+                        <div class="bracket-rounds">
+                            {% set match_counter = [0] %}
                             {% for round_num, round_matches in matches_by_round.items() %}
-                            <div class="round-section" data-round="{{ round_num }}">
-                                <div class="round-header" onclick="toggleRound({{ round_num }})">
-                                    <h6 class="round-title">
+                            <div class="round-column" data-round="{{ round_num }}">
+                                <!-- Round Header -->
+                                <div class="round-header">
+                                    <h5 class="round-title">
                                         {% if round_num == max_rounds %}
-                                            🏆 Final
+                                            <i class="fas fa-trophy text-neon-green"></i> Championship
                                         {% elif round_num == max_rounds - 1 %}
-                                            🥈 Semifinal
+                                            <i class="fas fa-medal text-neon-cyan"></i> Semifinals
                                         {% elif round_num == max_rounds - 2 %}
-                                            🥉 Quarterfinal
+                                            <i class="fas fa-star text-neon-purple"></i> Quarterfinals
                                         {% else %}
-                                            ⚡ Round {{ round_num }}
+                                            <i class="fas fa-play text-neon-cyan"></i> Round {{ round_num }}
                                         {% endif %}
-                                        <small class="ms-2">({{ round_matches|length }} matches)</small>
-                                    </h6>
-                                    <div class="round-toggle">
-                                        <i class="fas fa-chevron-down"></i>
-                                    </div>
+                                    </h5>
                                 </div>
                                 
-                                <div class="matches-grid">
+                                <!-- Round Matches -->
+                                <div class="round-matches">
                                     {% for match in round_matches %}
-                                    <div class="match-card {% if player_entry and (match.player1_id == player_entry.player_id or match.player2_id == player_entry.player_id) %}player-match{% endif %}" 
-                                         data-match-id="{{ match.id }}" 
-                                         onclick="showMatchDetails({{ match.id }})"
-                                         tabindex="0"
-                                         role="button"
-                                         aria-label="Match between {{ match.player1_name or 'TBD' }} and {{ match.player2_name or 'TBD' }}">
+                                    {% if match_counter.append(match_counter.pop() + 1) %}{% endif %}
+                                    <div class="game-container">
+                                        <!-- Game Label -->
+                                        <div class="game-label">
+                                            <span class="game-number">Game {{ match_counter[0] }}</span>
+                                        </div>
                                         
-                                        <!-- Player 1 -->
-                                        {% if match.player1_id %}
-                                        <div class="player-row {% if match.winner_id == match.player1_id %}winner{% endif %}" data-player-id="{{ match.player1_id }}">
-                                            <div class="player-info">
-                                                {% if match.player1_selfie %}
-                                                <img src="{{ url_for('static', filename='uploads/' + match.player1_selfie) }}" 
-                                                     alt="{{ match.player1_name }}" 
-                                                     class="player-avatar"
-                                                     loading="lazy">
+                                        <!-- Match Box -->
+                                        <div class="match-box 
+                                                    {% if player_entry and (match.player1_id == player_entry.player_id or match.player2_id == player_entry.player_id) %}current-player-match{% endif %}
+                                                    {% if current_player_context and current_player_context.next_opponent_match_id == match.id %}next-opponent-match{% endif %}"
+                                             data-match-id="{{ match.id }}"
+                                             onclick="showMatchDetails({{ match.id }})"
+                                             role="button"
+                                             tabindex="0"
+                                             aria-label="Game {{ match_counter[0] }}: {{ match.player1_name or 'TBD' }} vs {{ match.player2_name or 'TBD' }}">
+                                            
+                                            <!-- Player 1 -->
+                                            <div class="player-slot {% if match.winner_id == match.player1_id %}winner{% endif %}">
+                                                <div class="player-info">
+                                                    {% if match.player1_selfie %}
+                                                    <img src="{{ url_for('static', filename='uploads/' + match.player1_selfie) }}" 
+                                                         alt="{{ match.player1_name }}" 
+                                                         class="player-photo"
+                                                         loading="lazy">
+                                                    {% else %}
+                                                    <div class="player-photo-placeholder">
+                                                        <i class="fas fa-user"></i>
+                                                    </div>
+                                                    {% endif %}
+                                                    <span class="player-name">{{ match.player1_name or 'TBD' }}</span>
+                                                </div>
+                                                <div class="player-score">
+                                                    {{ match.player1_score if match.player1_score is not none else '-' }}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- VS Divider -->
+                                            <div class="vs-divider">
+                                                <span>VS</span>
+                                            </div>
+                                            
+                                            <!-- Player 2 -->
+                                            <div class="player-slot {% if match.winner_id == match.player2_id %}winner{% endif %}">
+                                                <div class="player-info">
+                                                    {% if match.player2_selfie %}
+                                                    <img src="{{ url_for('static', filename='uploads/' + match.player2_selfie) }}" 
+                                                         alt="{{ match.player2_name }}" 
+                                                         class="player-photo"
+                                                         loading="lazy">
+                                                    {% else %}
+                                                    <div class="player-photo-placeholder">
+                                                        <i class="fas fa-user"></i>
+                                                    </div>
+                                                    {% endif %}
+                                                    <span class="player-name">{{ match.player2_name or 'TBD' }}</span>
+                                                </div>
+                                                <div class="player-score">
+                                                    {{ match.player2_score if match.player2_score is not none else '-' }}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Match Status -->
+                                            <div class="match-status-indicator">
+                                                {% if match.status == 'completed' %}
+                                                <span class="status-badge completed">
+                                                    <i class="fas fa-check-circle"></i> Complete
+                                                </span>
+                                                {% elif match.status == 'in_progress' %}
+                                                <span class="status-badge live">
+                                                    <i class="fas fa-play-circle"></i> Live
+                                                </span>
                                                 {% else %}
-                                                <div class="player-avatar-placeholder">
-                                                    <i class="fas fa-user"></i>
-                                                </div>
+                                                <span class="status-badge pending">
+                                                    <i class="fas fa-clock"></i> Pending
+                                                </span>
                                                 {% endif %}
-                                                <span class="player-name">{{ match.player1_name }}</span>
                                             </div>
-                                            <span class="match-score">{{ match.player1_score if match.player1_score is not none else '-' }}</span>
-                                        </div>
-                                        {% else %}
-                                        <div class="player-row">
-                                            <div class="player-info">
-                                                <div class="player-avatar-placeholder">
-                                                    <i class="fas fa-question"></i>
-                                                </div>
-                                                <span class="player-name text-muted">TBD</span>
-                                            </div>
-                                            <span class="match-score text-muted">-</span>
-                                        </div>
-                                        {% endif %}
-                                        
-                                        <div class="match-divider"></div>
-                                        
-                                        <!-- Player 2 -->
-                                        {% if match.player2_id %}
-                                        <div class="player-row {% if match.winner_id == match.player2_id %}winner{% endif %}" data-player-id="{{ match.player2_id }}">
-                                            <div class="player-info">
-                                                {% if match.player2_selfie %}
-                                                <img src="{{ url_for('static', filename='uploads/' + match.player2_selfie) }}" 
-                                                     alt="{{ match.player2_name }}" 
-                                                     class="player-avatar"
-                                                     loading="lazy">
-                                                {% else %}
-                                                <div class="player-avatar-placeholder">
-                                                    <i class="fas fa-user"></i>
-                                                </div>
-                                                {% endif %}
-                                                <span class="player-name">{{ match.player2_name }}</span>
-                                            </div>
-                                            <span class="match-score">{{ match.player2_score if match.player2_score is not none else '-' }}</span>
-                                        </div>
-                                        {% else %}
-                                        <div class="player-row">
-                                            <div class="player-info">
-                                                <div class="player-avatar-placeholder">
-                                                    <i class="fas fa-question"></i>
-                                                </div>
-                                                <span class="player-name text-muted">TBD</span>
-                                            </div>
-                                            <span class="match-score text-muted">-</span>
-                                        </div>
-                                        {% endif %}
-                                        
-                                        <!-- Match Status -->
-                                        <div class="match-status {{ match.status }}">
-                                            {% if match.status == 'completed' %}
-                                                <i class="fas fa-check-circle"></i> Completed
-                                                {% if match.match_result %}
-                                                <div class="match-result-display mt-2">
-                                                    <span class="match-result-badge">{{ match.match_result }}</span>
-                                                </div>
-                                                {% endif %}
-                                            {% elif match.status == 'in_progress' %}
-                                                <i class="fas fa-play-circle"></i> Live
-                                            {% else %}
-                                                <i class="fas fa-clock"></i> Pending
-                                            {% endif %}
                                         </div>
                                     </div>
                                     {% endfor %}
-                                    
-                                    <!-- Skeleton Loading Cards (hidden by default) -->
-                                    {% for i in range(3) %}
-                                    <div class="skeleton-match d-none bracket-skeleton"></div>
-                                    {% endfor %}
                                 </div>
+                                
+                                <!-- Connector to Next Round -->
+                                {% if not loop.last %}
+                                <div class="round-connector">
+                                    <div class="connector-line"></div>
+                                </div>
+                                {% endif %}
                             </div>
                             {% endfor %}
                         </div>
+                        
+                        <!-- Championship Trophy (if tournament completed) -->
+                        {% if tournament.status == 'completed' %}
+                        <div class="championship-display">
+                            <div class="trophy-container">
+                                <i class="fas fa-trophy trophy-icon"></i>
+                                <h4 class="champion-title">Tournament Champion</h4>
+                                {% for round_num, round_matches in matches_by_round.items() %}
+                                    {% if round_num == max_rounds %}
+                                        {% for match in round_matches %}
+                                            {% if match.winner_id %}
+                                                <div class="champion-info">
+                                                    {% if match.winner_id == match.player1_id %}
+                                                        {% if match.player1_selfie %}
+                                                        <img src="{{ url_for('static', filename='uploads/' + match.player1_selfie) }}" 
+                                                             alt="{{ match.player1_name }}" 
+                                                             class="champion-photo">
+                                                        {% else %}
+                                                        <div class="champion-photo-placeholder">
+                                                            <i class="fas fa-crown"></i>
+                                                        </div>
+                                                        {% endif %}
+                                                        <h5 class="champion-name">{{ match.player1_name }}</h5>
+                                                    {% else %}
+                                                        {% if match.player2_selfie %}
+                                                        <img src="{{ url_for('static', filename='uploads/' + match.player2_selfie) }}" 
+                                                             alt="{{ match.player2_name }}" 
+                                                             class="champion-photo">
+                                                        {% else %}
+                                                        <div class="champion-photo-placeholder">
+                                                            <i class="fas fa-crown"></i>
+                                                        </div>
+                                                        {% endif %}
+                                                        <h5 class="champion-name">{{ match.player2_name }}</h5>
+                                                    {% endif %}
+                                                    <p class="final-score">Final Score: {{ match.player1_score }} - {{ match.player2_score }}</p>
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
-                    
-                    <!-- Pull to Refresh Indicator -->
-                    <div class="pull-refresh-indicator d-none" id="pullRefreshIndicator">
-                        <div class="loading-spinner"></div>
-                        <p>Release to refresh bracket</p>
-                    </div>
-                    
-                    <!-- ARIA Live Region for Accessibility -->
-                    <div aria-live="polite" aria-atomic="true" class="sr-only" id="bracketAnnouncer">
-                        <!-- Screen reader announcements will be inserted here -->
-                    </div>
-                </div>
-                
-                <!-- Floating Action Buttons -->
-                <div class="bracket-fab-container">
-                    {% if player_entry %}
-                    <button class="bracket-fab" id="showMyPath" title="Show My Path">
-                        <i class="fas fa-route"></i>
-                    </button>
-                    {% endif %}
-                    <button class="bracket-fab" id="fullscreenToggle" title="Toggle Fullscreen">
-                        <i class="fas fa-expand"></i>
-                    </button>
-                    <button class="bracket-fab" id="refreshBracket" title="Refresh Bracket">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
                 </div>
                 
                 {% endif %}
@@ -549,6 +535,552 @@
 </div>
 
 <style>
+        /* ========================================
+         * CLEAN TENNIS BRACKET STYLING - OVERRIDE
+         * Simple, professional tournament bracket design
+         * ======================================== */
+        
+        /* Reset and Override Complex Styles */
+        .tennis-bracket-container,
+        .tennis-bracket-container * {
+            box-sizing: border-box;
+        }
+        
+        /* Tennis Bracket Color System */
+        :root {
+            --tennis-bg: #0c0c19;
+            --tennis-surface: #1a1a2e;
+            --tennis-light: #ffffff;
+            --tennis-text: #333333;
+            --tennis-border: #e5e7eb;
+            --tennis-hover: #f3f4f6;
+            
+            /* Ready 2 Dink Neon Colors */
+            --neon-cyan: #00f5ff;
+            --neon-green: #00ff41;
+            --neon-purple: #bf00ff;
+            
+            /* Effects */
+            --tennis-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --tennis-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.15);
+            --neon-glow-cyan: 0 0 15px rgba(0, 245, 255, 0.6);
+            --neon-glow-green: 0 0 15px rgba(0, 255, 65, 0.6);
+            --neon-glow-purple: 0 0 15px rgba(191, 0, 255, 0.6);
+            
+            /* Spacing */
+            --tennis-xs: 0.5rem;
+            --tennis-sm: 0.75rem;
+            --tennis-md: 1rem;
+            --tennis-lg: 1.5rem;
+            --tennis-xl: 2rem;
+        }
+        
+        /* ========================================
+         * TENNIS BRACKET CONTAINER
+         * ======================================== */
+        
+        .tennis-bracket-container {
+            margin: var(--tennis-lg) 0 !important;
+            background: rgba(26, 26, 46, 0.3) !important;
+            border-radius: 12px !important;
+            padding: var(--tennis-lg) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: none !important;
+            box-shadow: none !important;
+        }
+        
+        .bracket-wrapper {
+            width: 100% !important;
+            overflow-x: auto !important;
+            padding: var(--tennis-sm) !important;
+        }
+        
+        /* ========================================
+         * BRACKET ROUNDS LAYOUT
+         * ======================================== */
+        
+        .bracket-rounds {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: var(--tennis-xl) !important;
+            min-width: max-content !important;
+            align-items: flex-start !important;
+        }
+        
+        .round-column {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: var(--tennis-md) !important;
+            min-width: 280px !important;
+            position: relative !important;
+        }
+        
+        /* ========================================
+         * ROUND HEADERS
+         * ======================================== */
+        
+        .round-header {
+            text-align: center !important;
+            margin-bottom: var(--tennis-md) !important;
+            background: none !important;
+            border: none !important;
+            padding: 0 !important;
+        }
+        
+        .round-title {
+            color: var(--text-primary) !important;
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+            text-align: center !important;
+            margin: 0 !important;
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.5) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: var(--tennis-sm) !important;
+            background: none !important;
+            border: none !important;
+            cursor: default !important;
+        }
+        
+        /* ========================================
+         * ROUND MATCHES
+         * ======================================== */
+        
+        .round-matches {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: var(--tennis-lg) !important;
+        }
+        
+        /* ========================================
+         * GAME CONTAINERS & LABELS
+         * ======================================== */
+        
+        .game-container {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: var(--tennis-sm) !important;
+        }
+        
+        .game-label {
+            text-align: center !important;
+            margin-bottom: var(--tennis-xs) !important;
+        }
+        
+        .game-number {
+            background: var(--neon-cyan) !important;
+            color: var(--tennis-bg) !important;
+            padding: 0.25rem 0.75rem !important;
+            border-radius: 6px !important;
+            font-size: 0.875rem !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            box-shadow: var(--neon-glow-cyan) !important;
+            display: inline-block !important;
+        }
+        
+        /* ========================================
+         * MATCH BOXES - Clean White Design
+         * ======================================== */
+        
+        .match-box {
+            background: var(--tennis-light) !important;
+            border: 2px solid var(--tennis-border) !important;
+            border-radius: 8px !important;
+            padding: var(--tennis-md) !important;
+            box-shadow: var(--tennis-shadow) !important;
+            transition: all 0.2s ease !important;
+            cursor: pointer !important;
+            position: relative !important;
+            backdrop-filter: none !important;
+            min-height: auto !important;
+        }
+        
+        .match-box:hover {
+            border-color: var(--neon-cyan) !important;
+            box-shadow: var(--tennis-shadow-hover), var(--neon-glow-cyan) !important;
+            transform: translateY(-2px) !important;
+        }
+        
+        /* Current Player Match Highlighting */
+        .match-box.current-player-match {
+            border-color: var(--neon-green) !important;
+            background: linear-gradient(135deg, rgba(0, 255, 65, 0.05), rgba(255, 255, 255, 0.95)) !important;
+            box-shadow: var(--tennis-shadow), var(--neon-glow-green) !important;
+        }
+        
+        /* Next Opponent Match Highlighting */
+        .match-box.next-opponent-match {
+            border-color: var(--neon-purple) !important;
+            background: linear-gradient(135deg, rgba(191, 0, 255, 0.05), rgba(255, 255, 255, 0.95)) !important;
+            box-shadow: var(--tennis-shadow), var(--neon-glow-purple) !important;
+        }
+        
+        /* ========================================
+         * PLAYER SLOTS
+         * ======================================== */
+        
+        .player-slot {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: var(--tennis-sm) !important;
+            border-radius: 6px !important;
+            margin-bottom: var(--tennis-xs) !important;
+            transition: all 0.2s ease !important;
+            background: transparent !important;
+            border: none !important;
+        }
+        
+        .player-slot:last-of-type {
+            margin-bottom: 0 !important;
+        }
+        
+        .player-slot.winner {
+            background: rgba(0, 255, 65, 0.1) !important;
+            border: 1px solid var(--neon-green) !important;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.3) !important;
+        }
+        
+        .player-info {
+            display: flex !important;
+            align-items: center !important;
+            gap: var(--tennis-sm) !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+        }
+        
+        .player-photo,
+        .player-photo-placeholder {
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 50% !important;
+            border: 2px solid var(--tennis-border) !important;
+            flex-shrink: 0 !important;
+        }
+        
+        .player-photo {
+            object-fit: cover !important;
+        }
+        
+        .player-photo-placeholder {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: white !important;
+            font-size: 1rem !important;
+        }
+        
+        .player-name {
+            color: var(--tennis-text) !important;
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
+            text-overflow: ellipsis !important;
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            text-shadow: none !important;
+        }
+        
+        .player-score {
+            color: var(--tennis-text) !important;
+            font-size: 1.125rem !important;
+            font-weight: 700 !important;
+            min-width: 30px !important;
+            text-align: center !important;
+            text-shadow: none !important;
+        }
+        
+        .player-slot.winner .player-name,
+        .player-slot.winner .player-score {
+            color: var(--neon-green) !important;
+            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5) !important;
+        }
+        
+        /* ========================================
+         * VS DIVIDER
+         * ======================================== */
+        
+        .vs-divider {
+            text-align: center !important;
+            margin: var(--tennis-xs) 0 !important;
+            position: relative !important;
+        }
+        
+        .vs-divider span {
+            background: var(--tennis-light) !important;
+            color: var(--tennis-text) !important;
+            padding: 0 var(--tennis-sm) !important;
+            font-size: 0.75rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.1em !important;
+            position: relative !important;
+            z-index: 1 !important;
+        }
+        
+        .vs-divider::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 50% !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 1px !important;
+            background: var(--tennis-border) !important;
+            z-index: 0 !important;
+        }
+        
+        /* ========================================
+         * MATCH STATUS INDICATORS
+         * ======================================== */
+        
+        .match-status-indicator {
+            text-align: center !important;
+            margin-top: var(--tennis-sm) !important;
+        }
+        
+        .status-badge {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 0.25rem !important;
+            padding: 0.25rem 0.75rem !important;
+            border-radius: 6px !important;
+            font-size: 0.75rem !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+        }
+        
+        .status-badge.completed {
+            background: rgba(0, 255, 65, 0.1) !important;
+            color: var(--neon-green) !important;
+            border: 1px solid var(--neon-green) !important;
+        }
+        
+        .status-badge.live {
+            background: rgba(255, 149, 0, 0.1) !important;
+            color: #ff9500 !important;
+            border: 1px solid #ff9500 !important;
+        }
+        
+        .status-badge.pending {
+            background: rgba(156, 163, 175, 0.1) !important;
+            color: #6b7280 !important;
+            border: 1px solid #6b7280 !important;
+        }
+        
+        /* ========================================
+         * ROUND CONNECTORS - Connecting Lines
+         * ======================================== */
+        
+        .round-connector {
+            position: absolute !important;
+            top: 50% !important;
+            right: calc(-1 * var(--tennis-xl) / 2) !important;
+            transform: translateY(-50%) !important;
+            z-index: 1 !important;
+        }
+        
+        .connector-line {
+            width: var(--tennis-xl) !important;
+            height: 3px !important;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple)) !important;
+            border-radius: 2px !important;
+            box-shadow: var(--neon-glow-cyan) !important;
+            position: relative !important;
+        }
+        
+        .connector-line::before {
+            content: '' !important;
+            position: absolute !important;
+            right: -8px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            width: 0 !important;
+            height: 0 !important;
+            border-left: 8px solid var(--neon-purple) !important;
+            border-top: 6px solid transparent !important;
+            border-bottom: 6px solid transparent !important;
+            filter: drop-shadow(var(--neon-glow-purple)) !important;
+        }
+        
+        /* ========================================
+         * CHAMPIONSHIP DISPLAY
+         * ======================================== */
+        
+        .championship-display {
+            text-align: center !important;
+            margin-top: var(--tennis-xl) !important;
+            padding: var(--tennis-xl) !important;
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(191, 0, 255, 0.1)) !important;
+            border-radius: 12px !important;
+            border: 2px solid var(--neon-cyan) !important;
+            box-shadow: var(--neon-glow-cyan) !important;
+        }
+        
+        .trophy-container {
+            max-width: 300px !important;
+            margin: 0 auto !important;
+        }
+        
+        .trophy-icon {
+            font-size: 3rem !important;
+            color: var(--neon-green) !important;
+            text-shadow: var(--neon-glow-green) !important;
+            margin-bottom: var(--tennis-md) !important;
+            animation: trophyGlow 2s ease-in-out infinite alternate !important;
+        }
+        
+        @keyframes trophyGlow {
+            from { 
+                filter: drop-shadow(0 0 10px rgba(0, 255, 65, 0.5)) !important;
+            }
+            to { 
+                filter: drop-shadow(0 0 20px rgba(0, 255, 65, 0.8)) !important;
+            }
+        }
+        
+        .champion-title {
+            color: var(--text-primary) !important;
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            margin-bottom: var(--tennis-md) !important;
+            text-shadow: var(--neon-glow-cyan) !important;
+        }
+        
+        .champion-photo,
+        .champion-photo-placeholder {
+            width: 80px !important;
+            height: 80px !important;
+            border-radius: 50% !important;
+            border: 3px solid var(--neon-green) !important;
+            margin: 0 auto var(--tennis-sm) !important;
+            box-shadow: var(--neon-glow-green) !important;
+        }
+        
+        .champion-photo {
+            object-fit: cover !important;
+        }
+        
+        .champion-photo-placeholder {
+            background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan)) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: white !important;
+            font-size: 2rem !important;
+        }
+        
+        .champion-name {
+            color: var(--text-primary) !important;
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+            margin-bottom: var(--tennis-sm) !important;
+            text-shadow: var(--neon-glow-green) !important;
+        }
+        
+        .final-score {
+            color: var(--text-secondary) !important;
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+        }
+        
+        /* ========================================
+         * MOBILE RESPONSIVE DESIGN
+         * ======================================== */
+        
+        /* Mobile - Stack vertically */
+        @media (max-width: 768px) {
+            .bracket-rounds {
+                flex-direction: column !important;
+                gap: var(--tennis-lg) !important;
+                align-items: stretch !important;
+            }
+            
+            .round-column {
+                min-width: 100% !important;
+                width: 100% !important;
+            }
+            
+            .round-connector {
+                position: static !important;
+                transform: none !important;
+                text-align: center !important;
+                margin: var(--tennis-md) 0 !important;
+            }
+            
+            .connector-line {
+                width: 50px !important;
+                height: 3px !important;
+                margin: 0 auto !important;
+                transform: rotate(90deg) !important;
+            }
+            
+            .connector-line::before {
+                right: 50% !important;
+                top: -8px !important;
+                transform: translateX(50%) rotate(90deg) !important;
+                border-left: 6px solid transparent !important;
+                border-right: 6px solid transparent !important;
+                border-top: 8px solid var(--neon-purple) !important;
+                border-bottom: none !important;
+            }
+            
+            .game-number {
+                font-size: 0.75rem !important;
+                padding: 0.2rem 0.5rem !important;
+            }
+            
+            .match-box {
+                padding: var(--tennis-sm) !important;
+            }
+            
+            .player-photo,
+            .player-photo-placeholder {
+                width: 35px !important;
+                height: 35px !important;
+            }
+            
+            .player-name {
+                font-size: 0.8rem !important;
+            }
+            
+            .player-score {
+                font-size: 1rem !important;
+            }
+        }
+        
+        /* Tablet */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .bracket-wrapper {
+                overflow-x: auto !important;
+            }
+            
+            .round-column {
+                min-width: 250px !important;
+            }
+            
+            .bracket-rounds {
+                gap: var(--tennis-lg) !important;
+            }
+        }
+        
+        /* Large Desktop */
+        @media (min-width: 1200px) {
+            .round-column {
+                min-width: 320px !important;
+            }
+            
+            .bracket-rounds {
+                gap: 3rem !important;
+            }
+            
+            .connector-line {
+                width: 3rem !important;
+            }
+        }
+
         /* ========================================
          * MOBILE-FIRST RESPONSIVE TOURNAMENT BRACKET
          * Custom Properties for Dynamic Theming
