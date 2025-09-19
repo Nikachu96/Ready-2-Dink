@@ -254,8 +254,17 @@ function sendChallenge() {
         challengeData.proposed_time = time;
     }
     
+    // Check if we have a valid player ID
+    const playerId = '{{ session.get("current_player_id") }}';
+    console.log('Player ID from session:', playerId);
+    
+    if (!playerId || playerId === 'None' || playerId === 'undefined') {
+        alert('Error: You must be logged in to send challenges. Please refresh the page and try again.');
+        return;
+    }
+    
     // Debug the URL being called  
-    const findMatchUrl = '/find_match/{{ session.get("current_player_id") }}';
+    const findMatchUrl = '/find_match/' + playerId;
     console.log('Calling URL:', findMatchUrl);
     console.log('Challenge data:', challengeData);
     
