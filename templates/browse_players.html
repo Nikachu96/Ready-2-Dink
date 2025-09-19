@@ -255,7 +255,7 @@ function sendChallenge() {
     }
     
     // Send the challenge
-    fetch('/find_match', {
+    fetch('/find_match/{{ session.get("current_player_id") or session.get("player_id") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
