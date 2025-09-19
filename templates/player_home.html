@@ -571,8 +571,10 @@ function loadChallenges() {
 
 // Load pending matches functionality
 function loadPendingMatches() {
-    showSuccessToast('Loading pending matches...');
-    setTimeout(() => location.reload(), 500);
+    showSuccessToast('Taking you to submit results...');
+    setTimeout(() => {
+        window.location.href = '/challenges';
+    }, 500);
 }
 
 // Membership modal functionality
