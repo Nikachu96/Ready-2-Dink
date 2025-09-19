@@ -3951,6 +3951,7 @@ def tournaments_overview():
     logging.info(f"DEBUG: Found {len(my_tournament_brackets)} tournament brackets for player {current_player_id}")
     for bracket in my_tournament_brackets:
         logging.info(f"DEBUG: Bracket - Tournament: {bracket['tournament_name']}, Status: {bracket['tournament_status']}, Player Status: {bracket['player_status']}")
+        logging.info(f"DEBUG: Bracket Details - Total Matches: {bracket['total_matches']}, Bracket Status: {bracket['bracket_status']}, Current Round: {bracket['current_round']}, Total Rounds: {bracket['total_rounds']}")
     
     conn.close()
     
