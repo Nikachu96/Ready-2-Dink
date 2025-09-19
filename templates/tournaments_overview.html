@@ -546,10 +546,7 @@
                         <table class="table table-dark table-hover">
                             <thead>
                                 <tr>
-                                    <th class="text-white fw-bold">Player</th>
                                     <th class="text-white fw-bold">Tournament</th>
-                                    <th class="text-white fw-bold">Level</th>
-                                    <th class="text-white fw-bold">Sport</th>
                                     <th class="text-white fw-bold">Entry Date</th>
                                     <th class="text-white fw-bold">Status</th>
                                     <th class="text-white fw-bold">Actions</th>
@@ -558,26 +555,7 @@
                             <tbody>
                                 {% for entry in recent_entries %}
                                 <tr>
-                                    <td class="text-white">
-                                        <div class="d-flex align-items-center">
-                                            {% if entry.selfie %}
-                                                <img src="{{ url_for('static', filename='uploads/' + entry.selfie) }}" 
-                                                     class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;" 
-                                                     alt="Player">
-                                            {% else %}
-                                                <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center me-2" 
-                                                     style="width: 32px; height: 32px;">
-                                                    <i class="fas fa-user text-white" style="font-size: 16px !important;"></i>
-                                                </div>
-                                            {% endif %}
-                                            <strong class="text-white">{{ entry.full_name }}</strong>
-                                        </div>
-                                    </td>
                                     <td class="text-white" style="color: white !important;"><strong style="color: white !important;">{{ entry.tournament_name }}</strong></td>
-                                    <td>
-                                        <span class="badge bg-info">{{ entry.tournament_level }}</span>
-                                    </td>
-                                    <td class="text-white" style="color: white !important;"><strong style="color: white !important;">{{ entry.sport }}</strong></td>
                                     <td class="text-white" style="color: white !important;"><strong style="color: white !important;">{{ entry.entry_date }}</strong></td>
                                     <td>
                                         {% if entry.completed %}
