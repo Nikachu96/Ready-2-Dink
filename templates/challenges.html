@@ -529,6 +529,60 @@
     </div>
 </div>
 
+<!-- Submit Score Modal -->
+<div class="modal fade" id="submitScoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-trophy me-2"></i>Submit Score vs <span id="scoreOpponentName"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="submitScoreForm">
+                    <input type="hidden" id="scoreMatchId" name="match_id">
+                    
+                    <div class="mb-4">
+                        <h6 class="text-white text-bold mb-3">Match Result (Best of 3 Sets):</h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label text-white">You Won:</label>
+                                <input type="number" class="form-control dark-input" id="player1SetsWon" 
+                                       min="0" max="3" value="0" onchange="updateWinner()">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-white"><span id="opponentNameLabel"></span> Won:</label>
+                                <input type="number" class="form-control dark-input" id="player2SetsWon" 
+                                       min="0" max="3" value="0" onchange="updateWinner()">
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info text-center" id="winnerDisplay" style="display: none;">
+                            <i class="fas fa-trophy me-2"></i><span id="winnerText"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-white text-bold">Detailed Score (Optional):</label>
+                        <input type="text" class="form-control dark-input" id="detailedScore" 
+                               placeholder="e.g., 11-9 6-11 11-7">
+                        <div class="form-text">Enter the detailed score for each set</div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-warning text-bold" onclick="submitMatchScore()">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Score
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Player Stats Modal -->
 <div class="modal fade" id="playerStatsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -559,6 +613,93 @@ function showChallengeModal(playerId, playerName) {
     document.getElementById('challengeOpponentId').value = playerId;
     const modal = new bootstrap.Modal(document.getElementById('challengeModal'));
     modal.show();
+}
+
+// Submit Score Modal Functions
+function showSubmitScore(matchId, opponentName) {
+    document.getElementById('scoreMatchId').value = matchId;
+    document.getElementById('scoreOpponentName').textContent = opponentName;
+    document.getElementById('opponentNameLabel').textContent = opponentName;
+    
+    // Reset form
+    document.getElementById('player1SetsWon').value = 0;
+    document.getElementById('player2SetsWon').value = 0;
+    document.getElementById('detailedScore').value = '';
+    document.getElementById('winnerDisplay').style.display = 'none';
+    
+    const modal = new bootstrap.Modal(document.getElementById('submitScoreModal'));
+    modal.show();
+}
+
+function updateWinner() {
+    const p1Sets = parseInt(document.getElementById('player1SetsWon').value) || 0;
+    const p2Sets = parseInt(document.getElementById('player2SetsWon').value) || 0;
+    const winnerDisplay = document.getElementById('winnerDisplay');
+    const winnerText = document.getElementById('winnerText');
+    
+    if (p1Sets + p2Sets < 2 || p1Sets + p2Sets > 3) {
+        winnerDisplay.style.display = 'none';
+        return;
+    }
+    
+    if (p1Sets > p2Sets) {
+        winnerText.textContent = 'You Win!';
+        winnerDisplay.className = 'alert alert-success text-center';
+    } else if (p2Sets > p1Sets) {
+        winnerText.textContent = document.getElementById('opponentNameLabel').textContent + ' Wins!';
+        winnerDisplay.className = 'alert alert-warning text-center';
+    } else {
+        winnerDisplay.style.display = 'none';
+        return;
+    }
+    
+    winnerDisplay.style.display = 'block';
+}
+
+function submitMatchScore() {
+    const matchId = document.getElementById('scoreMatchId').value;
+    const p1Sets = parseInt(document.getElementById('player1SetsWon').value) || 0;
+    const p2Sets = parseInt(document.getElementById('player2SetsWon').value) || 0;
+    const detailedScore = document.getElementById('detailedScore').value || 'Score not provided';
+    
+    // Validation
+    if (p1Sets + p2Sets < 2 || p1Sets + p2Sets > 3) {
+        alert('Please enter a valid best-of-3 result (2-0, 2-1, 1-2, or 0-2)');
+        return;
+    }
+    
+    if (p1Sets === p2Sets) {
+        alert('Please enter a winner - matches cannot be tied');
+        return;
+    }
+    
+    // Submit to server
+    fetch('/submit_match_result', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            match_id: matchId,
+            player1_sets_won: p1Sets,
+            player2_sets_won: p2Sets,
+            match_score: detailedScore
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Score submitted successfully! Waiting for opponent validation.');
+            bootstrap.Modal.getInstance(document.getElementById('submitScoreModal')).hide();
+            location.reload(); // Refresh to update the UI
+        } else {
+            alert('Error: ' + (data.message || 'Unable to submit score'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error submitting score. Please try again.');
+    });
 }
 
 // Player Stats Modal Functions
