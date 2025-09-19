@@ -42,16 +42,16 @@ localPort = 35527
 externalPort = 3002
 
 [[ports]]
+localPort = 43509
+externalPort = 4200
+
+[[ports]]
 localPort = 44277
 externalPort = 3003
 
 [[ports]]
 localPort = 45975
 externalPort = 3001
-
-[[ports]]
-localPort = 46303
-externalPort = 4200
 
 [agent]
 integrations = ["styling_replit==1.0.0", "twilio_send_message==1.0.0", "python_sendgrid==1.0.0", "python_log_in_with_replit==1.0.0", "flask_stripe==1.0.0"]

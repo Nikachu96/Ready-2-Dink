@@ -3936,10 +3936,7 @@ def tournaments_overview():
                            AND (tm2.player1_id = ? OR tm2.player2_id = ?)
                            AND tm2.status = 'completed'
                            AND tm2.winner_id != ?) THEN 'Eliminated'
-                WHEN EXISTS (SELECT 1 FROM tournament_matches tm2 
-                           WHERE tm2.tournament_instance_id = ti.id 
-                           AND (tm2.player1_id = ? OR tm2.player2_id = ?)
-                           AND tm2.status IN ('pending', 'active')) THEN 'Active'
+                WHEN COUNT(DISTINCT CASE WHEN tm.status IN ('pending', 'active') THEN tm.id END) > 0 THEN 'Active'
                 ELSE 'Awaiting Bracket'
             END as player_status
         FROM tournaments t
@@ -3950,7 +3947,7 @@ def tournaments_overview():
         ORDER BY t.entry_date DESC
     ''', (current_player_id, current_player_id, current_player_id, 
           current_player_id, current_player_id, current_player_id,
-          current_player_id, current_player_id, current_player_id)).fetchall()
+          current_player_id)).fetchall()
     logging.info(f"DEBUG: Found {len(my_tournament_brackets)} tournament brackets for player {current_player_id}")
     for bracket in my_tournament_brackets:
         logging.info(f"DEBUG: Bracket - Tournament: {bracket['tournament_name']}, Status: {bracket['tournament_status']}, Player Status: {bracket['player_status']}")
