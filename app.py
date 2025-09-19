@@ -3373,7 +3373,7 @@ def view_tournament_bracket(tournament_instance_id):
         flash('Tournament not found', 'danger')
         return redirect(url_for('tournaments_overview'))
     
-    # Check if current player is in this tournament
+    # Check if current player is in this tournament - Enhanced validation
     current_player_id = session.get('current_player_id')
     player_entry = None
     if current_player_id:
@@ -3381,6 +3381,13 @@ def view_tournament_bracket(tournament_instance_id):
             SELECT * FROM tournaments 
             WHERE player_id = ? AND tournament_instance_id = ?
         ''', (current_player_id, tournament_instance_id)).fetchone()
+        
+        # Enhanced enrollment validation
+        if not player_entry:
+            logging.warning(f"Player {current_player_id} attempted to access tournament bracket {tournament_instance_id} without enrollment")
+            flash(f'Access denied: You are not enrolled in "{tournament["name"]}". Please join the tournament first to view its bracket.', 'warning')
+            conn.close()
+            return redirect(url_for('tournaments_overview'))
     
     # Get tournament matches with player details
     matches = conn.execute('''
@@ -3434,7 +3441,7 @@ def view_tournament_bracket(tournament_instance_id):
             SELECT tm.*,
                    CASE WHEN tm.player1_id = ? THEN p2.full_name ELSE p1.full_name END as opponent_name,
                    CASE WHEN tm.player1_id = ? THEN tm.player2_score ELSE tm.player1_score END as opponent_score,
-                   CASE WHEN tm.player1_id = ? THEN tm.player1_score ELSE tm.player2_score END as player_score
+                   CASE WHEN tm.player1_id = ? THEN tm.player1_score ELSE tm.player2_score END as your_score
             FROM tournament_matches tm
             LEFT JOIN players p1 ON tm.player1_id = p1.id
             LEFT JOIN players p2 ON tm.player2_id = p2.id
@@ -3480,12 +3487,33 @@ def view_tournament_bracket(tournament_instance_id):
                 LIMIT 1
             ''', (next_opponent_id, next_opponent_id, next_opponent_id, next_opponent_id, tournament_instance_id, next_opponent_id, next_opponent_id)).fetchone()
         
+        # Determine player status in tournament
+        player_status = 'Awaiting Bracket'
+        if previous_matches or upcoming_matches:
+            # Check if player has been eliminated
+            is_eliminated = False
+            for match in previous_matches:
+                if match['status'] == 'completed' and match['winner_id'] and match['winner_id'] != current_player_id:
+                    is_eliminated = True
+                    break
+            
+            if is_eliminated and not upcoming_matches:
+                player_status = 'Eliminated'
+            elif upcoming_matches:
+                player_status = 'Active'
+            elif previous_matches and not upcoming_matches and tournament['status'] == 'completed':
+                # Player completed all their matches
+                player_status = 'Tournament Complete'
+            else:
+                player_status = 'Awaiting Next Round'
+        
         current_player_context = {
-            'previous_matches': previous_matches,
-            'upcoming_matches': upcoming_matches,
+            'previous_matches': previous_matches if previous_matches else [],
+            'upcoming_matches': upcoming_matches if upcoming_matches else [],
             'next_opponent_last_match': next_opponent_last_match,
-            'total_wins': len([m for m in previous_matches if m['winner_id'] == current_player_id]),
-            'total_matches_played': len(previous_matches)
+            'player_status': player_status,
+            'total_wins': len([m for m in previous_matches if m.get('winner_id') == current_player_id]) if previous_matches else 0,
+            'total_matches_played': len(previous_matches) if previous_matches else 0
         }
     
     conn.close()
