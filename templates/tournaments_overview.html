@@ -566,22 +566,6 @@
                                     </td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <!-- View Bracket Button -->
-                                            {% if entry.tournament_instance_id %}
-                                                {% if entry.status != 'open' %}
-                                                    <a href="{{ url_for('view_tournament_bracket', tournament_instance_id=entry.tournament_instance_id) }}" 
-                                                       class="btn btn-sm btn-outline-info" title="View Tournament Bracket">
-                                                        <i class="fas fa-sitemap me-1"></i>View Bracket
-                                                    </a>
-                                                {% else %}
-                                                    <button class="btn btn-sm btn-outline-secondary" disabled 
-                                                            title="Bracket will appear when tournament is seeded" 
-                                                            data-bs-toggle="tooltip" data-bs-placement="top">
-                                                        <i class="fas fa-sitemap me-1"></i>View Bracket
-                                                    </button>
-                                                {% endif %}
-                                            {% endif %}
-                                            
                                             <!-- Withdraw Button -->
                                             {% if not entry.completed %}
                                                 <form method="POST" action="{{ url_for('withdraw_from_tournament') }}" class="d-inline" 
