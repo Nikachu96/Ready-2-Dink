@@ -598,20 +598,20 @@
         </div>
     </div>
     
-    <!-- My Tournament Brackets Column -->
-    <div class="col-md-6 mb-4">
-        <div class="card">
+    <!-- My Tournament Brackets Section - Full Width -->
+    <div class="col-12 mb-4">
+        <div class="neon-frame">
             <div class="card-header">
-                <h5 class="card-title mb-0 text-center">
+                <h4 class="neon-text text-bold mb-0">
                     <i class="fas fa-trophy me-2"></i>My Tournament Brackets
-                </h5>
+                </h4>
             </div>
             <div class="card-body">
                 {% if my_tournament_brackets %}
-                    <div class="row g-3">
+                    <div class="row g-4">
                         {% for bracket in my_tournament_brackets %}
-                        <div class="col-12 col-md-6 col-lg-4">
-                            <div class="card h-100 neon-frame">
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="neon-frame h-100">
                                 <div class="card-body d-flex flex-column">
                                     <!-- Tournament Name - Prominent Display -->
                                     <div class="text-center mb-3">
@@ -631,7 +631,7 @@
                                             {% if bracket.bracket_status == 'Tournament Complete' %}
                                                 <span class="badge bg-success">{{ bracket.bracket_status }}</span>
                                             {% elif bracket.bracket_status == 'No Bracket Yet' or bracket.bracket_status == 'Awaiting Bracket' %}
-                                                <span class="badge bg-secondary">{{ bracket.bracket_status }}</span>
+                                                <span class="badge bg-warning">{{ bracket.bracket_status }}</span>
                                             {% elif 'Final' in bracket.bracket_status %}
                                                 <span class="badge bg-warning">{{ bracket.bracket_status }}</span>
                                             {% else %}
@@ -653,18 +653,25 @@
                                         </div>
                                     </div>
                                     
-                                    <!-- See Bracket Button - Touch-friendly -->
+                                    <!-- Action Buttons - Touch-friendly -->
                                     <div class="mt-auto">
                                         {% if bracket.total_matches > 0 %}
                                             <a href="{{ url_for('view_tournament_bracket', tournament_instance_id=bracket.tournament_instance_id) }}" 
-                                               class="btn btn-success w-100 btn-lg neon-button" title="View Tournament Bracket">
+                                               class="btn btn-success w-100 neon-button mb-2" title="View Tournament Bracket">
                                                 <i class="fas fa-sitemap me-2"></i>See Bracket
                                             </a>
+                                        {% elif bracket.bracket_status == 'No Bracket Yet' or bracket.bracket_status == 'Awaiting Bracket' %}
+                                            <div class="text-center">
+                                                <button class="btn btn-outline-secondary w-100 mb-2" disabled 
+                                                        title="Tournament is filling up - bracket will be created when full">
+                                                    <i class="fas fa-hourglass-half me-2"></i>Bracket Pending
+                                                </button>
+                                                <small class="text-muted">Waiting for tournament to fill</small>
+                                            </div>
                                         {% else %}
-                                            <button class="btn btn-secondary w-100 btn-lg" disabled 
-                                                    title="Bracket not yet available" 
-                                                    data-bs-toggle="tooltip" data-bs-placement="top">
-                                                <i class="fas fa-sitemap me-2"></i>See Bracket
+                                            <button class="btn btn-secondary w-100" disabled 
+                                                    title="Bracket not yet available">
+                                                <i class="fas fa-sitemap me-2"></i>Bracket Loading
                                             </button>
                                         {% endif %}
                                     </div>
@@ -674,10 +681,13 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">No Tournament Brackets Yet</h5>
-                        <p class="text-muted">Join a tournament to see your brackets here!</p>
+                    <div class="text-center py-5">
+                        <i class="fas fa-trophy fa-4x text-muted mb-4 opacity-50"></i>
+                        <h4 class="text-muted mb-3">No Tournament Brackets Yet</h4>
+                        <p class="text-muted mb-4">Join a tournament to track your progress and view brackets!</p>
+                        <a href="#tournament-levels" class="btn btn-primary neon-button" onclick="document.getElementById('tournament-levels').scrollIntoView({behavior: 'smooth'})">
+                            <i class="fas fa-plus me-2"></i>Join Your First Tournament
+                        </a>
                     </div>
                 {% endif %}
             </div>
