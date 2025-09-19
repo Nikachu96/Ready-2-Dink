@@ -446,7 +446,7 @@
                         <div class="card h-100 border-info">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="card-title text-info">{{ tournament.tournament_name }}</h6>
+                                    <h6 class="card-title text-info text-truncate">{{ tournament.tournament_name }}</h6>
                                     <span class="badge bg-info">${{ "%.0f"|format(tournament.entry_fee) }}</span>
                                 </div>
                                 
@@ -461,7 +461,7 @@
                                             <i class="fas fa-user text-white" style="font-size: 16px !important;"></i>
                                         </div>
                                     {% endif %}
-                                    <small class="text-muted">by {{ tournament.organizer_name }}</small>
+                                    <small class="text-muted">by {{ tournament.organizer_name|default('Unknown') }}</small>
                                 </div>
                                 
                                 {% if tournament.description %}
@@ -470,14 +470,14 @@
                                 
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <small class="text-muted">
-                                        <i class="fas fa-users me-1"></i>{{ tournament.current_entries }}/{{ tournament.max_players }}
+                                        <i class="fas fa-users me-1"></i>{{ tournament.current_entries|default(0) }}/{{ tournament.max_players|default(0) }}
                                     </small>
-                                    {% if tournament.current_entries >= tournament.max_players %}
+                                    {% if (tournament.current_entries|default(0)) >= (tournament.max_players|default(0)) %}
                                         <span class="badge" style="background-color: #E0563F; color: white;">Full</span>
-                                    {% elif (tournament.max_players - tournament.current_entries) <= 3 %}
-                                        <span class="badge bg-warning">{{ tournament.max_players - tournament.current_entries }} spots left!</span>
+                                    {% elif ((tournament.max_players|default(0)) - (tournament.current_entries|default(0))) <= 3 %}
+                                        <span class="badge bg-warning">{{ (tournament.max_players|default(0)) - (tournament.current_entries|default(0)) }} spots left!</span>
                                     {% else %}
-                                        <span class="badge bg-success">{{ tournament.max_players - tournament.current_entries }} spots available</span>
+                                        <span class="badge bg-success">{{ (tournament.max_players|default(0)) - (tournament.current_entries|default(0)) }} spots available</span>
                                     {% endif %}
                                 </div>
                                 
@@ -501,7 +501,7 @@
                                     <i class="fas fa-gift me-1"></i>Prize Pool: ${{ "%.0f"|format(tournament.prize_pool) }}
                                 </small>
                                 
-                                {% if tournament.current_entries >= tournament.max_players %}
+                                {% if (tournament.current_entries|default(0)) >= (tournament.max_players|default(0)) %}
                                     <button class="btn btn-secondary btn-sm w-100" disabled>
                                         <i class="fas fa-users me-1"></i>Tournament Full
                                     </button>
@@ -615,7 +615,7 @@
                                 <div class="card-body d-flex flex-column">
                                     <!-- Tournament Name - Prominent Display -->
                                     <div class="text-center mb-3">
-                                        <h6 class="card-title neon-text fw-bold mb-1">{{ bracket.tournament_name }}</h6>
+                                        <h6 class="card-title neon-text fw-bold mb-1 text-truncate">{{ bracket.tournament_name }}</h6>
                                         <small class="text-muted">{{ bracket.tournament_type|title }}</small>
                                     </div>
                                     
@@ -655,12 +655,12 @@
                                     
                                     <!-- Action Buttons - Touch-friendly -->
                                     <div class="mt-auto">
-                                        {% if bracket.total_matches > 0 %}
+                                        {% if (bracket.total_matches|default(0) > 0) or (bracket.bracket_status|default('') not in ['No Bracket Yet','Awaiting Bracket']) %}
                                             <a href="{{ url_for('view_tournament_bracket', tournament_instance_id=bracket.tournament_instance_id) }}" 
                                                class="btn btn-success w-100 neon-button mb-2" title="View Tournament Bracket">
                                                 <i class="fas fa-sitemap me-2"></i>See Bracket
                                             </a>
-                                        {% elif bracket.bracket_status == 'No Bracket Yet' or bracket.bracket_status == 'Awaiting Bracket' %}
+                                        {% elif bracket.bracket_status|default('') in ['No Bracket Yet', 'Awaiting Bracket'] %}
                                             <div class="text-center">
                                                 <button class="btn btn-outline-secondary w-100 mb-2" disabled 
                                                         title="Tournament is filling up - bracket will be created when full">
