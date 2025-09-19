@@ -254,8 +254,13 @@ function sendChallenge() {
         challengeData.proposed_time = time;
     }
     
+    // Debug the URL being called  
+    const findMatchUrl = '/find_match/{{ session.get("current_player_id") }}';
+    console.log('Calling URL:', findMatchUrl);
+    console.log('Challenge data:', challengeData);
+    
     // Send the challenge
-    fetch('/find_match/{{ session.get("player_id") }}', {
+    fetch(findMatchUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
