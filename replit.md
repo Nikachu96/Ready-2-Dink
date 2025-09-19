@@ -7,6 +7,7 @@ A Flask-based pickleball matchmaking and tournament platform designed to connect
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Tournament page design: Finalized and approved - maintain current visual appearance and layout without changes.
 
 ## System Architecture
 
