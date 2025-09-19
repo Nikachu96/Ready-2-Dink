@@ -546,24 +546,71 @@
             box-shadow: var(--shadow-hover), var(--shadow-neon-cyan);
         }
         
-        /* Challenge Avatar - Fixed sizing for challenges page */
+        /* Challenge Avatar - Responsive sizing for challenges page */
         .challenge-avatar {
-            max-width: 150px !important;
-            max-height: 150px !important;
-            width: auto !important;
-            height: auto !important;
+            width: 60px !important;
+            height: 60px !important;
             border-radius: 50% !important;
             object-fit: cover !important;
             border: 2px solid var(--neon-cyan) !important;
             box-shadow: var(--shadow-neon-cyan) !important;
             display: block !important;
             margin: 0 auto !important;
+            flex-shrink: 0 !important;
             transition: var(--transition-normal);
         }
         
         .challenge-avatar:hover {
             transform: scale(1.05);
             box-shadow: var(--shadow-hover), var(--shadow-neon-cyan);
+        }
+        
+        /* Player Avatar - Consistent sizing across all pages */
+        .player-avatar {
+            width: 60px !important;
+            height: 60px !important;
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            border: 2px solid var(--neon-cyan) !important;
+            box-shadow: var(--shadow-neon-cyan) !important;
+            display: block !important;
+            flex-shrink: 0 !important;
+        }
+        
+        .player-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-hover), var(--shadow-neon-cyan);
+        }
+        
+        /* Avatar Placeholder - Consistent sizing */
+        .avatar-placeholder {
+            width: 60px !important;
+            height: 60px !important;
+            border-radius: 50% !important;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border: 2px solid var(--neon-cyan) !important;
+            box-shadow: var(--shadow-neon-cyan) !important;
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+            color: var(--text-primary) !important;
+            flex-shrink: 0 !important;
+        }
+        
+        /* Responsive avatar sizing */
+        @media (max-width: 576px) {
+            .challenge-avatar,
+            .player-avatar,
+            .avatar-placeholder {
+                width: 50px !important;
+                height: 50px !important;
+            }
+            
+            .avatar-placeholder {
+                font-size: 1.25rem !important;
+            }
         }
         
         /* Section Titles */
