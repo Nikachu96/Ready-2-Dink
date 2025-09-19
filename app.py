@@ -4,7 +4,7 @@ import json
 import requests
 import math
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, Response, make_response
 from werkzeug.utils import secure_filename
 from functools import wraps
 import logging
@@ -2881,13 +2881,20 @@ def challenges():
     
     conn.close()
     
-    return render_template('challenges.html',
+    response = make_response(render_template('challenges.html',
                          player=player,
                          incoming_challenges=incoming_challenges,
                          outgoing_challenges=outgoing_challenges,
                          confirmed_matches=confirmed_matches,
                          completed_matches=completed_matches,
-                         available_players=available_players)
+                         available_players=available_players))
+    
+    # Add cache-busting headers to prevent stale data display
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    
+    return response
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
