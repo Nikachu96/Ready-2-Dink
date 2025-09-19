@@ -549,11 +549,22 @@ function showPlayerSelectionModal(players) {
 }
 
 // Challenge player functionality
-function challengePlayer(playerId) {
-    fetch('/challenge_player', {
+function challengePlayer(targetPlayerId) {
+    const currentPlayerId = '{{ current_player_id }}';
+    
+    if (!currentPlayerId || currentPlayerId === 'None') {
+        showErrorToast('You must be logged in to send challenges');
+        return;
+    }
+    
+    const challengeData = {
+        target_player_id: targetPlayerId
+    };
+    
+    fetch(`/find_match/${currentPlayerId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challenged_player_id: playerId })
+        body: JSON.stringify(challengeData)
     })
     .then(response => response.json())
     .then(data => {

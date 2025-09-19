@@ -2749,7 +2749,8 @@ def player_home(player_id):
                          available_tournaments=available_tournaments,
                          player_ranking=player_ranking,
                          leaderboard=leaderboard,
-                         is_birthday=is_birthday)
+                         is_birthday=is_birthday,
+                         current_player_id=player_id)
 
 @app.route('/challenges')
 def challenges():
