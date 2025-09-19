@@ -190,310 +190,201 @@
                 </div>
                 {% endif %}
 
-                <!-- Clean Tennis Bracket Layout -->
-                <div class="tennis-bracket-container">
-                    <div class="bracket-wrapper">
-                        <!-- Desktop Horizontal Layout / Mobile Vertical Layout -->
-                        <div class="bracket-rounds">
-                            {% set match_counter = [0] %}
-                            {% for round_num, round_matches in matches_by_round.items() %}
-                            <div class="round-column" data-round="{{ round_num }}">
-                                <!-- Round Header -->
-                                <div class="round-header">
-                                    <h5 class="round-title">
+                <!-- Focused Match Information - Simplified View -->
+                <div class="focused-bracket-container">
+                    <div class="row">
+                        <!-- Tournament Champion Display (if completed) -->
+                        {% if tournament.status == 'completed' %}
+                        <div class="col-12 mb-4">
+                            <div class="card text-center" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #000;">
+                                <div class="card-body py-5">
+                                    <i class="fas fa-trophy fa-4x mb-3"></i>
+                                    <h3 class="fw-bold mb-3">Tournament Champion</h3>
+                                    {% for round_num, round_matches in matches_by_round.items() %}
                                         {% if round_num == max_rounds %}
-                                            <i class="fas fa-trophy text-neon-green"></i> Championship
-                                        {% elif round_num == max_rounds - 1 %}
-                                            <i class="fas fa-medal text-neon-cyan"></i> Semifinals
-                                        {% elif round_num == max_rounds - 2 %}
-                                            <i class="fas fa-star text-neon-purple"></i> Quarterfinals
-                                        {% else %}
-                                            <i class="fas fa-play text-neon-cyan"></i> Round {{ round_num }}
+                                            {% for match in round_matches %}
+                                                {% if match.winner_id %}
+                                                    <div class="champion-info">
+                                                        <h4 class="mb-2">
+                                                            {{ match.player1_name if match.winner_id == match.player1_id else match.player2_name }}
+                                                        </h4>
+                                                        <p class="mb-0 fs-5">Final Score: {{ match.player1_score }} - {{ match.player2_score }}</p>
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
                                         {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Your Previous Match Result -->
+                        {% if current_player_context and current_player_context.previous_matches %}
+                        <div class="col-12 col-lg-6 mb-4">
+                            <div class="neon-frame h-100">
+                                <div class="card-header text-white" style="background: rgba(209, 116, 210, 0.2);">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-history me-2"></i>Your Previous Match
                                     </h5>
                                 </div>
-                                
-                                <!-- Round Matches -->
-                                <div class="round-matches">
-                                    {% for match in round_matches %}
-                                    {% if match_counter.append(match_counter.pop() + 1) %}{% endif %}
-                                    <div class="game-container">
-                                        <!-- Game Label -->
-                                        <div class="game-label">
-                                            <span class="game-number">Game {{ match_counter[0] }}</span>
+                                <div class="card-body">
+                                    {% set last_match = current_player_context.previous_matches[0] %}
+                                    <div class="text-center mb-3">
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <div class="p-3 rounded {{ 'bg-success' if last_match.winner_id == current_player_id else 'bg-danger' }} bg-opacity-10 border {{ 'border-success' if last_match.winner_id == current_player_id else 'border-danger' }}">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div class="flex-grow-1">
+                                                            <h6 class="mb-1">vs {{ last_match.opponent_name }}</h6>
+                                                            <small class="text-muted">
+                                                                {% if last_match.round_number == max_rounds %}
+                                                                    🏆 Final
+                                                                {% elif last_match.round_number == max_rounds - 1 %}
+                                                                    🥈 Semifinal
+                                                                {% elif last_match.round_number == max_rounds - 2 %}
+                                                                    🥉 Quarterfinal
+                                                                {% else %}
+                                                                    Round {{ last_match.round_number }}
+                                                                {% endif %}
+                                                            </small>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <span class="badge fs-6 {{ 'bg-success' if last_match.winner_id == current_player_id else 'bg-danger' }}">
+                                                                {{ 'WIN' if last_match.winner_id == current_player_id else 'LOSS' }}
+                                                            </span>
+                                                            <div class="mt-1">
+                                                                <strong class="fs-5">{{ last_match.your_score }} - {{ last_match.opponent_score }}</strong>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        
-                                        <!-- Match Box -->
-                                        <div class="match-box 
-                                                    {% if player_entry and (match.player1_id == player_entry.player_id or match.player2_id == player_entry.player_id) %}current-player-match{% endif %}
-                                                    {% if current_player_context and current_player_context.next_opponent_match_id == match.id %}next-opponent-match{% endif %}"
-                                             data-match-id="{{ match.id }}"
-                                             onclick="showMatchDetails({{ match.id }})"
-                                             role="button"
-                                             tabindex="0"
-                                             aria-label="Game {{ match_counter[0] }}: {{ match.player1_name or 'TBD' }} vs {{ match.player2_name or 'TBD' }}">
-                                            
-                                            <!-- Player 1 -->
-                                            <div class="player-slot {% if match.winner_id == match.player1_id %}winner{% endif %}">
-                                                <div class="player-info">
-                                                    {% if match.player1_selfie %}
-                                                    <img src="{{ url_for('static', filename='uploads/' + match.player1_selfie) }}" 
-                                                         alt="{{ match.player1_name }}" 
-                                                         class="player-photo"
-                                                         loading="lazy">
-                                                    {% else %}
-                                                    <div class="player-photo-placeholder">
-                                                        <i class="fas fa-user"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Tournament Completion Status -->
+                        {% if not current_player_context or not current_player_context.upcoming_matches %}
+                        <div class="col-12 col-lg-6 mb-4">
+                            <div class="neon-frame h-100">
+                                <div class="card-header text-white" style="background: rgba(63, 86, 127, 0.2);">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-flag-checkered me-2"></i>Tournament Status
+                                    </h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    {% if tournament.status == 'completed' %}
+                                        <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
+                                        <h5 class="text-success">Tournament Complete!</h5>
+                                        <p class="text-muted">All matches have been played.</p>
+                                    {% elif current_player_context and current_player_context.player_status == 'Eliminated' %}
+                                        <i class="fas fa-times-circle fa-3x text-danger mb-3"></i>
+                                        <h5 class="text-danger">Eliminated</h5>
+                                        <p class="text-muted">You've been eliminated from this tournament.</p>
+                                    {% else %}
+                                        <i class="fas fa-clock fa-3x text-info mb-3"></i>
+                                        <h5 class="text-info">Awaiting Next Round</h5>
+                                        <p class="text-muted">Waiting for other matches to complete.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Your Upcoming Matches (Next 2) -->
+                        {% if current_player_context and current_player_context.upcoming_matches %}
+                        {% for match in current_player_context.upcoming_matches[:2] %}
+                        <div class="col-12 col-lg-6 mb-4">
+                            <div class="neon-frame h-100">
+                                <div class="card-header text-white" style="background: rgba(63, 86, 127, 0.2);">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-calendar-alt me-2"></i>
+                                        {% if loop.first %}Your Next Match{% else %}Following Match{% endif %}
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Round Information -->
+                                    <div class="text-center mb-3">
+                                        <h6 class="text-primary">
+                                            {% if match.round_number == max_rounds %}
+                                                🏆 Final Match
+                                            {% elif match.round_number == max_rounds - 1 %}
+                                                🥈 Semifinal Match
+                                            {% elif match.round_number == max_rounds - 2 %}
+                                                🥉 Quarterfinal Match
+                                            {% else %}
+                                                Round {{ match.round_number }}
+                                            {% endif %}
+                                        </h6>
+                                    </div>
+
+                                    <!-- Opponent Information -->
+                                    {% if match.opponent_name %}
+                                    <div class="row mb-3">
+                                        <div class="col-12">
+                                            <div class="text-center p-3 rounded" style="background: linear-gradient(135deg, rgba(63, 86, 127, 0.1) 0%, rgba(209, 116, 210, 0.1) 100%); border: 1px solid rgba(63, 86, 127, 0.3);">
+                                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                                    <i class="fas fa-user-circle fa-2x me-3" style="color: var(--neon-purple);"></i>
+                                                    <div class="text-start">
+                                                        <h6 class="mb-1">{{ match.opponent_name }}</h6>
+                                                        <small class="text-muted">{{ match.opponent_skill }} Level</small>
                                                     </div>
-                                                    {% endif %}
-                                                    <span class="player-name">{{ match.player1_name or 'TBD' }}</span>
                                                 </div>
-                                                <div class="player-score">
-                                                    {{ match.player1_score if match.player1_score is not none else '-' }}
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- VS Divider -->
-                                            <div class="vs-divider">
-                                                <span>VS</span>
-                                            </div>
-                                            
-                                            <!-- Player 2 -->
-                                            <div class="player-slot {% if match.winner_id == match.player2_id %}winner{% endif %}">
-                                                <div class="player-info">
-                                                    {% if match.player2_selfie %}
-                                                    <img src="{{ url_for('static', filename='uploads/' + match.player2_selfie) }}" 
-                                                         alt="{{ match.player2_name }}" 
-                                                         class="player-photo"
-                                                         loading="lazy">
-                                                    {% else %}
-                                                    <div class="player-photo-placeholder">
-                                                        <i class="fas fa-user"></i>
+                                                
+                                                <!-- Opponent's Last Match Info -->
+                                                {% if loop.first and current_player_context.next_opponent_last_match %}
+                                                <div class="border-top pt-3 mt-3">
+                                                    <h6 class="text-muted mb-2">
+                                                        <i class="fas fa-history me-1"></i>Their Last Match
+                                                    </h6>
+                                                    <div class="row text-center">
+                                                        <div class="col-4">
+                                                            <div class="small text-muted">vs</div>
+                                                            <div class="fw-bold small">{{ current_player_context.next_opponent_last_match.opponent_opponent_name or 'N/A' }}</div>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <div class="small text-muted">Score</div>
+                                                            <div class="fw-bold">
+                                                                {{ current_player_context.next_opponent_last_match.next_opponent_score or '-' }}-{{ current_player_context.next_opponent_last_match.opponent_opponent_score or '-' }}
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <div class="small text-muted">Result</div>
+                                                            <span class="badge {{ 'bg-success' if current_player_context.next_opponent_last_match.next_opponent_result == 'W' else 'bg-danger' }}">
+                                                                {{ current_player_context.next_opponent_last_match.next_opponent_result or 'N/A' }}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    {% endif %}
-                                                    <span class="player-name">{{ match.player2_name or 'TBD' }}</span>
                                                 </div>
-                                                <div class="player-score">
-                                                    {{ match.player2_score if match.player2_score is not none else '-' }}
+                                                {% elif loop.first %}
+                                                <div class="border-top pt-3 mt-3">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-info-circle me-1"></i>No previous match data available
+                                                    </small>
                                                 </div>
-                                            </div>
-                                            
-                                            <!-- Match Status -->
-                                            <div class="match-status-indicator">
-                                                {% if match.status == 'completed' %}
-                                                <span class="status-badge completed">
-                                                    <i class="fas fa-check-circle"></i> Complete
-                                                </span>
-                                                {% elif match.status == 'in_progress' %}
-                                                <span class="status-badge live">
-                                                    <i class="fas fa-play-circle"></i> Live
-                                                </span>
-                                                {% else %}
-                                                <span class="status-badge pending">
-                                                    <i class="fas fa-clock"></i> Pending
-                                                </span>
                                                 {% endif %}
                                             </div>
                                         </div>
                                     </div>
-                                    {% endfor %}
-                                </div>
-                                
-                                <!-- Connector to Next Round -->
-                                {% if not loop.last %}
-                                <div class="round-connector">
-                                    <div class="connector-line"></div>
-                                </div>
-                                {% endif %}
-                            </div>
-                            {% endfor %}
-                        </div>
-                        
-                        <!-- Championship Trophy (if tournament completed) -->
-                        {% if tournament.status == 'completed' %}
-                        <div class="championship-display">
-                            <div class="trophy-container">
-                                <i class="fas fa-trophy trophy-icon"></i>
-                                <h4 class="champion-title">Tournament Champion</h4>
-                                {% for round_num, round_matches in matches_by_round.items() %}
-                                    {% if round_num == max_rounds %}
-                                        {% for match in round_matches %}
-                                            {% if match.winner_id %}
-                                                <div class="champion-info">
-                                                    {% if match.winner_id == match.player1_id %}
-                                                        {% if match.player1_selfie %}
-                                                        <img src="{{ url_for('static', filename='uploads/' + match.player1_selfie) }}" 
-                                                             alt="{{ match.player1_name }}" 
-                                                             class="champion-photo">
-                                                        {% else %}
-                                                        <div class="champion-photo-placeholder">
-                                                            <i class="fas fa-crown"></i>
-                                                        </div>
-                                                        {% endif %}
-                                                        <h5 class="champion-name">{{ match.player1_name }}</h5>
-                                                    {% else %}
-                                                        {% if match.player2_selfie %}
-                                                        <img src="{{ url_for('static', filename='uploads/' + match.player2_selfie) }}" 
-                                                             alt="{{ match.player2_name }}" 
-                                                             class="champion-photo">
-                                                        {% else %}
-                                                        <div class="champion-photo-placeholder">
-                                                            <i class="fas fa-crown"></i>
-                                                        </div>
-                                                        {% endif %}
-                                                        <h5 class="champion-name">{{ match.player2_name }}</h5>
-                                                    {% endif %}
-                                                    <p class="final-score">Final Score: {{ match.player1_score }} - {{ match.player2_score }}</p>
-                                                </div>
-                                            {% endif %}
-                                        {% endfor %}
+                                    {% else %}
+                                    <div class="text-center p-4">
+                                        <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                                        <h6 class="text-muted">Opponent TBD</h6>
+                                        <small class="text-muted">Waiting for previous matches to complete</small>
+                                    </div>
                                     {% endif %}
-                                {% endfor %}
+                                </div>
                             </div>
                         </div>
+                        {% endfor %}
                         {% endif %}
                     </div>
                 </div>
                 
-                {% endif %}
-                
-                <!-- Enhanced Player Tournament Context -->
-                {% if current_player_context %}
-                <div class="row mt-4">
-                    <!-- Player Tournament Summary -->
-                    <div class="col-12 col-lg-6 mb-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h6 class="mb-0">
-                                    <i class="fas fa-user-circle me-2"></i>Your Tournament Progress
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row text-center mb-3">
-                                    <div class="col-4">
-                                        <div class="h4 text-primary mb-1">{{ current_player_context.total_matches_played }}</div>
-                                        <small class="text-muted">Matches Played</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="h4 text-success mb-1">{{ current_player_context.total_wins }}</div>
-                                        <small class="text-muted">Wins</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="h4 text-info mb-1">{{ current_player_context.total_matches_played - current_player_context.total_wins }}</div>
-                                        <small class="text-muted">Losses</small>
-                                    </div>
-                                </div>
-                                
-                                {% if player_entry %}
-                                <div class="border-top pt-3">
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <small class="text-muted d-block">Entry Date</small>
-                                            <strong>{{ player_entry.entry_date }}</strong>
-                                        </div>
-                                        <div class="col-6">
-                                            <small class="text-muted d-block">Bracket Position</small>
-                                            <strong>#{{ player_entry.bracket_position or 'TBD' }}</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Match History & Upcoming -->
-                    <div class="col-12 col-lg-6 mb-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h6 class="mb-0">
-                                    <i class="fas fa-history me-2"></i>Recent & Upcoming Matches
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <!-- Recent Match Results -->
-                                {% if current_player_context.previous_matches %}
-                                <div class="mb-3">
-                                    <h6 class="text-primary mb-2"><i class="fas fa-clock-rotate-left me-1"></i>Last Match</h6>
-                                    {% set last_match = current_player_context.previous_matches[0] %}
-                                    <div class="p-2 rounded {{ 'bg-success' if last_match.winner_id == current_player_id else 'bg-danger' }} bg-opacity-10 border">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>vs {{ last_match.opponent_name }}</strong>
-                                                <br>
-                                                <small class="text-muted">Round {{ last_match.round_number }}</small>
-                                            </div>
-                                            <div class="text-end">
-                                                <div class="h6 mb-0">
-                                                    {{ last_match.player_score }} - {{ last_match.opponent_score }}
-                                                </div>
-                                                <span class="badge bg-{{ 'success' if last_match.winner_id == current_player_id else 'danger' }}">
-                                                    {{ 'WIN' if last_match.winner_id == current_player_id else 'LOSS' }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endif %}
-                                
-                                <!-- Upcoming Matches -->
-                                {% if current_player_context.upcoming_matches %}
-                                <div>
-                                    <h6 class="text-warning mb-2"><i class="fas fa-clock me-1"></i>Next Match{{ 'es' if current_player_context.upcoming_matches|length > 1 else '' }}</h6>
-                                    {% for match in current_player_context.upcoming_matches %}
-                                    <div class="p-2 rounded bg-primary bg-opacity-10 border mb-2">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>vs {{ match.opponent_name or 'TBD' }}</strong>
-                                                {% if match.opponent_skill %}
-                                                <span class="badge bg-secondary ms-1">{{ match.opponent_skill }}</span>
-                                                {% endif %}
-                                                <br>
-                                                <small class="text-muted">Round {{ match.round_number }}</small>
-                                            </div>
-                                            <div class="text-end">
-                                                <span class="badge bg-{{ 'warning' if match.status == 'in_progress' else 'primary' }}">
-                                                    {{ 'IN PROGRESS' if match.status == 'in_progress' else 'UPCOMING' }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                {% else %}
-                                <div class="text-center text-muted py-3">
-                                    <i class="fas fa-calendar-check fa-2x mb-2"></i>
-                                    <p class="mb-0">No upcoming matches</p>
-                                    <small>{% if tournament.status == 'completed' %}Tournament completed{% else %}Awaiting bracket progression{% endif %}</small>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% elif player_entry %}
-                <div class="card mt-4">
-                    <div class="card-header">
-                        <h6 class="mb-0">
-                            <i class="fas fa-user-circle me-2"></i>Your Tournament Status
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Entry Date:</strong> {{ player_entry.entry_date }}</p>
-                                <p><strong>Bracket Position:</strong> #{{ player_entry.bracket_position or 'TBD' }}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <p><strong>Status:</strong> 
-                                    <span class="badge bg-{{ 'success' if player_entry.completed else 'primary' }}">
-                                        {{ player_entry.match_result if player_entry.completed else 'Active' }}
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 {% endif %}
                 
                 <!-- Navigation Breadcrumbs -->
