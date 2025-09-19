@@ -276,8 +276,22 @@ function sendChallenge() {
         },
         body: JSON.stringify(challengeData)
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.ok) {
+            console.log('Response not ok, getting text...');
+            return response.text().then(text => {
+                console.log('Error response text:', text);
+                throw new Error(`HTTP ${response.status}: ${text}`);
+            });
+        }
+        
+        return response.json();
+    })
     .then(data => {
+        console.log('Success response:', data);
         if (data.success) {
             // Close modal and show success message
             const modal = bootstrap.Modal.getInstance(document.getElementById('challengeModal'));
@@ -294,7 +308,7 @@ function sendChallenge() {
     })
     .catch(error => {
         console.error('Error sending challenge:', error);
-        alert('Failed to send challenge. Please try again.');
+        alert('Failed to send challenge: ' + error.message);
     });
 }
 </script>
