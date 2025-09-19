@@ -672,8 +672,34 @@ function startSubscription(membershipType) {
 
 // Court location functionality
 function showCourtLocation(courtName, type) {
-    showSuccessToast(`Opening location for ${courtName}`);
-    // Could integrate with maps API here
+    if (!courtName || courtName.trim() === '') {
+        alert('Court location not available');
+        return;
+    }
+    
+    // Create Google Maps URL for directions
+    const encodedCourtName = encodeURIComponent(courtName.trim());
+    const mapsUrl = `https://www.google.com/maps/search/${encodedCourtName}`;
+    
+    // Try to open in a new tab/window
+    try {
+        const newWindow = window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+        if (newWindow) {
+            showSuccessToast(`Opening directions to ${courtName}`);
+        } else {
+            // If popup blocked, show URL to copy
+            if (confirm(`Popup blocked. Click OK to copy the maps URL for ${courtName}:`)) {
+                navigator.clipboard.writeText(mapsUrl).then(() => {
+                    showSuccessToast('Maps URL copied to clipboard!');
+                }).catch(() => {
+                    prompt('Copy this URL to get directions:', mapsUrl);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error opening maps:', error);
+        alert(`Error opening directions. Please search for: ${courtName}`);
+    }
 }
 </script>
 {% endblock %}
