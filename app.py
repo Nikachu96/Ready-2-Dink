@@ -3385,8 +3385,8 @@ def view_tournament_bracket(tournament_instance_id):
     # Get tournament matches with player details
     matches = conn.execute('''
         SELECT tm.*,
-               p1.full_name as player1_name, p1.selfie as player1_selfie,
-               p2.full_name as player2_name, p2.selfie as player2_selfie
+               p1.full_name as player1_name, p1.selfie as player1_selfie, p1.skill_level as player1_skill,
+               p2.full_name as player2_name, p2.selfie as player2_selfie, p2.skill_level as player2_skill
         FROM tournament_matches tm
         LEFT JOIN players p1 ON tm.player1_id = p1.id
         LEFT JOIN players p2 ON tm.player2_id = p2.id
@@ -3394,15 +3394,99 @@ def view_tournament_bracket(tournament_instance_id):
         ORDER BY tm.round_number, tm.match_number
     ''', (tournament_instance_id,)).fetchall()
     
-    # Group matches by round
+    # Group matches by round and add enhanced context
     matches_by_round = {}
     max_rounds = 0
+    player_match_context = {}
+    
     for match in matches:
         round_num = match['round_number']
         if round_num not in matches_by_round:
             matches_by_round[round_num] = []
         matches_by_round[round_num].append(match)
         max_rounds = max(max_rounds, round_num)
+        
+        # Track player context for enhanced information
+        if match['player1_id']:
+            player_match_context[match['player1_id']] = {
+                'current_round': round_num,
+                'match_id': match['id'],
+                'opponent_id': match['player2_id'],
+                'opponent_name': match['player2_name'],
+                'status': match['status'],
+                'is_winner': match['winner_id'] == match['player1_id'] if match['winner_id'] else None
+            }
+        if match['player2_id']:
+            player_match_context[match['player2_id']] = {
+                'current_round': round_num,
+                'match_id': match['id'],
+                'opponent_id': match['player1_id'],
+                'opponent_name': match['player1_name'],
+                'status': match['status'],
+                'is_winner': match['winner_id'] == match['player2_id'] if match['winner_id'] else None
+            }
+    
+    # Enhanced player context if current player is in tournament
+    current_player_context = None
+    if player_entry and current_player_id:
+        # Get player's previous matches in this tournament
+        previous_matches = conn.execute('''
+            SELECT tm.*,
+                   CASE WHEN tm.player1_id = ? THEN p2.full_name ELSE p1.full_name END as opponent_name,
+                   CASE WHEN tm.player1_id = ? THEN tm.player2_score ELSE tm.player1_score END as opponent_score,
+                   CASE WHEN tm.player1_id = ? THEN tm.player1_score ELSE tm.player2_score END as player_score
+            FROM tournament_matches tm
+            LEFT JOIN players p1 ON tm.player1_id = p1.id
+            LEFT JOIN players p2 ON tm.player2_id = p2.id
+            WHERE tm.tournament_instance_id = ? 
+            AND (tm.player1_id = ? OR tm.player2_id = ?)
+            AND tm.status = 'completed'
+            ORDER BY tm.round_number DESC
+        ''', (current_player_id, current_player_id, current_player_id, tournament_instance_id, current_player_id, current_player_id)).fetchall()
+        
+        # Get player's upcoming matches with proper ordering
+        upcoming_matches = conn.execute('''
+            SELECT tm.*,
+                   CASE WHEN tm.player1_id = ? THEN p2.full_name ELSE p1.full_name END as opponent_name,
+                   CASE WHEN tm.player1_id = ? THEN p2.skill_level ELSE p1.skill_level END as opponent_skill,
+                   CASE WHEN tm.player1_id = ? THEN tm.player2_id ELSE tm.player1_id END as opponent_id
+            FROM tournament_matches tm
+            LEFT JOIN players p1 ON tm.player1_id = p1.id
+            LEFT JOIN players p2 ON tm.player2_id = p2.id
+            WHERE tm.tournament_instance_id = ? 
+            AND (tm.player1_id = ? OR tm.player2_id = ?)
+            AND tm.status IN ('pending', 'in_progress')
+            ORDER BY tm.round_number ASC, tm.match_number ASC
+            LIMIT 2
+        ''', (current_player_id, current_player_id, current_player_id, tournament_instance_id, current_player_id, current_player_id)).fetchall()
+        
+        # Get next opponent's last match for the first upcoming match
+        next_opponent_last_match = None
+        if upcoming_matches and upcoming_matches[0]['opponent_id']:
+            next_opponent_id = upcoming_matches[0]['opponent_id']
+            next_opponent_last_match = conn.execute('''
+                SELECT tm.*,
+                       CASE WHEN tm.player1_id = ? THEN p2.full_name ELSE p1.full_name END as opponent_opponent_name,
+                       CASE WHEN tm.player1_id = ? THEN tm.player2_score ELSE tm.player1_score END as opponent_opponent_score,
+                       CASE WHEN tm.player1_id = ? THEN tm.player1_score ELSE tm.player2_score END as next_opponent_score,
+                       CASE WHEN tm.winner_id = ? THEN 'W' ELSE 'L' END as next_opponent_result
+                FROM tournament_matches tm
+                LEFT JOIN players p1 ON tm.player1_id = p1.id
+                LEFT JOIN players p2 ON tm.player2_id = p2.id
+                WHERE tm.tournament_instance_id = ? 
+                AND (tm.player1_id = ? OR tm.player2_id = ?)
+                AND tm.status = 'completed'
+                ORDER BY tm.round_number DESC, tm.match_number DESC
+                LIMIT 1
+            ''', (next_opponent_id, next_opponent_id, next_opponent_id, next_opponent_id, tournament_instance_id, next_opponent_id, next_opponent_id)).fetchone()
+        
+        current_player_context = {
+            'previous_matches': previous_matches,
+            'upcoming_matches': upcoming_matches,
+            'next_opponent_last_match': next_opponent_last_match,
+            'total_wins': len([m for m in previous_matches if m['winner_id'] == current_player_id]),
+            'total_matches_played': len(previous_matches)
+        }
     
     conn.close()
     
@@ -3412,7 +3496,9 @@ def view_tournament_bracket(tournament_instance_id):
                          matches_by_round=matches_by_round,
                          max_rounds=max_rounds,
                          player_entry=player_entry,
-                         current_player_id=current_player_id)
+                         current_player_id=current_player_id,
+                         player_match_context=player_match_context,
+                         current_player_context=current_player_context)
 
 @app.route('/leaderboard')
 def leaderboard():
