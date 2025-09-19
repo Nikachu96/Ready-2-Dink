@@ -586,17 +586,30 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if not entry.completed %}
-                                            <form method="POST" action="{{ url_for('withdraw_from_tournament') }}" class="d-inline" 
-                                                  onsubmit="return confirm('Are you sure you want to withdraw from this tournament? Entry fees are non-refundable.')">
-                                                <input type="hidden" name="tournament_id" value="{{ entry.id }}">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Withdraw from Tournament">
-                                                    <i class="fas fa-times me-1"></i>Withdraw
-                                                </button>
-                                            </form>
-                                        {% else %}
-                                            <span class="text-muted small">-</span>
-                                        {% endif %}
+                                        <div class="d-flex gap-2">
+                                            <!-- View Bracket Button -->
+                                            {% if entry.tournament_instance_id and entry.status != 'open' %}
+                                                <a href="{{ url_for('view_tournament_bracket', tournament_instance_id=entry.tournament_instance_id) }}" 
+                                                   class="btn btn-sm btn-outline-info" title="View Tournament Bracket">
+                                                    <i class="fas fa-sitemap me-1"></i>View Bracket
+                                                </a>
+                                            {% endif %}
+                                            
+                                            <!-- Withdraw Button -->
+                                            {% if not entry.completed %}
+                                                <form method="POST" action="{{ url_for('withdraw_from_tournament') }}" class="d-inline" 
+                                                      onsubmit="return confirm('Are you sure you want to withdraw from this tournament? Entry fees are non-refundable.')">
+                                                    <input type="hidden" name="tournament_id" value="{{ entry.id }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Withdraw from Tournament">
+                                                        <i class="fas fa-times me-1"></i>Withdraw
+                                                    </button>
+                                                </form>
+                                            {% elif entry.tournament_instance_id and entry.status != 'open' %}
+                                                <!-- Show only View Bracket for completed tournaments with active brackets -->
+                                            {% else %}
+                                                <span class="text-muted small">-</span>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
