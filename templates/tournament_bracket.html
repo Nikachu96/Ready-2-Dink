@@ -56,34 +56,79 @@
                     {% endif %}
                 </div>
 
-                <!-- Bracket Visualization -->
-                <div class="bracket-container">
-                    {% for round_num, round_matches in matches_by_round.items() %}
-                    <div class="round-column">
-                        <h6 class="round-title text-center mb-3">
-                            {% if round_num == max_rounds %}
-                                Final
-                            {% elif round_num == max_rounds - 1 %}
-                                Semifinal
-                            {% elif round_num == max_rounds - 2 %}
-                                Quarterfinal
-                            {% else %}
-                                Round {{ round_num }}
-                            {% endif %}
-                        </h6>
+                <!-- Enhanced Mobile-First Bracket Visualization -->
+                <div class="tournament-bracket-wrapper">
+                    <!-- Bracket Controls -->
+                    <div class="bracket-controls">
+                        <div class="bracket-zoom-controls">
+                            <button class="bracket-zoom-btn" id="zoomOut" title="Zoom Out">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="bracket-zoom-btn" id="zoomIn" title="Zoom In">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="bracket-zoom-btn" id="resetZoom" title="Reset View">
+                                <i class="fas fa-expand-arrows-alt"></i>
+                            </button>
+                        </div>
                         
-                        <div class="matches-column">
-                            {% for match in round_matches %}
-                            <div class="match-card mb-3 {% if player_entry and (match.player1_id == player_entry.player_id or match.player2_id == player_entry.player_id) %}player-match{% endif %}">
-                                <div class="card">
-                                    <div class="card-body p-2">
+                        {% if player_entry %}
+                        <button class="find-me-btn" id="findMe">
+                            <i class="fas fa-crosshairs"></i>
+                            Find Me
+                        </button>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div class="bracket-loading d-none" id="bracketLoading">
+                        <div class="loading-spinner"></div>
+                        <p class="text-white">Loading tournament bracket...</p>
+                    </div>
+                    
+                    <!-- Bracket Viewport -->
+                    <div class="bracket-container" id="bracketContainer">
+                        <div class="bracket-viewport" id="bracketViewport">
+                            {% for round_num, round_matches in matches_by_round.items() %}
+                            <div class="round-section" data-round="{{ round_num }}">
+                                <div class="round-header" onclick="toggleRound({{ round_num }})">
+                                    <h6 class="round-title">
+                                        {% if round_num == max_rounds %}
+                                            🏆 Final
+                                        {% elif round_num == max_rounds - 1 %}
+                                            🥈 Semifinal
+                                        {% elif round_num == max_rounds - 2 %}
+                                            🥉 Quarterfinal
+                                        {% else %}
+                                            ⚡ Round {{ round_num }}
+                                        {% endif %}
+                                        <small class="ms-2">({{ round_matches|length }} matches)</small>
+                                    </h6>
+                                    <div class="round-toggle">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="matches-grid">
+                                    {% for match in round_matches %}
+                                    <div class="match-card {% if player_entry and (match.player1_id == player_entry.player_id or match.player2_id == player_entry.player_id) %}player-match{% endif %}" 
+                                         data-match-id="{{ match.id }}" 
+                                         onclick="showMatchDetails({{ match.id }})"
+                                         tabindex="0"
+                                         role="button"
+                                         aria-label="Match between {{ match.player1_name or 'TBD' }} and {{ match.player2_name or 'TBD' }}">
+                                        
+                                        <!-- Player 1 -->
                                         {% if match.player1_id %}
-                                        <div class="player-row d-flex justify-content-between align-items-center {% if match.winner_id == match.player1_id %}winner{% endif %}">
+                                        <div class="player-row {% if match.winner_id == match.player1_id %}winner{% endif %}" data-player-id="{{ match.player1_id }}">
                                             <div class="player-info">
                                                 {% if match.player1_selfie %}
-                                                <img src="{{ url_for('static', filename='uploads/' + match.player1_selfie) }}" alt="{{ match.player1_name }}" class="player-avatar me-2">
+                                                <img src="{{ url_for('static', filename='uploads/' + match.player1_selfie) }}" 
+                                                     alt="{{ match.player1_name }}" 
+                                                     class="player-avatar"
+                                                     loading="lazy">
                                                 {% else %}
-                                                <div class="player-avatar-placeholder me-2">
+                                                <div class="player-avatar-placeholder">
                                                     <i class="fas fa-user"></i>
                                                 </div>
                                                 {% endif %}
@@ -91,27 +136,31 @@
                                             </div>
                                             <span class="match-score">{{ match.player1_score if match.player1_score is not none else '-' }}</span>
                                         </div>
-                                        <hr class="my-1">
                                         {% else %}
-                                        <div class="player-row d-flex justify-content-between align-items-center">
-                                            <div class="player-info text-muted">
-                                                <div class="player-avatar-placeholder me-2">
+                                        <div class="player-row">
+                                            <div class="player-info">
+                                                <div class="player-avatar-placeholder">
                                                     <i class="fas fa-question"></i>
                                                 </div>
-                                                <span class="player-name">TBD</span>
+                                                <span class="player-name text-muted">TBD</span>
                                             </div>
-                                            <span class="match-score">-</span>
+                                            <span class="match-score text-muted">-</span>
                                         </div>
-                                        <hr class="my-1">
                                         {% endif %}
                                         
+                                        <div class="match-divider"></div>
+                                        
+                                        <!-- Player 2 -->
                                         {% if match.player2_id %}
-                                        <div class="player-row d-flex justify-content-between align-items-center {% if match.winner_id == match.player2_id %}winner{% endif %}">
+                                        <div class="player-row {% if match.winner_id == match.player2_id %}winner{% endif %}" data-player-id="{{ match.player2_id }}">
                                             <div class="player-info">
                                                 {% if match.player2_selfie %}
-                                                <img src="{{ url_for('static', filename='uploads/' + match.player2_selfie) }}" alt="{{ match.player2_name }}" class="player-avatar me-2">
+                                                <img src="{{ url_for('static', filename='uploads/' + match.player2_selfie) }}" 
+                                                     alt="{{ match.player2_name }}" 
+                                                     class="player-avatar"
+                                                     loading="lazy">
                                                 {% else %}
-                                                <div class="player-avatar-placeholder me-2">
+                                                <div class="player-avatar-placeholder">
                                                     <i class="fas fa-user"></i>
                                                 </div>
                                                 {% endif %}
@@ -120,44 +169,65 @@
                                             <span class="match-score">{{ match.player2_score if match.player2_score is not none else '-' }}</span>
                                         </div>
                                         {% else %}
-                                        <div class="player-row d-flex justify-content-between align-items-center">
-                                            <div class="player-info text-muted">
-                                                <div class="player-avatar-placeholder me-2">
+                                        <div class="player-row">
+                                            <div class="player-info">
+                                                <div class="player-avatar-placeholder">
                                                     <i class="fas fa-question"></i>
                                                 </div>
-                                                <span class="player-name">TBD</span>
+                                                <span class="player-name text-muted">TBD</span>
                                             </div>
-                                            <span class="match-score">-</span>
+                                            <span class="match-score text-muted">-</span>
                                         </div>
                                         {% endif %}
                                         
-                                        <div class="match-status text-center mt-2">
+                                        <!-- Match Status -->
+                                        <div class="match-status {{ match.status }}">
                                             {% if match.status == 'completed' %}
-                                                <small class="text-success">
-                                                    <i class="fas fa-check-circle"></i> Complete
-                                                </small>
+                                                <i class="fas fa-check-circle"></i> Completed
                                                 {% if match.match_result %}
-                                                <div class="match-result-display mt-1">
-                                                    <small class="badge bg-success">{{ match.match_result }}</small>
+                                                <div class="match-result-display mt-2">
+                                                    <span class="match-result-badge">{{ match.match_result }}</span>
                                                 </div>
                                                 {% endif %}
                                             {% elif match.status == 'in_progress' %}
-                                                <small class="text-warning">
-                                                    <i class="fas fa-play-circle"></i> In Progress
-                                                </small>
+                                                <i class="fas fa-play-circle"></i> Live
                                             {% else %}
-                                                <small class="text-muted">
-                                                    <i class="fas fa-clock"></i> Pending
-                                                </small>
+                                                <i class="fas fa-clock"></i> Pending
                                             {% endif %}
                                         </div>
                                     </div>
+                                    {% endfor %}
+                                    
+                                    <!-- Skeleton Loading Cards (hidden by default) -->
+                                    {% for i in range(3) %}
+                                    <div class="skeleton-match d-none bracket-skeleton"></div>
+                                    {% endfor %}
                                 </div>
                             </div>
                             {% endfor %}
                         </div>
                     </div>
-                    {% endfor %}
+                    
+                    <!-- Pull to Refresh Indicator -->
+                    <div class="pull-refresh-indicator d-none" id="pullRefreshIndicator">
+                        <div class="loading-spinner"></div>
+                        <p>Release to refresh bracket</p>
+                    </div>
+                </div>
+                
+                <!-- Floating Action Buttons -->
+                <div class="bracket-fab-container">
+                    {% if player_entry %}
+                    <button class="bracket-fab" id="showMyPath" title="Show My Path">
+                        <i class="fas fa-route"></i>
+                    </button>
+                    {% endif %}
+                    <button class="bracket-fab" id="fullscreenToggle" title="Toggle Fullscreen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="bracket-fab" id="refreshBracket" title="Refresh Bracket">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
                 </div>
                 
                 {% endif %}
@@ -203,97 +273,2233 @@
 </div>
 
 <style>
-.bracket-container {
-    display: flex;
-    gap: 2rem;
-    overflow-x: auto;
-    padding: 1rem 0;
-    min-height: 400px;
-}
-
-.round-column {
-    display: flex;
-    flex-direction: column;
-    min-width: 200px;
-}
-
-.round-title {
-    position: sticky;
-    top: 0;
-    background: rgba(var(--bs-dark-rgb), 0.9);
-    padding: 0.5rem;
-    border-radius: 0.25rem;
-    z-index: 10;
-}
-
-.matches-column {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    flex-grow: 1;
-}
-
-.match-card {
-    transition: all 0.3s ease;
-}
-
-.match-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.player-match {
-    border: 2px solid var(--bs-warning);
-    border-radius: 0.5rem;
-    box-shadow: 0 0 10px rgba(var(--bs-warning-rgb), 0.3);
-}
-
-.player-avatar {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.player-avatar-placeholder {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: var(--bs-secondary);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px !important;
-}
-
-.player-row.winner {
-    background: rgba(var(--bs-success-rgb), 0.1);
-    border-radius: 0.25rem;
-    padding: 0.25rem;
-    font-weight: bold;
-}
-
-.player-name {
-    font-size: 16px !important;
-}
-
-.match-score {
-    font-weight: bold;
-    color: var(--bs-primary);
-}
-
-@media (max-width: 768px) {
-    .bracket-container {
-        gap: 1rem;
-    }
-    
-    .round-column {
-        min-width: 150px;
-    }
-    
-    .player-name {
-        font-size: 16px !important;
-    }
-}
+        /* ========================================
+         * MOBILE-FIRST RESPONSIVE TOURNAMENT BRACKET
+         * Custom Properties for Dynamic Theming
+         * ======================================== */
+        
+        :root {
+            /* Ready 2 Dink Neon Theme Colors */
+            --bracket-cyan: #00f5ff;
+            --bracket-green: #00ff41;
+            --bracket-purple: #bf00ff;
+            --bracket-dark-bg: #0c0c19;
+            --bracket-surface: #1a1a2e;
+            --bracket-accent: #2d2d4a;
+            --bracket-glass: rgba(255, 255, 255, 0.05);
+            --bracket-glass-border: rgba(255, 255, 255, 0.15);
+            
+            /* Dynamic spacing system */
+            --bracket-gap-xs: 0.5rem;
+            --bracket-gap-sm: 1rem;
+            --bracket-gap-md: 1.5rem;
+            --bracket-gap-lg: 2rem;
+            --bracket-gap-xl: 3rem;
+            
+            /* Touch targets */
+            --touch-target-min: 44px;
+            --touch-target-comfort: 56px;
+            
+            /* Responsive typography */
+            --bracket-text-xs: 0.75rem;
+            --bracket-text-sm: 0.875rem;
+            --bracket-text-base: 1rem;
+            --bracket-text-lg: 1.125rem;
+            --bracket-text-xl: 1.25rem;
+            
+            /* Animation timing */
+            --bracket-transition-fast: 0.15s ease-out;
+            --bracket-transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --bracket-transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Shadows and glows */
+            --bracket-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --bracket-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --bracket-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+            --bracket-glow-cyan: 0 0 20px rgba(0, 245, 255, 0.4);
+            --bracket-glow-green: 0 0 20px rgba(0, 255, 65, 0.4);
+            --bracket-glow-purple: 0 0 20px rgba(191, 0, 255, 0.4);
+        }
+        
+        /* ========================================
+         * BRACKET CONTAINER - MOBILE FIRST
+         * ======================================== */
+        
+        .tournament-bracket-wrapper {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 1rem;
+            background: var(--bracket-surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--bracket-glass-border);
+            box-shadow: var(--bracket-shadow-lg);
+        }
+        
+        .bracket-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--bracket-gap-sm);
+            background: linear-gradient(135deg, var(--bracket-cyan) 0%, var(--bracket-purple) 100%);
+            border-radius: 1rem 1rem 0 0;
+            margin-bottom: var(--bracket-gap-sm);
+        }
+        
+        .bracket-zoom-controls {
+            display: flex;
+            gap: var(--bracket-gap-xs);
+        }
+        
+        .bracket-zoom-btn {
+            width: var(--touch-target-min);
+            height: var(--touch-target-min);
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: var(--bracket-text-lg);
+            cursor: pointer;
+            transition: var(--bracket-transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        
+        .bracket-zoom-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .find-me-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bracket-green);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: var(--bracket-text-sm);
+            cursor: pointer;
+            transition: var(--bracket-transition-normal);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            min-height: var(--touch-target-min);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            touch-action: manipulation;
+        }
+        
+        .find-me-btn:hover {
+            background: var(--bracket-purple);
+            box-shadow: var(--bracket-glow-purple);
+            transform: translateY(-2px);
+        }
+        
+        .bracket-container {
+            position: relative;
+            width: 100%;
+            height: 70vh;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            touch-action: pan-x pan-y pinch-zoom;
+            transform-origin: center center;
+            transition: transform var(--bracket-transition-normal);
+        }
+        
+        .bracket-viewport {
+            /* Mobile-first: Vertical stacking */
+            display: flex;
+            flex-direction: column;
+            gap: var(--bracket-gap-lg);
+            padding: var(--bracket-gap-sm);
+            min-width: 100%;
+            transform-origin: 0 0;
+            will-change: transform;
+        }
+        
+        /* ========================================
+         * ROUND SYSTEM - MOBILE FIRST
+         * ======================================== */
+        
+        .round-section {
+            background: var(--bracket-glass);
+            border: 1px solid var(--bracket-glass-border);
+            border-radius: 1rem;
+            padding: var(--bracket-gap-sm);
+            backdrop-filter: blur(10px);
+            transition: var(--bracket-transition-normal);
+        }
+        
+        .round-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--bracket-gap-sm);
+            background: linear-gradient(135deg, var(--bracket-cyan) 0%, var(--bracket-green) 100%);
+            border-radius: 0.75rem;
+            margin-bottom: var(--bracket-gap-sm);
+            cursor: pointer;
+            touch-action: manipulation;
+            min-height: var(--touch-target-comfort);
+        }
+        
+        .round-title {
+            color: white;
+            font-weight: 700;
+            font-size: var(--bracket-text-lg);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            margin: 0;
+        }
+        
+        .round-toggle {
+            color: white;
+            font-size: var(--bracket-text-xl);
+            transition: var(--bracket-transition-fast);
+            transform-origin: center;
+        }
+        
+        .round-section.collapsed .round-toggle {
+            transform: rotate(-90deg);
+        }
+        
+        .matches-grid {
+            display: grid;
+            gap: var(--bracket-gap-sm);
+            grid-template-columns: 1fr;
+            transition: var(--bracket-transition-normal);
+            overflow: hidden;
+        }
+        
+        .round-section.collapsed .matches-grid {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+        
+        /* ========================================
+         * MATCH CARDS - MOBILE OPTIMIZED
+         * ======================================== */
+        
+        .match-card {
+            background: var(--bracket-surface);
+            border: 2px solid var(--bracket-glass-border);
+            border-radius: 1rem;
+            padding: var(--bracket-gap-sm);
+            transition: var(--bracket-transition-normal);
+            cursor: pointer;
+            touch-action: manipulation;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            min-height: var(--touch-target-comfort);
+        }
+        
+        .match-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--bracket-cyan), var(--bracket-green), var(--bracket-purple));
+            opacity: 0;
+            transition: var(--bracket-transition-normal);
+        }
+        
+        .match-card:hover::before,
+        .match-card:focus::before {
+            opacity: 1;
+        }
+        
+        .match-card:hover,
+        .match-card:focus {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: var(--bracket-shadow-lg), var(--bracket-glow-cyan);
+            border-color: var(--bracket-cyan);
+            z-index: 10;
+        }
+        
+        /* Player Match Highlighting with Pulsing Animation */
+        .player-match {
+            border-color: var(--bracket-green);
+            box-shadow: var(--bracket-glow-green);
+            animation: playerPulse 2s ease-in-out infinite;
+            position: relative;
+        }
+        
+        .player-match::after {
+            content: '👤 YOU';
+            position: absolute;
+            top: -0.5rem;
+            right: -0.5rem;
+            background: var(--bracket-green);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: var(--bracket-text-xs);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            box-shadow: var(--bracket-shadow-sm);
+            z-index: 5;
+        }
+        
+        @keyframes playerPulse {
+            0%, 100% {
+                box-shadow: var(--bracket-glow-green);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(0, 255, 65, 0.6), 0 0 60px rgba(0, 255, 65, 0.3);
+                transform: scale(1.01);
+            }
+        }
+        
+        /* ========================================
+         * PLAYER ROWS - ENHANCED MOBILE DESIGN
+         * ======================================== */
+        
+        .player-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--bracket-gap-xs);
+            border-radius: 0.5rem;
+            transition: var(--bracket-transition-fast);
+            min-height: var(--touch-target-min);
+            touch-action: manipulation;
+        }
+        
+        .player-row.winner {
+            background: linear-gradient(135deg, rgba(0, 255, 65, 0.2), rgba(0, 245, 255, 0.1));
+            border: 1px solid var(--bracket-green);
+            font-weight: 700;
+            animation: winnerGlow 1.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes winnerGlow {
+            from {
+                box-shadow: 0 0 5px rgba(0, 255, 65, 0.3);
+            }
+            to {
+                box-shadow: 0 0 15px rgba(0, 255, 65, 0.6);
+            }
+        }
+        
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: var(--bracket-gap-xs);
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .player-avatar {
+            width: var(--touch-target-min);
+            height: var(--touch-target-min);
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--bracket-glass-border);
+            transition: var(--bracket-transition-fast);
+            flex-shrink: 0;
+        }
+        
+        .player-avatar:hover {
+            border-color: var(--bracket-cyan);
+            box-shadow: var(--bracket-glow-cyan);
+        }
+        
+        .player-avatar-placeholder {
+            width: var(--touch-target-min);
+            height: var(--touch-target-min);
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bracket-accent), var(--bracket-surface));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--bracket-text-lg);
+            color: var(--bracket-glass-border);
+            border: 2px solid var(--bracket-glass-border);
+            flex-shrink: 0;
+        }
+        
+        .player-name {
+            font-size: var(--bracket-text-base);
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .match-score {
+            font-weight: 700;
+            font-size: var(--bracket-text-lg);
+            color: var(--bracket-cyan);
+            text-shadow: 0 0 10px currentColor;
+            min-width: 2rem;
+            text-align: center;
+        }
+        
+        .match-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--bracket-glass-border), transparent);
+            margin: var(--bracket-gap-xs) 0;
+        }
+        
+        /* ========================================
+         * MATCH STATUS INDICATORS
+         * ======================================== */
+        
+        .match-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: var(--bracket-gap-xs);
+            padding: 0.25rem;
+            border-radius: 0.5rem;
+            font-size: var(--bracket-text-xs);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .match-status.completed {
+            background: linear-gradient(135deg, var(--bracket-green), rgba(0, 255, 65, 0.8));
+            color: white;
+        }
+        
+        .match-status.in_progress {
+            background: linear-gradient(135deg, #ff9500, rgba(255, 149, 0, 0.8));
+            color: white;
+            animation: progressPulse 1s ease-in-out infinite;
+        }
+        
+        .match-status.pending {
+            background: var(--bracket-glass);
+            color: var(--bracket-glass-border);
+            border: 1px solid var(--bracket-glass-border);
+        }
+        
+        @keyframes progressPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .match-result-display {
+            margin-top: 0.5rem;
+        }
+        
+        .match-result-badge {
+            background: var(--bracket-green);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: var(--bracket-text-xs);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            box-shadow: var(--bracket-shadow-sm);
+        }
+        
+        /* ========================================
+         * LOADING STATES & SKELETONS
+         * ======================================== */
+        
+        .bracket-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 50vh;
+            gap: var(--bracket-gap-md);
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--bracket-glass-border);
+            border-top: 3px solid var(--bracket-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .skeleton-match {
+            background: linear-gradient(90deg, var(--bracket-glass) 25%, rgba(255,255,255,0.1) 50%, var(--bracket-glass) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 1rem;
+            height: 120px;
+            margin-bottom: var(--bracket-gap-sm);
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .pull-refresh-indicator {
+            position: absolute;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bracket-surface);
+            padding: var(--bracket-gap-sm);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: var(--bracket-gap-xs);
+            color: white;
+            font-size: var(--bracket-text-sm);
+            z-index: 100;
+            transition: var(--bracket-transition-normal);
+        }
+        
+        /* ========================================
+         * FLOATING ACTION BUTTONS
+         * ======================================== */
+        
+        .bracket-fab-container {
+            position: fixed;
+            bottom: var(--bracket-gap-lg);
+            right: var(--bracket-gap-lg);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: var(--bracket-gap-sm);
+        }
+        
+        .bracket-fab {
+            width: var(--touch-target-comfort);
+            height: var(--touch-target-comfort);
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bracket-cyan), var(--bracket-purple));
+            border: none;
+            color: white;
+            font-size: var(--bracket-text-lg);
+            cursor: pointer;
+            transition: var(--bracket-transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--bracket-shadow-md), var(--bracket-glow-cyan);
+            touch-action: manipulation;
+        }
+        
+        .bracket-fab:hover {
+            transform: scale(1.1) translateY(-2px);
+            box-shadow: var(--bracket-shadow-lg), var(--bracket-glow-purple);
+        }
+        
+        /* ========================================
+         * RESPONSIVE BREAKPOINTS
+         * ======================================== */
+        
+        /* Small devices (landscape phones, 576px and up) */
+        @media (min-width: 576px) {
+            .bracket-viewport {
+                gap: var(--bracket-gap-xl);
+            }
+            
+            .matches-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+            
+            .bracket-controls {
+                padding: var(--bracket-gap-md);
+            }
+        }
+        
+        /* Medium devices (tablets, 768px and up) */
+        @media (min-width: 768px) {
+            .bracket-viewport {
+                /* Switch to horizontal layout on tablets */
+                flex-direction: row;
+                align-items: flex-start;
+                gap: var(--bracket-gap-xl);
+                padding: var(--bracket-gap-md);
+            }
+            
+            .round-section {
+                min-width: 300px;
+                flex-shrink: 0;
+            }
+            
+            .matches-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .bracket-container {
+                height: 80vh;
+            }
+            
+            :root {
+                --bracket-text-base: 1.125rem;
+                --bracket-text-lg: 1.25rem;
+                --bracket-text-xl: 1.5rem;
+            }
+        }
+        
+        /* Large devices (desktops, 1024px and up) */
+        @media (min-width: 1024px) {
+            :root {
+                --bracket-connector-width: 3px;
+                --bracket-connector-height: 60px;
+            }
+            
+            .bracket-viewport {
+                gap: var(--bracket-gap-xl);
+                padding: var(--bracket-gap-lg);
+                overflow-x: auto;
+                overflow-y: hidden;
+                min-width: max-content;
+            }
+            
+            .round-section {
+                min-width: 350px;
+                position: relative;
+            }
+            
+            /* Add connectors between rounds on desktop */
+            .round-section:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                right: calc(-1 * var(--bracket-gap-xl) / 2 - var(--bracket-connector-width) / 2);
+                width: var(--bracket-connector-width);
+                height: var(--bracket-connector-height);
+                background: linear-gradient(135deg, var(--bracket-cyan), var(--bracket-green));
+                border-radius: var(--bracket-connector-width);
+                transform: translateY(-50%);
+                box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+                z-index: 1;
+            }
+            
+            .match-card {
+                padding: var(--bracket-gap-md);
+                transition: var(--bracket-transition-normal);
+            }
+            
+            .match-card:hover {
+                transform: translateY(-4px) scale(1.02);
+                box-shadow: var(--bracket-shadow-lg), var(--bracket-glow-cyan);
+            }
+            
+            .bracket-container {
+                height: 85vh;
+            }
+            
+            .round-header {
+                cursor: default; /* Less emphasis on collapsing on desktop */
+            }
+            
+            .round-toggle {
+                opacity: 0.5; /* Reduce visibility on desktop */
+            }
+            
+            /* Desktop bracket fab positioning */
+            .bracket-fab-container {
+                position: fixed;
+                top: 50%;
+                right: 2rem;
+                transform: translateY(-50%);
+                z-index: 100;
+            }
+            
+            .bracket-fab {
+                width: 56px;
+                height: 56px;
+                font-size: 1.25rem;
+            }
+            
+            /* Enhanced zoom controls for desktop */
+            .bracket-zoom-btn {
+                width: 48px;
+                height: 48px;
+                font-size: 1.25rem;
+                transition: var(--bracket-transition-normal);
+            }
+            
+            .bracket-zoom-btn:hover {
+                background: rgba(255, 255, 255, 0.4);
+                transform: scale(1.1);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+        }
+        
+        /* Extra large devices (large desktops, 1200px and up) */
+        @media (min-width: 1200px) {
+            .bracket-viewport {
+                justify-content: center;
+                align-items: flex-start;
+            }
+            
+            .round-section {
+                min-width: 400px;
+                max-width: 500px;
+            }
+            
+            .match-card {
+                padding: 2rem;
+                border-radius: 1.5rem;
+            }
+            
+            .player-avatar {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .player-avatar-placeholder {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .player-name {
+                font-size: var(--bracket-text-lg);
+                font-weight: 600;
+            }
+            
+            .match-score {
+                font-size: var(--bracket-text-xl);
+                font-weight: 700;
+            }
+            
+            :root {
+                --bracket-text-base: 1.25rem;
+                --bracket-text-lg: 1.375rem;
+                --bracket-text-xl: 1.625rem;
+            }
+        }
+        
+        /* Ultra-wide desktop (for large tournaments, 1440px and up) */
+        @media (min-width: 1440px) {
+            .bracket-viewport {
+                gap: 5rem;
+            }
+            
+            .round-section {
+                min-width: 450px;
+                max-width: 550px;
+            }
+            
+            /* Enhanced connectors for ultra-wide */
+            .round-section:not(:last-child)::after {
+                right: calc(-2.5rem - var(--bracket-connector-width) / 2);
+                height: 80px;
+                width: 4px;
+                border-radius: 4px;
+            }
+        }
+        
+        /* Performance optimizations for low-end devices */
+        @media (max-width: 768px) and (max-height: 1024px) {
+            /* Reduce effects on mobile for better performance */
+            .tournament-bracket-wrapper,
+            .bracket-container,
+            .match-card {
+                backdrop-filter: none;
+            }
+            
+            .match-card:hover {
+                transform: none;
+            }
+            
+            .bracket-fab:hover {
+                transform: scale(1.05);
+            }
+        }
+        
+        /* ========================================
+         * ACCESSIBILITY ENHANCEMENTS
+         * ======================================== */
+        
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* Focus management */
+        .match-card:focus,
+        .bracket-fab:focus,
+        .find-me-btn:focus,
+        .bracket-zoom-btn:focus {
+            outline: 3px solid var(--bracket-cyan);
+            outline-offset: 2px;
+        }
+        
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            :root {
+                --bracket-glass: rgba(255, 255, 255, 0.15);
+                --bracket-glass-border: rgba(255, 255, 255, 0.5);
+            }
+            
+            .match-card {
+                border-width: 3px;
+            }
+        }
+        
+        /* Dark mode preference (additional darkening) */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bracket-dark-bg: #050510;
+                --bracket-surface: #0f0f1a;
+            }
+        }
 </style>
+
+<script>
+    // ========================================
+    // COMPREHENSIVE MOBILE BRACKET INTERACTIONS
+    // ========================================
+    
+    class TournamentBracket {
+        constructor() {
+            this.currentZoom = 1;
+            this.minZoom = 0.5;
+            this.maxZoom = 3;
+            this.isDragging = false;
+            this.startX = 0;
+            this.startY = 0;
+            this.translateX = 0;
+            this.translateY = 0;
+            this.pullStartY = 0;
+            this.isPulling = false;
+            
+            this.viewport = document.getElementById('bracketViewport');
+            this.container = document.getElementById('bracketContainer');
+            this.loading = document.getElementById('bracketLoading');
+            this.pullRefreshIndicator = document.getElementById('pullRefreshIndicator');
+            
+            this.init();
+        }
+        
+        init() {
+            this.setupZoomControls();
+            this.setupTouchInteractions();
+            this.setupFindMe();
+            this.setupFloatingButtons();
+            this.setupKeyboardNavigation();
+            this.setupPullToRefresh();
+            this.setupSwipeNavigation();
+            this.optimizeScrolling();
+            
+            // Auto-hide loading on page load
+            setTimeout(() => {
+                this.hideLoading();
+            }, 500);
+        }
+        
+        // ========================================
+        // ZOOM FUNCTIONALITY
+        // ========================================
+        
+        setupZoomControls() {
+            const zoomIn = document.getElementById('zoomIn');
+            const zoomOut = document.getElementById('zoomOut');
+            const resetZoom = document.getElementById('resetZoom');
+            
+            if (zoomIn) zoomIn.addEventListener('click', () => this.zoom(1.2));
+            if (zoomOut) zoomOut.addEventListener('click', () => this.zoom(0.8));
+            if (resetZoom) resetZoom.addEventListener('click', () => this.resetZoom());
+        }
+        
+        zoom(factor) {
+            const newZoom = this.currentZoom * factor;
+            if (newZoom >= this.minZoom && newZoom <= this.maxZoom) {
+                this.currentZoom = newZoom;
+                this.updateViewportTransform();
+            }
+        }
+        
+        resetZoom() {
+            this.currentZoom = 1;
+            this.translateX = 0;
+            this.translateY = 0;
+            this.updateViewportTransform();
+        }
+        
+        updateViewportTransform() {
+            if (this.viewport) {
+                this.viewport.style.transform = 
+                    `scale(${this.currentZoom}) translate(${this.translateX}px, ${this.translateY}px)`;
+            }
+        }
+        
+        // ========================================
+        // TOUCH INTERACTIONS & GESTURES
+        // ========================================
+        
+        setupTouchInteractions() {
+            if (!this.container) return;
+            
+            let lastTouchDistance = 0;
+            let lastTouchCenter = { x: 0, y: 0 };
+            
+            // Touch start
+            this.container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    // Single touch - start dragging
+                    this.isDragging = true;
+                    this.startX = e.touches[0].clientX - this.translateX;
+                    this.startY = e.touches[0].clientY - this.translateY;
+                } else if (e.touches.length === 2) {
+                    // Pinch gesture start
+                    e.preventDefault();
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    
+                    lastTouchDistance = this.getDistance(touch1, touch2);
+                    lastTouchCenter = this.getCenter(touch1, touch2);
+                }
+            }, { passive: false });
+            
+            // Touch move
+            this.container.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && this.isDragging) {
+                    // Single touch - dragging
+                    e.preventDefault();
+                    this.translateX = e.touches[0].clientX - this.startX;
+                    this.translateY = e.touches[0].clientY - this.startY;
+                    this.updateViewportTransform();
+                } else if (e.touches.length === 2) {
+                    // Pinch gesture
+                    e.preventDefault();
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    
+                    const distance = this.getDistance(touch1, touch2);
+                    const center = this.getCenter(touch1, touch2);
+                    
+                    if (lastTouchDistance > 0) {
+                        const scale = distance / lastTouchDistance;
+                        const newZoom = this.currentZoom * scale;
+                        
+                        if (newZoom >= this.minZoom && newZoom <= this.maxZoom) {
+                            this.currentZoom = newZoom;
+                            
+                            // Adjust translation to zoom towards touch center
+                            const deltaX = center.x - lastTouchCenter.x;
+                            const deltaY = center.y - lastTouchCenter.y;
+                            this.translateX += deltaX;
+                            this.translateY += deltaY;
+                            
+                            this.updateViewportTransform();
+                        }
+                    }
+                    
+                    lastTouchDistance = distance;
+                    lastTouchCenter = center;
+                }
+            }, { passive: false });
+            
+            // Touch end
+            this.container.addEventListener('touchend', () => {
+                this.isDragging = false;
+                lastTouchDistance = 0;
+            });
+            
+            // Mouse events for desktop
+            this.setupMouseInteractions();
+        }
+        
+        setupMouseInteractions() {
+            if (!this.container) return;
+            
+            this.container.addEventListener('wheel', (e) => {
+                if (e.ctrlKey) {
+                    // Zoom with Ctrl+scroll
+                    e.preventDefault();
+                    const scale = e.deltaY > 0 ? 0.9 : 1.1;
+                    this.zoom(scale);
+                }
+            }, { passive: false });
+            
+            // Mouse drag
+            this.container.addEventListener('mousedown', (e) => {
+                if (e.button === 0) { // Left click
+                    this.isDragging = true;
+                    this.startX = e.clientX - this.translateX;
+                    this.startY = e.clientY - this.translateY;
+                    this.container.style.cursor = 'grabbing';
+                }
+            });
+            
+            this.container.addEventListener('mousemove', (e) => {
+                if (this.isDragging) {
+                    this.translateX = e.clientX - this.startX;
+                    this.translateY = e.clientY - this.startY;
+                    this.updateViewportTransform();
+                }
+            });
+            
+            this.container.addEventListener('mouseup', () => {
+                this.isDragging = false;
+                this.container.style.cursor = 'grab';
+            });
+            
+            this.container.addEventListener('mouseleave', () => {
+                this.isDragging = false;
+                this.container.style.cursor = 'grab';
+            });
+        }
+        
+        getDistance(touch1, touch2) {
+            const dx = touch1.clientX - touch2.clientX;
+            const dy = touch1.clientY - touch2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        getCenter(touch1, touch2) {
+            return {
+                x: (touch1.clientX + touch2.clientX) / 2,
+                y: (touch1.clientY + touch2.clientY) / 2
+            };
+        }
+        
+        // ========================================
+        // FIND ME FUNCTIONALITY
+        // ========================================
+        
+        setupFindMe() {
+            const findMeBtn = document.getElementById('findMe');
+            if (findMeBtn) {
+                findMeBtn.addEventListener('click', () => this.scrollToPlayerMatch());
+            }
+        }
+        
+        scrollToPlayerMatch() {
+            const playerMatch = document.querySelector('.player-match');
+            if (playerMatch) {
+                // Add pulse effect
+                playerMatch.style.animation = 'none';
+                setTimeout(() => {
+                    playerMatch.style.animation = 'playerPulse 1s ease-in-out 3';
+                }, 10);
+                
+                // Smooth scroll to match
+                playerMatch.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center',
+                    inline: 'center'
+                });
+                
+                // Show notification
+                this.showNotification('🏆 Found your match!', 'success');
+            } else {
+                this.showNotification('🔍 No active matches found', 'info');
+            }
+        }
+        
+        // ========================================
+        // FLOATING ACTION BUTTONS
+        // ========================================
+        
+        setupFloatingButtons() {
+            const showMyPath = document.getElementById('showMyPath');
+            const fullscreenToggle = document.getElementById('fullscreenToggle');
+            const refreshBracket = document.getElementById('refreshBracket');
+            
+            if (showMyPath) {
+                showMyPath.addEventListener('click', () => this.highlightPlayerPath());
+            }
+            
+            if (fullscreenToggle) {
+                fullscreenToggle.addEventListener('click', () => this.toggleFullscreen());
+            }
+            
+            if (refreshBracket) {
+                refreshBracket.addEventListener('click', () => this.refreshBracket());
+            }
+        }
+        
+        highlightPlayerPath() {
+            const playerMatches = document.querySelectorAll('.player-match');
+            const playerRows = document.querySelectorAll('[data-player-id]');
+            
+            // Clear previous highlights
+            document.querySelectorAll('.path-highlight').forEach(el => {
+                el.classList.remove('path-highlight');
+            });
+            
+            // Add path highlighting
+            playerMatches.forEach(match => {
+                match.classList.add('path-highlight');
+            });
+            
+            playerRows.forEach(row => {
+                if (row.closest('.player-match')) {
+                    row.style.background = 'linear-gradient(135deg, rgba(0, 255, 65, 0.3), rgba(0, 245, 255, 0.2))';
+                }
+            });
+            
+            this.showNotification('✨ Highlighted your tournament path', 'success');
+        }
+        
+        toggleFullscreen() {
+            const bracket = document.querySelector('.tournament-bracket-wrapper');
+            
+            if (!document.fullscreenElement) {
+                bracket.requestFullscreen().catch(err => {
+                    console.log('Fullscreen failed:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        refreshBracket() {
+            this.showLoading();
+            
+            // Simulate refresh delay
+            setTimeout(() => {
+                this.hideLoading();
+                this.showNotification('⚙️ Bracket refreshed!', 'success');
+                
+                // You can add actual refresh logic here
+                // window.location.reload();
+            }, 1500);
+        }
+        
+        // ========================================
+        // ROUND TOGGLE FUNCTIONALITY
+        // ========================================
+        
+        toggleRound(roundNum) {
+            const roundSection = document.querySelector(`[data-round="${roundNum}"]`);
+            if (roundSection) {
+                roundSection.classList.toggle('collapsed');
+                
+                // Update localStorage for persistence
+                const collapsedRounds = JSON.parse(localStorage.getItem('collapsedRounds') || '[]');
+                if (roundSection.classList.contains('collapsed')) {
+                    if (!collapsedRounds.includes(roundNum)) {
+                        collapsedRounds.push(roundNum);
+                    }
+                } else {
+                    const index = collapsedRounds.indexOf(roundNum);
+                    if (index > -1) {
+                        collapsedRounds.splice(index, 1);
+                    }
+                }
+                localStorage.setItem('collapsedRounds', JSON.stringify(collapsedRounds));
+            }
+        }
+        
+        // Restore collapsed state on load
+        restoreRoundStates() {
+            const collapsedRounds = JSON.parse(localStorage.getItem('collapsedRounds') || '[]');
+            collapsedRounds.forEach(roundNum => {
+                const roundSection = document.querySelector(`[data-round="${roundNum}"]`);
+                if (roundSection) {
+                    roundSection.classList.add('collapsed');
+                }
+            });
+        }
+        
+        // ========================================
+        // MATCH DETAIL FUNCTIONALITY
+        // ========================================
+        
+        showMatchDetails(matchId) {
+            // Find the match element
+            const matchCard = document.querySelector(`[data-match-id="${matchId}"]`);
+            if (!matchCard) return;
+            
+            // Create modal or overlay for match details
+            const modal = document.createElement('div');
+            modal.className = 'match-detail-modal';
+            modal.innerHTML = `
+                <div class="match-detail-content">
+                    <div class="match-detail-header">
+                        <h3>🏆 Match Details</h3>
+                        <button class="close-modal" onclick="this.parentElement.parentElement.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="match-detail-body">
+                        ${matchCard.innerHTML}
+                        <div class="match-extra-info">
+                            <p><strong>Match ID:</strong> ${matchId}</p>
+                            <p><strong>Status:</strong> <span class="status-badge">Active</span></p>
+                            <p><strong>Round:</strong> Current Round</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal styles
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                backdrop-filter: blur(10px);
+            `;
+            
+            const content = modal.querySelector('.match-detail-content');
+            content.style.cssText = `
+                background: var(--bracket-surface);
+                border-radius: 1rem;
+                padding: 2rem;
+                max-width: 90vw;
+                max-height: 80vh;
+                overflow-y: auto;
+                border: 1px solid var(--bracket-glass-border);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Close on outside click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+        
+        // ========================================
+        // KEYBOARD NAVIGATION
+        // ========================================
+        
+        setupKeyboardNavigation() {
+            document.addEventListener('keydown', (e) => {
+                // Zoom shortcuts
+                if (e.ctrlKey && e.key === '=') {
+                    e.preventDefault();
+                    this.zoom(1.2);
+                } else if (e.ctrlKey && e.key === '-') {
+                    e.preventDefault();
+                    this.zoom(0.8);
+                } else if (e.ctrlKey && e.key === '0') {
+                    e.preventDefault();
+                    this.resetZoom();
+                }
+                
+                // Find me shortcut
+                if (e.ctrlKey && e.key === 'f') {
+                    e.preventDefault();
+                    this.scrollToPlayerMatch();
+                }
+                
+                // Refresh shortcut
+                if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+                    e.preventDefault();
+                    this.refreshBracket();
+                }
+            });
+        }
+        
+        // ========================================
+        // PULL TO REFRESH
+        // ========================================
+        
+        setupPullToRefresh() {
+            let startY = 0;
+            let currentY = 0;
+            let pullDistance = 0;
+            const threshold = 100;
+            
+            this.container.addEventListener('touchstart', (e) => {
+                if (this.container.scrollTop === 0) {
+                    startY = e.touches[0].clientY;
+                    this.isPulling = true;
+                }
+            });
+            
+            this.container.addEventListener('touchmove', (e) => {
+                if (!this.isPulling) return;
+                
+                currentY = e.touches[0].clientY;
+                pullDistance = currentY - startY;
+                
+                if (pullDistance > 0 && this.container.scrollTop === 0) {
+                    e.preventDefault();
+                    
+                    if (this.pullRefreshIndicator) {
+                        this.pullRefreshIndicator.style.transform = `translateY(${Math.min(pullDistance, threshold)}px)`;
+                        
+                        if (pullDistance >= threshold) {
+                            this.pullRefreshIndicator.classList.remove('d-none');
+                        }
+                    }
+                }
+            });
+            
+            this.container.addEventListener('touchend', () => {
+                if (this.isPulling && pullDistance >= threshold) {
+                    this.refreshBracket();
+                }
+                
+                this.isPulling = false;
+                pullDistance = 0;
+                
+                if (this.pullRefreshIndicator) {
+                    this.pullRefreshIndicator.style.transform = '';
+                    setTimeout(() => {
+                        this.pullRefreshIndicator.classList.add('d-none');
+                    }, 300);
+                }
+            });
+        }
+        
+        // ========================================
+        // SWIPE NAVIGATION
+        // ========================================
+        
+        setupSwipeNavigation() {
+            let startX = 0;
+            let startY = 0;
+            let isHorizontalSwipe = false;
+            
+            this.viewport.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isHorizontalSwipe = false;
+            });
+            
+            this.viewport.addEventListener('touchmove', (e) => {
+                if (!startX || !startY) return;
+                
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
+                const diffX = startX - currentX;
+                const diffY = startY - currentY;
+                
+                // Determine if this is a horizontal swipe
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 30) {
+                    isHorizontalSwipe = true;
+                }
+            });
+            
+            this.viewport.addEventListener('touchend', (e) => {
+                if (!startX || !startY || !isHorizontalSwipe) return;
+                
+                const endX = e.changedTouches[0].clientX;
+                const diffX = startX - endX;
+                
+                // Navigate between rounds with swipe
+                if (Math.abs(diffX) > 100) {
+                    if (diffX > 0) {
+                        this.navigateToNextRound();
+                    } else {
+                        this.navigateToPreviousRound();
+                    }
+                }
+                
+                startX = 0;
+                startY = 0;
+                isHorizontalSwipe = false;
+            });
+        }
+        
+        navigateToNextRound() {
+            const rounds = document.querySelectorAll('.round-section:not(.collapsed)');
+            if (rounds.length > 0) {
+                const nextRound = rounds[Math.min(this.currentRoundIndex + 1, rounds.length - 1)];
+                nextRound.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+        
+        navigateToPreviousRound() {
+            const rounds = document.querySelectorAll('.round-section:not(.collapsed)');
+            if (rounds.length > 0) {
+                const prevRound = rounds[Math.max(this.currentRoundIndex - 1, 0)];
+                prevRound.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+        
+        // ========================================
+        // PERFORMANCE OPTIMIZATIONS
+        // ======================================== 
+        
+        optimizeScrolling() {
+            // Enable GPU acceleration
+            if (this.container) {
+                this.container.style.transform = 'translate3d(0,0,0)';
+                this.container.style.willChange = 'scroll-position';
+            }
+            
+            // Throttle scroll events
+            let scrollTimeout;
+            this.container?.addEventListener('scroll', () => {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    // Update visible matches for virtual scrolling
+                    this.updateVisibleMatches();
+                }, 16); // ~60fps
+            });
+        }
+        
+        updateVisibleMatches() {
+            const containerRect = this.container.getBoundingClientRect();
+            const matches = document.querySelectorAll('.match-card');
+            
+            matches.forEach(match => {
+                const matchRect = match.getBoundingClientRect();
+                const isVisible = (
+                    matchRect.bottom >= containerRect.top &&
+                    matchRect.top <= containerRect.bottom
+                );
+                
+                // Toggle visibility for performance
+                if (isVisible) {
+                    match.style.visibility = 'visible';
+                } else {
+                    match.style.visibility = 'hidden';
+                }
+            });
+        }
+        
+        // ========================================
+        // UTILITY FUNCTIONS
+        // ========================================
+        
+        showLoading() {
+            if (this.loading) {
+                this.loading.classList.remove('d-none');
+            }
+        }
+        
+        hideLoading() {
+            if (this.loading) {
+                this.loading.classList.add('d-none');
+            }
+        }
+        
+        showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `bracket-notification ${type}`;
+            notification.textContent = message;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--bracket-surface);
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 0.5rem;
+                border: 1px solid var(--bracket-glass-border);
+                box-shadow: var(--bracket-shadow-lg);
+                z-index: 1001;
+                font-weight: 600;
+                backdrop-filter: blur(10px);
+                animation: slideInFromTop 0.3s ease-out;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOutToTop 0.3s ease-out';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+    }
+    
+    // ========================================
+    // TOURNAMENT BRACKET CONTROLLER CLASS
+    // ========================================
+    
+    class TournamentBracketController {
+        constructor() {
+            this.container = document.getElementById('bracketContainer');
+            this.viewport = document.getElementById('bracketViewport');
+            this.loading = document.getElementById('bracketLoading');
+            this.pullRefreshIndicator = document.getElementById('pullRefreshIndicator');
+            
+            // State management
+            this.currentZoom = 1;
+            this.minZoom = 0.5;
+            this.maxZoom = 3;
+            this.translateX = 0;
+            this.translateY = 0;
+            this.isDragging = false;
+            this.isPulling = false;
+            this.startX = 0;
+            this.startY = 0;
+            this.currentRoundIndex = 0;
+            
+            // Performance optimization flags
+            this.isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            this.isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
+            
+            this.init();
+        }
+        
+        init() {
+            if (!this.container || !this.viewport) {
+                console.warn('Bracket elements not found');
+                return;
+            }
+            
+            this.setupZoomControls();
+            this.setupTouchInteractions();
+            this.setupFindMe();
+            this.setupFloatingButtons();
+            this.setupKeyboardNavigation();
+            this.setupPullToRefresh();
+            this.setupSwipeNavigation();
+            this.optimizePerformance();
+            this.restoreRoundStates();
+            
+            // Set initial cursor for draggable area
+            this.container.style.cursor = 'grab';
+        }
+        
+        // ========================================
+        // ZOOM CONTROLS
+        // ========================================
+        
+        setupZoomControls() {
+            const zoomIn = document.getElementById('zoomIn');
+            const zoomOut = document.getElementById('zoomOut');
+            const resetZoom = document.getElementById('resetZoom');
+            
+            if (zoomIn) zoomIn.addEventListener('click', () => this.zoom(1.2));
+            if (zoomOut) zoomOut.addEventListener('click', () => this.zoom(0.8));
+            if (resetZoom) resetZoom.addEventListener('click', () => this.resetZoom());
+        }
+        
+        zoom(factor) {
+            const newZoom = this.currentZoom * factor;
+            if (newZoom >= this.minZoom && newZoom <= this.maxZoom) {
+                this.currentZoom = newZoom;
+                this.updateViewportTransform();
+            }
+        }
+        
+        resetZoom() {
+            this.currentZoom = 1;
+            this.translateX = 0;
+            this.translateY = 0;
+            this.updateViewportTransform();
+        }
+        
+        updateViewportTransform() {
+            if (this.viewport) {
+                this.viewport.style.transform = 
+                    `scale(${this.currentZoom}) translate(${this.translateX}px, ${this.translateY}px)`;
+            }
+        }
+        
+        // ========================================
+        // TOUCH INTERACTIONS & GESTURES
+        // ========================================
+        
+        setupTouchInteractions() {
+            if (!this.container) return;
+            
+            let lastTouchDistance = 0;
+            let lastTouchCenter = { x: 0, y: 0 };
+            
+            // Touch start
+            this.container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    // Single touch - start dragging
+                    this.isDragging = true;
+                    this.startX = e.touches[0].clientX - this.translateX;
+                    this.startY = e.touches[0].clientY - this.translateY;
+                } else if (e.touches.length === 2) {
+                    // Pinch gesture start
+                    e.preventDefault();
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    
+                    lastTouchDistance = this.getDistance(touch1, touch2);
+                    lastTouchCenter = this.getCenter(touch1, touch2);
+                }
+            }, { passive: false });
+            
+            // Touch move with throttling
+            this.container.addEventListener('touchmove', this.throttle((e) => {
+                if (e.touches.length === 1 && this.isDragging) {
+                    // Single touch - dragging
+                    e.preventDefault();
+                    this.translateX = e.touches[0].clientX - this.startX;
+                    this.translateY = e.touches[0].clientY - this.startY;
+                    this.updateViewportTransform();
+                } else if (e.touches.length === 2) {
+                    // Pinch gesture
+                    e.preventDefault();
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    
+                    const distance = this.getDistance(touch1, touch2);
+                    const center = this.getCenter(touch1, touch2);
+                    
+                    if (lastTouchDistance > 0) {
+                        const scale = distance / lastTouchDistance;
+                        const newZoom = this.currentZoom * scale;
+                        
+                        if (newZoom >= this.minZoom && newZoom <= this.maxZoom) {
+                            this.currentZoom = newZoom;
+                            
+                            // Adjust translation to zoom towards touch center
+                            const deltaX = center.x - lastTouchCenter.x;
+                            const deltaY = center.y - lastTouchCenter.y;
+                            this.translateX += deltaX;
+                            this.translateY += deltaY;
+                            
+                            this.updateViewportTransform();
+                        }
+                    }
+                    
+                    lastTouchDistance = distance;
+                    lastTouchCenter = center;
+                }
+            }, 16), { passive: false });
+            
+            // Touch end
+            this.container.addEventListener('touchend', () => {
+                this.isDragging = false;
+                lastTouchDistance = 0;
+            });
+            
+            // Mouse events for desktop
+            this.setupMouseInteractions();
+        }
+        
+        setupMouseInteractions() {
+            if (!this.container) return;
+            
+            this.container.addEventListener('wheel', (e) => {
+                if (e.ctrlKey) {
+                    // Zoom with Ctrl+scroll
+                    e.preventDefault();
+                    const scale = e.deltaY > 0 ? 0.9 : 1.1;
+                    this.zoom(scale);
+                }
+            }, { passive: false });
+            
+            // Mouse drag
+            this.container.addEventListener('mousedown', (e) => {
+                if (e.button === 0) { // Left click
+                    this.isDragging = true;
+                    this.startX = e.clientX - this.translateX;
+                    this.startY = e.clientY - this.translateY;
+                    this.container.style.cursor = 'grabbing';
+                }
+            });
+            
+            this.container.addEventListener('mousemove', this.throttle((e) => {
+                if (this.isDragging) {
+                    this.translateX = e.clientX - this.startX;
+                    this.translateY = e.clientY - this.startY;
+                    this.updateViewportTransform();
+                }
+            }, 16));
+            
+            this.container.addEventListener('mouseup', () => {
+                this.isDragging = false;
+                this.container.style.cursor = 'grab';
+            });
+            
+            this.container.addEventListener('mouseleave', () => {
+                this.isDragging = false;
+                this.container.style.cursor = 'grab';
+            });
+        }
+        
+        getDistance(touch1, touch2) {
+            const dx = touch1.clientX - touch2.clientX;
+            const dy = touch1.clientY - touch2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        getCenter(touch1, touch2) {
+            return {
+                x: (touch1.clientX + touch2.clientX) / 2,
+                y: (touch1.clientY + touch2.clientY) / 2
+            };
+        }
+        
+        // ========================================
+        // FIND ME FUNCTIONALITY
+        // ========================================
+        
+        setupFindMe() {
+            const findMeBtn = document.getElementById('findMe');
+            if (findMeBtn) {
+                findMeBtn.addEventListener('click', () => this.scrollToPlayerMatch());
+            }
+        }
+        
+        scrollToPlayerMatch() {
+            const playerMatch = document.querySelector('.player-match');
+            if (playerMatch) {
+                // Add pulse effect if motion is allowed
+                if (!this.isReducedMotion) {
+                    playerMatch.style.animation = 'none';
+                    setTimeout(() => {
+                        playerMatch.style.animation = 'playerPulse 1s ease-in-out 3';
+                    }, 10);
+                }
+                
+                // Smooth scroll to match
+                playerMatch.scrollIntoView({ 
+                    behavior: this.isReducedMotion ? 'auto' : 'smooth', 
+                    block: 'center',
+                    inline: 'center'
+                });
+                
+                // Show notification
+                this.showNotification('🏆 Found your match!', 'success');
+            } else {
+                this.showNotification('🔍 No active matches found', 'info');
+            }
+        }
+        
+        // ========================================
+        // FLOATING ACTION BUTTONS
+        // ========================================
+        
+        setupFloatingButtons() {
+            const showMyPath = document.getElementById('showMyPath');
+            const fullscreenToggle = document.getElementById('fullscreenToggle');
+            const refreshBracket = document.getElementById('refreshBracket');
+            
+            if (showMyPath) {
+                showMyPath.addEventListener('click', () => this.highlightPlayerPath());
+            }
+            
+            if (fullscreenToggle) {
+                fullscreenToggle.addEventListener('click', () => this.toggleFullscreen());
+            }
+            
+            if (refreshBracket) {
+                refreshBracket.addEventListener('click', () => this.refreshBracket());
+            }
+        }
+        
+        highlightPlayerPath() {
+            const playerMatches = document.querySelectorAll('.player-match');
+            const playerRows = document.querySelectorAll('[data-player-id]');
+            
+            // Clear previous highlights
+            document.querySelectorAll('.path-highlight').forEach(el => {
+                el.classList.remove('path-highlight');
+            });
+            
+            // Add path highlighting
+            playerMatches.forEach(match => {
+                match.classList.add('path-highlight');
+            });
+            
+            playerRows.forEach(row => {
+                if (row.closest('.player-match')) {
+                    row.style.background = 'linear-gradient(135deg, rgba(0, 255, 65, 0.3), rgba(0, 245, 255, 0.2))';
+                }
+            });
+            
+            this.showNotification('✨ Highlighted your tournament path', 'success');
+        }
+        
+        toggleFullscreen() {
+            const bracket = document.querySelector('.tournament-bracket-wrapper');
+            
+            if (!document.fullscreenElement) {
+                bracket.requestFullscreen().catch(err => {
+                    console.log('Fullscreen failed:', err);
+                    this.showNotification('❌ Fullscreen not supported', 'warning');
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        refreshBracket() {
+            this.showLoading();
+            
+            // Simulate refresh delay
+            setTimeout(() => {
+                this.hideLoading();
+                this.showNotification('⚙️ Bracket refreshed!', 'success');
+                
+                // Actual refresh logic can be added here
+                // window.location.reload();
+            }, 1500);
+        }
+        
+        // ========================================
+        // ROUND TOGGLE FUNCTIONALITY
+        // ========================================
+        
+        toggleRound(roundNum) {
+            const roundSection = document.querySelector(`[data-round="${roundNum}"]`);
+            if (roundSection) {
+                roundSection.classList.toggle('collapsed');
+                
+                // Update localStorage for persistence
+                const collapsedRounds = JSON.parse(localStorage.getItem('collapsedRounds') || '[]');
+                if (roundSection.classList.contains('collapsed')) {
+                    if (!collapsedRounds.includes(roundNum)) {
+                        collapsedRounds.push(roundNum);
+                    }
+                } else {
+                    const index = collapsedRounds.indexOf(roundNum);
+                    if (index > -1) {
+                        collapsedRounds.splice(index, 1);
+                    }
+                }
+                localStorage.setItem('collapsedRounds', JSON.stringify(collapsedRounds));
+            }
+        }
+        
+        // Restore collapsed state on load
+        restoreRoundStates() {
+            const collapsedRounds = JSON.parse(localStorage.getItem('collapsedRounds') || '[]');
+            collapsedRounds.forEach(roundNum => {
+                const roundSection = document.querySelector(`[data-round="${roundNum}"]`);
+                if (roundSection) {
+                    roundSection.classList.add('collapsed');
+                }
+            });
+        }
+        
+        // ========================================
+        // MATCH DETAIL FUNCTIONALITY
+        // ========================================
+        
+        showMatchDetails(matchId) {
+            // Find the match element
+            const matchCard = document.querySelector(`[data-match-id="${matchId}"]`);
+            if (!matchCard) return;
+            
+            // Create modal or overlay for match details
+            const modal = document.createElement('div');
+            modal.className = 'match-detail-modal';
+            modal.innerHTML = `
+                <div class="match-detail-content">
+                    <div class="match-detail-header">
+                        <h3>🏆 Match Details</h3>
+                        <button class="close-modal" onclick="this.parentElement.parentElement.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="match-detail-body">
+                        ${matchCard.innerHTML}
+                        <div class="match-extra-info">
+                            <p><strong>Match ID:</strong> ${matchId}</p>
+                            <p><strong>Status:</strong> <span class="status-badge">Active</span></p>
+                            <p><strong>Round:</strong> Current Round</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal styles with performance considerations
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                ${this.isMobile ? '' : 'backdrop-filter: blur(10px);'}
+            `;
+            
+            const content = modal.querySelector('.match-detail-content');
+            content.style.cssText = `
+                background: var(--bracket-surface);
+                border-radius: 1rem;
+                padding: 2rem;
+                max-width: 90vw;
+                max-height: 80vh;
+                overflow-y: auto;
+                border: 1px solid var(--bracket-glass-border);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Close on outside click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+        
+        // ========================================
+        // KEYBOARD NAVIGATION
+        // ========================================
+        
+        setupKeyboardNavigation() {
+            document.addEventListener('keydown', (e) => {
+                // Zoom shortcuts
+                if (e.ctrlKey && e.key === '=') {
+                    e.preventDefault();
+                    this.zoom(1.2);
+                } else if (e.ctrlKey && e.key === '-') {
+                    e.preventDefault();
+                    this.zoom(0.8);
+                } else if (e.ctrlKey && e.key === '0') {
+                    e.preventDefault();
+                    this.resetZoom();
+                }
+                
+                // Find me shortcut
+                if (e.ctrlKey && e.key === 'f') {
+                    e.preventDefault();
+                    this.scrollToPlayerMatch();
+                }
+                
+                // Refresh shortcut
+                if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+                    e.preventDefault();
+                    this.refreshBracket();
+                }
+            });
+        }
+        
+        // ========================================
+        // PULL TO REFRESH
+        // ========================================
+        
+        setupPullToRefresh() {
+            if (!this.isMobile) return; // Only enable on mobile
+            
+            let startY = 0;
+            let currentY = 0;
+            let pullDistance = 0;
+            const threshold = 100;
+            
+            this.container.addEventListener('touchstart', (e) => {
+                if (this.container.scrollTop === 0) {
+                    startY = e.touches[0].clientY;
+                    this.isPulling = true;
+                }
+            });
+            
+            this.container.addEventListener('touchmove', (e) => {
+                if (!this.isPulling) return;
+                
+                currentY = e.touches[0].clientY;
+                pullDistance = currentY - startY;
+                
+                if (pullDistance > 0 && this.container.scrollTop === 0) {
+                    e.preventDefault();
+                    
+                    if (this.pullRefreshIndicator) {
+                        this.pullRefreshIndicator.style.transform = `translateY(${Math.min(pullDistance, threshold)}px)`;
+                        
+                        if (pullDistance >= threshold) {
+                            this.pullRefreshIndicator.classList.remove('d-none');
+                        }
+                    }
+                }
+            });
+            
+            this.container.addEventListener('touchend', () => {
+                if (this.isPulling && pullDistance >= threshold) {
+                    this.refreshBracket();
+                }
+                
+                this.isPulling = false;
+                pullDistance = 0;
+                
+                if (this.pullRefreshIndicator) {
+                    this.pullRefreshIndicator.style.transform = '';
+                    setTimeout(() => {
+                        this.pullRefreshIndicator.classList.add('d-none');
+                    }, 300);
+                }
+            });
+        }
+        
+        // ========================================
+        // SWIPE NAVIGATION
+        // ========================================
+        
+        setupSwipeNavigation() {
+            if (!this.isMobile) return; // Only enable on mobile
+            
+            let startX = 0;
+            let startY = 0;
+            let isHorizontalSwipe = false;
+            
+            this.viewport.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isHorizontalSwipe = false;
+            });
+            
+            this.viewport.addEventListener('touchmove', (e) => {
+                if (!startX || !startY) return;
+                
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
+                const diffX = startX - currentX;
+                const diffY = startY - currentY;
+                
+                // Determine if this is a horizontal swipe
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 30) {
+                    isHorizontalSwipe = true;
+                }
+            });
+            
+            this.viewport.addEventListener('touchend', (e) => {
+                if (!startX || !startY || !isHorizontalSwipe) return;
+                
+                const endX = e.changedTouches[0].clientX;
+                const diffX = startX - endX;
+                
+                // Navigate between rounds with swipe
+                if (Math.abs(diffX) > 100) {
+                    if (diffX > 0) {
+                        this.navigateToNextRound();
+                    } else {
+                        this.navigateToPreviousRound();
+                    }
+                }
+                
+                startX = 0;
+                startY = 0;
+                isHorizontalSwipe = false;
+            });
+        }
+        
+        navigateToNextRound() {
+            const rounds = document.querySelectorAll('.round-section:not(.collapsed)');
+            if (rounds.length > 0) {
+                const nextRound = rounds[Math.min(this.currentRoundIndex + 1, rounds.length - 1)];
+                nextRound.scrollIntoView({ 
+                    behavior: this.isReducedMotion ? 'auto' : 'smooth', 
+                    block: 'start' 
+                });
+                this.currentRoundIndex = Math.min(this.currentRoundIndex + 1, rounds.length - 1);
+            }
+        }
+        
+        navigateToPreviousRound() {
+            const rounds = document.querySelectorAll('.round-section:not(.collapsed)');
+            if (rounds.length > 0) {
+                const prevRound = rounds[Math.max(this.currentRoundIndex - 1, 0)];
+                prevRound.scrollIntoView({ 
+                    behavior: this.isReducedMotion ? 'auto' : 'smooth', 
+                    block: 'start' 
+                });
+                this.currentRoundIndex = Math.max(this.currentRoundIndex - 1, 0);
+            }
+        }
+        
+        // ========================================
+        // PERFORMANCE OPTIMIZATIONS
+        // ======================================== 
+        
+        optimizePerformance() {
+            // Enable GPU acceleration
+            if (this.container) {
+                this.container.style.transform = 'translate3d(0,0,0)';
+                this.container.style.willChange = 'scroll-position';
+            }
+            
+            // Throttle scroll events for virtual scrolling
+            if (this.container) {
+                let scrollTimeout;
+                this.container.addEventListener('scroll', () => {
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(() => {
+                        // Update visible matches for performance
+                        this.updateVisibleMatches();
+                    }, 16); // ~60fps
+                });
+            }
+            
+            // Optimize effects for mobile devices
+            if (this.isMobile) {
+                // Reduce backdrop filters and shadows on mobile
+                document.querySelectorAll('.bracket-container, .tournament-bracket-wrapper').forEach(el => {
+                    el.style.backdropFilter = 'none';
+                });
+            }
+        }
+        
+        updateVisibleMatches() {
+            if (!this.container) return;
+            
+            const containerRect = this.container.getBoundingClientRect();
+            const matches = document.querySelectorAll('.match-card');
+            
+            matches.forEach(match => {
+                const matchRect = match.getBoundingClientRect();
+                const isVisible = (
+                    matchRect.bottom >= containerRect.top &&
+                    matchRect.top <= containerRect.bottom
+                );
+                
+                // Toggle visibility for performance
+                if (isVisible) {
+                    match.style.visibility = 'visible';
+                } else {
+                    match.style.visibility = 'hidden';
+                }
+            });
+        }
+        
+        // ========================================
+        // UTILITY FUNCTIONS
+        // ========================================
+        
+        throttle(func, delay) {
+            let timeoutId;
+            let lastExecTime = 0;
+            return function (...args) {
+                const currentTime = Date.now();
+                
+                if (currentTime - lastExecTime > delay) {
+                    func.apply(this, args);
+                    lastExecTime = currentTime;
+                } else {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => {
+                        func.apply(this, args);
+                        lastExecTime = Date.now();
+                    }, delay - (currentTime - lastExecTime));
+                }
+            };
+        }
+        
+        showLoading() {
+            if (this.loading) {
+                this.loading.classList.remove('d-none');
+            }
+        }
+        
+        hideLoading() {
+            if (this.loading) {
+                this.loading.classList.add('d-none');
+            }
+        }
+        
+        showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `bracket-notification ${type}`;
+            notification.textContent = message;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--bracket-surface);
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 0.5rem;
+                border: 1px solid var(--bracket-glass-border);
+                box-shadow: var(--bracket-shadow-lg);
+                z-index: 1001;
+                font-weight: 600;
+                ${this.isMobile ? '' : 'backdrop-filter: blur(10px);'}
+                animation: ${this.isReducedMotion ? 'none' : 'slideInFromTop 0.3s ease-out'};
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (!this.isReducedMotion) {
+                    notification.style.animation = 'slideOutToTop 0.3s ease-out';
+                }
+                setTimeout(() => notification.remove(), this.isReducedMotion ? 0 : 300);
+            }, 3000);
+        }
+    }
+    
+    // Global functions for HTML event handlers
+    function toggleRound(roundNum) {
+        if (window.bracketInstance) {
+            window.bracketInstance.toggleRound(roundNum);
+        }
+    }
+    
+    function showMatchDetails(matchId) {
+        if (window.bracketInstance) {
+            window.bracketInstance.showMatchDetails(matchId);
+        }
+    }
+    
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+        window.bracketInstance = new TournamentBracketController();
+    });
+    
+    // Add CSS animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideInFromTop {
+            from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        
+        @keyframes slideOutToTop {
+            from { transform: translateX(-50%) translateY(0); opacity: 1; }
+            to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+        }
+        
+        .path-highlight {
+            border-color: var(--bracket-green) !important;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.8) !important;
+            animation: pathPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pathPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        @keyframes playerPulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: var(--bracket-shadow-md);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: var(--bracket-glow-green), var(--bracket-shadow-lg);
+            }
+        }
+        
+        @keyframes bracketConnectorGlow {
+            0%, 100% { 
+                box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+            }
+            50% { 
+                box-shadow: 0 0 20px rgba(0, 245, 255, 0.8), 0 0 30px rgba(0, 255, 65, 0.4);
+            }
+        }
+        
+        /* Apply connector animation on desktop */
+        @media (min-width: 1024px) {
+            .round-section:not(:last-child)::after {
+                animation: bracketConnectorGlow 3s ease-in-out infinite;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+
 {% endblock %}
