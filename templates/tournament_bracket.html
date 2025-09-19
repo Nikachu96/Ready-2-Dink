@@ -213,6 +213,11 @@
                         <div class="loading-spinner"></div>
                         <p>Release to refresh bracket</p>
                     </div>
+                    
+                    <!-- ARIA Live Region for Accessibility -->
+                    <div aria-live="polite" aria-atomic="true" class="sr-only" id="bracketAnnouncer">
+                        <!-- Screen reader announcements will be inserted here -->
+                    </div>
                 </div>
                 
                 <!-- Floating Action Buttons -->
@@ -2398,6 +2403,9 @@
         }
         
         showNotification(message, type = 'info') {
+            // Announce to screen readers
+            this.announceToScreenReader(message);
+            
             const notification = document.createElement('div');
             notification.className = `bracket-notification ${type}`;
             notification.textContent = message;
@@ -2428,6 +2436,17 @@
                 setTimeout(() => notification.remove(), this.isReducedMotion ? 0 : 300);
             }, 3000);
         }
+        
+        announceToScreenReader(message) {
+            const announcer = document.getElementById('bracketAnnouncer');
+            if (announcer) {
+                announcer.textContent = message;
+                // Clear after announcement to allow repeated announcements
+                setTimeout(() => {
+                    announcer.textContent = '';
+                }, 1000);
+            }
+        }
     }
     
     // Global functions for HTML event handlers
@@ -2445,7 +2464,7 @@
     
     // Initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
-        window.bracketInstance = new TournamentBracketController();
+        window.bracketInstance = new TournamentBracket();
     });
     
     // Add CSS animations
@@ -2497,6 +2516,19 @@
             .round-section:not(:last-child)::after {
                 animation: bracketConnectorGlow 3s ease-in-out infinite;
             }
+        }
+        
+        /* Screen reader only class for accessibility */
+        .sr-only {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
         }
     `;
     document.head.appendChild(style);
