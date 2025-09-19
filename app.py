@@ -5120,7 +5120,8 @@ def browse_players():
     
     return render_template('browse_players.html', 
                          players=compatible_players, 
-                         current_player=current_player)
+                         current_player=current_player,
+                         current_player_id=current_player_id)
 
 @app.route('/profile_settings')
 def profile_settings():

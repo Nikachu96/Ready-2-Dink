@@ -255,8 +255,8 @@ function sendChallenge() {
     }
     
     // Check if we have a valid player ID
-    const playerId = '{{ session.get("current_player_id") }}';
-    console.log('Player ID from session:', playerId);
+    const playerId = '{{ current_player_id }}';
+    console.log('Player ID passed to template:', playerId);
     
     if (!playerId || playerId === 'None' || playerId === 'undefined') {
         alert('Error: You must be logged in to send challenges. Please refresh the page and try again.');
