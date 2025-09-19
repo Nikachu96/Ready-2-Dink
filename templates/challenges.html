@@ -241,7 +241,7 @@
                                                 <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
                                                      class="challenge-avatar" alt="Player">
                                             {% else %}
-                                                <div class="avatar-placeholder" style="font-size: 1rem;">
+                                                <div class="avatar-placeholder challenge-avatar-placeholder" style="font-size: 1rem;">
                                                     {{ player.full_name[0].upper() }}
                                                 </div>
                                             {% endif %}
