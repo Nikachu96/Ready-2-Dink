@@ -2799,7 +2799,10 @@ def challenges():
         ORDER BY m.created_at DESC
     ''', (player_id,)).fetchall()
     
-    # Get confirmed matches (upcoming confirmed matches)
+    # Get confirmed matches - separate upcoming from past due (need score submission)
+    from datetime import datetime
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+    
     confirmed_matches = conn.execute('''
         SELECT m.*, 
                CASE 
@@ -2813,7 +2816,11 @@ def challenges():
                CASE 
                    WHEN m.player1_id = ? THEN p2.skill_level
                    ELSE p1.skill_level 
-               END as opponent_skill
+               END as opponent_skill,
+               CASE 
+                   WHEN datetime(m.scheduled_time) <= datetime('now') THEN 'past_due'
+                   ELSE 'upcoming'
+               END as time_status
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
