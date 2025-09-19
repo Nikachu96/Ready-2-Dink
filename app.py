@@ -3889,6 +3889,54 @@ def tournaments_overview():
     # Get all registered players for quick access
     players = conn.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name').fetchall()
     
+    # Get tournament brackets for the current player
+    my_tournament_brackets = conn.execute('''
+        SELECT DISTINCT 
+            ti.id as tournament_instance_id,
+            ti.name as tournament_name,
+            ti.skill_level,
+            ti.status as tournament_status,
+            t.tournament_type,
+            t.entry_date,
+            COUNT(DISTINCT tm.id) as total_matches,
+            COUNT(DISTINCT CASE WHEN tm.status = 'completed' THEN tm.id END) as completed_matches,
+            MAX(tm.round_number) as current_round,
+            (SELECT COUNT(DISTINCT round_number) FROM tournament_matches 
+             WHERE tournament_instance_id = ti.id) as total_rounds,
+            CASE 
+                WHEN COUNT(DISTINCT tm.id) = 0 THEN 'No Bracket Yet'
+                WHEN ti.status = 'completed' THEN 'Tournament Complete'
+                WHEN MAX(tm.round_number) = (SELECT MAX(round_number) FROM tournament_matches 
+                                           WHERE tournament_instance_id = ti.id
+                                           AND status = 'completed') THEN 'Final Round'
+                ELSE 'Round ' || COALESCE(MAX(CASE WHEN tm.status IN ('pending', 'active') THEN tm.round_number END), 1)
+            END as bracket_status,
+            CASE 
+                WHEN EXISTS (SELECT 1 FROM tournament_matches tm2 
+                           WHERE tm2.tournament_instance_id = ti.id 
+                           AND (tm2.player1_id = ? OR tm2.player2_id = ?)
+                           AND tm2.winner_id = ?) THEN 'Advanced'
+                WHEN EXISTS (SELECT 1 FROM tournament_matches tm2 
+                           WHERE tm2.tournament_instance_id = ti.id 
+                           AND (tm2.player1_id = ? OR tm2.player2_id = ?)
+                           AND tm2.status = 'completed'
+                           AND tm2.winner_id != ?) THEN 'Eliminated'
+                WHEN EXISTS (SELECT 1 FROM tournament_matches tm2 
+                           WHERE tm2.tournament_instance_id = ti.id 
+                           AND (tm2.player1_id = ? OR tm2.player2_id = ?)
+                           AND tm2.status IN ('pending', 'active')) THEN 'Active'
+                ELSE 'Awaiting Bracket'
+            END as player_status
+        FROM tournaments t
+        JOIN tournament_instances ti ON t.tournament_instance_id = ti.id
+        LEFT JOIN tournament_matches tm ON ti.id = tm.tournament_instance_id
+        WHERE t.player_id = ?
+        GROUP BY ti.id, ti.name, ti.skill_level, ti.status, t.tournament_type, t.entry_date
+        ORDER BY t.entry_date DESC
+    ''', (current_player_id, current_player_id, current_player_id, 
+          current_player_id, current_player_id, current_player_id,
+          current_player_id, current_player_id, current_player_id)).fetchall()
+    
     conn.close()
     
     # Add comprehensive location filter info to template context
@@ -3937,6 +3985,7 @@ def tournaments_overview():
                          tournament_instances=tournament_instances,
                          custom_tournaments=custom_tournaments,
                          recent_entries=recent_entries,
+                         my_tournament_brackets=my_tournament_brackets,
                          players=players,
                          location_info=location_context)
 

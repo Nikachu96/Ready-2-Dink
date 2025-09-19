@@ -532,7 +532,8 @@
 {% endif %}
 
 <div class="row">
-    <div class="col-md-10 col-lg-8 mx-auto">
+    <!-- Recent Tournament Entries Column -->
+    <div class="col-md-6 mb-4">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0 text-center">
@@ -629,6 +630,91 @@
                         <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
                         <h5 class="text-muted">No Tournament Entries Yet</h5>
                         <p class="text-muted">Be the first to join a tournament!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- My Tournament Brackets Column -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0 text-center">
+                    <i class="fas fa-trophy me-2"></i>My Tournament Brackets
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if my_tournament_brackets %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th class="text-white fw-bold">Tournament</th>
+                                    <th class="text-white fw-bold">Level</th>
+                                    <th class="text-white fw-bold">Status</th>
+                                    <th class="text-white fw-bold">Position</th>
+                                    <th class="text-white fw-bold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bracket in my_tournament_brackets %}
+                                <tr>
+                                    <td class="text-white">
+                                        <div class="d-flex flex-column">
+                                            <strong class="text-white">{{ bracket.tournament_name }}</strong>
+                                            <small class="text-muted">{{ bracket.tournament_type|title }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ bracket.skill_level }}</span>
+                                    </td>
+                                    <td>
+                                        {% if bracket.bracket_status == 'Tournament Complete' %}
+                                            <span class="badge bg-success">{{ bracket.bracket_status }}</span>
+                                        {% elif bracket.bracket_status == 'No Bracket Yet' or bracket.bracket_status == 'Awaiting Bracket' %}
+                                            <span class="badge bg-secondary">{{ bracket.bracket_status }}</span>
+                                        {% elif 'Final' in bracket.bracket_status %}
+                                            <span class="badge bg-warning">{{ bracket.bracket_status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">{{ bracket.bracket_status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if bracket.player_status == 'Advanced' %}
+                                            <span class="badge bg-success">{{ bracket.player_status }}</span>
+                                        {% elif bracket.player_status == 'Eliminated' %}
+                                            <span class="badge bg-danger">{{ bracket.player_status }}</span>
+                                        {% elif bracket.player_status == 'Active' %}
+                                            <span class="badge bg-warning">{{ bracket.player_status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ bracket.player_status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if bracket.total_matches > 0 %}
+                                            <a href="{{ url_for('view_tournament_bracket', tournament_instance_id=bracket.tournament_instance_id) }}" 
+                                               class="btn btn-sm btn-outline-info" title="View Tournament Bracket">
+                                                <i class="fas fa-sitemap me-1"></i>View Bracket
+                                            </a>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-outline-secondary" disabled 
+                                                    title="Bracket not yet available" 
+                                                    data-bs-toggle="tooltip" data-bs-placement="top">
+                                                <i class="fas fa-sitemap me-1"></i>View Bracket
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Tournament Brackets Yet</h5>
+                        <p class="text-muted">Join a tournament to see your brackets here!</p>
                     </div>
                 {% endif %}
             </div>
