@@ -7376,6 +7376,40 @@ def api_recent_credit_transactions():
     
     return jsonify({'transactions': transactions_list})
 
+@app.route('/api/player_stats/<int:player_id>')
+def api_player_stats(player_id):
+    """API endpoint to get player statistics"""
+    try:
+        conn = get_db_connection()
+        
+        player = conn.execute('''
+            SELECT id, full_name, skill_level, wins, losses, ranking_points, location
+            FROM players 
+            WHERE id = ?
+        ''', (player_id,)).fetchone()
+        
+        conn.close()
+        
+        if not player:
+            return jsonify({'success': False, 'message': 'Player not found'})
+        
+        return jsonify({
+            'success': True,
+            'player': {
+                'id': player['id'],
+                'full_name': player['full_name'],
+                'skill_level': player['skill_level'],
+                'wins': player['wins'] or 0,
+                'losses': player['losses'] or 0,
+                'ranking_points': player['ranking_points'] or 0,
+                'location': player['location']
+            }
+        })
+        
+    except Exception as e:
+        logging.error(f"Error fetching player stats for player {player_id}: {e}")
+        return jsonify({'success': False, 'message': 'Error loading player stats'})
+
 @app.route('/credit_transaction_history/<int:player_id>')
 def credit_transaction_history(player_id):
     """Display credit transaction history for a player"""

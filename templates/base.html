@@ -571,6 +571,130 @@
             height: 45px !important;
             font-size: 0.9rem !important;
         }
+
+        /* Challenge Player Cards - New Grid Layout */
+        .challenge-player-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            transition: var(--transition-normal);
+            backdrop-filter: blur(10px);
+        }
+
+        .challenge-player-card:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Challenge Player Avatars */
+        .challenge-player-avatar {
+            width: 60px !important;
+            height: 60px !important;
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            border: 3px solid var(--neon-green) !important;
+            transition: var(--transition-normal);
+        }
+
+        .challenge-player-avatar.advanced {
+            border-color: var(--neon-green) !important;
+        }
+
+        .challenge-player-avatar.beginner {
+            border-color: #4a90e2 !important;
+        }
+
+        .challenge-player-avatar-placeholder {
+            width: 60px !important;
+            height: 60px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1.5rem !important;
+            font-weight: bold !important;
+            color: white !important;
+            border: 3px solid var(--neon-green) !important;
+            transition: var(--transition-normal);
+        }
+
+        .challenge-player-avatar-placeholder.advanced {
+            background: var(--neon-green) !important;
+            border-color: var(--neon-green) !important;
+        }
+
+        .challenge-player-avatar-placeholder.beginner {
+            background: #4a90e2 !important;
+            border-color: #4a90e2 !important;
+        }
+
+        /* Challenge and Stats Buttons */
+        .btn-challenge-advanced, .btn-challenge-beginner {
+            padding: 8px 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            transition: var(--transition-normal);
+            min-width: 90px;
+        }
+
+        .btn-challenge-advanced {
+            background: var(--neon-green);
+            color: white;
+        }
+
+        .btn-challenge-advanced:hover {
+            background: #00cc33;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 255, 65, 0.4);
+        }
+
+        .btn-challenge-beginner {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .btn-challenge-beginner:hover {
+            background: #357abd;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+        }
+
+        .btn-stats-advanced, .btn-stats-beginner {
+            padding: 8px 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: 2px solid;
+            background: transparent;
+            transition: var(--transition-normal);
+            min-width: 90px;
+        }
+
+        .btn-stats-advanced {
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+        }
+
+        .btn-stats-advanced:hover {
+            background: var(--neon-green);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 255, 65, 0.4);
+        }
+
+        .btn-stats-beginner {
+            border-color: #4a90e2;
+            color: #4a90e2;
+        }
+
+        .btn-stats-beginner:hover {
+            background: #4a90e2;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+        }
         
         /* Player Avatar - Consistent sizing across all pages */
         .player-avatar {

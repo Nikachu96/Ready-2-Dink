@@ -218,73 +218,121 @@
         </div>
         {% endif %}
 
-        <!-- Send New Challenge -->
+        <!-- Challenge Players by Skill Level -->
         <div class="row mb-5">
             <div class="col-12">
                 <h2 class="text-bold mb-4 neon-text">
-                    <i class="fas fa-plus-circle me-2"></i>Challenge a Player
+                    <i class="fas fa-plus-circle me-2"></i>Pick Player to Challenge:
                 </h2>
                 
-                <div class="neon-frame">
-                    <form method="POST" action="{{ url_for('send_challenge_route') }}">
-                        <div class="mb-4">
-                            <label class="form-label text-white text-bold">Select Player to Challenge:</label>
-                            <div style="max-height: 400px; overflow-y: auto;">
-                                {% for player in available_players %}
-                                <div class="player-option">
+                {% if available_players %}
+                    {% set advanced_players = available_players | selectattr("skill_level", "in", ["Advanced", "Expert", "Pro"]) | list %}
+                    {% set beginner_players = available_players | selectattr("skill_level", "in", ["Beginner", "Intermediate", "Recreational"]) | list %}
+                    
+                    <!-- Advanced Players Section -->
+                    {% if advanced_players %}
+                    <div class="mb-5">
+                        <h3 class="text-white text-bold mb-3">Advanced Players</h3>
+                        <div class="row">
+                            {% for player in advanced_players %}
+                            <div class="col-md-6 mb-3">
+                                <div class="challenge-player-card advanced">
                                     <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            <input type="radio" name="opponent_id" value="{{ player.id }}" id="player_{{ player.id }}" class="form-check-input me-2">
-                                        </div>
                                         <div class="col-auto">
                                             {% if player.selfie %}
                                                 <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                                     class="challenge-avatar" alt="Player">
+                                                     class="challenge-player-avatar advanced" alt="{{ player.full_name }}">
                                             {% else %}
-                                                <div class="avatar-placeholder challenge-avatar-placeholder" style="font-size: 1rem;">
+                                                <div class="challenge-player-avatar-placeholder advanced">
                                                     {{ player.full_name[0].upper() }}
                                                 </div>
                                             {% endif %}
                                         </div>
                                         <div class="col">
-                                            <label for="player_{{ player.id }}" class="form-check-label" style="cursor: pointer; width: 100%;">
-                                                <h6 class="mb-1 text-white text-bold neon-text">{{ player.full_name }}</h6>
-                                                <div class="d-flex flex-wrap gap-2">
-                                                    <span class="badge badge-success text-bold">{{ player.skill_level }}</span>
-                                                    <span class="badge badge-primary text-bold">{{ player.wins or 0 }}W-{{ player.losses or 0 }}L</span>
-                                                    <span class="badge badge-warning text-bold">{{ player.ranking_points or 0 }} pts</span>
+                                            <h5 class="mb-1 text-white text-bold">{{ player.full_name }}</h5>
+                                            <div class="player-details">
+                                                <div class="text-white mb-1">
+                                                    <span class="me-3"><strong>Skill</strong> {{ player.skill_level }}</span>
                                                 </div>
-                                            </label>
+                                                <div class="text-white">
+                                                    <span><strong>Points</strong> {{ player.ranking_points or 0 }} pts</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <div class="d-flex flex-column gap-2">
+                                                <button onclick="showChallengeModal({{ player.id }}, '{{ player.full_name }}')" 
+                                                        class="btn btn-challenge-advanced">
+                                                    Challenge
+                                                </button>
+                                                <button onclick="showPlayerStats({{ player.id }})" 
+                                                        class="btn btn-stats-advanced">
+                                                    View Stats
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                {% else %}
-                                <div class="text-center py-4">
-                                    <p class="text-white-50">No available players to challenge at the moment</p>
-                                </div>
-                                {% endfor %}
                             </div>
+                            {% endfor %}
                         </div>
-                        
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Beginner Players Section -->
+                    {% if beginner_players %}
+                    <div class="mb-5">
+                        <h3 class="text-white text-bold mb-3">Beginner Players</h3>
                         <div class="row">
+                            {% for player in beginner_players %}
                             <div class="col-md-6 mb-3">
-                                <label class="form-label text-white text-bold">Proposed Location (Optional):</label>
-                                <input type="text" class="form-control dark-input" name="court_location" 
-                                       placeholder="Court or location preference">
+                                <div class="challenge-player-card beginner">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            {% if player.selfie %}
+                                                <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
+                                                     class="challenge-player-avatar beginner" alt="{{ player.full_name }}">
+                                            {% else %}
+                                                <div class="challenge-player-avatar-placeholder beginner">
+                                                    {{ player.full_name[0].upper() }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col">
+                                            <h5 class="mb-1 text-white text-bold">{{ player.full_name }}</h5>
+                                            <div class="player-details">
+                                                <div class="text-white mb-1">
+                                                    <span class="me-3"><strong>Skill</strong> {{ player.skill_level }}</span>
+                                                </div>
+                                                <div class="text-white">
+                                                    <span><strong>Points</strong> {{ player.ranking_points or 0 }} pts</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <div class="d-flex flex-column gap-2">
+                                                <button onclick="showChallengeModal({{ player.id }}, '{{ player.full_name }}')" 
+                                                        class="btn btn-challenge-beginner">
+                                                    Challenge
+                                                </button>
+                                                <button onclick="showPlayerStats({{ player.id }})" 
+                                                        class="btn btn-stats-beginner">
+                                                    View Stats
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label text-white text-bold">Proposed Date & Time (Optional):</label>
-                                <input type="datetime-local" class="form-control dark-input" name="scheduled_time">
-                            </div>
+                            {% endfor %}
                         </div>
-                        
-                        <div class="text-center">
-                            <button type="submit" class="btn btn-primary btn-lg text-bold">
-                                <i class="fas fa-paper-plane me-2"></i>Send Challenge
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="neon-frame text-center py-5">
+                        <p class="text-white-50 mb-0">No available players to challenge at the moment</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
@@ -390,6 +438,171 @@
 </div>
 {% endif %}
 {% endfor %}
+
+<!-- Challenge Modal -->
+<div class="modal fade" id="challengeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-handshake me-2"></i>Challenge <span id="challengePlayerName"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="challengeForm" method="POST" action="{{ url_for('send_challenge_route') }}">
+                    <input type="hidden" id="challengeOpponentId" name="opponent_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-white text-bold">Proposed Location (Optional):</label>
+                        <input type="text" class="form-control dark-input" name="court_location" 
+                               placeholder="Court or location preference">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-white text-bold">Proposed Date & Time (Optional):</label>
+                        <input type="datetime-local" class="form-control dark-input" name="scheduled_time">
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg text-bold">
+                            <i class="fas fa-paper-plane me-2"></i>Send Challenge
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Player Stats Modal -->
+<div class="modal fade" id="playerStatsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-bar me-2"></i><span id="statsPlayerName"></span> Stats
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="playerStatsContent">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Challenge Modal Functions
+function showChallengeModal(playerId, playerName) {
+    document.getElementById('challengePlayerName').textContent = playerName;
+    document.getElementById('challengeOpponentId').value = playerId;
+    const modal = new bootstrap.Modal(document.getElementById('challengeModal'));
+    modal.show();
+}
+
+// Player Stats Modal Functions
+function showPlayerStats(playerId) {
+    const modal = new bootstrap.Modal(document.getElementById('playerStatsModal'));
+    
+    // Reset content
+    document.getElementById('playerStatsContent').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Fetch player stats
+    fetch(`/api/player_stats/${playerId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const player = data.player;
+                document.getElementById('statsPlayerName').textContent = player.full_name;
+                
+                const winRate = (player.wins + player.losses) > 0 ? 
+                    Math.round((player.wins / (player.wins + player.losses)) * 100) : 0;
+                
+                document.getElementById('playerStatsContent').innerHTML = `
+                    <div class="row text-center mb-4">
+                        <div class="col-4">
+                            <div class="neon-frame p-3">
+                                <div class="text-neon-green text-bold h3">${player.wins || 0}</div>
+                                <div class="text-white">Wins</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="neon-frame p-3">
+                                <div class="text-danger text-bold h3">${player.losses || 0}</div>
+                                <div class="text-white">Losses</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="neon-frame p-3">
+                                <div class="text-neon text-bold h3">${winRate}%</div>
+                                <div class="text-white">Win Rate</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h6 class="text-white text-bold">Skill Level</h6>
+                                <span class="badge badge-primary">${player.skill_level}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h6 class="text-white text-bold">Ranking Points</h6>
+                                <span class="badge badge-warning">${player.ranking_points || 0} pts</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h6 class="text-white text-bold">Total Matches</h6>
+                                <span class="text-white">${(player.wins || 0) + (player.losses || 0)}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h6 class="text-white text-bold">Location</h6>
+                                <span class="text-white">${player.location || 'Not specified'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('playerStatsContent').innerHTML = `
+                    <div class="text-center text-danger">
+                        <p>Unable to load player stats</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching player stats:', error);
+            document.getElementById('playerStatsContent').innerHTML = `
+                <div class="text-center text-danger">
+                    <p>Error loading player stats</p>
+                </div>
+            `;
+        });
+}
+</script>
 
 <script>
 function handleCounterProposal(challengeId) {
