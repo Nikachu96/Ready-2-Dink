@@ -4333,12 +4333,16 @@ def player_home(player_id):
     # Check if it's the player's birthday
     is_birthday = is_player_birthday(player['dob'])
     
+    # Get team invitations
+    team_invitations = get_player_team_invitations(player_id)
+    
     return render_template('player_home.html', 
                          player=player, 
                          connections=connections,
                          recent_matches=recent_matches,
                          tournaments=tournaments,
                          player_tournaments=player_tournaments,
+                         team_invitations=team_invitations,
                          available_tournaments=available_tournaments,
                          player_ranking=player_ranking,
                          leaderboard=leaderboard,
@@ -8025,7 +8029,7 @@ def accept_team_invitation_route(invitation_id):
 
 @app.route('/reject_team_invitation/<int:invitation_id>')
 def reject_team_invitation_route(invitation_id):
-    """Reject a team invitation"""
+    """Reject a team invitation or match challenge"""
     current_player_id = session.get('current_player_id') or session.get('player_id')
     
     logging.info(f"🚫 DECLINE DEBUG: invitation_id={invitation_id}, current_player_id={current_player_id}")
@@ -8034,6 +8038,34 @@ def reject_team_invitation_route(invitation_id):
         flash('Please log in first', 'warning')
         return redirect(url_for('player_login'))
     
+    # First check if this is a match challenge (singles/doubles match) instead of a team invitation
+    try:
+        conn = get_db_connection()
+        invitation = conn.execute('''
+            SELECT * FROM team_invitations WHERE id = ? AND invitee_id = ? AND status = 'pending'
+        ''', (invitation_id, current_player_id)).fetchone()
+        
+        if invitation and invitation.get('meta_json'):
+            import json
+            meta = json.loads(invitation['meta_json'])
+            if meta.get('type') in ['singles', 'doubles']:
+                # This is a match challenge, not a team invitation
+                conn.execute('''
+                    UPDATE team_invitations 
+                    SET status = 'rejected', responded_at = datetime('now')
+                    WHERE id = ? AND invitee_id = ? AND status = 'pending'
+                ''', (invitation_id, current_player_id))
+                conn.commit()
+                conn.close()
+                
+                flash('Match challenge declined.', 'info')
+                return redirect(url_for('player_home'))
+        
+        conn.close()
+    except Exception as e:
+        logging.error(f"Error checking invitation type: {e}")
+    
+    # Regular team invitation decline
     result = reject_team_invitation(invitation_id, current_player_id)
     
     logging.info(f"🚫 DECLINE RESULT: {result}")
