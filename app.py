@@ -5518,10 +5518,9 @@ def submit_match_result():
     conn.execute('''
         UPDATE matches 
         SET player1_score = ?, player2_score = ?, winner_id = ?, 
-            status = 'completed', result_submitted_by = ?,
-            match_result = ?
+            status = 'completed', match_result = ?
         WHERE id = ?
-    ''', (player1_sets_won, player2_sets_won, winner_id, submitter_id, 
+    ''', (player1_sets_won, player2_sets_won, winner_id, 
           match_score, match_id))
     
     # Update player win/loss records
