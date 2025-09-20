@@ -5334,6 +5334,21 @@ def update_profile():
         except (ValueError, TypeError):
             logging.warning(f"Profile update: Invalid search radius provided, using default 15")
     
+    # Validate and process gender
+    gender = request.form.get('gender', 'prefer_not_to_say').strip()
+    valid_genders = ['male', 'female', 'non_binary', 'prefer_not_to_say']
+    if gender not in valid_genders:
+        flash('Please select a valid gender option', 'danger')
+        return redirect(url_for('profile_settings'))
+    
+    # Validate and process travel radius
+    travel_radius_input = request.form.get('travel_radius', '25').strip()
+    try:
+        travel_radius = max(5, min(100, int(travel_radius_input)))  # Clamp between 5-100 miles
+    except (ValueError, TypeError):
+        flash('Travel radius must be a number between 5 and 100 miles', 'danger')
+        return redirect(url_for('profile_settings'))
+    
     try:
         # Update player information
         if selfie_filename:
@@ -5344,7 +5359,7 @@ def update_profile():
                     court1_coordinates = ?, court2_coordinates = ?,
                     skill_level = ?, email = ?, selfie = ?, player_id = ?, payout_preference = ?,
                     paypal_email = ?, venmo_username = ?, zelle_info = ?,
-                    latitude = ?, longitude = ?, search_radius_miles = ?
+                    latitude = ?, longitude = ?, search_radius_miles = ?, gender = ?, travel_radius = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
@@ -5353,7 +5368,7 @@ def update_profile():
                   request.form['skill_level'], request.form['email'], selfie_filename, player_id_input, 
                   request.form.get('payout_preference', ''), request.form.get('paypal_email', ''),
                   request.form.get('venmo_username', ''), request.form.get('zelle_info', ''),
-                  latitude, longitude, search_radius_miles, player_id))
+                  latitude, longitude, search_radius_miles, gender, travel_radius, player_id))
         else:
             conn.execute('''
                 UPDATE players 
@@ -5362,7 +5377,7 @@ def update_profile():
                     court1_coordinates = ?, court2_coordinates = ?,
                     skill_level = ?, email = ?, player_id = ?, payout_preference = ?,
                     paypal_email = ?, venmo_username = ?, zelle_info = ?,
-                    latitude = ?, longitude = ?, search_radius_miles = ?
+                    latitude = ?, longitude = ?, search_radius_miles = ?, gender = ?, travel_radius = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
@@ -5371,7 +5386,7 @@ def update_profile():
                   request.form['skill_level'], request.form['email'], player_id_input, 
                   request.form.get('payout_preference', ''), request.form.get('paypal_email', ''),
                   request.form.get('venmo_username', ''), request.form.get('zelle_info', ''),
-                  latitude, longitude, search_radius_miles, player_id))
+                  latitude, longitude, search_radius_miles, gender, travel_radius, player_id))
         
         conn.commit()
         conn.close()

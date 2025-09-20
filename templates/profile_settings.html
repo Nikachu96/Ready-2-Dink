@@ -203,6 +203,47 @@
                         </div>
                     </div>
                     
+                    <!-- Gender and Travel Radius -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="gender" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Gender
+                                </label>
+                                <select class="form-select" id="gender" name="gender">
+                                    <option value="prefer_not_to_say" {{ 'selected' if player.gender == 'prefer_not_to_say' or not player.gender }}>Prefer not to say</option>
+                                    <option value="male" {{ 'selected' if player.gender == 'male' }}>Male</option>
+                                    <option value="female" {{ 'selected' if player.gender == 'female' }}>Female</option>
+                                    <option value="non_binary" {{ 'selected' if player.gender == 'non_binary' }}>Non-binary</option>
+                                </select>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Optional demographic information
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="travel_radius" class="form-label">
+                                    <i class="fas fa-route me-1"></i>Maximum Travel Distance (miles)
+                                </label>
+                                <select class="form-select" id="travel_radius" name="travel_radius">
+                                    <option value="5" {{ 'selected' if player.travel_radius == 5 }}>5 miles</option>
+                                    <option value="10" {{ 'selected' if player.travel_radius == 10 }}>10 miles</option>
+                                    <option value="15" {{ 'selected' if player.travel_radius == 15 }}>15 miles</option>
+                                    <option value="25" {{ 'selected' if player.travel_radius == 25 or not player.travel_radius }}>25 miles (default)</option>
+                                    <option value="50" {{ 'selected' if player.travel_radius == 50 }}>50 miles</option>
+                                    <option value="75" {{ 'selected' if player.travel_radius == 75 }}>75 miles</option>
+                                    <option value="100" {{ 'selected' if player.travel_radius == 100 }}>100 miles</option>
+                                </select>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    How far you're willing to travel for matches and tournaments
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
