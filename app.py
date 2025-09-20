@@ -2425,7 +2425,16 @@ def handle_random_match_acceptance(invitation, player_id, conn):
 def reject_team_invitation(invitation_id, player_id):
     """Reject a team invitation"""
     try:
+        logging.info(f"🚫 REJECT FUNCTION: invitation_id={invitation_id}, player_id={player_id}")
+        
         conn = get_db_connection()
+        
+        # Check if invitation exists first
+        invitation_check = conn.execute('''
+            SELECT * FROM team_invitations WHERE id = ? AND invitee_id = ? AND status = 'pending'
+        ''', (invitation_id, player_id)).fetchone()
+        
+        logging.info(f"🚫 INVITATION CHECK: {invitation_check}")
         
         # Update invitation status
         result = conn.execute('''
@@ -2433,6 +2442,8 @@ def reject_team_invitation(invitation_id, player_id):
             SET status = 'rejected', responded_at = datetime('now')
             WHERE id = ? AND invitee_id = ? AND status = 'pending'
         ''', (invitation_id, player_id))
+        
+        logging.info(f"🚫 UPDATE RESULT: rowcount={result.rowcount}")
         
         if result.rowcount == 0:
             conn.close()
@@ -8017,11 +8028,15 @@ def reject_team_invitation_route(invitation_id):
     """Reject a team invitation"""
     current_player_id = session.get('current_player_id') or session.get('player_id')
     
+    logging.info(f"🚫 DECLINE DEBUG: invitation_id={invitation_id}, current_player_id={current_player_id}")
+    
     if not current_player_id:
         flash('Please log in first', 'warning')
         return redirect(url_for('player_login'))
     
     result = reject_team_invitation(invitation_id, current_player_id)
+    
+    logging.info(f"🚫 DECLINE RESULT: {result}")
     
     if result['success']:
         flash('Team invitation declined.', 'info')
