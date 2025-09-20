@@ -3038,8 +3038,12 @@ def get_filtered_compatible_players(player_id, match_type="", skill_level="", di
             base_query += " AND skill_level = ?"
             params.append(player['skill_level'])
     
-    # Note: Match type filter (singles/doubles) could be implemented here
-    # when the doubles team system is fully integrated
+    # Apply discoverability filter based on match type
+    if match_type == "singles":
+        base_query += " AND (discoverability_preference = 'singles' OR discoverability_preference = 'both' OR discoverability_preference IS NULL)"
+    elif match_type == "doubles":
+        base_query += " AND (discoverability_preference = 'doubles' OR discoverability_preference = 'both' OR discoverability_preference IS NULL)"
+    # If no match_type specified, show all players (backward compatibility)
     
     base_query += " ORDER BY ranking_points DESC, wins DESC, created_at ASC"
     
@@ -7673,6 +7677,7 @@ def team_search():
         AND p.match_preference = 'doubles_need_partner'
         AND p.current_team_id IS NULL
         AND p.is_looking_for_match = 1
+        AND (p.discoverability_preference = 'doubles' OR p.discoverability_preference = 'both' OR p.discoverability_preference IS NULL)
         ORDER BY p.ranking_points DESC, p.wins DESC
     ''', (current_player_id,)).fetchall()
     
