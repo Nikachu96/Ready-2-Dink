@@ -7644,6 +7644,8 @@ def team_search():
     """Search for potential team partners"""
     current_player_id = session.get('current_player_id')
     
+    logging.info(f"🎯 TEAM SEARCH DEBUG: current_player_id = {current_player_id}")
+    
     if not current_player_id:
         flash('Please log in first', 'warning')
         return redirect(url_for('player_login'))
@@ -7652,7 +7654,12 @@ def team_search():
     conn = get_db_connection()
     player = conn.execute('SELECT match_preference FROM players WHERE id = ?', (current_player_id,)).fetchone()
     
+    logging.info(f"🎯 PLAYER DEBUG: player found = {player}")
+    if player:
+        logging.info(f"🎯 PREFERENCE DEBUG: match_preference = '{player['match_preference']}'")
+    
     if not player or player['match_preference'] != 'doubles_need_partner':
+        logging.error(f"🎯 ACCESS DENIED: player={player}, preference={player['match_preference'] if player else 'None'}")
         flash('Team search is only available if you need a doubles partner', 'warning')
         return redirect(url_for('profile_settings'))
     
