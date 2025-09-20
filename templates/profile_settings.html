@@ -1173,26 +1173,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// IMMEDIATE TEST - This should show up first
-alert('JavaScript is running!');
-console.log('=== IMMEDIATE TEST - JavaScript is working! ===');
-
 // Team Management Functions - Clean Fixed Version
 function handleRadioChange() {
-    console.log('Radio changed to:', this.value);
     showTeamSection(this.value);
+    
+    // Update preference in backend
+    updateMatchPreference(this.value);
 }
 
 function showTeamSection(preference) {
-    console.log('showTeamSection called with:', preference);
     const teamSection = document.getElementById('team_action_section');
     const havePartner = document.getElementById('have_partner_section');
     const needPartner = document.getElementById('need_partner_section');
     
-    if (!teamSection) {
-        console.log('Team section not found!');
-        return;
-    }
+    if (!teamSection) return;
     
     // Hide all first
     teamSection.style.display = 'none';
@@ -1200,11 +1194,9 @@ function showTeamSection(preference) {
     if (needPartner) needPartner.style.display = 'none';
     
     if (preference === 'doubles_with_partner') {
-        console.log('Showing have partner section');
         teamSection.style.display = 'block';
         if (havePartner) havePartner.style.display = 'block';
     } else if (preference === 'doubles_need_partner') {
-        console.log('Showing need partner section');
         teamSection.style.display = 'block';
         if (needPartner) needPartner.style.display = 'block';
     }
@@ -1212,12 +1204,9 @@ function showTeamSection(preference) {
 
 // Add event listeners when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Setting up radio listeners...');
     const radios = document.querySelectorAll('input[name="match_preference_radio"]');
-    console.log('Found', radios.length, 'radios');
     
-    radios.forEach(function(radio, index) {
-        console.log('Adding listener to radio', index, radio.value);
+    radios.forEach(function(radio) {
         radio.addEventListener('change', handleRadioChange);
     });
     
@@ -1227,6 +1216,26 @@ document.addEventListener('DOMContentLoaded', function() {
         showTeamSection(checkedRadio.value);
     }
 });
+
+// Update match preference in backend
+function updateMatchPreference(preference) {
+    fetch('/update_match_preference', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'match_preference=' + encodeURIComponent(preference)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            console.error('Failed to update preference:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating preference:', error);
+    });
+}
 
 // Send team invitation function
 function sendTeamInvitation() {
