@@ -3504,7 +3504,6 @@ def get_compatible_players(player_id):
     
     # Get the player's preferences and location
     player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
-    logging.info(f"Debug get_compatible_players: Player {player_id} data: lat={player['latitude'] if player else 'None'}, lng={player['longitude'] if player else 'None'}, looking_for_match={player['is_looking_for_match'] if player else 'None'}")
     if not player or not player['is_looking_for_match']:
         conn.close()
         return []
