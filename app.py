@@ -1,5 +1,7 @@
 import os
 import sqlite3
+import psycopg2
+import psycopg2.extras
 import json
 import requests
 import math
@@ -1211,6 +1213,16 @@ def get_db_connection():
     conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
+def get_pg_connection():
+    """Get PostgreSQL database connection with dict cursor"""
+    import psycopg2
+    import psycopg2.extras
+    conn = psycopg2.connect(
+        os.environ.get('DATABASE_URL'),
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+    return conn
+
 def get_setting(key, default=None):
     """Get a setting value from database"""
     conn = get_db_connection()
@@ -2035,18 +2047,20 @@ def reject_team_invitation(invitation_id, player_id):
 def get_player_team(player_id):
     """Get player's current team information"""
     try:
-        conn = get_db_connection()
+        conn = get_pg_connection()
+        cur = conn.cursor()
         
-        team = conn.execute('''
+        cur.execute('''
             SELECT t.*, 
                    p1.full_name as player1_name, p1.selfie as player1_selfie,
                    p2.full_name as player2_name, p2.selfie as player2_selfie
             FROM teams t
             JOIN players p1 ON t.player1_id = p1.id
             JOIN players p2 ON t.player2_id = p2.id
-            WHERE (t.player1_id = ? OR t.player2_id = ?) AND t.status = 'active'
-        ''', (player_id, player_id)).fetchone()
+            WHERE (t.player1_id = %s OR t.player2_id = %s) AND t.status = 'active'
+        ''', (player_id, player_id))
         
+        team = cur.fetchone()
         conn.close()
         return dict(team) if team else None
         
@@ -2057,16 +2071,18 @@ def get_player_team(player_id):
 def get_player_team_invitations(player_id):
     """Get pending team invitations for a player"""
     try:
-        conn = get_db_connection()
+        conn = get_pg_connection()
+        cur = conn.cursor()
         
-        invitations = conn.execute('''
+        cur.execute('''
             SELECT ti.*, p.full_name as inviter_name, p.selfie as inviter_selfie
             FROM team_invitations ti
             JOIN players p ON ti.inviter_id = p.id
-            WHERE ti.invitee_id = ? AND ti.status = 'pending'
+            WHERE ti.invitee_id = %s AND ti.status = 'pending'
             ORDER BY ti.created_at DESC
-        ''', (player_id,)).fetchall()
+        ''', (player_id,))
         
+        invitations = cur.fetchall()
         conn.close()
         return [dict(inv) for inv in invitations]
         
