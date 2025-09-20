@@ -1208,27 +1208,44 @@ function showTeamSection(preference) {
 
 // Add event listeners when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    const radios = document.querySelectorAll('input[name="match_preference_radio"]');
+    console.log('=== RADIO BUTTON DEBUGGING ===');
     
-    // Debug: Check if radios are disabled
+    const radios = document.querySelectorAll('input[name="match_preference_radio"]');
     console.log('Found', radios.length, 'radio buttons');
+    
+    if (radios.length === 0) {
+        console.error('NO RADIO BUTTONS FOUND! Check HTML structure.');
+        return;
+    }
+    
     radios.forEach(function(radio, index) {
-        console.log(`Radio ${index}: value=${radio.value}, disabled=${radio.disabled}`);
-        radio.addEventListener('change', handleRadioChange);
+        console.log(`Radio ${index}: value=${radio.value}, disabled=${radio.disabled}, checked=${radio.checked}`);
+        radio.addEventListener('change', function() {
+            console.log('*** RADIO CLICKED ***', this.value);
+            handleRadioChange.call(this);
+        });
     });
+    
+    // Check for team sections
+    const teamSection = document.getElementById('team_action_section');
+    const havePartner = document.getElementById('have_partner_section');
+    const needPartner = document.getElementById('need_partner_section');
+    
+    console.log('Team sections found:');
+    console.log('- team_action_section:', !!teamSection);
+    console.log('- have_partner_section:', !!havePartner);
+    console.log('- need_partner_section:', !!needPartner);
     
     // Initialize on page load
     const checkedRadio = document.querySelector('input[name="match_preference_radio"]:checked');
     if (checkedRadio) {
-        console.log('Checked radio:', checkedRadio.value, 'disabled:', checkedRadio.disabled);
+        console.log('Initial checked radio:', checkedRadio.value);
         showTeamSection(checkedRadio.value);
+    } else {
+        console.log('No radio button is initially checked');
     }
     
-    // Show message if all radios are disabled
-    const allDisabled = Array.from(radios).every(radio => radio.disabled);
-    if (allDisabled) {
-        console.log('All radio buttons are disabled - user has an active team');
-    }
+    console.log('=== RADIO SETUP COMPLETE ===');
 });
 
 // Update match preference in backend
