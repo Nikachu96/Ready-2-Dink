@@ -3422,8 +3422,8 @@ def get_filtered_compatible_players(player_id, match_type="", skill_level="", di
     
     # Build the SQL query with filters
     base_query = '''
-        SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
-               wins, losses, ranking_points, selfie, latitude, longitude, gender, travel_radius
+        SELECT id, full_name as name, first_name, last_name, location1 as location, skill_level, preferred_court, 
+               wins, losses, ranking_points, selfie, latitude, longitude, gender, search_radius_miles as travel_radius
         FROM players 
         WHERE id != ? 
         AND is_looking_for_match = 1
@@ -3511,7 +3511,7 @@ def get_compatible_players(player_id):
         return []
     
     # Get player's travel radius (default 25 miles if not set)
-    player_travel_radius = player['travel_radius'] if player['travel_radius'] is not None else 25
+    player_travel_radius = player['search_radius_miles'] if player['search_radius_miles'] is not None else 25
     player_lat = player['latitude']
     player_lng = player['longitude']
     
@@ -3522,8 +3522,8 @@ def get_compatible_players(player_id):
         # More flexible fallback - match by skill level and general area, not exact location
         # This makes it easier to find matches when GPS isn't available
         query = '''
-            SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
-                   wins, losses, ranking_points, selfie, latitude, longitude, gender, travel_radius
+            SELECT id, full_name as name, first_name, last_name, location1 as location, skill_level, preferred_court, 
+                   wins, losses, ranking_points, selfie, latitude, longitude, gender, search_radius_miles as travel_radius
             FROM players 
             WHERE id != ? 
             AND is_looking_for_match = 1
@@ -3548,8 +3548,8 @@ def get_compatible_players(player_id):
             
             for skill in adjacent_skills:
                 query = '''
-                    SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
-                           wins, losses, ranking_points, selfie, latitude, longitude, gender, travel_radius
+                    SELECT id, full_name as name, first_name, last_name, location1 as location, skill_level, preferred_court, 
+                           wins, losses, ranking_points, selfie, latitude, longitude, gender, search_radius_miles as travel_radius
                     FROM players 
                     WHERE id != ? 
                     AND is_looking_for_match = 1
@@ -3565,8 +3565,8 @@ def get_compatible_players(player_id):
     else:
         # GPS-based matching - get all players with same skill level and GPS coordinates
         query = '''
-            SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
-                   wins, losses, ranking_points, selfie, latitude, longitude, gender, travel_radius
+            SELECT id, full_name as name, first_name, last_name, location1 as location, skill_level, preferred_court, 
+                   wins, losses, ranking_points, selfie, latitude, longitude, gender, search_radius_miles as travel_radius
             FROM players 
             WHERE id != ? 
             AND is_looking_for_match = 1
@@ -3607,15 +3607,15 @@ def get_compatible_players(player_id):
     players_list = []
     for p in compatible_players:
         # Use first_name if available, otherwise fall back to full_name
-        display_name = p['first_name'] if p['first_name'] else p['full_name'].split()[0] if p['full_name'] else 'Unknown'
+        display_name = p['first_name'] if p['first_name'] else p['name'].split()[0] if p['name'] else 'Unknown'
         
         player_data = {
             'id': p['id'],
             'name': display_name,
-            'full_name': p['full_name'],
+            'full_name': p['name'],
             'first_name': p['first_name'],
             'last_name': p['last_name'],
-            'location': p['location1'],
+            'location': p['location'],
             'skill_level': p['skill_level'],
             'preferred_court': p['preferred_court'],
             'wins': p['wins'] or 0,
