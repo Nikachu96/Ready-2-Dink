@@ -507,6 +507,16 @@ def from_json_filter(value):
 
 app.jinja_env.filters['from_json'] = from_json_filter
 
+# Add distance calculation filter
+def distance_from_current_player_filter(player_data):
+    """Custom Jinja filter to calculate distance from current player"""
+    current_player_id = session.get('current_player_id')
+    if not current_player_id:
+        return None
+    return get_distance_from_current_player(player_data, current_player_id)
+
+app.jinja_env.filters['distance_from_current'] = distance_from_current_player_filter
+
 # Configure Stripe
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
@@ -4219,16 +4229,28 @@ def player_home(player_id):
                 WHEN m.player1_id = ? THEN p2.tournament_wins
                 ELSE p1.tournament_wins 
             END as opponent_tournament_wins,
+            CASE 
+                WHEN m.player1_id = ? THEN p2.latitude
+                ELSE p1.latitude 
+            END as opponent_latitude,
+            CASE 
+                WHEN m.player1_id = ? THEN p2.longitude
+                ELSE p1.longitude 
+            END as opponent_longitude,
+            CASE 
+                WHEN m.player1_id = ? THEN p2.location1
+                ELSE p1.location1 
+            END as opponent_location1,
             COUNT(*) as matches_played,
             MAX(m.created_at) as last_played
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
         WHERE m.player1_id = ? OR m.player2_id = ?
-        GROUP BY opponent_id, opponent_name, opponent_selfie, opponent_wins, opponent_losses, opponent_tournament_wins
+        GROUP BY opponent_id, opponent_name, opponent_selfie, opponent_wins, opponent_losses, opponent_tournament_wins, opponent_latitude, opponent_longitude, opponent_location1
         ORDER BY last_played DESC
         LIMIT 10
-    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
     
     # Get recent activity
     recent_matches = conn.execute('''

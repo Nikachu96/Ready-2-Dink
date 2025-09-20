@@ -60,9 +60,18 @@
                                             {% endif %}
                                             
                                             {% if partner.location1 %}
-                                            <div class="mb-3">
+                                            <div class="mb-2">
                                                 <small class="text-muted">
                                                     <i class="fas fa-map-marker-alt me-1"></i>{{ partner.location1[:30] }}...
+                                                </small>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            {% set distance = partner | distance_from_current %}
+                                            {% if distance %}
+                                            <div class="mb-3">
+                                                <small class="text-info">
+                                                    <i class="fas fa-road me-1"></i>{{ distance }}
                                                 </small>
                                             </div>
                                             {% endif %}
