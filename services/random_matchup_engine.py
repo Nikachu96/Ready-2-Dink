@@ -19,11 +19,18 @@ import threading
 from datetime import datetime, timedelta
 from typing import List, Dict, Tuple, Optional
 
-# Add parent directory to path for imports
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from app import get_db_connection
+# Database connection function - copied to avoid circular imports
+def get_db_connection():
+    """Get database connection for Random Matchup Engine"""
+    import psycopg2
+    import psycopg2.extras
+    
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url:
+        raise RuntimeError("DATABASE_URL environment variable must be set")
+    
+    conn = psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
+    return conn
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -63,9 +70,12 @@ class RandomMatchupEngine:
         """Update database heartbeat to indicate active leader"""
         try:
             conn = get_db_connection()
-            conn.execute('''
-                INSERT OR REPLACE INTO system_jobs (job_name, last_run_at, owner_pid, heartbeat_at)
-                VALUES (?, ?, ?, ?)
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO system_jobs (job_name, last_run_at, owner_pid, heartbeat_at)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (job_name) 
+                DO UPDATE SET last_run_at = EXCLUDED.last_run_at, owner_pid = EXCLUDED.owner_pid, heartbeat_at = EXCLUDED.heartbeat_at
             ''', (self.job_name, datetime.now(), str(os.getpid()), datetime.now()))
             conn.commit()
             conn.close()
@@ -92,8 +102,8 @@ class RandomMatchupEngine:
                 FROM players 
                 WHERE is_looking_for_match = 1
                 AND account_status != 'suspended'
-                AND (last_random_challenge_at IS NULL OR last_random_challenge_at < ?)
-                AND (discoverability_preference = ? OR discoverability_preference = 'both' OR discoverability_preference IS NULL)
+                AND (last_random_challenge_at IS NULL OR last_random_challenge_at < %s)
+                AND (discoverability_preference = %s OR discoverability_preference = 'both' OR discoverability_preference IS NULL)
             '''
             
             # 24 hours ago
@@ -103,24 +113,28 @@ class RandomMatchupEngine:
             
             # Additional filters for doubles - no locked teams
             if match_type == 'doubles':
-                query += ' AND (current_team_id IS NULL OR current_team_id = "")'
+                query += ' AND (current_team_id IS NULL)'
             
-            players = conn.execute(query, params).fetchall()
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            players = cursor.fetchall()
             
             # Filter out players with pending invitations
             eligible_players = []
             for player in players:
                 # Check for pending outgoing invitations
-                pending_out = conn.execute('''
+                cursor.execute('''
                     SELECT COUNT(*) as count FROM team_invitations 
-                    WHERE inviter_id = ? AND status = 'pending'
-                ''', (player['id'],)).fetchone()
+                    WHERE inviter_id = %s AND status = 'pending'
+                ''', (player['id'],))
+                pending_out = cursor.fetchone()
                 
                 # Check for pending incoming invitations
-                pending_in = conn.execute('''
+                cursor.execute('''
                     SELECT COUNT(*) as count FROM team_invitations 
-                    WHERE invitee_id = ? AND status = 'pending'
-                ''', (player['id'],)).fetchone()
+                    WHERE invitee_id = %s AND status = 'pending'
+                ''', (player['id'],))
+                pending_in = cursor.fetchone()
                 
                 if pending_out['count'] == 0 and pending_in['count'] == 0:
                     eligible_players.append(dict(player))
@@ -214,9 +228,10 @@ class RandomMatchupEngine:
             invitee = player2 if inviter == player1 else player1
             
             # Create invitation record
-            conn.execute('''
+            cursor = conn.cursor()
+            cursor.execute('''
                 INSERT INTO team_invitations (inviter_id, invitee_id, invitation_message, status, source, meta_json, created_at)
-                VALUES (?, ?, ?, 'pending', 'random', ?, ?)
+                VALUES (%s, %s, %s, 'pending', 'random', %s, %s)
             ''', (
                 inviter['id'], 
                 invitee['id'],
@@ -226,8 +241,8 @@ class RandomMatchupEngine:
             ))
             
             # Update last random challenge time
-            conn.execute('''
-                UPDATE players SET last_random_challenge_at = ? WHERE id IN (?, ?)
+            cursor.execute('''
+                UPDATE players SET last_random_challenge_at = %s WHERE id IN (%s, %s)
             ''', (datetime.now(), player1['id'], player2['id']))
             
             conn.commit()
@@ -252,9 +267,10 @@ class RandomMatchupEngine:
             all_player_ids = [team1[0]['id'], team1[1]['id'], team2[0]['id'], team2[1]['id']]
             
             # Create invitation record
-            conn.execute('''
+            cursor = conn.cursor()
+            cursor.execute('''
                 INSERT INTO team_invitations (inviter_id, invitee_id, invitation_message, status, source, meta_json, created_at)
-                VALUES (?, ?, ?, 'pending', 'random', ?, ?)
+                VALUES (%s, %s, %s, 'pending', 'random', %s, %s)
             ''', (
                 inviter['id'], 
                 invitee['id'],
@@ -269,8 +285,8 @@ class RandomMatchupEngine:
             ))
             
             # Update last random challenge time for all players
-            conn.execute('''
-                UPDATE players SET last_random_challenge_at = ? WHERE id IN (?, ?, ?, ?)
+            cursor.execute('''
+                UPDATE players SET last_random_challenge_at = %s WHERE id IN (%s, %s, %s, %s)
             ''', (datetime.now(), *all_player_ids))
             
             conn.commit()

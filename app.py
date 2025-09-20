@@ -12,6 +12,14 @@ from functools import wraps
 import logging
 import stripe
 
+# Import Random Matchup Engine
+try:
+    from services.random_matchup_engine import start_random_matchup_engine
+    RANDOM_MATCHUP_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"Random Matchup Engine not available: {e}")
+    RANDOM_MATCHUP_AVAILABLE = False
+
 # Configure logging - only enable debug logging in development
 if os.environ.get('FLASK_ENV') == 'development' or os.environ.get('DEBUG') == '1':
     logging.basicConfig(level=logging.DEBUG)
@@ -235,6 +243,16 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Ensure upload directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Start Random Matchup Engine background service
+if RANDOM_MATCHUP_AVAILABLE:
+    try:
+        start_random_matchup_engine()
+        logging.info("Random Matchup Engine started successfully")
+    except Exception as e:
+        logging.error(f"Failed to start Random Matchup Engine: {e}")
+else:
+    logging.info("Random Matchup Engine disabled or not available")
 
 def allowed_file(filename):
     """Check if uploaded file has allowed extension"""
@@ -1951,7 +1969,7 @@ def send_team_invitation(inviter_id, invitee_id, message=""):
         return {'success': False, 'message': 'Failed to send team invitation'}
 
 def accept_team_invitation(invitation_id, player_id):
-    """Accept a team invitation"""
+    """Accept a team invitation or random match challenge"""
     try:
         conn = get_db_connection()
         
@@ -1965,6 +1983,11 @@ def accept_team_invitation(invitation_id, player_id):
             conn.close()
             return {'success': False, 'message': 'Invalid invitation'}
         
+        # Check if this is a random match invitation
+        if invitation.get('source') == 'random' and invitation.get('meta_json'):
+            return handle_random_match_acceptance(invitation, player_id, conn)
+        
+        # Original team formation logic
         # Check if either player is already in a team
         player1_team = conn.execute('SELECT current_team_id FROM players WHERE id = ?', (invitation['inviter_id'],)).fetchone()
         player2_team = conn.execute('SELECT current_team_id FROM players WHERE id = ?', (player_id,)).fetchone()
@@ -1983,9 +2006,9 @@ def accept_team_invitation(invitation_id, player_id):
         # Update invitation status
         conn.execute('''
             UPDATE team_invitations 
-            SET status = 'accepted', responded_at = datetime('now')
+            SET status = 'accepted', responded_at = ?
             WHERE id = ?
-        ''', (invitation_id,))
+        ''', (datetime.now(), invitation_id))
         
         conn.commit()
         conn.close()
@@ -2005,6 +2028,113 @@ def accept_team_invitation(invitation_id, player_id):
     except Exception as e:
         logging.error(f"Error accepting team invitation: {e}")
         return {'success': False, 'message': 'Failed to accept invitation'}
+
+def handle_random_match_acceptance(invitation, player_id, conn):
+    """Handle acceptance of random match challenges"""
+    try:
+        import json
+        meta_data = json.loads(invitation.get('meta_json', '{}'))
+        match_type = meta_data.get('type', 'singles')
+        
+        if match_type == 'singles':
+            # Create singles match
+            player_ids = meta_data.get('players', [])
+            if len(player_ids) != 2:
+                conn.close()
+                return {'success': False, 'message': 'Invalid singles match data'}
+            
+            # Create match record
+            cursor = conn.execute('''
+                INSERT INTO matches (player1_id, player2_id, sport, court_location, status, created_at)
+                VALUES (?, ?, 'pickleball', 'TBD', 'scheduled', ?)
+            ''', (player_ids[0], player_ids[1], datetime.now()))
+            
+            match_id = cursor.lastrowid
+            
+            # Update invitation status
+            conn.execute('''
+                UPDATE team_invitations 
+                SET status = 'accepted', responded_at = ?
+                WHERE id = ?
+            ''', (datetime.now(), invitation['id']))
+            
+            conn.commit()
+            
+            # Send notifications to both players
+            player1_name = get_player_name(player_ids[0])
+            player2_name = get_player_name(player_ids[1])
+            
+            send_push_notification(
+                player_ids[0],
+                f"🏓 Match confirmed! You have a singles match with {player2_name}.",
+                "Match Scheduled"
+            )
+            
+            send_push_notification(
+                player_ids[1],
+                f"🏓 Match confirmed! You have a singles match with {player1_name}.",
+                "Match Scheduled"
+            )
+            
+            conn.close()
+            logging.info(f"Random singles match created: {player1_name} vs {player2_name}")
+            return {'success': True, 'match_id': match_id, 'type': 'singles'}
+            
+        elif match_type == 'doubles':
+            # Create doubles match
+            team1 = meta_data.get('team1', [])
+            team2 = meta_data.get('team2', [])
+            all_players = meta_data.get('all_players', [])
+            
+            if len(team1) != 2 or len(team2) != 2 or len(all_players) != 4:
+                conn.close()
+                return {'success': False, 'message': 'Invalid doubles match data'}
+            
+            # Create match record (using team1[0] and team2[0] as primary players)
+            cursor = conn.execute('''
+                INSERT INTO matches (player1_id, player2_id, sport, court_location, status, created_at)
+                VALUES (?, ?, 'pickleball', 'TBD', 'scheduled', ?)
+            ''', (team1[0], team2[0], datetime.now()))
+            
+            match_id = cursor.lastrowid
+            
+            # Update invitation status
+            conn.execute('''
+                UPDATE team_invitations 
+                SET status = 'accepted', responded_at = ?
+                WHERE id = ?
+            ''', (datetime.now(), invitation['id']))
+            
+            conn.commit()
+            
+            # Send notifications to all 4 players
+            team1_names = [get_player_name(pid) for pid in team1]
+            team2_names = [get_player_name(pid) for pid in team2]
+            
+            for pid in all_players:
+                if pid in team1:
+                    partner_name = team1_names[1] if pid == team1[0] else team1_names[0]
+                    opponents = f"{team2_names[0]} & {team2_names[1]}"
+                    message = f"🏓 Doubles match confirmed! You and {partner_name} vs {opponents}."
+                else:
+                    partner_name = team2_names[1] if pid == team2[0] else team2_names[0]
+                    opponents = f"{team1_names[0]} & {team1_names[1]}"
+                    message = f"🏓 Doubles match confirmed! You and {partner_name} vs {opponents}."
+                
+                send_push_notification(pid, message, "Match Scheduled")
+            
+            conn.close()
+            logging.info(f"Random doubles match created: {team1_names} vs {team2_names}")
+            return {'success': True, 'match_id': match_id, 'type': 'doubles'}
+        
+        else:
+            conn.close()
+            return {'success': False, 'message': 'Unknown match type'}
+            
+    except Exception as e:
+        conn.close()
+        logging.error(f"Error handling random match acceptance: {e}")
+        return {'success': False, 'message': 'Failed to create match'}
 
 def reject_team_invitation(invitation_id, player_id):
     """Reject a team invitation"""
