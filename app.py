@@ -1957,8 +1957,8 @@ def get_compatible_players(player_id):
         conn.close()
         return []
     
-    # Get player's search radius (default 15 miles if not set)
-    search_radius = player['search_radius_miles'] if player['search_radius_miles'] is not None else 15
+    # Get player's travel radius (default 25 miles if not set)
+    player_travel_radius = player['travel_radius'] if player['travel_radius'] is not None else 25
     player_lat = player['latitude']
     player_lng = player['longitude']
     
@@ -1970,7 +1970,7 @@ def get_compatible_players(player_id):
         # This makes it easier to find matches when GPS isn't available
         query = '''
             SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
-                   wins, losses, ranking_points, selfie, latitude, longitude
+                   wins, losses, ranking_points, selfie, latitude, longitude, gender, travel_radius
             FROM players 
             WHERE id != ? 
             AND is_looking_for_match = 1
@@ -1996,7 +1996,7 @@ def get_compatible_players(player_id):
             for skill in adjacent_skills:
                 query = '''
                     SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
-                           wins, losses, ranking_points, selfie, latitude, longitude
+                           wins, losses, ranking_points, selfie, latitude, longitude, gender, travel_radius
                     FROM players 
                     WHERE id != ? 
                     AND is_looking_for_match = 1
@@ -2013,7 +2013,7 @@ def get_compatible_players(player_id):
         # GPS-based matching - get all players with same skill level and GPS coordinates
         query = '''
             SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
-                   wins, losses, ranking_points, selfie, latitude, longitude
+                   wins, losses, ranking_points, selfie, latitude, longitude, gender, travel_radius
             FROM players 
             WHERE id != ? 
             AND is_looking_for_match = 1
@@ -2025,7 +2025,7 @@ def get_compatible_players(player_id):
         
         all_players = conn.execute(query, (player_id, player['skill_level'])).fetchall()
         
-        # Filter by distance using GPS coordinates
+        # Filter by distance using GPS coordinates and both players' travel radius
         compatible_players = []
         for candidate in all_players:
             distance = calculate_distance_haversine(
@@ -2033,16 +2033,22 @@ def get_compatible_players(player_id):
                 candidate['latitude'], candidate['longitude']
             )
             
-            if distance is not None and distance <= search_radius:
-                # Add distance to the player record for sorting
-                candidate_dict = dict(candidate)
-                candidate_dict['distance_miles'] = round(distance, 1)
-                compatible_players.append(candidate_dict)
+            if distance is not None:
+                # Check if distance is within BOTH players' travel radius
+                candidate_travel_radius = candidate['travel_radius'] if candidate['travel_radius'] is not None else 25
+                
+                # Player must be within both their own travel radius AND the candidate's travel radius
+                if distance <= player_travel_radius and distance <= candidate_travel_radius:
+                    # Add distance and travel radius info to the player record
+                    candidate_dict = dict(candidate)
+                    candidate_dict['distance_miles'] = round(distance, 1)
+                    candidate_dict['candidate_travel_radius'] = candidate_travel_radius
+                    compatible_players.append(candidate_dict)
         
         # Sort by distance (closest first), then by ranking
         compatible_players.sort(key=lambda x: (x['distance_miles'], -x['ranking_points']))
         
-        logging.info(f"GPS-based matching for player {player_id}: found {len(compatible_players)} players within {search_radius} miles")
+        logging.info(f"GPS-based matching for player {player_id}: found {len(compatible_players)} players within travel radius (user: {player_travel_radius} miles)")
     
     # Convert to list of dictionaries
     players_list = []
@@ -2062,12 +2068,16 @@ def get_compatible_players(player_id):
             'wins': p['wins'] or 0,
             'losses': p['losses'] or 0,
             'ranking_points': p['ranking_points'] or 0,
-            'selfie': p['selfie']
+            'selfie': p['selfie'],
+            'gender': p['gender'] if 'gender' in p else 'prefer_not_to_say',
+            'travel_radius': p['travel_radius'] if 'travel_radius' in p else 25
         }
         
-        # Add distance if available (for GPS-based matches)
+        # Add distance and candidate travel radius if available (for GPS-based matches)
         if 'distance_miles' in p:
             player_data['distance_miles'] = p['distance_miles']
+        if 'candidate_travel_radius' in p:
+            player_data['candidate_travel_radius'] = p['candidate_travel_radius']
         
         players_list.append(player_data)
     
@@ -3868,9 +3878,9 @@ def tournaments_overview():
         user_lng = None
         
     try:
-        search_radius = player['search_radius_miles'] if player['search_radius_miles'] is not None else 15
+        search_radius = player['travel_radius'] if player['travel_radius'] is not None else 25
     except (KeyError, TypeError):
-        search_radius = 15  # Default to 15 miles
+        search_radius = 25  # Default to 25 miles
     
     # Enable location filtering if player has GPS coordinates
     location_filter_enabled = (user_lat is not None and user_lng is not None)
@@ -3878,7 +3888,7 @@ def tournaments_overview():
     if not location_filter_enabled:
         logging.info(f"Player {current_player_id} has no GPS coordinates - showing all tournaments")
     else:
-        logging.info(f"Player {current_player_id} location filtering: {search_radius} mile radius from ({user_lat:.4f}, {user_lng:.4f})")
+        logging.info(f"Player {current_player_id} location filtering: {search_radius} mile travel radius from ({user_lat:.4f}, {user_lng:.4f})")
     
     tournament_levels = get_tournament_levels()
     

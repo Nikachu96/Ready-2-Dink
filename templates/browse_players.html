@@ -94,6 +94,21 @@
                                         {{ player.location }}
                                     </div>
                                 </div>
+
+                                <!-- Distance & Travel Info -->
+                                {% if player.distance_miles is defined %}
+                                <div class="mb-3">
+                                    <div class="badge badge-info text-center w-100">
+                                        DISTANCE
+                                    </div>
+                                    <div class="text-center text-bold text-cyan mt-2">
+                                        {{ player.distance_miles }} miles away
+                                    </div>
+                                    <div class="text-center text-secondary small">
+                                        <i class="fas fa-road me-1"></i>Travels {{ player.travel_radius }} miles
+                                    </div>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
