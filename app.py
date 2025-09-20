@@ -6939,13 +6939,13 @@ def update_profile():
     """Update player profile information"""
     conn = get_db_connection()
     
-    # Get current player ID
-    players = conn.execute('SELECT id FROM players ORDER BY created_at DESC LIMIT 1').fetchall()
-    if not players:
-        flash('Player not found', 'danger')
-        return redirect(url_for('register'))
+    # Get current player ID from session
+    current_player_id = session.get('current_player_id')
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
     
-    player_id = players[0]['id']
+    player_id = current_player_id
     
     # Form validation
     required_fields = ['full_name', 'address', 'zip_code', 'city', 'state', 'dob', 'preferred_court_1', 'skill_level', 'email', 'player_id']
