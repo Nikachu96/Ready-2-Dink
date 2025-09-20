@@ -1381,8 +1381,8 @@ function getGPSLocation() {
     gpsBtn.disabled = true;
     
     showLocationStatus('Requesting GPS location...', 'info');
-        
-        navigator.geolocation.getCurrentPosition(
+    
+    navigator.geolocation.getCurrentPosition(
             function(position) {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
@@ -1426,8 +1426,7 @@ function getGPSLocation() {
                 timeout: 10000,
                 maximumAge: 300000
             }
-        );
-    }
+    );
 }
 
 // Update Location from ZIP Code  
@@ -1508,7 +1507,6 @@ function showLocationStatus(message, type) {
                 }
             }, 5000);
         }
-    }
 }
 </script>
 {% endblock %}
