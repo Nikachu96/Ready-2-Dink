@@ -1175,9 +1175,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Team Management Functions - Clean Fixed Version
 function handleRadioChange() {
-    showTeamSection(this.value);
+    // Check if radio is disabled
+    if (this.disabled) {
+        console.log('Radio button is disabled - user has existing team');
+        return;
+    }
     
-    // Update preference in backend
+    showTeamSection(this.value);
     updateMatchPreference(this.value);
 }
 
@@ -1206,14 +1210,24 @@ function showTeamSection(preference) {
 document.addEventListener('DOMContentLoaded', function() {
     const radios = document.querySelectorAll('input[name="match_preference_radio"]');
     
-    radios.forEach(function(radio) {
+    // Debug: Check if radios are disabled
+    console.log('Found', radios.length, 'radio buttons');
+    radios.forEach(function(radio, index) {
+        console.log(`Radio ${index}: value=${radio.value}, disabled=${radio.disabled}`);
         radio.addEventListener('change', handleRadioChange);
     });
     
     // Initialize on page load
     const checkedRadio = document.querySelector('input[name="match_preference_radio"]:checked');
     if (checkedRadio) {
+        console.log('Checked radio:', checkedRadio.value, 'disabled:', checkedRadio.disabled);
         showTeamSection(checkedRadio.value);
+    }
+    
+    // Show message if all radios are disabled
+    const allDisabled = Array.from(radios).every(radio => radio.disabled);
+    if (allDisabled) {
+        console.log('All radio buttons are disabled - user has an active team');
     }
 });
 
