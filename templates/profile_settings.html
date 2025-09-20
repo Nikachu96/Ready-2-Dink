@@ -920,17 +920,28 @@ function initializeMap(containerId, inputId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     
-    // Default to a general location (USA center)
-    const map = L.map(containerId).setView([39.8283, -98.5795], 4);
+    // Check if Leaflet is loaded
+    if (typeof L === 'undefined') {
+        console.log('Leaflet not loaded, skipping map initialization');
+        return null;
+    }
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-    
-    maps[containerId] = map;
-    markers[containerId] = null;
-    
-    return map;
+    try {
+        // Default to a general location (USA center)
+        const map = L.map(containerId).setView([39.8283, -98.5795], 4);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        maps[containerId] = map;
+        markers[containerId] = null;
+        
+        return map;
+    } catch (error) {
+        console.error('Error initializing map:', error);
+        return null;
+    }
 }
 
 function searchCourt(query, mapId, inputId) {
@@ -1036,10 +1047,12 @@ function searchCourt(query, mapId, inputId) {
                                     </div>
                                 `;
                                 
-                                markers[mapId] = L.marker([lat, lon])
-                                    .addTo(map)
-                                    .bindPopup(popupContent)
-                                    .openPopup();
+                                if (typeof L !== 'undefined') {
+                                    markers[mapId] = L.marker([lat, lon])
+                                        .addTo(map)
+                                        .bindPopup(popupContent)
+                                        .openPopup();
+                                }
                                 
                                 map.setView([lat, lon], 14);
                             }
@@ -1199,16 +1212,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const mapId = input.id + '-map';
         let searchTimeout;
         
-        // If input has a value, search for it immediately
+        // If input has a value, search for it immediately (wait for Leaflet to load)
         if (input.value && input.value.length >= 3) {
             setTimeout(() => {
                 const mapContainer = document.getElementById(mapId);
-                if (mapContainer) {
+                if (mapContainer && typeof L !== 'undefined') {
                     mapContainer.style.display = 'block';
                     initializeMap(mapId, input.id);
                     searchCourt(input.value, mapId, input.id);
                 }
-            }, 500);
+            }, 1000); // Increased delay to ensure Leaflet loads
         }
         
         input.addEventListener('input', function() {
