@@ -1254,10 +1254,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (checkedRadio) {
             showTeamActionSection(checkedRadio.value);
         }
-    });
+});
 
-    // Send team invitation function
-    function sendTeamInvitation() {
+// Send team invitation function - Fixed: Moved outside DOMContentLoaded
+function sendTeamInvitation() {
         const selectedPartner = document.querySelector('input[name="partner_connection"]:checked');
         const message = document.getElementById('invitation_message').value;
 
