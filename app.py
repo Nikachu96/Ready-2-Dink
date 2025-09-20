@@ -787,6 +787,26 @@ def init_db():
         c.execute('ALTER TABLE matches ADD COLUMN validation_status TEXT DEFAULT "pending"')
     except Exception:
         pass  # Column already exists
+        
+    # Add match type field to distinguish singles vs doubles matches
+    try:
+        c.execute('ALTER TABLE matches ADD COLUMN match_type TEXT DEFAULT "singles"')
+    except Exception:
+        pass  # Column already exists
+        
+    # Create match_teams table to track team members for all match types
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS match_teams (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            match_id INTEGER NOT NULL,
+            team_number INTEGER NOT NULL,  -- 1 or 2 to identify which team
+            player_id INTEGER NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(match_id) REFERENCES matches(id),
+            FOREIGN KEY(player_id) REFERENCES players(id),
+            UNIQUE(match_id, player_id)  -- Each player can only be on one team per match
+        )
+    ''')
     
     # Add GPS location columns to tournament_instances for existing installations
     try:
@@ -1361,8 +1381,9 @@ def submit_tournament_match_result(tournament_match_id, player1_sets_won, player
     except Exception as e:
         # Rollback transaction on any error
         try:
-            conn.rollback()
-            conn.close()
+            if 'conn' in locals():
+                conn.rollback()
+                conn.close()
             logging.error(f"Transaction rolled back for tournament match {tournament_match_id} due to error: {e}")
         except:
             pass  # Connection might already be closed
@@ -1439,9 +1460,12 @@ def advance_tournament_bracket(tournament_instance_id, current_round, current_ma
         
     except Exception as e:
         logging.error(f"Error advancing tournament bracket: {e}")
-        if 'conn' in locals():
-            conn.rollback()
-            conn.close()
+        try:
+            if 'conn' in locals():
+                conn.rollback()
+                conn.close()
+        except:
+            pass  # Connection might already be closed
 
 def set_user_permissions(player_id, membership_type):
     """Set user permissions based on membership type"""
