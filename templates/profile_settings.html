@@ -793,9 +793,6 @@
 
 {% block scripts %}
 <script>
-console.log("=== SCRIPT LOADING TEST ===");
-alert("JavaScript is loading!");
-
 // Payout preference field management
 function togglePayoutFields() {
     const selectedMethod = document.getElementById('payout_preference').value;
@@ -1257,48 +1254,48 @@ function updateMatchPreference(preference) {
 // Send team invitation function
 function sendTeamInvitation() {
     const selectedPartner = document.querySelector('input[name="partner_connection"]:checked');
-        const message = document.getElementById('invitation_message').value;
+    const message = document.getElementById('invitation_message').value;
 
-        if (!selectedPartner) {
-            alert('Please select a partner to invite.');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('invitee_id', selectedPartner.value);
-        formData.append('message', message);
-
-        // Show loading state
-        const button = event.target;
-        const originalText = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
-        button.disabled = true;
-
-        fetch('/send_team_invitation', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Team invitation sent successfully!');
-                // Reset form
-                document.getElementById('invitation_message').value = '';
-                selectedPartner.checked = false;
-            } else {
-                alert('Failed to send invitation: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error sending invitation. Please try again.');
-        })
-        .finally(() => {
-            // Reset button
-            button.innerHTML = originalText;
-            button.disabled = false;
-        });
+    if (!selectedPartner) {
+        alert('Please select a partner to invite.');
+        return;
     }
+
+    const formData = new FormData();
+    formData.append('invitee_id', selectedPartner.value);
+    formData.append('message', message);
+
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+    button.disabled = true;
+
+    fetch('/send_team_invitation', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Team invitation sent successfully!');
+            // Reset form
+            document.getElementById('invitation_message').value = '';
+            selectedPartner.checked = false;
+        } else {
+            alert('Failed to send invitation: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error sending invitation. Please try again.');
+    })
+    .finally(() => {
+        // Reset button
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
 
     // Confirm leave team function
     function confirmLeaveTeam() {
