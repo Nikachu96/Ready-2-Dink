@@ -418,6 +418,37 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    # Add permission columns for new membership system
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN can_search_players INTEGER DEFAULT 1')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN can_send_challenges INTEGER DEFAULT 1')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN can_receive_challenges INTEGER DEFAULT 1')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN can_join_tournaments INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN can_view_leaderboard INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN can_view_premium_stats INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     try:
         c.execute('ALTER TABLE players ADD COLUMN test_account INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
