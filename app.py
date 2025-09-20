@@ -1301,19 +1301,25 @@ def submit_tournament_match_result(tournament_match_id, player1_sets_won, player
             WHERE id = ?
         ''', (f"{player1_sets_won} sets", f"{player2_sets_won} sets", winner_id, tournament_match_id))
         
-        # Update player win/loss records
-        conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (winner_id,))
-        conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (loser_id,))
+        # DOUBLES TEAM SCORING: Update win/loss records for all team members
+        # Get team members for both winner and loser (pass connection to reuse transaction)
+        winner_team_members = get_tournament_team_members(tournament_match_id, winner_id, conn)
+        loser_team_members = get_tournament_team_members(tournament_match_id, loser_id, conn)
         
-        # FIRST ROUND POINTS POLICY DECISION: Set include_first_round=True
-        # Champions will now get 550 points (Final 400 + Semi 100 + Quarter 40 + First 10)
-        # instead of 540 points, rewarding players for every tournament round victory
+        # Calculate points for tournament win
         points_awarded = get_progressive_tournament_points(match['round_number'], total_rounds, include_first_round=True)
+        round_name = get_tournament_round_name(match['round_number'], total_rounds)
+        points_description = f'{round_name} win in {match["tournament_name"]}'
         
-        if points_awarded > 0:
-            round_name = get_tournament_round_name(match['round_number'], total_rounds)
-            # TRANSACTION ATOMICITY FIX: Pass connection to award_points
-            award_points(winner_id, points_awarded, f'{round_name} win in {match["tournament_name"]}', conn)
+        # Update records for all winning team members
+        for player_id in winner_team_members:
+            update_player_match_record(player_id, True, points_awarded, points_description, conn)
+        
+        # Update records for all losing team members  
+        for player_id in loser_team_members:
+            update_player_match_record(player_id, False, 0, "", conn)
+        
+        logging.info(f"Tournament match {tournament_match_id}: Updated {len(winner_team_members)} winning players, {len(loser_team_members)} losing players")
         
         # Advance winner to next round if not final
         if match['round_number'] < total_rounds:
@@ -1594,6 +1600,107 @@ def require_admin():
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+def get_tournament_team_members(tournament_match_id, player_id, conn=None):
+    """Get all team members for a tournament doubles match"""
+    should_close = False
+    if conn is None:
+        conn = get_db_connection()
+        should_close = True
+    
+    try:
+        # Get the tournament match details and check if it's a doubles tournament
+        match = conn.execute('''
+            SELECT tm.*, ti.name as tournament_name, ti.tournament_type
+            FROM tournament_matches tm
+            JOIN tournament_instances ti ON tm.tournament_instance_id = ti.id
+            WHERE tm.id = ?
+        ''', (tournament_match_id,)).fetchone()
+        
+        if not match:
+            logging.warning(f"Tournament match {tournament_match_id} not found")
+            return [player_id]
+        
+        team_members = [player_id]
+        
+        # Only look for partners if this is a doubles tournament
+        if match.get('tournament_type') == 'doubles':
+            # Get the tournament entry for the current player
+            tournament_entry = conn.execute('''
+                SELECT t.id
+                FROM tournaments t
+                WHERE t.player_id = ? AND t.tournament_instance_id = ?
+            ''', (player_id, match['tournament_instance_id'])).fetchone()
+            
+            if tournament_entry:
+                # Find partner via accepted invitations
+                partner = conn.execute('''
+                    SELECT invitee_id as partner_id
+                    FROM partner_invitations pi
+                    JOIN tournaments t ON pi.tournament_entry_id = t.id
+                    WHERE pi.tournament_entry_id = ? AND pi.status = 'accepted' AND pi.inviter_id = ?
+                        AND t.tournament_instance_id = ?
+                    UNION
+                    SELECT inviter_id as partner_id
+                    FROM partner_invitations pi  
+                    JOIN tournaments t ON pi.tournament_entry_id = t.id
+                    WHERE pi.tournament_entry_id = ? AND pi.status = 'accepted' AND pi.invitee_id = ?
+                        AND t.tournament_instance_id = ?
+                ''', (tournament_entry['id'], player_id, match['tournament_instance_id'],
+                      tournament_entry['id'], player_id, match['tournament_instance_id'])).fetchone()
+                
+                if partner:
+                    team_members.append(partner['partner_id'])
+                    logging.info(f"Found doubles partner for player {player_id}: {partner['partner_id']}")
+                else:
+                    logging.warning(f"No accepted partner found for player {player_id} in doubles tournament {match['tournament_instance_id']}")
+        
+        logging.info(f"Tournament match {tournament_match_id}: Player {player_id} team members: {team_members}")
+        return team_members
+        
+    except Exception as e:
+        logging.error(f"Error getting tournament team members for match {tournament_match_id}, player {player_id}: {e}")
+        return [player_id]
+    finally:
+        if should_close:
+            conn.close()
+
+def get_match_team_members(match_id, player_id):
+    """Get all team members for a regular doubles match"""
+    conn = get_db_connection()
+    
+    # For regular matches, check if there's a match_type or partner info
+    # Since regular matches don't have explicit doubles support yet,
+    # we'll return just the individual player for now
+    # This can be extended when regular doubles matches are implemented
+    
+    team_members = [player_id]
+    conn.close()
+    return team_members
+
+def update_player_match_record(player_id, is_winner, points_awarded=0, points_description="", conn=None):
+    """Update an individual player's match record with wins/losses and points"""
+    should_close = False
+    if conn is None:
+        conn = get_db_connection()
+        should_close = True
+    
+    try:
+        if is_winner:
+            conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (player_id,))
+            if points_awarded > 0:
+                award_points(player_id, points_awarded, points_description, conn)
+        else:
+            conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (player_id,))
+        
+        logging.info(f"Updated player {player_id}: {'win' if is_winner else 'loss'}, points: {points_awarded}")
+        
+    except Exception as e:
+        logging.error(f"Error updating player {player_id} match record: {e}")
+        raise e
+    finally:
+        if should_close:
+            conn.close()
 
 def get_tournament_points(result):
     """Get points based on tournament result - DEPRECATED in favor of progressive system"""
@@ -6116,16 +6223,27 @@ def submit_match_result():
     ''', (player1_sets_won, player2_sets_won, winner_id, 
           match_score, match_id))
     
-    # Update player win/loss records
-    conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (winner_id,))
-    conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (loser_id,))
+    # DOUBLES TEAM SCORING: Update win/loss records for all team members
+    # Get team members for both winner and loser
+    winner_team_members = get_match_team_members(match_id, winner_id)
+    loser_team_members = get_match_team_members(match_id, loser_id)
+    
+    # Calculate points based on match type
+    points_awarded = 15 if (player1_sets_won + player2_sets_won) == 3 else 10  # Bonus for 3-set matches
+    points_description = 'Match victory'
+    
+    # Update records for all winning team members
+    for player_id in winner_team_members:
+        update_player_match_record(player_id, True, points_awarded, points_description, conn)
+    
+    # Update records for all losing team members
+    for player_id in loser_team_members:
+        update_player_match_record(player_id, False, 0, "", conn)
+    
+    logging.info(f"Regular match {match_id}: Updated {len(winner_team_members)} winning players, {len(loser_team_members)} losing players")
     
     conn.commit()
     conn.close()
-    
-    # Award points based on match type
-    points_awarded = 15 if (player1_sets_won + player2_sets_won) == 3 else 10  # Bonus for 3-set matches
-    award_points(winner_id, points_awarded, 'Match victory')
     
     # Send notifications
     conn = get_db_connection()
