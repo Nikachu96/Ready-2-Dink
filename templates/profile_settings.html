@@ -632,6 +632,37 @@
                         </div>
                     </div>
                     
+                    <!-- Discoverability Section -->
+                    <div class="card account-info-card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-eye me-2"></i>Discoverability
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="discoverability_preference" class="form-label">
+                                    <i class="fas fa-search me-1"></i>How can other players find you?
+                                </label>
+                                <select class="form-select" id="discoverability_preference" name="discoverability_preference">
+                                    <option value="singles" {{ 'selected' if player.discoverability_preference == 'singles' }}>
+                                        <i class="fas fa-user me-1"></i>Singles Only - Available for singles challenges only
+                                    </option>
+                                    <option value="doubles" {{ 'selected' if player.discoverability_preference == 'doubles' }}>
+                                        <i class="fas fa-users me-1"></i>Doubles Only - Available for doubles partner search only
+                                    </option>
+                                    <option value="both" {{ 'selected' if player.discoverability_preference == 'both' or not player.discoverability_preference }}>
+                                        <i class="fas fa-globe me-1"></i>Both - Available for singles challenges and doubles partner search
+                                    </option>
+                                </select>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Control how other players can discover and connect with you in the app
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="mb-3">
                         <label for="selfie" class="form-label">
                             <i class="fas fa-camera me-1"></i>Update Profile Photo

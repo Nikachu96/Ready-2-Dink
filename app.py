@@ -6595,7 +6595,7 @@ def update_profile():
                     court1_coordinates = ?, court2_coordinates = ?,
                     skill_level = ?, email = ?, selfie = ?, player_id = ?, payout_preference = ?,
                     paypal_email = ?, venmo_username = ?, zelle_info = ?,
-                    latitude = ?, longitude = ?, search_radius_miles = ?, gender = ?, travel_radius = ?
+                    latitude = ?, longitude = ?, search_radius_miles = ?, gender = ?, travel_radius = ?, discoverability_preference = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
@@ -6604,7 +6604,8 @@ def update_profile():
                   request.form['skill_level'], request.form['email'], selfie_filename, player_id_input, 
                   request.form.get('payout_preference', ''), request.form.get('paypal_email', ''),
                   request.form.get('venmo_username', ''), request.form.get('zelle_info', ''),
-                  latitude, longitude, search_radius_miles, gender, travel_radius, player_id))
+                  latitude, longitude, search_radius_miles, gender, travel_radius, 
+                  request.form.get('discoverability_preference', 'both'), player_id))
         else:
             conn.execute('''
                 UPDATE players 
@@ -6613,7 +6614,7 @@ def update_profile():
                     court1_coordinates = ?, court2_coordinates = ?,
                     skill_level = ?, email = ?, player_id = ?, payout_preference = ?,
                     paypal_email = ?, venmo_username = ?, zelle_info = ?,
-                    latitude = ?, longitude = ?, search_radius_miles = ?, gender = ?, travel_radius = ?
+                    latitude = ?, longitude = ?, search_radius_miles = ?, gender = ?, travel_radius = ?, discoverability_preference = ?
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'], 
                   request.form['zip_code'], request.form['city'], request.form['state'],
@@ -6622,7 +6623,8 @@ def update_profile():
                   request.form['skill_level'], request.form['email'], player_id_input, 
                   request.form.get('payout_preference', ''), request.form.get('paypal_email', ''),
                   request.form.get('venmo_username', ''), request.form.get('zelle_info', ''),
-                  latitude, longitude, search_radius_miles, gender, travel_radius, player_id))
+                  latitude, longitude, search_radius_miles, gender, travel_radius, 
+                  request.form.get('discoverability_preference', 'both'), player_id))
         
         conn.commit()
         conn.close()
