@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 from functools import wraps
 import logging
 import stripe
+from haversine import haversine, Unit
 
 # Import Random Matchup Engine
 try:
@@ -25,6 +26,279 @@ if os.environ.get('FLASK_ENV') == 'development' or os.environ.get('DEBUG') == '1
     logging.basicConfig(level=logging.DEBUG)
 else:
     logging.basicConfig(level=logging.INFO)
+
+# Distance calculation functions
+def estimate_coordinates_from_location(location_text):
+    """
+    Estimate coordinates from location text using basic city/state mappings.
+    This is a simple fallback for when exact GPS coordinates aren't available.
+    """
+    if not location_text:
+        return None, None
+    
+    # Common city coordinates for basic estimation (lat, lon)
+    city_coordinates = {
+        # New York Area
+        'manhattan': (40.7831, -73.9712),
+        'brooklyn': (40.6782, -73.9442),
+        'queens': (40.7282, -73.7949),
+        'bronx': (40.8448, -73.8648),
+        'new york': (40.7589, -73.9851),
+        'nyc': (40.7589, -73.9851),
+        
+        # Major US Cities
+        'los angeles': (34.0522, -118.2437),
+        'chicago': (41.8781, -87.6298),
+        'houston': (29.7604, -95.3698),
+        'phoenix': (33.4484, -112.0740),
+        'philadelphia': (39.9526, -75.1652),
+        'san antonio': (29.4241, -98.4936),
+        'san diego': (32.7157, -117.1611),
+        'dallas': (32.7767, -96.7970),
+        'san jose': (37.3382, -121.8863),
+        'austin': (30.2672, -97.7431),
+        'jacksonville': (30.3322, -81.6557),
+        'fort worth': (32.7555, -97.3308),
+        'columbus': (39.9612, -82.9988),
+        'san francisco': (37.7749, -122.4194),
+        'charlotte': (35.2271, -80.8431),
+        'indianapolis': (39.7684, -86.1581),
+        'seattle': (47.6062, -122.3321),
+        'denver': (39.7392, -104.9903),
+        'boston': (42.3601, -71.0589),
+        'el paso': (31.7619, -106.4850),
+        'detroit': (42.3314, -83.0458),
+        'nashville': (36.1627, -86.7816),
+        'portland': (45.5152, -122.6784),
+        'oklahoma city': (35.4676, -97.5164),
+        'las vegas': (36.1699, -115.1398),
+        'louisville': (38.2527, -85.7585),
+        'baltimore': (39.2904, -76.6122),
+        'milwaukee': (43.0389, -87.9065),
+        'albuquerque': (35.0844, -106.6504),
+        'tucson': (32.2226, -110.9747),
+        'fresno': (36.7378, -119.7871),
+        'sacramento': (38.5816, -121.4944),
+        'kansas city': (39.0997, -94.5786),
+        'mesa': (33.4152, -111.8315),
+        'atlanta': (33.7490, -84.3880),
+        'omaha': (41.2565, -95.9345),
+        'colorado springs': (38.8339, -104.8214),
+        'raleigh': (35.7796, -78.6382),
+        'miami': (25.7617, -80.1918),
+        'cleveland': (41.4993, -81.6944),
+        'tulsa': (36.1540, -95.9928),
+        'oakland': (37.8044, -122.2711),
+        'minneapolis': (44.9778, -93.2650),
+        'wichita': (37.6872, -97.3301),
+        'arlington': (32.7357, -97.1081),
+        'new orleans': (29.9511, -90.0715),
+        'bakersfield': (35.3733, -119.0187),
+        'tampa': (27.9506, -82.4572),
+        'honolulu': (21.3099, -157.8581),
+        'anaheim': (33.8366, -117.9143),
+        'aurora': (39.7294, -104.8319),
+        'santa ana': (33.7455, -117.8677),
+        'st. louis': (38.6270, -90.1994),
+        'riverside': (33.9533, -117.3962),
+        'corpus christi': (27.8006, -97.3964),
+        'lexington': (38.0406, -84.5037),
+        'pittsburgh': (40.4406, -79.9959),
+        'anchorage': (61.2181, -149.9003),
+        'stockton': (37.9577, -121.2908),
+        'cincinnati': (39.1031, -84.5120),
+        'st. paul': (44.9537, -93.0900),
+        'toledo': (41.6528, -83.5379),
+        'newark': (40.7357, -74.1724),
+        'greensboro': (36.0726, -79.7920),
+        'plano': (33.0198, -96.6989),
+        'henderson': (36.0395, -114.9817),
+        'lincoln': (40.8136, -96.7026),
+        'buffalo': (42.8864, -78.8784),
+        'jersey city': (40.7178, -74.0431),
+        'chula vista': (32.6401, -117.0842),
+        'fort wayne': (41.0793, -85.1394),
+        'orlando': (28.5383, -81.3792),
+        'st. petersburg': (27.7676, -82.6403),
+        'chandler': (33.3062, -111.8413),
+        'laredo': (27.5306, -99.4803),
+        'norfolk': (36.8468, -76.2852),
+        'durham': (35.9940, -78.8986),
+        'madison': (43.0731, -89.4012),
+        'lubbock': (33.5779, -101.8552),
+        'irvine': (33.6846, -117.8265),
+        'winston-salem': (36.0999, -80.2442),
+        'glendale': (33.5387, -112.1860),
+        'garland': (32.9126, -96.6389),
+        'hialeah': (25.8576, -80.2781),
+        'reno': (39.5296, -119.8138),
+        'chesapeake': (36.7682, -76.2875),
+        'gilbert': (33.3528, -111.7890),
+        'baton rouge': (30.4515, -91.1871),
+        'irving': (32.8140, -96.9489),
+        'scottsdale': (33.4942, -111.9261),
+        'north las vegas': (36.1989, -115.1175),
+        'fremont': (37.5485, -121.9886),
+        'boise': (43.6150, -116.2023),
+        'richmond': (37.5407, -77.4360),
+        'san bernardino': (34.1083, -117.2898),
+        'birmingham': (33.5186, -86.8104),
+        'spokane': (47.6587, -117.4260),
+        'rochester': (43.1566, -77.6088),
+        'des moines': (41.5868, -93.6250),
+        'modesto': (37.6391, -120.9969),
+        'fayetteville': (36.0726, -94.1574),
+        'tacoma': (47.2529, -122.4443),
+        'oxnard': (34.1975, -119.1771),
+        'fontana': (34.0922, -117.4350),
+        'columbus': (32.4609, -84.9877),
+        'montgomery': (32.3617, -86.2792),
+        'moreno valley': (33.9425, -117.2297),
+        'shreveport': (32.5252, -93.7502),
+        'aurora': (41.7606, -88.3201),
+        'yonkers': (40.9312, -73.8988),
+        'akron': (41.0814, -81.5190),
+        'huntington beach': (33.6595, -117.9988),
+        'little rock': (34.7465, -92.2896),
+        'augusta': (33.4735, -82.0105),
+        'amarillo': (35.2220, -101.8313),
+        'glendale': (34.1425, -118.2551),
+        'mobile': (30.6954, -88.0399),
+        'grand rapids': (42.9634, -85.6681),
+        'salt lake city': (40.7608, -111.8910),
+        'tallahassee': (30.4518, -84.2807),
+        'huntsville': (34.7304, -86.5861),
+        'grand prairie': (32.7460, -96.9978),
+        'knoxville': (35.9606, -83.9207),
+        'worcester': (42.2626, -71.8023),
+        'newport news': (37.0871, -76.4730),
+        'brownsville': (25.9018, -97.4975),
+        'overland park': (38.9822, -94.6708),
+        'santa clarita': (34.3917, -118.5426),
+        'providence': (41.8240, -71.4128),
+        'garden grove': (33.7739, -117.9414),
+        'chattanooga': (35.0456, -85.3097),
+        'oceanside': (33.1959, -117.3795),
+        'jackson': (32.2988, -90.1848),
+        'fort lauderdale': (26.1224, -80.1373),
+        'santa rosa': (38.4404, -122.7144),
+        'rancho cucamonga': (34.1064, -117.5931),
+        'port st. lucie': (27.2939, -80.3501),
+        'tempe': (33.4255, -111.9400),
+        'ontario': (34.0633, -117.6509),
+        'vancouver': (45.6387, -122.6615),
+        'cape coral': (26.5629, -81.9495),
+        'sioux falls': (43.5446, -96.7311),
+        'springfield': (39.7817, -89.6501),
+        'peoria': (40.6936, -89.5890),
+        'pembroke pines': (26.0073, -80.2962),
+        'elk grove': (38.4088, -121.3716),
+        'corona': (33.8753, -117.5664),
+        'lancaster': (34.6868, -118.1542),
+        'eugene': (44.0521, -123.0868),
+        'palmdale': (34.5794, -118.1165),
+        'salinas': (36.6777, -121.6555),
+        'springfield': (37.2153, -93.2982),
+        'pasadena': (34.1478, -118.1445),
+        'fort collins': (40.5853, -105.0844),
+        'hayward': (37.6688, -122.0808),
+        'pomona': (34.0555, -117.7500),
+        'cary': (35.7915, -78.7811),
+        'rockford': (42.2711, -89.0940),
+        'alexandria': (38.8048, -77.0469),
+        'escondido': (33.1192, -117.0864),
+        'mckinney': (33.1972, -96.6397),
+        'kansas city': (39.1142, -94.6275),
+        'joliet': (41.5250, -88.0817),
+        'sunnyvale': (37.3688, -122.0363)
+    }
+    
+    location_lower = location_text.lower().strip()
+    
+    # Try direct city lookup
+    if location_lower in city_coordinates:
+        return city_coordinates[location_lower]
+    
+    # Try to extract city from "City, State" format
+    if ',' in location_lower:
+        city_part = location_lower.split(',')[0].strip()
+        if city_part in city_coordinates:
+            return city_coordinates[city_part]
+    
+    # If no match found, return None
+    return None, None
+
+def calculate_distance_between_players(player1_data, player2_data):
+    """
+    Calculate distance in miles between two players using their location data.
+    Returns distance in miles or None if calculation isn't possible.
+    """
+    try:
+        # First try using exact GPS coordinates
+        lat1, lon1 = player1_data.get('latitude'), player1_data.get('longitude')
+        lat2, lon2 = player2_data.get('latitude'), player2_data.get('longitude')
+        
+        # If both players have exact coordinates, use those
+        if lat1 and lon1 and lat2 and lon2:
+            distance = haversine((lat1, lon1), (lat2, lon2), unit=Unit.MILES)
+            return round(distance, 1)
+        
+        # Fall back to estimated coordinates from location text
+        if not lat1 or not lon1:
+            lat1, lon1 = estimate_coordinates_from_location(player1_data.get('location1'))
+        
+        if not lat2 or not lon2:
+            lat2, lon2 = estimate_coordinates_from_location(player2_data.get('location1'))
+        
+        # If we have coordinates for both players, calculate distance
+        if lat1 and lon1 and lat2 and lon2:
+            distance = haversine((lat1, lon1), (lat2, lon2), unit=Unit.MILES)
+            return round(distance, 1)
+        
+        # If we can't calculate distance, return None
+        return None
+        
+    except Exception as e:
+        logging.error(f"Error calculating distance: {e}")
+        return None
+
+def get_distance_from_current_player(player_data, current_player_id):
+    """
+    Calculate distance from current logged-in player to another player.
+    Returns formatted distance string or None.
+    """
+    if not current_player_id or not player_data:
+        return None
+    
+    try:
+        conn = get_db_connection()
+        current_player = conn.execute(
+            'SELECT latitude, longitude, location1 FROM players WHERE id = ?', 
+            (current_player_id,)
+        ).fetchone()
+        conn.close()
+        
+        if not current_player:
+            return None
+        
+        distance = calculate_distance_between_players(
+            dict(current_player), 
+            dict(player_data)
+        )
+        
+        if distance is not None:
+            if distance < 1:
+                return "< 1 mile away"
+            elif distance < 10:
+                return f"~{distance} miles away"
+            else:
+                return f"~{int(distance)} miles away"
+        
+        return None
+        
+    except Exception as e:
+        logging.error(f"Error getting distance from current player: {e}")
+        return None
 
 # Email configuration for SendGrid
 def send_admin_credentials_email(full_name, email, username, password, login_url):
