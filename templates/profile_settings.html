@@ -1172,8 +1172,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 2000);
     });
     
-    // Team Management Functions
-    document.addEventListener('DOMContentLoaded', function() {
+});
+
+// Team Management Functions - Fixed: Moved outside nested DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
         const matchPreferenceRadios = document.querySelectorAll('input[name="match_preference_radio"]');
         const teamActionSection = document.getElementById('team_action_section');
         const havePartnerSection = document.getElementById('have_partner_section');
