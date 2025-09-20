@@ -793,6 +793,9 @@
 
 {% block scripts %}
 <script>
+console.log("=== SCRIPT LOADING TEST ===");
+alert("JavaScript is loading!");
+
 // Payout preference field management
 function togglePayoutFields() {
     const selectedMethod = document.getElementById('payout_preference').value;
