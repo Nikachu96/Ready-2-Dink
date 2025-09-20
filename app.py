@@ -639,6 +639,17 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    # Add match preference columns for team system
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN match_preference TEXT DEFAULT "singles"')  # singles, doubles_with_partner, doubles_need_partner
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN current_team_id INTEGER DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     try:
         c.execute('ALTER TABLE matches ADD COLUMN notification_sent INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
@@ -805,6 +816,39 @@ def init_db():
             FOREIGN KEY(match_id) REFERENCES matches(id),
             FOREIGN KEY(player_id) REFERENCES players(id),
             UNIQUE(match_id, player_id)  -- Each player can only be on one team per match
+        )
+    ''')
+    
+    # Create teams table for permanent player partnerships
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS teams (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player1_id INTEGER NOT NULL,
+            player2_id INTEGER NOT NULL,
+            team_name TEXT,
+            status TEXT DEFAULT 'active',  -- active, inactive, dissolved
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            created_by INTEGER NOT NULL,  -- who initiated the team
+            FOREIGN KEY(player1_id) REFERENCES players(id),
+            FOREIGN KEY(player2_id) REFERENCES players(id),
+            FOREIGN KEY(created_by) REFERENCES players(id),
+            UNIQUE(player1_id, player2_id)
+        )
+    ''')
+    
+    # Create team invitations table for team formation
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS team_invitations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            inviter_id INTEGER NOT NULL,
+            invitee_id INTEGER NOT NULL,
+            invitation_message TEXT,
+            status TEXT DEFAULT 'pending',  -- pending, accepted, rejected, expired
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            responded_at TEXT,
+            expires_at TEXT,
+            FOREIGN KEY(inviter_id) REFERENCES players(id),
+            FOREIGN KEY(invitee_id) REFERENCES players(id)
         )
     ''')
     
@@ -1792,6 +1836,253 @@ def backfill_existing_matches_as_singles():
     except Exception as e:
         logging.error(f"Error backfilling existing matches: {e}")
         return 0
+
+def create_team(player1_id, player2_id, created_by, team_name=None):
+    """Create a new team between two players"""
+    try:
+        conn = get_db_connection()
+        
+        # Check if either player is already in a team
+        existing_team = conn.execute('''
+            SELECT * FROM teams 
+            WHERE (player1_id = ? OR player2_id = ?) 
+            OR (player1_id = ? OR player2_id = ?) 
+            AND status = 'active'
+        ''', (player1_id, player1_id, player2_id, player2_id)).fetchone()
+        
+        if existing_team:
+            conn.close()
+            return {'success': False, 'message': 'One of the players is already in an active team'}
+        
+        # Create the team (ensure consistent ordering with lower ID first)
+        if player1_id > player2_id:
+            player1_id, player2_id = player2_id, player1_id
+            
+        cursor = conn.execute('''
+            INSERT INTO teams (player1_id, player2_id, team_name, created_by)
+            VALUES (?, ?, ?, ?)
+        ''', (player1_id, player2_id, team_name, created_by))
+        
+        team_id = cursor.lastrowid
+        
+        # Update both players' current_team_id
+        conn.execute('UPDATE players SET current_team_id = ? WHERE id = ?', (team_id, player1_id))
+        conn.execute('UPDATE players SET current_team_id = ? WHERE id = ?', (team_id, player2_id))
+        
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"Team {team_id} created between players {player1_id} and {player2_id}")
+        return {'success': True, 'team_id': team_id}
+        
+    except Exception as e:
+        logging.error(f"Error creating team: {e}")
+        return {'success': False, 'message': 'Failed to create team'}
+
+def send_team_invitation(inviter_id, invitee_id, message=""):
+    """Send a team invitation to another player"""
+    try:
+        conn = get_db_connection()
+        
+        # Check if inviter already has an active team
+        inviter = conn.execute('''
+            SELECT current_team_id FROM players WHERE id = ?
+        ''', (inviter_id,)).fetchone()
+        
+        if inviter and inviter['current_team_id']:
+            conn.close()
+            return {'success': False, 'message': 'You are already in a team'}
+        
+        # Check if invitee already has an active team
+        invitee = conn.execute('''
+            SELECT current_team_id FROM players WHERE id = ?
+        ''', (invitee_id,)).fetchone()
+        
+        if invitee and invitee['current_team_id']:
+            conn.close()
+            return {'success': False, 'message': 'This player is already in a team'}
+        
+        # Check for existing pending invitation between these players
+        existing = conn.execute('''
+            SELECT id FROM team_invitations 
+            WHERE ((inviter_id = ? AND invitee_id = ?) OR (inviter_id = ? AND invitee_id = ?))
+            AND status = 'pending'
+        ''', (inviter_id, invitee_id, invitee_id, inviter_id)).fetchone()
+        
+        if existing:
+            conn.close()
+            return {'success': False, 'message': 'There is already a pending invitation between you and this player'}
+        
+        # Create the invitation
+        cursor = conn.execute('''
+            INSERT INTO team_invitations (inviter_id, invitee_id, invitation_message)
+            VALUES (?, ?, ?)
+        ''', (inviter_id, invitee_id, message))
+        
+        invitation_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        # Send notification
+        inviter_name = get_player_name(inviter_id)
+        send_push_notification(
+            invitee_id,
+            f"🤝 Team Invitation from {inviter_name}! They want to form a doubles team with you.",
+            "Team Invitation"
+        )
+        
+        logging.info(f"Team invitation {invitation_id} sent from {inviter_id} to {invitee_id}")
+        return {'success': True, 'invitation_id': invitation_id}
+        
+    except Exception as e:
+        logging.error(f"Error sending team invitation: {e}")
+        return {'success': False, 'message': 'Failed to send team invitation'}
+
+def accept_team_invitation(invitation_id, player_id):
+    """Accept a team invitation"""
+    try:
+        conn = get_db_connection()
+        
+        # Get invitation details
+        invitation = conn.execute('''
+            SELECT * FROM team_invitations 
+            WHERE id = ? AND invitee_id = ? AND status = 'pending'
+        ''', (invitation_id, player_id)).fetchone()
+        
+        if not invitation:
+            conn.close()
+            return {'success': False, 'message': 'Invalid invitation'}
+        
+        # Check if either player is already in a team
+        player1_team = conn.execute('SELECT current_team_id FROM players WHERE id = ?', (invitation['inviter_id'],)).fetchone()
+        player2_team = conn.execute('SELECT current_team_id FROM players WHERE id = ?', (player_id,)).fetchone()
+        
+        if (player1_team and player1_team['current_team_id']) or (player2_team and player2_team['current_team_id']):
+            conn.close()
+            return {'success': False, 'message': 'One of you is already in a team'}
+        
+        # Create the team
+        team_result = create_team(invitation['inviter_id'], player_id, invitation['inviter_id'])
+        
+        if not team_result['success']:
+            conn.close()
+            return team_result
+        
+        # Update invitation status
+        conn.execute('''
+            UPDATE team_invitations 
+            SET status = 'accepted', responded_at = datetime('now')
+            WHERE id = ?
+        ''', (invitation_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        # Send confirmation notifications
+        invitee_name = get_player_name(player_id)
+        inviter_name = get_player_name(invitation['inviter_id'])
+        
+        send_push_notification(
+            invitation['inviter_id'],
+            f"🎉 {invitee_name} accepted your team invitation! You are now teammates.",
+            "Team Formed"
+        )
+        
+        return {'success': True, 'team_id': team_result['team_id']}
+        
+    except Exception as e:
+        logging.error(f"Error accepting team invitation: {e}")
+        return {'success': False, 'message': 'Failed to accept invitation'}
+
+def reject_team_invitation(invitation_id, player_id):
+    """Reject a team invitation"""
+    try:
+        conn = get_db_connection()
+        
+        # Update invitation status
+        result = conn.execute('''
+            UPDATE team_invitations 
+            SET status = 'rejected', responded_at = datetime('now')
+            WHERE id = ? AND invitee_id = ? AND status = 'pending'
+        ''', (invitation_id, player_id))
+        
+        if result.rowcount == 0:
+            conn.close()
+            return {'success': False, 'message': 'Invalid invitation'}
+        
+        # Get invitation details for notification
+        invitation = conn.execute('''
+            SELECT inviter_id FROM team_invitations WHERE id = ?
+        ''', (invitation_id,)).fetchone()
+        
+        conn.commit()
+        conn.close()
+        
+        # Notify inviter
+        invitee_name = get_player_name(player_id)
+        send_push_notification(
+            invitation['inviter_id'],
+            f"{invitee_name} declined your team invitation.",
+            "Team Invitation Declined"
+        )
+        
+        return {'success': True}
+        
+    except Exception as e:
+        logging.error(f"Error rejecting team invitation: {e}")
+        return {'success': False, 'message': 'Failed to reject invitation'}
+
+def get_player_team(player_id):
+    """Get player's current team information"""
+    try:
+        conn = get_db_connection()
+        
+        team = conn.execute('''
+            SELECT t.*, 
+                   p1.full_name as player1_name, p1.selfie as player1_selfie,
+                   p2.full_name as player2_name, p2.selfie as player2_selfie
+            FROM teams t
+            JOIN players p1 ON t.player1_id = p1.id
+            JOIN players p2 ON t.player2_id = p2.id
+            WHERE (t.player1_id = ? OR t.player2_id = ?) AND t.status = 'active'
+        ''', (player_id, player_id)).fetchone()
+        
+        conn.close()
+        return dict(team) if team else None
+        
+    except Exception as e:
+        logging.error(f"Error getting player team: {e}")
+        return None
+
+def get_player_team_invitations(player_id):
+    """Get pending team invitations for a player"""
+    try:
+        conn = get_db_connection()
+        
+        invitations = conn.execute('''
+            SELECT ti.*, p.full_name as inviter_name, p.selfie as inviter_selfie
+            FROM team_invitations ti
+            JOIN players p ON ti.inviter_id = p.id
+            WHERE ti.invitee_id = ? AND ti.status = 'pending'
+            ORDER BY ti.created_at DESC
+        ''', (player_id,)).fetchall()
+        
+        conn.close()
+        return [dict(inv) for inv in invitations]
+        
+    except Exception as e:
+        logging.error(f"Error getting team invitations: {e}")
+        return []
+
+def get_player_name(player_id):
+    """Get player's full name"""
+    try:
+        conn = get_db_connection()
+        player = conn.execute('SELECT full_name FROM players WHERE id = ?', (player_id,)).fetchone()
+        conn.close()
+        return player['full_name'] if player else 'Unknown Player'
+    except:
+        return 'Unknown Player'
 
 def update_player_match_record(player_id, is_winner, points_awarded=0, points_description="", conn=None):
     """Update an individual player's match record with wins/losses and points"""
@@ -6047,7 +6338,7 @@ def browse_players():
 
 @app.route('/profile_settings')
 def profile_settings():
-    """Profile settings page - get current logged-in player"""
+    """Profile settings page - get current logged-in player with team information"""
     current_player_id = session.get('current_player_id')
     
     if not current_player_id:
@@ -6056,13 +6347,35 @@ def profile_settings():
     
     conn = get_db_connection()
     player = conn.execute('SELECT * FROM players WHERE id = ?', (current_player_id,)).fetchone()
+    
+    # Get player's team information
+    current_team = get_player_team(current_player_id)
+    
+    # Get pending team invitations
+    pending_invitations = get_player_team_invitations(current_player_id)
+    
+    # Get player's connections (players they've played matches with)
+    connections = conn.execute('''
+        SELECT DISTINCT p.id, p.full_name, p.selfie
+        FROM players p
+        JOIN matches m ON (p.id = m.player1_id OR p.id = m.player2_id)
+        WHERE ((m.player1_id = ? AND p.id = m.player2_id) OR (m.player2_id = ? AND p.id = m.player1_id))
+        AND m.status = 'completed'
+        AND p.id != ?
+        ORDER BY p.full_name
+    ''', (current_player_id, current_player_id, current_player_id)).fetchall()
+    
     conn.close()
     
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('player_login'))
     
-    return render_template('profile_settings.html', player=player)
+    return render_template('profile_settings.html', 
+                         player=player,
+                         current_team=current_team,
+                         pending_invitations=pending_invitations,
+                         connections=[dict(c) for c in connections])
 
 @app.route('/update-availability/<int:player_id>', methods=['POST'])
 def update_availability(player_id):
@@ -7181,6 +7494,116 @@ def admin_backfill_matches():
     except Exception as e:
         flash(f'Error backfilling matches: {str(e)}', 'error')
     return redirect(url_for('admin_dashboard'))
+
+@app.route('/update_match_preference', methods=['POST'])
+def update_match_preference():
+    """Update player's match preference"""
+    current_player_id = session.get('current_player_id')
+    
+    if not current_player_id:
+        return jsonify({'success': False, 'message': 'Authentication required'})
+    
+    preference = request.form.get('match_preference')
+    if preference not in ['singles', 'doubles_with_partner', 'doubles_need_partner']:
+        return jsonify({'success': False, 'message': 'Invalid preference'})
+    
+    try:
+        conn = get_db_connection()
+        conn.execute('UPDATE players SET match_preference = ? WHERE id = ?', (preference, current_player_id))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Match preference updated successfully'})
+    except Exception as e:
+        logging.error(f"Error updating match preference: {e}")
+        return jsonify({'success': False, 'message': 'Failed to update preference'})
+
+@app.route('/send_team_invitation', methods=['POST'])
+def send_team_invitation_route():
+    """Send a team invitation to another player"""
+    current_player_id = session.get('current_player_id')
+    
+    if not current_player_id:
+        return jsonify({'success': False, 'message': 'Authentication required'})
+    
+    invitee_id = request.form.get('invitee_id')
+    message = request.form.get('message', '')
+    
+    if not invitee_id:
+        return jsonify({'success': False, 'message': 'Invitee required'})
+    
+    result = send_team_invitation(current_player_id, int(invitee_id), message)
+    return jsonify(result)
+
+@app.route('/accept_team_invitation/<int:invitation_id>')
+def accept_team_invitation_route(invitation_id):
+    """Accept a team invitation"""
+    current_player_id = session.get('current_player_id')
+    
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
+    
+    result = accept_team_invitation(invitation_id, current_player_id)
+    
+    if result['success']:
+        flash('Team invitation accepted! You now have a doubles partner.', 'success')
+    else:
+        flash(f'Failed to accept invitation: {result["message"]}', 'error')
+    
+    return redirect(url_for('profile_settings'))
+
+@app.route('/reject_team_invitation/<int:invitation_id>')
+def reject_team_invitation_route(invitation_id):
+    """Reject a team invitation"""
+    current_player_id = session.get('current_player_id')
+    
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
+    
+    result = reject_team_invitation(invitation_id, current_player_id)
+    
+    if result['success']:
+        flash('Team invitation declined.', 'info')
+    else:
+        flash(f'Failed to decline invitation: {result["message"]}', 'error')
+    
+    return redirect(url_for('profile_settings'))
+
+@app.route('/team_search')
+def team_search():
+    """Search for potential team partners"""
+    current_player_id = session.get('current_player_id')
+    
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
+    
+    # Check if player needs a partner
+    conn = get_db_connection()
+    player = conn.execute('SELECT match_preference FROM players WHERE id = ?', (current_player_id,)).fetchone()
+    
+    if not player or player['match_preference'] != 'doubles_need_partner':
+        flash('Team search is only available if you need a doubles partner', 'warning')
+        return redirect(url_for('profile_settings'))
+    
+    # Get potential partners (players who also need partners)
+    potential_partners = conn.execute('''
+        SELECT p.id, p.full_name, p.selfie, p.skill_level, p.location1, p.wins, p.losses, p.ranking_points
+        FROM players p
+        WHERE p.id != ? 
+        AND p.match_preference = 'doubles_need_partner'
+        AND p.current_team_id IS NULL
+        AND p.is_looking_for_match = 1
+        ORDER BY p.ranking_points DESC, p.wins DESC
+    ''', (current_player_id,)).fetchall()
+    
+    conn.close()
+    
+    return render_template('team_search.html', 
+                         potential_partners=[dict(p) for p in potential_partners],
+                         current_player_id=current_player_id)
 
 @app.route('/admin')
 @admin_required
