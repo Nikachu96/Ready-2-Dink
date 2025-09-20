@@ -602,6 +602,12 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
         
+    # Add phone number column for SMS notifications
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN phone_number TEXT DEFAULT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+        
     try:
         c.execute('ALTER TABLE matches ADD COLUMN notification_sent INTEGER DEFAULT 0')
     except sqlite3.OperationalError:
@@ -1331,6 +1337,9 @@ def advance_tournament_bracket(tournament_instance_id, current_round, current_ma
     try:
         conn = get_db_connection()
         
+        # Start transaction
+        conn.execute('BEGIN IMMEDIATE')
+        
         # Calculate next round and match position
         next_round = current_round + 1
         next_match_number = (current_match_number + 1) // 2
@@ -1340,6 +1349,8 @@ def advance_tournament_bracket(tournament_instance_id, current_round, current_ma
             SELECT * FROM tournament_matches 
             WHERE tournament_instance_id = ? AND round_number = ? AND match_number = ?
         ''', (tournament_instance_id, next_round, next_match_number)).fetchone()
+        
+        match_to_notify = None
         
         if next_match:
             # Determine if winner goes to player1 or player2 slot
@@ -1370,12 +1381,30 @@ def advance_tournament_bracket(tournament_instance_id, current_round, current_ma
                     WHERE id = ?
                 ''', (next_match['id'],))
                 logging.info(f"Tournament match {next_match['id']} is now ready with both players assigned")
+                
+                # Store match for notification after successful commit
+                match_to_notify = next_match['id']
         
+        # Commit the bracket advancement first
         conn.commit()
         conn.close()
         
+        # Send notifications and create match schedules after successful commit
+        if match_to_notify:
+            try:
+                # Create match schedule record for the new match
+                create_match_schedule_record(match_to_notify)
+                
+                # Send notifications to both players about their new match
+                send_tournament_match_notification(match_to_notify, 'bracket_generated')
+            except Exception as e:
+                logging.error(f"Failed to send notification for advanced match {match_to_notify}: {e}")
+        
     except Exception as e:
         logging.error(f"Error advancing tournament bracket: {e}")
+        if 'conn' in locals():
+            conn.rollback()
+            conn.close()
 
 def get_tournament_points(result):
     """Get points based on tournament result - DEPRECATED in favor of progressive system"""
@@ -1830,6 +1859,206 @@ def send_push_notification(player_id, message, title="Ready 2 Dink"):
         return True
     except Exception as e:
         logging.error(f"Failed to send push notification: {e}")
+        return False
+
+def send_tournament_match_notification(tournament_match_id, notification_type, custom_message=None):
+    """Send notifications to both players in a tournament match with idempotency"""
+    try:
+        conn = get_db_connection()
+        
+        # Check if notifications have already been sent for this match and type
+        existing_notifications = conn.execute('''
+            SELECT player_id FROM match_reminders 
+            WHERE tournament_match_id = ? AND reminder_type = ? AND delivery_status = 'sent'
+        ''', (tournament_match_id, notification_type)).fetchall()
+        
+        if len(existing_notifications) >= 2:  # Both players already notified
+            logging.info(f"Notifications already sent for match {tournament_match_id}, type {notification_type}")
+            conn.close()
+            return True
+        
+        # Get list of already notified players
+        already_notified = {row['player_id'] for row in existing_notifications}
+        
+        # Get match and player details with notification preferences
+        match_info = conn.execute('''
+            SELECT tm.*, ti.name as tournament_name,
+                   p1.full_name as player1_name, p1.email as player1_email, p1.phone_number as player1_phone,
+                   p1.notifications_enabled as player1_notifications_enabled,
+                   p2.full_name as player2_name, p2.email as player2_email, p2.phone_number as player2_phone,
+                   p2.notifications_enabled as player2_notifications_enabled
+            FROM tournament_matches tm
+            JOIN tournament_instances ti ON tm.tournament_instance_id = ti.id
+            JOIN players p1 ON tm.player1_id = p1.id
+            LEFT JOIN players p2 ON tm.player2_id = p2.id
+            WHERE tm.id = ?
+        ''', (tournament_match_id,)).fetchone()
+        
+        if not match_info:
+            logging.error(f"Tournament match {tournament_match_id} not found")
+            return False
+        
+        # Skip if it's a bye match (no player2)
+        if not match_info['player2_id']:
+            logging.info(f"Skipping notification for bye match {tournament_match_id}")
+            return True
+        
+        # Prepare notification messages based on type
+        if notification_type == 'bracket_generated':
+            title = f"Tournament Bracket Generated - {match_info['tournament_name']}"
+            if custom_message:
+                message_template = custom_message
+            else:
+                message_template = f"🏆 Your match in {match_info['tournament_name']} has been scheduled! You'll face {{opponent}} in Round {match_info['round_number']}. You have 7 days to coordinate and complete your match. Use the 'Plan Match' feature to schedule your game!"
+        
+        elif notification_type == 'match_scheduled':
+            title = f"Match Scheduled - {match_info['tournament_name']}"
+            message_template = custom_message or "Your tournament match has been scheduled! Check the details in your tournament dashboard."
+        
+        elif notification_type == 'deadline_reminder':
+            title = f"Match Deadline Reminder - {match_info['tournament_name']}"
+            message_template = custom_message or "⏰ Your tournament match deadline is approaching! Please complete your match soon to avoid forfeit."
+            
+        else:
+            logging.error(f"Unknown notification type: {notification_type}")
+            return False
+        
+        # Send notifications to both players
+        for player_num in [1, 2]:
+            player_id = match_info[f'player{player_num}_id']
+            player_name = match_info[f'player{player_num}_name']
+            player_email = match_info[f'player{player_num}_email']
+            player_phone = match_info[f'player{player_num}_phone']
+            player_notifications_enabled = match_info[f'player{player_num}_notifications_enabled']
+            opponent_name = match_info[f'player{3-player_num}_name']  # Get the other player
+            
+            # Skip if player has notifications disabled
+            if not player_notifications_enabled:
+                logging.info(f"Skipping notification for player {player_name} - notifications disabled")
+                continue
+            
+            # Skip if player already notified (idempotency check)
+            if player_id in already_notified:
+                logging.info(f"Player {player_name} already notified for match {tournament_match_id}, type {notification_type}")
+                continue
+            
+            # Personalize message with opponent name
+            personalized_message = message_template.format(opponent=opponent_name)
+            
+            delivery_status = 'sent'
+            notification_methods = []
+            
+            # Send in-app notification
+            try:
+                conn.execute('''
+                    INSERT INTO notifications (player_id, type, title, message, data)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (player_id, 'tournament_match', title, personalized_message, 
+                      json.dumps({'tournament_match_id': tournament_match_id, 'tournament_name': match_info['tournament_name']})))
+                notification_methods.append('in_app')
+                logging.info(f"In-app notification sent to {player_name}")
+            except Exception as e:
+                logging.error(f"Failed to send in-app notification to {player_name}: {e}")
+                delivery_status = 'failed'
+            
+            # Send email if available
+            if player_email:
+                try:
+                    email_html = f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #00f5ff;">{title}</h2>
+                        <p>Hi {player_name},</p>
+                        <p>{personalized_message}</p>
+                        <p><strong>Tournament:</strong> {match_info['tournament_name']}</p>
+                        <p><strong>Round:</strong> {match_info['round_number']}</p>
+                        <p><strong>Opponent:</strong> {opponent_name}</p>
+                        <p>Log in to Ready 2 Dink to coordinate your match scheduling!</p>
+                        <p>Best of luck,<br>The Ready 2 Dink Team</p>
+                    </div>
+                    """
+                    email_sent = send_email_notification(player_email, title, email_html)
+                    if email_sent:
+                        notification_methods.append('email')
+                        logging.info(f"Email notification sent to {player_name} ({player_email})")
+                    else:
+                        logging.warning(f"Failed to send email to {player_name}")
+                        if delivery_status != 'failed':
+                            delivery_status = 'partial'
+                except Exception as e:
+                    logging.error(f"Failed to send email to {player_name}: {e}")
+                    if delivery_status != 'failed':
+                        delivery_status = 'partial'
+            
+            # Record the notification in match_reminders table (idempotency protection)
+            try:
+                import sqlite3
+                notification_method = 'all' if len(notification_methods) > 1 else (notification_methods[0] if notification_methods else 'none')
+                
+                # Insert with unique constraint handling for concurrency safety
+                try:
+                    conn.execute('''
+                        INSERT INTO match_reminders (tournament_match_id, player_id, reminder_type, notification_method, delivery_status)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (tournament_match_id, player_id, notification_type, notification_method, delivery_status))
+                except sqlite3.IntegrityError:
+                    # Unique constraint violation - another process already sent notification, this is OK
+                    logging.info(f"Notification already recorded for player {player_id}, match {tournament_match_id}, type {notification_type}")
+                    # Update delivery status in case the previous attempt failed
+                    conn.execute('''
+                        UPDATE match_reminders 
+                        SET delivery_status = ?, notification_method = ?, sent_at = CURRENT_TIMESTAMP
+                        WHERE tournament_match_id = ? AND player_id = ? AND reminder_type = ?
+                    ''', (delivery_status, notification_method, tournament_match_id, player_id, notification_type))
+                    
+            except Exception as e:
+                logging.error(f"Failed to record reminder for player {player_id}: {e}")
+        
+        conn.commit()
+        conn.close()
+        logging.info(f"Tournament match notifications sent for match {tournament_match_id}, type: {notification_type}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Error sending tournament match notification: {e}")
+        return False
+
+def create_match_schedule_record(tournament_match_id):
+    """Create initial match schedule record with 7-day deadline"""
+    try:
+        from datetime import datetime, timedelta
+        
+        conn = get_db_connection()
+        
+        # Calculate deadline (7 days from now)
+        deadline_at = (datetime.now() + timedelta(days=7)).isoformat()
+        
+        # Get the match details to determine which player should be the initial proposer
+        match = conn.execute('''
+            SELECT player1_id, player2_id FROM tournament_matches WHERE id = ?
+        ''', (tournament_match_id,)).fetchone()
+        
+        if not match or not match['player2_id']:  # Skip bye matches
+            conn.close()
+            return True
+        
+        # Create initial schedule record with player1 as proposer
+        conn.execute('''
+            INSERT INTO match_schedules (
+                tournament_match_id, proposer_id, proposed_at, deadline_at, 
+                confirmation_status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        ''', (tournament_match_id, match['player1_id'], 
+              datetime.now().isoformat(), deadline_at, 'pending', 
+              datetime.now().isoformat()))
+        
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"Created match schedule record for tournament match {tournament_match_id} with 7-day deadline")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Error creating match schedule record: {e}")
         return False
 
 def schedule_match_notifications():
@@ -3415,72 +3644,107 @@ def generate_tournament_bracket(tournament_instance_id):
     """Generate bracket for a tournament instance"""
     conn = get_db_connection()
     
-    # Get all players in this tournament
-    players = conn.execute('''
-        SELECT t.*, p.full_name, p.selfie 
-        FROM tournaments t
-        JOIN players p ON t.player_id = p.id
-        WHERE t.tournament_instance_id = ?
-        ORDER BY t.created_at
-    ''', (tournament_instance_id,)).fetchall()
-    
-    if len(players) < 2:
-        conn.close()
-        return False
-    
-    # Assign bracket positions
-    for i, player in enumerate(players, 1):
-        conn.execute('UPDATE tournaments SET bracket_position = ? WHERE id = ?', 
-                    (i, player['id']))
-    
-    # Calculate number of rounds needed
-    num_players = len(players)
-    import math
-    max_rounds = math.ceil(math.log2(num_players)) if num_players > 1 else 1
-    
-    # Generate first round matches
-    matches_created = []
-    
-    # Pair players for first round
-    for i in range(0, len(players), 2):
-        player1 = players[i]
-        player2 = players[i + 1] if i + 1 < len(players) else None
+    try:
+        # Start transaction for bracket generation
+        conn.execute('BEGIN IMMEDIATE')
         
-        match_number = (i // 2) + 1
+        # Get all players in this tournament
+        players = conn.execute('''
+            SELECT t.*, p.full_name, p.selfie 
+            FROM tournaments t
+            JOIN players p ON t.player_id = p.id
+            WHERE t.tournament_instance_id = ?
+            ORDER BY t.created_at
+        ''', (tournament_instance_id,)).fetchall()
         
-        cursor = conn.execute('''
-            INSERT INTO tournament_matches 
-            (tournament_instance_id, round_number, match_number, player1_id, player2_id, status)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (tournament_instance_id, 1, match_number, player1['player_id'], 
-              player2['player_id'] if player2 else None,
-              'pending' if player2 else 'bye'))
+        if len(players) < 2:
+            conn.rollback()
+            conn.close()
+            return False
         
-        matches_created.append(cursor.lastrowid)
-    
-    # Generate empty matches for subsequent rounds
-    current_matches = len(matches_created)
-    for round_num in range(2, max_rounds + 1):
-        matches_in_round = current_matches // 2
-        if matches_in_round == 0:
-            break
+        # Assign bracket positions
+        for i, player in enumerate(players, 1):
+            conn.execute('UPDATE tournaments SET bracket_position = ? WHERE id = ?', 
+                        (i, player['id']))
+        
+        # Calculate number of rounds needed
+        num_players = len(players)
+        import math
+        max_rounds = math.ceil(math.log2(num_players)) if num_players > 1 else 1
+        
+        # Generate first round matches
+        matches_created = []
+        matches_to_notify = []  # Store matches that need notifications
+        
+        # Pair players for first round
+        for i in range(0, len(players), 2):
+            player1 = players[i]
+            player2 = players[i + 1] if i + 1 < len(players) else None
             
-        for match_num in range(1, matches_in_round + 1):
+            match_number = (i // 2) + 1
+            
             cursor = conn.execute('''
                 INSERT INTO tournament_matches 
-                (tournament_instance_id, round_number, match_number, status)
-                VALUES (?, ?, ?, ?)
-            ''', (tournament_instance_id, round_num, match_num, 'pending'))
+                (tournament_instance_id, round_number, match_number, player1_id, player2_id, status)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (tournament_instance_id, 1, match_number, player1['player_id'], 
+                  player2['player_id'] if player2 else None,
+                  'pending' if player2 else 'bye'))
             
-        current_matches = matches_in_round
+            match_id = cursor.lastrowid
+            matches_created.append(match_id)
+            
+            # For matches with both players (not bye matches)
+            if player2:
+                # Store match for notification after successful commit
+                matches_to_notify.append(match_id)
+        
+        # Generate empty matches for subsequent rounds
+        current_matches = len(matches_created)
+        for round_num in range(2, max_rounds + 1):
+            matches_in_round = current_matches // 2
+            if matches_in_round == 0:
+                break
+                
+            for match_num in range(1, matches_in_round + 1):
+                cursor = conn.execute('''
+                    INSERT INTO tournament_matches 
+                    (tournament_instance_id, round_number, match_number, status)
+                    VALUES (?, ?, ?, ?)
+                ''', (tournament_instance_id, round_num, match_num, 'pending'))
+                
+            current_matches = matches_in_round
     
-    # Update tournament instance status
-    conn.execute('UPDATE tournament_instances SET status = ? WHERE id = ?', 
-                ('active', tournament_instance_id))
-    
-    conn.commit()
-    conn.close()
-    return True
+        # Update tournament instance status
+        conn.execute('UPDATE tournament_instances SET status = ? WHERE id = ?', 
+                    ('active', tournament_instance_id))
+        
+        # Commit the bracket creation transaction first
+        conn.commit()
+        logging.info(f"Tournament bracket generated for tournament {tournament_instance_id} with {len(matches_created)} matches")
+        
+        # Send notifications and create match schedules after successful commit
+        notifications_sent = 0
+        for match_id in matches_to_notify:
+            try:
+                # Create match schedule record with 7-day deadline
+                create_match_schedule_record(match_id)
+                
+                # Send bracket generated notifications to both players
+                send_tournament_match_notification(match_id, 'bracket_generated')
+                notifications_sent += 1
+            except Exception as e:
+                logging.error(f"Failed to send notification for match {match_id}: {e}")
+        
+        conn.close()
+        logging.info(f"Tournament bracket complete: {notifications_sent} matches notified out of {len(matches_to_notify)}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Error generating tournament bracket: {e}")
+        conn.rollback()
+        conn.close()
+        return False
 
 @app.route('/tournament-bracket/<int:tournament_instance_id>')
 def view_tournament_bracket(tournament_instance_id):
