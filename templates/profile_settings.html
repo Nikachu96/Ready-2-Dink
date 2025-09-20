@@ -1296,6 +1296,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Update match preference in backend
 function updateMatchPreference(preference) {
+    console.log('=== UPDATING MATCH PREFERENCE ===');
+    console.log('Preference:', preference);
+    
     fetch('/update_match_preference', {
         method: 'POST',
         headers: {
@@ -1305,12 +1308,15 @@ function updateMatchPreference(preference) {
     })
     .then(response => response.json())
     .then(data => {
-        if (!data.success) {
-            console.error('Failed to update preference:', data.message);
+        console.log('Update response:', data);
+        if (data.success) {
+            console.log('✅ Match preference updated successfully!');
+        } else {
+            console.error('❌ Failed to update preference:', data.message);
         }
     })
     .catch(error => {
-        console.error('Error updating preference:', error);
+        console.error('❌ Network error updating preference:', error);
     });
 }
 
