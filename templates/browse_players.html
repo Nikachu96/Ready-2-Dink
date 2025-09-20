@@ -114,14 +114,13 @@
                                 </div>
 
                                 <!-- Distance & Travel Info -->
-                                {% set distance = player | distance_from_current %}
-                                {% if distance %}
+                                {% if player.distance_display %}
                                 <div class="mb-3">
                                     <div class="badge badge-info text-center w-100">
                                         DISTANCE
                                     </div>
                                     <div class="text-center text-bold text-cyan mt-2">
-                                        {{ distance }}
+                                        {{ player.distance_display }}
                                     </div>
                                     <div class="text-center text-secondary small">
                                         <i class="fas fa-road me-1"></i>Travels {{ player.travel_radius }} miles

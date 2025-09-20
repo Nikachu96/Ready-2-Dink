@@ -239,19 +239,21 @@ def calculate_distance_between_players(player1_data, player2_data):
         lat2, lon2 = player2_data.get('latitude'), player2_data.get('longitude')
         
         # If both players have exact coordinates, use those
-        if lat1 and lon1 and lat2 and lon2:
+        if lat1 is not None and lon1 is not None and lat2 is not None and lon2 is not None:
+            lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
             distance = haversine((lat1, lon1), (lat2, lon2), unit=Unit.MILES)
             return round(distance, 1)
         
         # Fall back to estimated coordinates from location text
-        if not lat1 or not lon1:
+        if lat1 is None or lon1 is None:
             lat1, lon1 = estimate_coordinates_from_location(player1_data.get('location1'))
         
-        if not lat2 or not lon2:
+        if lat2 is None or lon2 is None:
             lat2, lon2 = estimate_coordinates_from_location(player2_data.get('location1'))
         
         # If we have coordinates for both players, calculate distance
-        if lat1 and lon1 and lat2 and lon2:
+        if lat1 is not None and lon1 is not None and lat2 is not None and lon2 is not None:
+            lat1, lon1, lat2, lon2 = float(lat1), float(lon1), float(lat2), float(lon2)
             distance = haversine((lat1, lon1), (lat2, lon2), unit=Unit.MILES)
             return round(distance, 1)
         
@@ -6767,6 +6769,17 @@ def browse_players():
         )
     else:
         compatible_players = get_compatible_players(current_player_id)
+    
+    # Pre-calculate distances for template efficiency (avoid N+1 queries)
+    for player in compatible_players:
+        if isinstance(player, dict):
+            # Add pre-calculated distance to each player
+            player['distance_display'] = get_distance_from_current_player(player, current_player_id)
+        else:
+            # Convert to dict and add distance
+            player_dict = dict(player)
+            player_dict['distance_display'] = get_distance_from_current_player(player_dict, current_player_id)
+            compatible_players[compatible_players.index(player)] = player_dict
     
     # Get current player info for display
     conn = get_db_connection()

@@ -67,11 +67,10 @@
                                             </div>
                                             {% endif %}
                                             
-                                            {% set distance = partner | distance_from_current %}
-                                            {% if distance %}
+                                            {% if partner.distance_display %}
                                             <div class="mb-3">
                                                 <small class="text-info">
-                                                    <i class="fas fa-road me-1"></i>{{ distance }}
+                                                    <i class="fas fa-road me-1"></i>{{ partner.distance_display }}
                                                 </small>
                                             </div>
                                             {% endif %}
