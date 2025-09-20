@@ -7674,6 +7674,10 @@ def team_search():
         ORDER BY p.ranking_points DESC, p.wins DESC
     ''', (current_player_id,)).fetchall()
     
+    logging.info(f"🎯 PARTNERS DEBUG: Found {len(potential_partners)} potential partners")
+    for partner in potential_partners:
+        logging.info(f"🎯 PARTNER: {partner['full_name']} - {partner['location1']} - Preference: Need Partner")
+    
     conn.close()
     
     return render_template('team_search.html', 
