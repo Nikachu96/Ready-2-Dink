@@ -8045,21 +8045,30 @@ def reject_team_invitation_route(invitation_id):
             SELECT * FROM team_invitations WHERE id = ? AND invitee_id = ? AND status = 'pending'
         ''', (invitation_id, current_player_id)).fetchone()
         
-        if invitation and invitation.get('meta_json'):
-            import json
-            meta = json.loads(invitation['meta_json'])
-            if meta.get('type') in ['singles', 'doubles']:
-                # This is a match challenge, not a team invitation
-                conn.execute('''
-                    UPDATE team_invitations 
-                    SET status = 'rejected', responded_at = datetime('now')
-                    WHERE id = ? AND invitee_id = ? AND status = 'pending'
-                ''', (invitation_id, current_player_id))
-                conn.commit()
-                conn.close()
-                
-                flash('Match challenge declined.', 'info')
-                return redirect(url_for('player_home'))
+        logging.info(f"🚫 INVITATION FOUND: {invitation}")
+        
+        if invitation:
+            # Check if this has meta_json indicating it's a match challenge
+            if invitation.get('meta_json'):
+                import json
+                try:
+                    meta = json.loads(invitation['meta_json'])
+                    logging.info(f"🚫 META JSON: {meta}")
+                    if meta.get('type') in ['singles', 'doubles']:
+                        # This is a match challenge, not a team invitation
+                        logging.info("🚫 Detected as match challenge - declining directly")
+                        conn.execute('''
+                            UPDATE team_invitations 
+                            SET status = 'rejected', responded_at = datetime('now')
+                            WHERE id = ? AND invitee_id = ? AND status = 'pending'
+                        ''', (invitation_id, current_player_id))
+                        conn.commit()
+                        conn.close()
+                        
+                        flash('Match challenge declined.', 'info')
+                        return redirect(url_for('player_home'))
+                except json.JSONDecodeError:
+                    logging.error(f"Invalid JSON in meta_json: {invitation.get('meta_json')}")
         
         conn.close()
     except Exception as e:
