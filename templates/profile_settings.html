@@ -1176,14 +1176,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Team Management Functions - Fixed: Moved outside nested DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function() {
+        console.log('DEBUG: Team management JavaScript loaded');
         const matchPreferenceRadios = document.querySelectorAll('input[name="match_preference_radio"]');
         const teamActionSection = document.getElementById('team_action_section');
         const havePartnerSection = document.getElementById('have_partner_section');
         const needPartnerSection = document.getElementById('need_partner_section');
 
+        console.log('DEBUG: Found elements:', {
+            radios: matchPreferenceRadios.length,
+            teamSection: !!teamActionSection,
+            havePartner: !!havePartnerSection,
+            needPartner: !!needPartnerSection
+        });
+
         // Handle match preference changes
         matchPreferenceRadios.forEach(radio => {
             radio.addEventListener('change', function() {
+                console.log('DEBUG: Radio changed to:', this.value);
                 updateMatchPreference(this.value);
                 showTeamActionSection(this.value);
             });
@@ -1213,7 +1222,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function showTeamActionSection(preference) {
-            if (!teamActionSection) return;
+            console.log('DEBUG: showTeamActionSection called with preference:', preference);
+            console.log('DEBUG: teamActionSection exists:', !!teamActionSection);
+            
+            if (!teamActionSection) {
+                console.log('DEBUG: teamActionSection not found, returning');
+                return;
+            }
             
             // Hide all sections first
             teamActionSection.style.display = 'none';
@@ -1221,9 +1236,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (needPartnerSection) needPartnerSection.style.display = 'none';
 
             if (preference === 'doubles_with_partner' && havePartnerSection) {
+                console.log('DEBUG: Showing have partner section');
                 teamActionSection.style.display = 'block';
                 havePartnerSection.style.display = 'block';
             } else if (preference === 'doubles_need_partner' && needPartnerSection) {
+                console.log('DEBUG: Showing need partner section');
                 teamActionSection.style.display = 'block';
                 needPartnerSection.style.display = 'block';
             }
