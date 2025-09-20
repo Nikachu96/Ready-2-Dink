@@ -1479,6 +1479,73 @@ def check_user_permission(player_id, permission):
         return True
     return False
 
+def check_and_handle_trial_expiry(player_id):
+    """Check if a user's trial has expired and downgrade if necessary"""
+    from datetime import datetime
+    
+    conn = get_db_connection()
+    player = conn.execute('''
+        SELECT id, trial_end_date, subscription_status, membership_type 
+        FROM players WHERE id = ?
+    ''', (player_id,)).fetchone()
+    
+    if not player:
+        conn.close()
+        return False
+    
+    # Skip if user doesn't have a trial end date or is already on a paid plan
+    if not player['trial_end_date'] or player['subscription_status'] == 'active':
+        conn.close()
+        return False
+    
+    # Check if trial has expired
+    try:
+        trial_end = datetime.fromisoformat(player['trial_end_date'])
+        if datetime.now() > trial_end and player['subscription_status'] == 'trialing':
+            # Trial has expired, downgrade to Free Search
+            conn.execute('''
+                UPDATE players SET 
+                    membership_type = 'free_search',
+                    subscription_status = 'expired',
+                    can_search_players = 1,
+                    can_send_challenges = 1, 
+                    can_receive_challenges = 1,
+                    can_join_tournaments = 0,
+                    can_view_leaderboard = 0,
+                    can_view_premium_stats = 0
+                WHERE id = ?
+            ''', (player_id,))
+            conn.commit()
+            conn.close()
+            logging.info(f"Trial expired for player {player_id}, downgraded to Free Search")
+            return True
+    except Exception as e:
+        logging.error(f"Error checking trial expiry for player {player_id}: {e}")
+    
+    conn.close()
+    return False
+
+def check_bulk_trial_expiry():
+    """Check all users for trial expiry - can be run as a batch job"""
+    from datetime import datetime
+    
+    conn = get_db_connection()
+    expired_trials = conn.execute('''
+        SELECT id FROM players 
+        WHERE trial_end_date IS NOT NULL 
+        AND subscription_status = 'trialing'
+        AND datetime(trial_end_date) < datetime('now')
+    ''').fetchall()
+    
+    count = 0
+    for player in expired_trials:
+        if check_and_handle_trial_expiry(player['id']):
+            count += 1
+    
+    conn.close()
+    logging.info(f"Processed {count} expired trials in bulk check")
+    return count
+
 def get_tournament_points(result):
     """Get points based on tournament result - DEPRECATED in favor of progressive system"""
     # This function is now deprecated since we award points progressively
@@ -3036,7 +3103,10 @@ def player_home(player_id):
     session['current_player_id'] = player_id
     session['player_id'] = player_id  # For consistency
     
-    # Get player info
+    # Check and handle trial expiry for this user
+    check_and_handle_trial_expiry(player_id)
+    
+    # Get player info (refresh after potential trial expiry update)
     player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
     if not player:
         flash('Player not found', 'danger')
@@ -4297,6 +4367,9 @@ def tournaments_overview():
     if not current_player_id:
         flash('Please log in to view tournaments', 'warning')
         return redirect(url_for('player_login'))
+    
+    # Check and handle trial expiry for this user
+    check_and_handle_trial_expiry(current_player_id)
     
     conn = get_db_connection()
     
@@ -5563,6 +5636,21 @@ def players():
     
     return render_template('admin/players.html', players=players)
 
+@app.route('/admin/check-trials')
+def admin_check_trials():
+    """Admin route to manually check and process expired trials"""
+    # Basic admin check (you may want to add proper admin authentication)
+    current_player_id = session.get('current_player_id')
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
+    
+    # Run bulk trial expiry check
+    expired_count = check_bulk_trial_expiry()
+    
+    flash(f'Trial expiry check completed. {expired_count} users were downgraded from expired trials.', 'info')
+    return redirect(url_for('players'))
+
 @app.route('/browse-players')
 def browse_players():
     """Browse compatible players page with player cards"""
@@ -5571,6 +5659,9 @@ def browse_players():
     if not current_player_id:
         flash('Please log in first', 'warning')
         return redirect(url_for('player_login'))
+    
+    # Check and handle trial expiry for this user
+    check_and_handle_trial_expiry(current_player_id)
     
     # Get compatible players
     compatible_players = get_compatible_players(current_player_id)
