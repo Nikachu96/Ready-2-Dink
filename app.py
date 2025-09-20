@@ -8015,7 +8015,7 @@ def accept_team_invitation_route(invitation_id):
 @app.route('/reject_team_invitation/<int:invitation_id>')
 def reject_team_invitation_route(invitation_id):
     """Reject a team invitation"""
-    current_player_id = session.get('current_player_id')
+    current_player_id = session.get('current_player_id') or session.get('player_id')
     
     if not current_player_id:
         flash('Please log in first', 'warning')
