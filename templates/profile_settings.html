@@ -413,6 +413,225 @@
                         </div>
                     </div>
                     
+                    <!-- Team Management Section -->
+                    <div class="card account-info-card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-users me-2"></i>Team & Match Preferences
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Current Team Status -->
+                            {% if current_team %}
+                            <div class="alert alert-success mb-3">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <i class="fas fa-users text-success fa-2x"></i>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1">
+                                            <strong>Current Team: {{ current_team.team_name or 'Doubles Partnership' }}</strong>
+                                        </h6>
+                                        <div class="d-flex align-items-center mb-2">
+                                            {% if current_team.player1_id == player.id %}
+                                                {% set partner = current_team.player2_name %}
+                                                {% set partner_selfie = current_team.player2_selfie %}
+                                            {% else %}
+                                                {% set partner = current_team.player1_name %}
+                                                {% set partner_selfie = current_team.player1_selfie %}
+                                            {% endif %}
+                                            
+                                            {% if partner_selfie %}
+                                                <img src="{{ url_for('static', filename='uploads/' + partner_selfie) }}" 
+                                                     class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;" 
+                                                     alt="{{ partner }}">
+                                            {% endif %}
+                                            <span class="text-bold">Partner: {{ partner }}</span>
+                                        </div>
+                                        <small class="text-muted">Team formed on {{ current_team.created_at[:10] }}</small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="leaveTeam()">
+                                            <i class="fas fa-sign-out-alt me-1"></i>Leave Team
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Match Preference Selection -->
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-table-tennis me-1"></i>Match Type Preference
+                                </label>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="match_preference_radio" 
+                                                   id="singles_pref" value="singles" 
+                                                   {{ 'checked' if player.match_preference == 'singles' or not player.match_preference }}
+                                                   {{ 'disabled' if current_team }}>
+                                            <label class="form-check-label" for="singles_pref">
+                                                <i class="fas fa-user me-1"></i>
+                                                <strong>Singles</strong><br>
+                                                <small class="text-muted">Play individual matches</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="match_preference_radio" 
+                                                   id="doubles_with_partner_pref" value="doubles_with_partner" 
+                                                   {{ 'checked' if player.match_preference == 'doubles_with_partner' }}
+                                                   {{ 'disabled' if current_team }}>
+                                            <label class="form-check-label" for="doubles_with_partner_pref">
+                                                <i class="fas fa-users me-1"></i>
+                                                <strong>Doubles (Have Partner)</strong><br>
+                                                <small class="text-muted">Play with a teammate</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="match_preference_radio" 
+                                                   id="doubles_need_partner_pref" value="doubles_need_partner" 
+                                                   {{ 'checked' if player.match_preference == 'doubles_need_partner' }}
+                                                   {{ 'disabled' if current_team }}>
+                                            <label class="form-check-label" for="doubles_need_partner_pref">
+                                                <i class="fas fa-search me-1"></i>
+                                                <strong>Need a Partner</strong><br>
+                                                <small class="text-muted">Looking for a teammate</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if current_team %}
+                                <div class="form-text text-info mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    You must leave your current team before changing match preferences
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Team Action Buttons -->
+                            {% if not current_team %}
+                            <div class="row mt-3" id="team_action_section" style="display: none;">
+                                <!-- Have Partner - Show Invite Form -->
+                                <div id="have_partner_section" class="col-12" style="display: none;">
+                                    <div class="card bg-dark border-secondary">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-handshake me-2"></i>Invite Your Partner
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% if connections %}
+                                            <div class="mb-3">
+                                                <label class="form-label">Select from players you've played with:</label>
+                                                <div class="row">
+                                                    {% for connection in connections %}
+                                                    <div class="col-md-6 mb-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="partner_connection" 
+                                                                   id="partner_{{ connection.id }}" value="{{ connection.id }}">
+                                                            <label class="form-check-label d-flex align-items-center" 
+                                                                   for="partner_{{ connection.id }}">
+                                                                {% if connection.selfie %}
+                                                                    <img src="{{ url_for('static', filename='uploads/' + connection.selfie) }}" 
+                                                                         class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;" 
+                                                                         alt="{{ connection.full_name }}">
+                                                                {% endif %}
+                                                                {{ connection.full_name }}
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            {% else %}
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                You haven't played any matches yet. Complete some matches first to build connections!
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <div class="mb-3">
+                                                <label for="invitation_message" class="form-label">Invitation Message (Optional)</label>
+                                                <textarea class="form-control" id="invitation_message" rows="2" 
+                                                        placeholder="Hey! Want to be my doubles partner?"></textarea>
+                                            </div>
+                                            
+                                            <button type="button" class="btn btn-primary" onclick="sendTeamInvitation()">
+                                                <i class="fas fa-paper-plane me-1"></i>Send Invitation
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Need Partner - Show Search Button -->
+                                <div id="need_partner_section" class="col-12" style="display: none;">
+                                    <div class="card bg-dark border-secondary">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                                            <h6 class="mb-2">Find Your Perfect Partner</h6>
+                                            <p class="text-muted mb-3">Search for other players who also need a doubles partner</p>
+                                            <a href="{{ url_for('team_search') }}" class="btn btn-primary">
+                                                <i class="fas fa-search me-1"></i>Search for Partners
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Pending Team Invitations -->
+                            {% if pending_invitations %}
+                            <div class="mt-4">
+                                <h6 class="text-neon mb-3">
+                                    <i class="fas fa-envelope me-2"></i>Team Invitations ({{ pending_invitations|length }})
+                                </h6>
+                                {% for invitation in pending_invitations %}
+                                <div class="card bg-dark border-warning mb-2">
+                                    <div class="card-body">
+                                        <div class="row align-items-center">
+                                            <div class="col-auto">
+                                                {% if invitation.inviter_selfie %}
+                                                    <img src="{{ url_for('static', filename='uploads/' + invitation.inviter_selfie) }}" 
+                                                         class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" 
+                                                         alt="{{ invitation.inviter_name }}">
+                                                {% else %}
+                                                    <div class="rounded-circle avatar-placeholder d-inline-flex align-items-center justify-content-center" 
+                                                         style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-user text-white"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col">
+                                                <h6 class="mb-1">{{ invitation.inviter_name }} wants to team up!</h6>
+                                                {% if invitation.invitation_message %}
+                                                <p class="mb-1 text-muted">"{{ invitation.invitation_message }}"</p>
+                                                {% endif %}
+                                                <small class="text-muted">Sent {{ invitation.created_at[:10] }}</small>
+                                            </div>
+                                            <div class="col-auto">
+                                                <a href="{{ url_for('accept_team_invitation_route', invitation_id=invitation.id) }}" 
+                                                   class="btn btn-success btn-sm me-1">
+                                                    <i class="fas fa-check me-1"></i>Accept
+                                                </a>
+                                                <a href="{{ url_for('reject_team_invitation_route', invitation_id=invitation.id) }}" 
+                                                   class="btn btn-outline-danger btn-sm">
+                                                    <i class="fas fa-times me-1"></i>Decline
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
                     <div class="mb-3">
                         <label for="selfie" class="form-label">
                             <i class="fas fa-camera me-1"></i>Update Profile Photo
@@ -952,6 +1171,122 @@ document.addEventListener('DOMContentLoaded', function() {
             this.disabled = false;
         }, 2000);
     });
+    
+    // Team Management Functions
+    document.addEventListener('DOMContentLoaded', function() {
+        const matchPreferenceRadios = document.querySelectorAll('input[name="match_preference_radio"]');
+        const teamActionSection = document.getElementById('team_action_section');
+        const havePartnerSection = document.getElementById('have_partner_section');
+        const needPartnerSection = document.getElementById('need_partner_section');
+
+        // Handle match preference changes
+        matchPreferenceRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                updateMatchPreference(this.value);
+                showTeamActionSection(this.value);
+            });
+        });
+
+        function updateMatchPreference(preference) {
+            fetch('/update_match_preference', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'match_preference=' + encodeURIComponent(preference)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Match preference updated');
+                } else {
+                    console.error('Failed to update preference:', data.message);
+                    alert('Failed to update preference: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating preference. Please try again.');
+            });
+        }
+
+        function showTeamActionSection(preference) {
+            if (!teamActionSection) return;
+            
+            // Hide all sections first
+            teamActionSection.style.display = 'none';
+            if (havePartnerSection) havePartnerSection.style.display = 'none';
+            if (needPartnerSection) needPartnerSection.style.display = 'none';
+
+            if (preference === 'doubles_with_partner' && havePartnerSection) {
+                teamActionSection.style.display = 'block';
+                havePartnerSection.style.display = 'block';
+            } else if (preference === 'doubles_need_partner' && needPartnerSection) {
+                teamActionSection.style.display = 'block';
+                needPartnerSection.style.display = 'block';
+            }
+        }
+
+        // Initialize on page load
+        const checkedRadio = document.querySelector('input[name="match_preference_radio"]:checked');
+        if (checkedRadio) {
+            showTeamActionSection(checkedRadio.value);
+        }
+    });
+
+    // Send team invitation function
+    function sendTeamInvitation() {
+        const selectedPartner = document.querySelector('input[name="partner_connection"]:checked');
+        const message = document.getElementById('invitation_message').value;
+
+        if (!selectedPartner) {
+            alert('Please select a partner to invite.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('invitee_id', selectedPartner.value);
+        formData.append('message', message);
+
+        // Show loading state
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+        button.disabled = true;
+
+        fetch('/send_team_invitation', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Team invitation sent successfully!');
+                // Reset form
+                document.getElementById('invitation_message').value = '';
+                selectedPartner.checked = false;
+            } else {
+                alert('Failed to send invitation: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error sending invitation. Please try again.');
+        })
+        .finally(() => {
+            // Reset button
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+
+    // Leave team function
+    function leaveTeam() {
+        if (confirm('Are you sure you want to leave your current team? This action cannot be undone.')) {
+            // Implementation for leaving team would go here
+            alert('Team leave functionality to be implemented');
+        }
+    }
     
     // Cancel Membership Confirmation
     document.getElementById('confirmCancelMembership').addEventListener('click', function() {

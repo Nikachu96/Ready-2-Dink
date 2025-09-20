@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Find a Partner - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="neon-frame">
+                <div class="text-center mb-4">
+                    <h4 class="card-title mb-0 text-bold text-neon">
+                        <i class="fas fa-search me-2"></i>Find Your Perfect Doubles Partner
+                    </h4>
+                    <p class="mb-0 text-secondary">Connect with other players who also need a teammate</p>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Back Button -->
+                    <div class="mb-4">
+                        <a href="{{ url_for('profile_settings') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Profile Settings
+                        </a>
+                    </div>
+
+                    {% if potential_partners %}
+                    <div class="row">
+                        {% for partner in potential_partners %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card bg-dark border-secondary h-100">
+                                <div class="card-body">
+                                    <!-- Partner Profile -->
+                                    <div class="text-center mb-3">
+                                        {% if partner.selfie %}
+                                            <img src="{{ url_for('static', filename='uploads/' + partner.selfie) }}" 
+                                                 class="rounded-circle profile-avatar mb-3" 
+                                                 style="width: 80px; height: 80px; object-fit: cover;" 
+                                                 alt="{{ partner.full_name }}">
+                                        {% else %}
+                                            <div class="rounded-circle avatar-placeholder d-inline-flex align-items-center justify-content-center mb-3" 
+                                                 style="width: 80px; height: 80px;">
+                                                <i class="fas fa-user text-white fa-2x"></i>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <h6 class="card-title text-bold mb-1">{{ partner.full_name }}</h6>
+                                        <div class="mb-2">
+                                            <span class="badge badge-primary me-1">{{ partner.skill_level }}</span>
+                                            <span class="badge badge-success">
+                                                {{ partner.wins or 0 }}W-{{ partner.losses or 0 }}L
+                                            </span>
+                                        </div>
+                                        
+                                        {% if partner.ranking_points and partner.ranking_points > 0 %}
+                                        <div class="mb-2">
+                                            <small class="text-neon">
+                                                <i class="fas fa-trophy me-1"></i>{{ partner.ranking_points }} pts
+                                            </small>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if partner.location1 %}
+                                        <div class="mb-3">
+                                            <small class="text-muted">
+                                                <i class="fas fa-map-marker-alt me-1"></i>{{ partner.location1[:30] }}...
+                                            </small>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Match Compatibility -->
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-center mb-2">
+                                            <span class="badge badge-info">
+                                                <i class="fas fa-search me-1"></i>Looking for Partner
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Invitation Form -->
+                                    <div class="text-center">
+                                        <button type="button" class="btn btn-primary w-100" 
+                                                onclick="showInviteModal('{{ partner.id }}', '{{ partner.full_name }}')">
+                                            <i class="fas fa-handshake me-1"></i>Send Team Invitation
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if potential_partners|length == 0 %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted mb-3">No Partners Available Right Now</h5>
+                        <p class="text-muted">
+                            There are currently no other players looking for a doubles partner in your area.
+                            Try checking back later or consider playing some singles matches to build your network!
+                        </p>
+                        <a href="{{ url_for('browse_players') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-search me-1"></i>Browse All Players
+                        </a>
+                        <a href="{{ url_for('profile_settings') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-cog me-1"></i>Update Preferences
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-exclamation-circle fa-3x text-warning mb-3"></i>
+                        <h5 class="text-warning mb-3">Access Restricted</h5>
+                        <p class="text-muted">
+                            Partner search is only available for players who have set their preference to "Need a Partner".
+                        </p>
+                        <a href="{{ url_for('profile_settings') }}" class="btn btn-primary">
+                            <i class="fas fa-cog me-1"></i>Update Match Preferences
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Team Invitation Modal -->
+<div class="modal fade" id="teamInviteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-handshake me-2"></i>Send Team Invitation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <p>Send a team invitation to <strong><span id="invitee-name"></span></strong>?</p>
+                </div>
+                
+                <form id="team-invitation-form">
+                    <input type="hidden" id="invitee-id" name="invitee_id">
+                    
+                    <div class="mb-3">
+                        <label for="modal-invitation-message" class="form-label">Personal Message (Optional)</label>
+                        <textarea class="form-control" id="modal-invitation-message" name="message" rows="3" 
+                                placeholder="Hey! I think we'd make a great doubles team. Want to partner up?"></textarea>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            A friendly message can increase your chances of acceptance
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="sendTeamInvitationFromModal()">
+                    <i class="fas fa-paper-plane me-1"></i>Send Invitation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show invitation modal
+function showInviteModal(partnerId, partnerName) {
+    document.getElementById('invitee-id').value = partnerId;
+    document.getElementById('invitee-name').textContent = partnerName;
+    document.getElementById('modal-invitation-message').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('teamInviteModal'));
+    modal.show();
+}
+
+// Send team invitation from modal
+function sendTeamInvitationFromModal() {
+    const form = document.getElementById('team-invitation-form');
+    const formData = new FormData(form);
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+    button.disabled = true;
+    
+    fetch('/send_team_invitation', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('teamInviteModal'));
+            modal.hide();
+            
+            // Show success message
+            alert('Team invitation sent successfully! They\'ll be notified and can accept or decline from their profile settings.');
+            
+            // Optionally refresh the page or remove the invited partner from the list
+            // location.reload();
+        } else {
+            alert('Failed to send invitation: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error sending invitation. Please try again.');
+    })
+    .finally(() => {
+        // Reset button
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+</script>
+
+{% endblock %}
