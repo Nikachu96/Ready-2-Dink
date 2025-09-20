@@ -544,31 +544,47 @@
                     <input type="hidden" id="scoreMatchId" name="match_id">
                     
                     <div class="mb-4">
-                        <h6 class="text-white text-bold mb-3">Match Result (Best of 3 Sets):</h6>
+                        <h6 class="text-white text-bold mb-3">Game Scores (Best of 3 Sets):</h6>
                         
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <label class="form-label text-white">You Won:</label>
-                                <input type="number" class="form-control dark-input" id="player1SetsWon" 
-                                       min="0" max="3" value="0" onchange="updateWinner()">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label text-white"><span id="opponentNameLabel"></span> Won:</label>
-                                <input type="number" class="form-control dark-input" id="player2SetsWon" 
-                                       min="0" max="3" value="0" onchange="updateWinner()">
-                            </div>
+                        <!-- Score Input Table -->
+                        <div class="table-responsive">
+                            <table class="table table-dark table-bordered">
+                                <thead>
+                                    <tr class="text-center">
+                                        <th width="30%">Player</th>
+                                        <th width="20%">Set 1</th>
+                                        <th width="20%">Set 2</th>
+                                        <th width="20%">Set 3</th>
+                                        <th width="10%">Sets Won</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="text-white text-bold">You</td>
+                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="yourSet1" min="0" max="21" onchange="calculateWinner()"></td>
+                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="yourSet2" min="0" max="21" onchange="calculateWinner()"></td>
+                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="yourSet3" min="0" max="21" onchange="calculateWinner()"></td>
+                                        <td class="text-center text-bold" id="yourSetsWon">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-white text-bold"><span id="opponentNameLabel"></span></td>
+                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="oppSet1" min="0" max="21" onchange="calculateWinner()"></td>
+                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="oppSet2" min="0" max="21" onchange="calculateWinner()"></td>
+                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="oppSet3" min="0" max="21" onchange="calculateWinner()"></td>
+                                        <td class="text-center text-bold" id="oppSetsWon">0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                         
                         <div class="alert alert-info text-center" id="winnerDisplay" style="display: none;">
                             <i class="fas fa-trophy me-2"></i><span id="winnerText"></span>
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label text-white text-bold">Detailed Score (Optional):</label>
-                        <input type="text" class="form-control dark-input" id="detailedScore" 
-                               placeholder="e.g., 11-9 6-11 11-7">
-                        <div class="form-text">Enter the detailed score for each set</div>
+                        
+                        <div class="text-muted small mt-2">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Enter the score for each set. Games are typically played to 11 points (must win by 2).
+                        </div>
                     </div>
                     
                     <div class="text-center">
@@ -621,55 +637,115 @@ function showSubmitScore(matchId, opponentName) {
     document.getElementById('scoreOpponentName').textContent = opponentName;
     document.getElementById('opponentNameLabel').textContent = opponentName;
     
-    // Reset form
-    document.getElementById('player1SetsWon').value = 0;
-    document.getElementById('player2SetsWon').value = 0;
-    document.getElementById('detailedScore').value = '';
+    // Reset form - clear all score inputs
+    ['yourSet1', 'yourSet2', 'yourSet3', 'oppSet1', 'oppSet2', 'oppSet3'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('yourSetsWon').textContent = '0';
+    document.getElementById('oppSetsWon').textContent = '0';
     document.getElementById('winnerDisplay').style.display = 'none';
     
     const modal = new bootstrap.Modal(document.getElementById('submitScoreModal'));
     modal.show();
 }
 
-function updateWinner() {
-    const p1Sets = parseInt(document.getElementById('player1SetsWon').value) || 0;
-    const p2Sets = parseInt(document.getElementById('player2SetsWon').value) || 0;
+function calculateWinner() {
+    const yourScores = [
+        parseInt(document.getElementById('yourSet1').value) || null,
+        parseInt(document.getElementById('yourSet2').value) || null,
+        parseInt(document.getElementById('yourSet3').value) || null
+    ];
+    
+    const oppScores = [
+        parseInt(document.getElementById('oppSet1').value) || null,
+        parseInt(document.getElementById('oppSet2').value) || null,
+        parseInt(document.getElementById('oppSet3').value) || null
+    ];
+    
+    let yourSets = 0;
+    let oppSets = 0;
+    
+    // Calculate sets won
+    for (let i = 0; i < 3; i++) {
+        if (yourScores[i] !== null && oppScores[i] !== null) {
+            if (yourScores[i] > oppScores[i]) {
+                yourSets++;
+            } else if (oppScores[i] > yourScores[i]) {
+                oppSets++;
+            }
+        }
+    }
+    
+    // Update sets won display
+    document.getElementById('yourSetsWon').textContent = yourSets;
+    document.getElementById('oppSetsWon').textContent = oppSets;
+    
+    // Show winner if match is complete
     const winnerDisplay = document.getElementById('winnerDisplay');
     const winnerText = document.getElementById('winnerText');
     
-    if (p1Sets + p2Sets < 2 || p1Sets + p2Sets > 3) {
-        winnerDisplay.style.display = 'none';
-        return;
-    }
-    
-    if (p1Sets > p2Sets) {
+    if (yourSets === 2) {
         winnerText.textContent = 'You Win!';
         winnerDisplay.className = 'alert alert-success text-center';
-    } else if (p2Sets > p1Sets) {
+        winnerDisplay.style.display = 'block';
+    } else if (oppSets === 2) {
         winnerText.textContent = document.getElementById('opponentNameLabel').textContent + ' Wins!';
         winnerDisplay.className = 'alert alert-warning text-center';
+        winnerDisplay.style.display = 'block';
     } else {
         winnerDisplay.style.display = 'none';
-        return;
     }
-    
-    winnerDisplay.style.display = 'block';
 }
 
 function submitMatchScore() {
     const matchId = document.getElementById('scoreMatchId').value;
-    const p1Sets = parseInt(document.getElementById('player1SetsWon').value) || 0;
-    const p2Sets = parseInt(document.getElementById('player2SetsWon').value) || 0;
-    const detailedScore = document.getElementById('detailedScore').value || 'Score not provided';
+    
+    // Collect all scores
+    const yourScores = [
+        parseInt(document.getElementById('yourSet1').value) || null,
+        parseInt(document.getElementById('yourSet2').value) || null,
+        parseInt(document.getElementById('yourSet3').value) || null
+    ];
+    
+    const oppScores = [
+        parseInt(document.getElementById('oppSet1').value) || null,
+        parseInt(document.getElementById('oppSet2').value) || null,
+        parseInt(document.getElementById('oppSet3').value) || null
+    ];
+    
+    // Calculate sets won
+    let yourSets = 0;
+    let oppSets = 0;
+    let validSets = 0;
+    let scoreString = '';
+    
+    for (let i = 0; i < 3; i++) {
+        if (yourScores[i] !== null && oppScores[i] !== null) {
+            validSets++;
+            if (scoreString) scoreString += ' ';
+            scoreString += `${yourScores[i]}-${oppScores[i]}`;
+            
+            if (yourScores[i] > oppScores[i]) {
+                yourSets++;
+            } else if (oppScores[i] > yourScores[i]) {
+                oppSets++;
+            }
+        }
+    }
     
     // Validation
-    if (p1Sets + p2Sets < 2 || p1Sets + p2Sets > 3) {
-        alert('Please enter a valid best-of-3 result (2-0, 2-1, 1-2, or 0-2)');
+    if (validSets < 2) {
+        alert('Please enter scores for at least 2 sets');
         return;
     }
     
-    if (p1Sets === p2Sets) {
+    if (yourSets === oppSets) {
         alert('Please enter a winner - matches cannot be tied');
+        return;
+    }
+    
+    if (yourSets < 2 && oppSets < 2) {
+        alert('One player must win at least 2 sets');
         return;
     }
     
@@ -681,9 +757,9 @@ function submitMatchScore() {
         },
         body: JSON.stringify({
             match_id: matchId,
-            player1_sets_won: p1Sets,
-            player2_sets_won: p2Sets,
-            match_score: detailedScore
+            player1_sets_won: yourSets,
+            player2_sets_won: oppSets,
+            match_score: scoreString
         })
     })
     .then(response => response.json())

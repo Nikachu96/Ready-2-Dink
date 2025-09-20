@@ -5480,7 +5480,11 @@ def submit_match_result():
     match_score = data.get('match_score')  # Format: "11-5 6-11 11-9"
     player1_sets_won = int(data.get('player1_sets_won', 0))
     player2_sets_won = int(data.get('player2_sets_won', 0))
-    submitter_id = data.get('submitter_id')
+    
+    # SECURITY FIX: Get submitter_id from server-side session, not client input
+    submitter_id = session.get('current_player_id') or session.get('player_id')
+    if not submitter_id:
+        return jsonify({'success': False, 'message': 'Authentication required. Please login.'})
     
     # Validate input
     if not match_score or player1_sets_won == player2_sets_won:
