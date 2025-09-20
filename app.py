@@ -1546,6 +1546,55 @@ def check_bulk_trial_expiry():
     logging.info(f"Processed {count} expired trials in bulk check")
     return count
 
+def require_permission(permission):
+    """Decorator to require specific permissions for route access"""
+    from functools import wraps
+    
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            current_player_id = session.get('current_player_id')
+            if not current_player_id:
+                flash('Please log in first', 'warning')
+                return redirect(url_for('player_login'))
+            
+            # Check and handle trial expiry first
+            check_and_handle_trial_expiry(current_player_id)
+            
+            # Check if user has the required permission
+            if not check_user_permission(current_player_id, permission):
+                flash('This feature requires a Premium membership. Upgrade to access all features!', 'warning')
+                return redirect(url_for('membership_payment_page', membership_type='premium'))
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def require_admin():
+    """Decorator to require admin access"""
+    from functools import wraps
+    
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            current_player_id = session.get('current_player_id')
+            if not current_player_id:
+                flash('Please log in first', 'warning')
+                return redirect(url_for('player_login'))
+            
+            # Check if user is admin
+            conn = get_db_connection()
+            player = conn.execute('SELECT is_admin FROM players WHERE id = ?', (current_player_id,)).fetchone()
+            conn.close()
+            
+            if not player or not player.get('is_admin'):
+                flash('Admin access required', 'danger')
+                return redirect(url_for('player_home', player_id=current_player_id))
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 def get_tournament_points(result):
     """Get points based on tournament result - DEPRECATED in favor of progressive system"""
     # This function is now deprecated since we award points progressively
@@ -4065,8 +4114,9 @@ def view_tournament_bracket(tournament_instance_id):
                          current_player_context=current_player_context)
 
 @app.route('/leaderboard')
+@require_permission('can_view_leaderboard')
 def leaderboard():
-    """Display player leaderboard by skill levels"""
+    """Display player leaderboard by skill levels - requires premium membership"""
     beginner_leaderboard = get_leaderboard(50, 'Beginner')
     intermediate_leaderboard = get_leaderboard(50, 'Intermediate') 
     advanced_leaderboard = get_leaderboard(50, 'Advanced')
@@ -4356,20 +4406,11 @@ def withdraw_from_tournament():
     return redirect(url_for('tournaments_overview'))
 
 @app.route('/tournaments')
+@require_permission('can_join_tournaments')
 def tournaments_overview():
-    """Tournament overview page - requires login with GPS-based location filtering"""
-    # Check if user is logged in
+    """Tournament overview page - requires premium membership"""
+    # User is already authenticated and has permission via decorator
     current_player_id = session.get('current_player_id')
-    # Only log session info in debug mode for development
-    if app.debug and os.environ.get('FLASK_ENV') == 'development':
-        logging.debug(f"User authentication check - player_id present: {bool(current_player_id)}")
-    
-    if not current_player_id:
-        flash('Please log in to view tournaments', 'warning')
-        return redirect(url_for('player_login'))
-    
-    # Check and handle trial expiry for this user
-    check_and_handle_trial_expiry(current_player_id)
     
     conn = get_db_connection()
     
@@ -5637,14 +5678,9 @@ def players():
     return render_template('admin/players.html', players=players)
 
 @app.route('/admin/check-trials')
+@require_admin()
 def admin_check_trials():
     """Admin route to manually check and process expired trials"""
-    # Basic admin check (you may want to add proper admin authentication)
-    current_player_id = session.get('current_player_id')
-    if not current_player_id:
-        flash('Please log in first', 'warning')
-        return redirect(url_for('player_login'))
-    
     # Run bulk trial expiry check
     expired_count = check_bulk_trial_expiry()
     
@@ -6598,12 +6634,10 @@ def create_custom_tournament():
         return jsonify({'success': False, 'message': f'Error creating tournament: {str(e)}'})
 
 @app.route('/join_custom_tournament/<int:tournament_id>')
+@require_permission('can_join_tournaments')
 def join_custom_tournament(tournament_id):
-    """Join a custom tournament with payment and GPS validation"""
+    """Join a custom tournament with payment and GPS validation - requires premium membership"""
     current_player_id = session.get('current_player_id')
-    if not current_player_id:
-        flash('Please log in to join tournaments', 'danger')
-        return redirect(url_for('index'))
     
     conn = get_db_connection()
     
@@ -8020,8 +8054,9 @@ def credit_transaction_history(player_id):
     return render_template('credit_history.html', player=player, transactions=transactions)
 
 @app.route('/quick_join_tournament/<int:player_id>')
+@require_permission('can_join_tournaments')
 def quick_join_tournament(player_id):
-    """Quick tournament join - show format selection page first"""
+    """Quick tournament join - show format selection page first - requires premium membership"""
     level = request.args.get('level')
     
     conn = get_db_connection()
