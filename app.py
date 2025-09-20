@@ -4163,9 +4163,9 @@ def player_login_post():
         
     except Exception as e:
         flash(f'Login error: {str(e)}', 'danger')
+        if conn:
+            conn.close()
         return redirect(url_for('player_login'))
-    finally:
-        conn.close()
 
 @app.route('/')
 def index():
