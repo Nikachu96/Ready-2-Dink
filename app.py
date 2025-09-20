@@ -2683,6 +2683,96 @@ def suggest_match_time(player1, player2):
         logging.error(f"Error suggesting match time: {e}")
         return "This week - Flexible timing"
 
+def get_filtered_compatible_players(player_id, match_type="", skill_level="", distance=None):
+    """Get list of compatible players with filters applied"""
+    conn = get_db_connection()
+    
+    # Get the player's preferences and location
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    if not player or not player['is_looking_for_match']:
+        conn.close()
+        return []
+    
+    # Get player's coordinates for distance filtering
+    player_lat = player['latitude']
+    player_lng = player['longitude']
+    
+    # Build the SQL query with filters
+    base_query = '''
+        SELECT id, full_name, first_name, last_name, location1, skill_level, preferred_court, 
+               wins, losses, ranking_points, selfie, latitude, longitude, gender, travel_radius
+        FROM players 
+        WHERE id != ? 
+        AND is_looking_for_match = 1
+    '''
+    params = [player_id]
+    
+    # Apply skill level filter
+    if skill_level:
+        base_query += " AND skill_level = ?"
+        params.append(skill_level)
+    else:
+        # Default to same or adjacent skill levels if no filter specified
+        skill_levels = ['Beginner', 'Intermediate', 'Advanced']
+        try:
+            current_skill_idx = skill_levels.index(player['skill_level'])
+            # Include current level and adjacent levels
+            adjacent_skills = [player['skill_level']]
+            if current_skill_idx > 0:
+                adjacent_skills.append(skill_levels[current_skill_idx - 1])
+            if current_skill_idx < len(skill_levels) - 1:
+                adjacent_skills.append(skill_levels[current_skill_idx + 1])
+            
+            placeholders = ','.join(['?' for _ in adjacent_skills])
+            base_query += f" AND skill_level IN ({placeholders})"
+            params.extend(adjacent_skills)
+        except ValueError:
+            # If skill level not in standard list, just use exact match
+            base_query += " AND skill_level = ?"
+            params.append(player['skill_level'])
+    
+    # Note: Match type filter (singles/doubles) could be implemented here
+    # when the doubles team system is fully integrated
+    
+    base_query += " ORDER BY ranking_points DESC, wins DESC, created_at ASC"
+    
+    compatible_players = conn.execute(base_query, params).fetchall()
+    
+    # Calculate distances and apply distance filter
+    filtered_players = []
+    for p in compatible_players:
+        player_data = dict(p)
+        player_data['name'] = p['full_name'] 
+        player_data['location'] = p['location1']
+        
+        # Calculate distance if both players have GPS coordinates
+        if player_lat and player_lng and p['latitude'] and p['longitude']:
+            distance_miles = calculate_distance(player_lat, player_lng, p['latitude'], p['longitude'])
+            player_data['distance_miles'] = round(distance_miles, 1)
+            
+            # Apply distance filter
+            if distance and distance_miles > distance:
+                continue  # Skip this player if they're too far
+                
+            # Check if opponent is within player's travel radius 
+            player_travel_radius = player['travel_radius'] if player['travel_radius'] else 25
+            opponent_travel_radius = p['travel_radius'] if p['travel_radius'] else 25
+            
+            # Use the more restrictive radius
+            max_allowed_distance = min(player_travel_radius, opponent_travel_radius)
+            if distance_miles > max_allowed_distance:
+                continue  # Skip if outside mutual travel range
+                
+        elif distance:
+            # If no GPS and distance filter is applied, skip this player
+            continue
+        
+        filtered_players.append(player_data)
+    
+    conn.close()
+    logging.info(f"Filtered search for player {player_id}: Found {len(filtered_players)} compatible players with filters: match_type={match_type}, skill_level={skill_level}, distance={distance}")
+    return filtered_players
+
 def get_compatible_players(player_id):
     """Get list of compatible players using GPS-based distance filtering"""
     conn = get_db_connection()
@@ -5915,7 +6005,7 @@ def admin_check_trials():
 
 @app.route('/browse-players')
 def browse_players():
-    """Browse compatible players page with player cards"""
+    """Browse compatible players page with player cards and search filters"""
     current_player_id = session.get('current_player_id')
     
     if not current_player_id:
@@ -5925,8 +6015,21 @@ def browse_players():
     # Check and handle trial expiry for this user
     check_and_handle_trial_expiry(current_player_id)
     
-    # Get compatible players
-    compatible_players = get_compatible_players(current_player_id)
+    # Get filter parameters from request
+    match_type = request.args.get('match_type', '')
+    skill_level = request.args.get('skill_level', '')
+    distance = request.args.get('distance', '')
+    
+    # Get filtered compatible players
+    if match_type or skill_level or distance:
+        compatible_players = get_filtered_compatible_players(
+            current_player_id, 
+            match_type=match_type, 
+            skill_level=skill_level, 
+            distance=int(distance) if distance else None
+        )
+    else:
+        compatible_players = get_compatible_players(current_player_id)
     
     # Get current player info for display
     conn = get_db_connection()

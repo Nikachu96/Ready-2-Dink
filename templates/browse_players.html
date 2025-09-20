@@ -11,11 +11,29 @@
                 <h1 class="text-neon text-bold mb-0">
                     <i class="fas fa-users me-2"></i>Browse Compatible Players
                 </h1>
-                <a href="{{ url_for('index') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-                </a>
+                <div>
+                    <button class="btn btn-primary me-2" onclick="showSearchFilters()">
+                        <i class="fas fa-filter me-2"></i>Search Filters
+                    </button>
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
             </div>
             <p class="text-secondary">Find players at your skill level in your area</p>
+            
+            <!-- Active Filters Display -->
+            <div id="activeFilters" class="mb-3" style="display: none;">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-white text-bold">Active Filters:</span>
+                    <span id="matchTypeFilter" class="badge badge-primary"></span>
+                    <span id="skillLevelFilter" class="badge badge-success"></span>
+                    <span id="distanceFilter" class="badge badge-warning"></span>
+                    <button class="btn btn-sm btn-outline-danger" onclick="clearAllFilters()">
+                        <i class="fas fa-times me-1"></i>Clear All
+                    </button>
+                </div>
+            </div>
         </div>
 
     {% if players %}
@@ -187,6 +205,66 @@
 </div>
 </div>
 
+<!-- Search Filter Modal -->
+<div class="modal fade" id="searchFilterModal" tabindex="-1" aria-labelledby="searchFilterModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: var(--dark-surface); border: 1px solid var(--glass-border);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--glass-border);">
+                <h5 class="modal-title text-white text-bold neon-text" id="searchFilterModalLabel">
+                    <i class="fas fa-filter me-2"></i>Find Opponents
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="searchFilterForm">
+                    <div class="mb-4">
+                        <label class="form-label text-white text-bold">
+                            <i class="fas fa-user-friends me-2"></i>Match Type:
+                        </label>
+                        <select class="form-select dark-input" id="matchType">
+                            <option value="">Any Match Type</option>
+                            <option value="singles">Singles</option>
+                            <option value="doubles">Team/Doubles</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-white text-bold">
+                            <i class="fas fa-star me-2"></i>Skill Level:
+                        </label>
+                        <select class="form-select dark-input" id="skillLevel">
+                            <option value="">Any Skill Level</option>
+                            <option value="Beginner">Beginner</option>
+                            <option value="Intermediate">Intermediate</option>
+                            <option value="Advanced">Advanced</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-white text-bold">
+                            <i class="fas fa-road me-2"></i>Distance:
+                        </label>
+                        <select class="form-select dark-input" id="distance">
+                            <option value="">Any Distance</option>
+                            <option value="5">Within 5 miles</option>
+                            <option value="10">Within 10 miles</option>
+                            <option value="15">Within 15 miles</option>
+                            <option value="25">Within 25 miles</option>
+                            <option value="50">Within 50 miles</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid var(--glass-border);">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success text-bold" onclick="applySearchFilters()">
+                    <i class="fas fa-search me-2"></i>Search Opponents
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Challenge Modal -->
 <div class="modal fade" id="challengeModal" tabindex="-1" aria-labelledby="challengeModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -230,6 +308,79 @@
 
 <script>
 let currentChallengePlayerId = null;
+
+// Search Filter Functions
+function showSearchFilters() {
+    // Populate current filters if any
+    const urlParams = new URLSearchParams(window.location.search);
+    document.getElementById('matchType').value = urlParams.get('match_type') || '';
+    document.getElementById('skillLevel').value = urlParams.get('skill_level') || '';
+    document.getElementById('distance').value = urlParams.get('distance') || '';
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('searchFilterModal'));
+    modal.show();
+}
+
+function applySearchFilters() {
+    const matchType = document.getElementById('matchType').value;
+    const skillLevel = document.getElementById('skillLevel').value;
+    const distance = document.getElementById('distance').value;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (matchType) params.append('match_type', matchType);
+    if (skillLevel) params.append('skill_level', skillLevel);
+    if (distance) params.append('distance', distance);
+    
+    // Redirect with filters
+    window.location.href = '/browse-players?' + params.toString();
+}
+
+function clearAllFilters() {
+    window.location.href = '/browse-players';
+}
+
+// Display active filters on page load
+function displayActiveFilters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const matchType = urlParams.get('match_type');
+    const skillLevel = urlParams.get('skill_level');
+    const distance = urlParams.get('distance');
+    
+    let hasFilters = false;
+    
+    if (matchType) {
+        document.getElementById('matchTypeFilter').textContent = `Type: ${matchType}`;
+        document.getElementById('matchTypeFilter').style.display = 'inline';
+        hasFilters = true;
+    } else {
+        document.getElementById('matchTypeFilter').style.display = 'none';
+    }
+    
+    if (skillLevel) {
+        document.getElementById('skillLevelFilter').textContent = `Level: ${skillLevel}`;
+        document.getElementById('skillLevelFilter').style.display = 'inline';
+        hasFilters = true;
+    } else {
+        document.getElementById('skillLevelFilter').style.display = 'none';
+    }
+    
+    if (distance) {
+        document.getElementById('distanceFilter').textContent = `Distance: ${distance} miles`;
+        document.getElementById('distanceFilter').style.display = 'inline';
+        hasFilters = true;
+    } else {
+        document.getElementById('distanceFilter').style.display = 'none';
+    }
+    
+    document.getElementById('activeFilters').style.display = hasFilters ? 'block' : 'none';
+}
+
+// Initialize filters display on page load
+document.addEventListener('DOMContentLoaded', function() {
+    displayActiveFilters();
+});
 
 function challengePlayer(playerId, playerName) {
     currentChallengePlayerId = playerId;
