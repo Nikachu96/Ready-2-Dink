@@ -7615,17 +7615,7 @@ def leave_team():
         conn.commit()
         conn.close()
         
-        # Notify the partner
-        partner_id = team['player1_id'] if team['player1_id'] != current_player_id else team['player2_id']
-        current_player_name = get_player_name(current_player_id)
-        
-        send_push_notification(
-            partner_id,
-            f"{current_player_name} has left your doubles team. You can now form a new partnership.",
-            "Team Dissolved"
-        )
-        
-        flash('You have successfully left the team. You can now form a new partnership.', 'success')
+        flash('You have successfully switched partners. You can now form a new partnership.', 'success')
         
     except Exception as e:
         logging.error(f"Error leaving team: {e}")
