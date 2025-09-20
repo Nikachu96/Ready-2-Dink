@@ -1690,17 +1690,108 @@ def get_tournament_team_members(tournament_match_id, player_id, conn=None):
             conn.close()
 
 def get_match_team_members(match_id, player_id):
-    """Get all team members for a regular doubles match"""
+    """Get all team members for a regular match using the match_teams system"""
     conn = get_db_connection()
     
-    # For regular matches, check if there's a match_type or partner info
-    # Since regular matches don't have explicit doubles support yet,
-    # we'll return just the individual player for now
-    # This can be extended when regular doubles matches are implemented
-    
-    team_members = [player_id]
-    conn.close()
-    return team_members
+    try:
+        # First check if this match has team data in match_teams table
+        player_team = conn.execute('''
+            SELECT team_number FROM match_teams 
+            WHERE match_id = ? AND player_id = ?
+        ''', (match_id, player_id)).fetchone()
+        
+        if player_team:
+            # Get all players on the same team
+            team_members = conn.execute('''
+                SELECT player_id FROM match_teams 
+                WHERE match_id = ? AND team_number = ?
+            ''', (match_id, player_team['team_number'])).fetchall()
+            
+            team_member_ids = [member['player_id'] for member in team_members]
+            logging.info(f"Match {match_id}: Found {len(team_member_ids)} team members for player {player_id}")
+            return team_member_ids
+        else:
+            # Fallback: For matches without team data (legacy matches), return just the individual player
+            logging.info(f"Match {match_id}: No team data found, treating as singles for player {player_id}")
+            return [player_id]
+            
+    except Exception as e:
+        logging.error(f"Error getting match team members for match {match_id}, player {player_id}: {e}")
+        return [player_id]
+    finally:
+        conn.close()
+
+def create_match_teams(match_id, player1_id, player2_id, match_type="singles", player1_partner_id=None, player2_partner_id=None, conn=None):
+    """Create team entries in match_teams table for a match"""
+    should_close = False
+    if conn is None:
+        conn = get_db_connection()
+        should_close = True
+        
+    try:
+        # Clear any existing team data for this match (for idempotency)
+        conn.execute('DELETE FROM match_teams WHERE match_id = ?', (match_id,))
+        
+        if match_type == "doubles":
+            # Team 1: player1 + partner
+            conn.execute('INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, ?, ?)', 
+                        (match_id, 1, player1_id))
+            if player1_partner_id:
+                conn.execute('INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, ?, ?)', 
+                            (match_id, 1, player1_partner_id))
+            
+            # Team 2: player2 + partner  
+            conn.execute('INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, ?, ?)', 
+                        (match_id, 2, player2_id))
+            if player2_partner_id:
+                conn.execute('INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, ?, ?)', 
+                            (match_id, 2, player2_partner_id))
+        else:
+            # Singles: each player is their own team
+            conn.execute('INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, ?, ?)', 
+                        (match_id, 1, player1_id))
+            conn.execute('INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, ?, ?)', 
+                        (match_id, 2, player2_id))
+        
+        logging.info(f"Created match teams for match {match_id}: {match_type} with {4 if match_type == 'doubles' else 2} players")
+        
+    except Exception as e:
+        logging.error(f"Error creating match teams for match {match_id}: {e}")
+        raise
+    finally:
+        if should_close:
+            conn.close()
+
+def backfill_existing_matches_as_singles():
+    """Backfill existing matches without team data as singles matches"""
+    try:
+        conn = get_db_connection()
+        
+        # Find matches that don't have team data yet
+        matches_without_teams = conn.execute('''
+            SELECT m.id, m.player1_id, m.player2_id 
+            FROM matches m
+            LEFT JOIN match_teams mt ON m.id = mt.match_id
+            WHERE mt.match_id IS NULL
+        ''').fetchall()
+        
+        backfilled_count = 0
+        for match in matches_without_teams:
+            # Set match type to singles if not already set
+            conn.execute('UPDATE matches SET match_type = ? WHERE id = ?', ('singles', match['id']))
+            
+            # Create team entries for singles match
+            create_match_teams(match['id'], match['player1_id'], match['player2_id'], 'singles', conn=conn)
+            backfilled_count += 1
+        
+        conn.commit()
+        conn.close()
+        logging.info(f"Backfilled {backfilled_count} existing matches as singles")
+        return backfilled_count
+        
+    except Exception as e:
+        logging.error(f"Error backfilling existing matches: {e}")
+        return 0
 
 def update_player_match_record(player_id, is_winner, points_awarded=0, points_description="", conn=None):
     """Update an individual player's match record with wins/losses and points"""
@@ -2867,13 +2958,17 @@ def create_direct_challenge(challenger_id, target_id, proposed_location=None, pr
         else:
             scheduled_time = suggest_match_time(challenger, target)
         
-        # Create the match
+        # Create the match (default to singles for now)
         cursor = conn.execute('''
-            INSERT INTO matches (player1_id, player2_id, sport, court_location, scheduled_time, status, created_at)
-            VALUES (?, ?, 'Pickleball', ?, ?, 'pending', datetime('now'))
+            INSERT INTO matches (player1_id, player2_id, sport, court_location, scheduled_time, status, created_at, match_type)
+            VALUES (?, ?, 'Pickleball', ?, ?, 'pending', datetime('now'), 'singles')
         ''', (challenger_id, target_id, match_court, scheduled_time))
         
         match_id = cursor.lastrowid
+        
+        # Create team entries for the match
+        create_match_teams(match_id, challenger_id, target_id, 'singles', conn=conn)
+        
         conn.commit()
         conn.close()
         
@@ -6972,6 +7067,17 @@ def tournament_payment_success(tournament_id):
         flash('Error confirming payment. Please contact support.', 'danger')
     
     return redirect(url_for('tournaments_overview'))
+
+@app.route('/admin/backfill_matches')
+@admin_required
+def admin_backfill_matches():
+    """Admin route to backfill existing matches with team data"""
+    try:
+        count = backfill_existing_matches_as_singles()
+        flash(f'Successfully backfilled {count} matches with team data', 'success')
+    except Exception as e:
+        flash(f'Error backfilling matches: {str(e)}', 'error')
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin')
 @admin_required
