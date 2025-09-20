@@ -437,69 +437,68 @@ body {
                 
                 <!-- Pricing Cards -->
                 <div class="row mb-5">
-                    <!-- Discovery Plan -->
+                    <!-- Free Search Plan -->
                     <div class="col-lg-6 mb-4">
-                        <div class="neon-frame h-100 {% if membership_type == 'discovery' %}border-neon{% endif %}">
-                            {% if membership_type == 'discovery' %}
-                            <div class="selected-badge">Selected Plan</div>
+                        <div class="neon-frame h-100 {% if membership_type == 'free_search' %}border-neon{% endif %}">
+                            {% if membership_type == 'free_search' %}
+                            <div class="selected-badge">Current Plan</div>
                             {% endif %}
                             
                             <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 100%; padding: 2rem;">
-                                <i class="fas fa-users plan-icon" style="color: var(--accent-cyan);"></i>
-                                <h3 class="plan-name" style="color: var(--accent-cyan);">Player Discovery</h3>
-                                <div class="plan-price" style="color: var(--accent-cyan);">
-                                    $4.99
-                                    <small class="plan-period">per month</small>
+                                <i class="fas fa-search plan-icon" style="color: var(--accent-green);"></i>
+                                <h3 class="plan-name" style="color: var(--accent-green);">Free Search</h3>
+                                <div class="plan-price" style="color: var(--accent-green);">
+                                    FREE
+                                    <small class="plan-period">forever</small>
                                 </div>
-                                <p class="plan-description">Perfect for finding compatible players in your area</p>
+                                <p class="plan-description">Basic player discovery with essential features</p>
                                 
                                 <ul class="plan-features">
-                                    <li>Find and match with compatible players</li>
-                                    <li>Chat with connected players</li>
+                                    <li>Find and match with players</li>
+                                    <li>Send & receive challenges</li>
+                                    <li>Basic player profiles</li>
+                                    <li>Location-based search</li>
+                                    <li>Chat with connections</li>
                                     <li>Organize casual games</li>
-                                    <li>View detailed player profiles</li>
-                                    <li>Location-based player search</li>
-                                    <li>Basic game statistics</li>
                                 </ul>
                                 
                                 <div style="margin-top: auto; width: 100%;">
-                                    <a href="{{ url_for('membership_payment_page', membership_type='discovery') }}" 
-                                       class="alt-payment-btn">
-                                        <i class="fas fa-arrow-right me-2"></i>Select This Plan
-                                    </a>
+                                    <div class="alt-payment-btn" style="background: rgba(0, 255, 65, 0.1); border-color: var(--accent-green); color: var(--accent-green); cursor: default;">
+                                        <i class="fas fa-check me-2"></i>Free Forever
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Tournament Plan -->
+                    <!-- Premium Plan -->
                     <div class="col-lg-6 mb-4">
-                        <div class="neon-frame h-100 {% if membership_type == 'tournament' %}border-neon{% endif %}">
-                            {% if membership_type == 'tournament' %}
-                            <div class="selected-badge">Selected Plan</div>
+                        <div class="neon-frame h-100 {% if membership_type == 'premium' %}border-neon{% endif %}">
+                            {% if membership_type == 'premium' %}
+                            <div class="selected-badge">Current Plan</div>
                             {% endif %}
                             
                             <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 100%; padding: 2rem;">
-                                <i class="fas fa-trophy plan-icon" style="color: var(--accent-gold);"></i>
-                                <h3 class="plan-name" style="color: var(--accent-gold);">Tournament Access</h3>
+                                <i class="fas fa-crown plan-icon" style="color: var(--accent-gold);"></i>
+                                <h3 class="plan-name" style="color: var(--accent-gold);">Premium</h3>
                                 <div class="plan-price" style="color: var(--accent-gold);">
                                     $9.99
                                     <small class="plan-period">per month</small>
                                 </div>
-                                <p class="plan-description">Complete access including competitive tournaments</p>
+                                <p class="plan-description">Complete access with tournaments and premium features</p>
                                 
                                 <ul class="plan-features">
-                                    <li><strong>Everything in Player Discovery</strong></li>
+                                    <li><strong>Everything in Free Search</strong></li>
                                     <li>Enter paid tournaments</li>
                                     <li>Compete for cash prizes</li>
-                                    <li>Tournament brackets and standings</li>
+                                    <li>View full leaderboards</li>
                                     <li>Advanced player statistics</li>
-                                    <li>Priority tournament registration</li>
+                                    <li>Premium insights & analytics</li>
                                     <li>Exclusive tournament features</li>
                                 </ul>
                                 
                                 <div style="margin-top: auto; width: 100%;">
-                                    <a href="{{ url_for('membership_payment_page', membership_type='tournament') }}" 
+                                    <a href="{{ url_for('membership_payment_page', membership_type='premium') }}" 
                                        class="alt-payment-btn">
                                         <i class="fas fa-arrow-right me-2"></i>Select This Plan
                                     </a>
@@ -514,10 +513,10 @@ body {
                     <div class="card-body">
                         <div class="payment-title">
                             <i class="fas fa-shield-alt me-2"></i>
-                            {% if membership_type == 'discovery' %}
-                                Complete Your Player Discovery Setup
+                            {% if membership_type == 'free_search' %}
+                                Free Search Access
                             {% else %}
-                                Complete Your Tournament Access Setup
+                                Complete Your Premium Setup
                             {% endif %}
                         </div>
                         
@@ -548,27 +547,27 @@ body {
                         <div class="benefits-card">
                             <div class="benefits-title">
                                 <i class="fas fa-check-circle me-2"></i>
-                                {% if membership_type == 'discovery' %}
-                                    Player Discovery Benefits
+                                {% if membership_type == 'free_search' %}
+                                    Free Search Benefits
                                 {% else %}
-                                    Tournament Access Benefits
+                                    Premium Benefits
                                 {% endif %}
                             </div>
                             <ul class="benefits-list">
-                                {% if membership_type == 'discovery' %}
-                                    <li>Find and match with compatible players</li>
-                                    <li>Chat with connected players</li>
+                                {% if membership_type == 'free_search' %}
+                                    <li>Find and match with players</li>
+                                    <li>Send & receive challenges</li>
+                                    <li>Basic player profiles</li>
+                                    <li>Location-based search</li>
+                                    <li>Chat with connections</li>
                                     <li>Organize casual games</li>
-                                    <li>View detailed player profiles</li>
-                                    <li>Location-based player search</li>
-                                    <li>Basic game statistics</li>
                                 {% else %}
-                                    <li><strong>Everything in Player Discovery Plan</strong></li>
+                                    <li><strong>Everything in Free Search Plan</strong></li>
                                     <li>Enter paid tournaments</li>
                                     <li>Compete for cash prizes</li>
-                                    <li>Tournament brackets and standings</li>
+                                    <li>View full leaderboards</li>
                                     <li>Advanced player statistics</li>
-                                    <li>Priority tournament registration</li>
+                                    <li>Premium insights & analytics</li>
                                     <li>Exclusive tournament features</li>
                                 {% endif %}
                             </ul>

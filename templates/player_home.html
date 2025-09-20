@@ -254,23 +254,23 @@
                     <div class="d-grid gap-3">
                         
                         <!-- Find Opponent Button -->
-                        {% if player.membership_type == 'discovery' or player.membership_type == 'tournament' %}
+                        {% if player.can_search_players %}
                         <a href="{{ url_for('browse_players') }}" class="btn btn-primary action-btn text-decoration-none">
                             <i class="fas fa-users"></i>Find Opponent
                         </a>
                         {% else %}
-                        <button class="btn btn-primary action-btn" onclick="showMembershipModal('discovery')">
+                        <button class="btn btn-primary action-btn" onclick="showMembershipModal('premium')">
                             <i class="fas fa-lock"></i>Unlock Player Matching
                         </button>
                         {% endif %}
                         
                         <!-- Join Tournament Button -->
-                        {% if player.membership_type == 'tournament' %}
+                        {% if player.can_join_tournaments %}
                         <a href="{{ url_for('tournaments_overview') }}" class="btn btn-primary action-btn text-decoration-none">
                             <i class="fas fa-trophy"></i>Join Tournament
                         </a>
                         {% else %}
-                        <button class="btn btn-primary action-btn" onclick="showMembershipModal('tournament')">
+                        <button class="btn btn-primary action-btn" onclick="showMembershipModal('premium')">
                             <i class="fas fa-crown"></i>Unlock Tournaments
                         </button>
                         {% endif %}
@@ -313,7 +313,7 @@
                             <div class="col-4">
                                 <div class="mb-1 text-secondary text-bold">Membership</div>
                                 <div class="fw-bold text-neon-green">
-                                    <i class="fas fa-star me-1"></i>{{ player.membership_type|title or 'Free' }}
+                                    <i class="fas fa-star me-1"></i>{% if player.membership_type == 'premium' %}Premium{% elif player.membership_type == 'free_search' %}Free Search{% else %}Free{% endif %}
                                 </div>
                             </div>
                             <div class="col-4">
@@ -578,63 +578,63 @@ function loadPendingMatches() {
 }
 
 // Membership modal functionality
-function showMembershipModal(suggestedType = 'discovery') {
+function showMembershipModal(suggestedType = 'premium') {
     const modalHtml = `
         <div class="modal fade" id="membershipModal" tabindex="-1">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
                     <div class="modal-header">
                         <h5 class="modal-title">
-                            <i class="fas fa-star me-2"></i>Choose Your Membership
+                            <i class="fas fa-star me-2"></i>Choose Your Plan
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="text-center mb-4">
                             <h3 class="fw-bold">Start Your Journey</h3>
-                            <p style="color: #ffffff !important; opacity: 1.0 !important; font-size: 16px !important;">Choose the membership that fits your pickleball goals</p>
+                            <p style="color: #ffffff !important; opacity: 1.0 !important; font-size: 16px !important;">Choose the plan that fits your pickleball goals</p>
                         </div>
                         
                         <div class="row g-4">
                             <div class="col-12 col-md-6">
-                                <div class="card h-100" style="background: rgba(255,255,255,0.05); border: ${suggestedType === 'discovery' ? '2px solid var(--neon-cyan)' : '1px solid var(--glass-border)'};">
+                                <div class="card h-100" style="background: rgba(255,255,255,0.05); border: ${suggestedType === 'free_search' ? '2px solid var(--neon-green)' : '1px solid var(--glass-border)'};">
                                     <div class="card-body p-4 text-center">
-                                        <i class="fas fa-users fa-3x mb-3" style="color: var(--neon-cyan);"></i>
-                                        <h4 class="fw-bold text-white">Player Discovery</h4>
-                                        <div class="display-5 fw-bold mb-2" style="color: var(--neon-cyan);">$4.99</div>
-                                        <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">per month</span>
+                                        <i class="fas fa-search fa-3x mb-3" style="color: var(--neon-green);"></i>
+                                        <h4 class="fw-bold text-white">Free Search</h4>
+                                        <div class="display-5 fw-bold mb-2" style="color: var(--neon-green);">FREE</div>
+                                        <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">forever</span>
                                         
                                         <ul class="list-unstyled mt-4 mb-4 text-start">
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Find compatible players</li>
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Chat with players</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Send & receive challenges</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Chat with connections</li>
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Organize casual games</li>
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>View detailed profiles</li>
                                         </ul>
                                         
-                                        <button class="btn btn-primary w-100 btn-lg" onclick="startSubscription('discovery')">
-                                            <i class="fas fa-rocket me-2"></i>Start Free Trial
-                                        </button>
+                                        <div class="btn btn-success w-100 btn-lg" style="cursor: default;">
+                                            <i class="fas fa-check me-2"></i>Free Forever
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="col-12 col-md-6">
-                                <div class="card h-100" style="background: rgba(255,255,255,0.05); border: ${suggestedType === 'tournament' ? '2px solid var(--neon-green)' : '1px solid var(--glass-border)'};">
+                                <div class="card h-100" style="background: rgba(255,255,255,0.05); border: ${suggestedType === 'premium' ? '2px solid var(--neon-cyan)' : '1px solid var(--glass-border)'};">
                                     <div class="card-body p-4 text-center">
-                                        <i class="fas fa-trophy fa-3x mb-3" style="color: var(--neon-green);"></i>
-                                        <h4 class="fw-bold text-white">Tournament Access</h4>
-                                        <div class="display-5 fw-bold mb-2" style="color: var(--neon-green);">$9.99</div>
+                                        <i class="fas fa-crown fa-3x mb-3" style="color: var(--neon-cyan);"></i>
+                                        <h4 class="fw-bold text-white">Premium</h4>
+                                        <div class="display-5 fw-bold mb-2" style="color: var(--neon-cyan);">$9.99</div>
                                         <span style="color: #f1f5f9 !important; opacity: 1.0 !important; font-size: 16px !important;">per month</span>
                                         
                                         <ul class="list-unstyled mt-4 mb-4 text-start">
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i><strong>Everything in Discovery</strong></li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i><strong>Everything in Free Search</strong></li>
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Enter paid tournaments</li>
                                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Compete for cash prizes</li>
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Advanced statistics</li>
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Premium insights & analytics</li>
                                         </ul>
                                         
-                                        <button class="btn w-100 btn-lg" style="background: var(--neon-green); color: white;" onclick="startSubscription('tournament')">
-                                            <i class="fas fa-crown me-2"></i>Start Free Trial
+                                        <button class="btn w-100 btn-lg" style="background: var(--neon-cyan); color: white;" onclick="startSubscription('premium')">
+                                            <i class="fas fa-rocket me-2"></i>Start Free Trial
                                         </button>
                                     </div>
                                 </div>
