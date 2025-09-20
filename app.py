@@ -9228,5 +9228,396 @@ def contact():
     
     return render_template('contact.html')
 
+# ========== TEAM MANAGEMENT ROUTES ==========
+
+@app.route('/teams')
+def teams():
+    """Teams dashboard showing user's teams, invitations, and team search"""
+    if 'player_id' not in session:
+        return redirect(url_for('login'))
+    
+    player_id = session['player_id']
+    conn = get_db_connection()
+    
+    # Get user's current teams
+    user_teams = conn.execute('''
+        SELECT t.*, p1.full_name as player1_name, p2.full_name as player2_name
+        FROM teams t
+        JOIN players p1 ON t.player1_id = p1.id
+        JOIN players p2 ON t.player2_id = p2.id
+        WHERE t.player1_id = ? OR t.player2_id = ?
+        ORDER BY t.created_at DESC
+    ''', (player_id, player_id)).fetchall()
+    
+    # Get pending invitations sent to this player
+    pending_invitations = conn.execute('''
+        SELECT ti.*, p.full_name as inviter_name
+        FROM team_invitations ti
+        JOIN players p ON ti.inviter_id = p.id
+        WHERE ti.invitee_id = ? AND ti.status = 'pending'
+        ORDER BY ti.created_at DESC
+    ''', (player_id,)).fetchall()
+    
+    # Get invitations sent by this player
+    sent_invitations = conn.execute('''
+        SELECT ti.*, p.full_name as invitee_name
+        FROM team_invitations ti
+        JOIN players p ON ti.invitee_id = p.id
+        WHERE ti.inviter_id = ? AND ti.status = 'pending'
+        ORDER BY ti.created_at DESC
+    ''', (player_id,)).fetchall()
+    
+    conn.close()
+    
+    return render_template('teams.html', 
+                         user_teams=user_teams,
+                         pending_invitations=pending_invitations,
+                         sent_invitations=sent_invitations)
+
+@app.route('/send_team_invitation', methods=['POST'])
+def send_team_invitation():
+    """Send a team invitation to another player"""
+    if 'player_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in first'})
+    
+    data = request.get_json()
+    inviter_id = session['player_id']
+    invitee_id = data.get('invitee_id')
+    team_name = data.get('team_name', '').strip()
+    location = data.get('location', '').strip()
+    travel_radius = int(data.get('travel_radius', 10))
+    
+    if not invitee_id:
+        return jsonify({'success': False, 'message': 'Please select a player to invite'})
+    
+    if inviter_id == invitee_id:
+        return jsonify({'success': False, 'message': 'You cannot invite yourself'})
+    
+    conn = get_db_connection()
+    
+    # Check if players already have a team together
+    existing_team = conn.execute('''
+        SELECT id FROM teams 
+        WHERE (player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?)
+    ''', (inviter_id, invitee_id, invitee_id, inviter_id)).fetchone()
+    
+    if existing_team:
+        conn.close()
+        return jsonify({'success': False, 'message': 'You already have a team with this player'})
+    
+    # Check if there's already a pending invitation between these players
+    existing_invitation = conn.execute('''
+        SELECT id FROM team_invitations 
+        WHERE ((inviter_id = ? AND invitee_id = ?) OR (inviter_id = ? AND invitee_id = ?))
+        AND status = 'pending'
+    ''', (inviter_id, invitee_id, invitee_id, inviter_id)).fetchone()
+    
+    if existing_invitation:
+        conn.close()
+        return jsonify({'success': False, 'message': 'There is already a pending team invitation between you two'})
+    
+    # Create the invitation
+    conn.execute('''
+        INSERT INTO team_invitations (inviter_id, invitee_id, team_name, location, travel_radius)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (inviter_id, invitee_id, team_name, location, travel_radius))
+    
+    conn.commit()
+    
+    # Get player names for notification
+    inviter = conn.execute('SELECT full_name FROM players WHERE id = ?', (inviter_id,)).fetchone()
+    invitee = conn.execute('SELECT full_name FROM players WHERE id = ?', (invitee_id,)).fetchone()
+    
+    conn.close()
+    
+    # Send notification to invitee
+    if inviter and invitee:
+        message = f"🤝 {inviter['full_name']} wants to form a doubles team with you!"
+        send_push_notification(invitee_id, message, "Team Invitation")
+    
+    return jsonify({'success': True, 'message': f'Team invitation sent to {invitee["full_name"] if invitee else "player"}!'})
+
+@app.route('/respond_team_invitation', methods=['POST'])
+def respond_team_invitation():
+    """Accept or decline a team invitation"""
+    if 'player_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in first'})
+    
+    data = request.get_json()
+    invitation_id = data.get('invitation_id')
+    response = data.get('response')  # 'accept' or 'decline'
+    
+    if response not in ['accept', 'decline']:
+        return jsonify({'success': False, 'message': 'Invalid response'})
+    
+    conn = get_db_connection()
+    
+    # Get the invitation
+    invitation = conn.execute('''
+        SELECT * FROM team_invitations 
+        WHERE id = ? AND invitee_id = ? AND status = 'pending'
+    ''', (invitation_id, session['player_id'])).fetchone()
+    
+    if not invitation:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Invitation not found or already processed'})
+    
+    if response == 'accept':
+        # Create the team
+        conn.execute('''
+            INSERT INTO teams (player1_id, player2_id, team_name, location, travel_radius)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (invitation['inviter_id'], invitation['invitee_id'], 
+              invitation['team_name'], invitation['location'], invitation['travel_radius']))
+        
+        # Update invitation status
+        conn.execute('''
+            UPDATE team_invitations 
+            SET status = 'accepted', responded_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ''', (invitation_id,))
+        
+        conn.commit()
+        
+        # Get player names for notifications
+        inviter = conn.execute('SELECT full_name FROM players WHERE id = ?', (invitation['inviter_id'],)).fetchone()
+        invitee = conn.execute('SELECT full_name FROM players WHERE id = ?', (invitation['invitee_id'],)).fetchone()
+        
+        conn.close()
+        
+        # Send notification to inviter
+        if inviter and invitee:
+            message = f"🎉 {invitee['full_name']} accepted your team invitation! Your doubles team is now formed."
+            send_push_notification(invitation['inviter_id'], message, "Team Formed")
+        
+        return jsonify({'success': True, 'message': 'Team invitation accepted! Your doubles team has been formed.'})
+    
+    else:  # decline
+        # Update invitation status
+        conn.execute('''
+            UPDATE team_invitations 
+            SET status = 'declined', responded_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ''', (invitation_id,))
+        
+        conn.commit()
+        
+        # Get player names for notification
+        inviter = conn.execute('SELECT full_name FROM players WHERE id = ?', (invitation['inviter_id'],)).fetchone()
+        invitee = conn.execute('SELECT full_name FROM players WHERE id = ?', (invitation['invitee_id'],)).fetchone()
+        
+        conn.close()
+        
+        # Send notification to inviter
+        if inviter and invitee:
+            message = f"{invitee['full_name']} declined your team invitation."
+            send_push_notification(invitation['inviter_id'], message, "Team Invitation")
+        
+        return jsonify({'success': True, 'message': 'Team invitation declined.'})
+
+@app.route('/find_teams')
+def find_teams():
+    """Find other teams to challenge based on location and travel radius"""
+    if 'player_id' not in session:
+        return redirect(url_for('login'))
+    
+    player_id = session['player_id']
+    conn = get_db_connection()
+    
+    # Get user's teams
+    user_teams = conn.execute('''
+        SELECT t.*, p1.full_name as player1_name, p2.full_name as player2_name
+        FROM teams t
+        JOIN players p1 ON t.player1_id = p1.id
+        JOIN players p2 ON t.player2_id = p2.id
+        WHERE t.player1_id = ? OR t.player2_id = ?
+    ''', (player_id, player_id)).fetchall()
+    
+    # Get all other teams that could be challenged
+    available_teams = conn.execute('''
+        SELECT t.*, p1.full_name as player1_name, p2.full_name as player2_name
+        FROM teams t
+        JOIN players p1 ON t.player1_id = p1.id
+        JOIN players p2 ON t.player2_id = p2.id
+        WHERE t.player1_id != ? AND t.player2_id != ?
+        ORDER BY t.ranking_points DESC, t.wins DESC
+    ''', (player_id, player_id)).fetchall()
+    
+    conn.close()
+    
+    return render_template('find_teams.html', 
+                         user_teams=user_teams,
+                         available_teams=available_teams)
+
+@app.route('/challenge_team', methods=['POST'])
+def challenge_team():
+    """Challenge another team to a doubles match"""
+    if 'player_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in first'})
+    
+    data = request.get_json()
+    challenger_team_id = data.get('challenger_team_id')
+    challenged_team_id = data.get('challenged_team_id')
+    court_location = data.get('court_location', '').strip()
+    scheduled_time = data.get('scheduled_time', '').strip()
+    
+    if not all([challenger_team_id, challenged_team_id, court_location, scheduled_time]):
+        return jsonify({'success': False, 'message': 'Please fill in all fields'})
+    
+    player_id = session['player_id']
+    conn = get_db_connection()
+    
+    # Verify the challenger is part of the challenging team
+    challenger_team = conn.execute('''
+        SELECT * FROM teams 
+        WHERE id = ? AND (player1_id = ? OR player2_id = ?)
+    ''', (challenger_team_id, player_id, player_id)).fetchone()
+    
+    if not challenger_team:
+        conn.close()
+        return jsonify({'success': False, 'message': 'You are not part of this team'})
+    
+    # Create the team match
+    conn.execute('''
+        INSERT INTO team_matches (team1_id, team2_id, court_location, scheduled_time)
+        VALUES (?, ?, ?, ?)
+    ''', (challenger_team_id, challenged_team_id, court_location, scheduled_time))
+    
+    conn.commit()
+    
+    # Get team names for notifications
+    challenged_team = conn.execute('''
+        SELECT t.*, p1.full_name as player1_name, p2.full_name as player2_name
+        FROM teams t
+        JOIN players p1 ON t.player1_id = p1.id
+        JOIN players p2 ON t.player2_id = p2.id
+        WHERE t.id = ?
+    ''', (challenged_team_id,)).fetchone()
+    
+    conn.close()
+    
+    # Send notifications to challenged team members
+    if challenged_team:
+        team_name = challenged_team['team_name'] or f"{challenged_team['player1_name']} & {challenged_team['player2_name']}"
+        challenge_message = f"🎾 Team challenge! Another doubles team wants to play you at {court_location} on {scheduled_time}"
+        
+        send_push_notification(challenged_team['player1_id'], challenge_message, "Team Challenge")
+        send_push_notification(challenged_team['player2_id'], challenge_message, "Team Challenge")
+    
+    return jsonify({'success': True, 'message': 'Team challenge sent successfully!'})
+
+@app.route('/api/available_players')
+def api_available_players():
+    """Get list of players available for team invitations"""
+    if 'player_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in first'})
+    
+    player_id = session['player_id']
+    conn = get_db_connection()
+    
+    # Get all players except current user and those already on teams with current user
+    players = conn.execute('''
+        SELECT DISTINCT p.id, p.full_name, p.location1
+        FROM players p
+        WHERE p.id != ? 
+        AND p.id NOT IN (
+            SELECT CASE 
+                WHEN t.player1_id = ? THEN t.player2_id 
+                ELSE t.player1_id 
+            END
+            FROM teams t 
+            WHERE t.player1_id = ? OR t.player2_id = ?
+        )
+        AND p.id NOT IN (
+            SELECT CASE 
+                WHEN ti.inviter_id = ? THEN ti.invitee_id 
+                ELSE ti.inviter_id 
+            END
+            FROM team_invitations ti 
+            WHERE (ti.inviter_id = ? OR ti.invitee_id = ?) 
+            AND ti.status = 'pending'
+        )
+        ORDER BY p.full_name
+    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
+    
+    conn.close()
+    
+    players_list = [{'id': p['id'], 'full_name': p['full_name'], 'location1': p['location1']} for p in players]
+    
+    return jsonify({'success': True, 'players': players_list})
+
+@app.route('/submit_team_match_result', methods=['POST'])
+def submit_team_match_result():
+    """Submit result for a team doubles match"""
+    if 'player_id' not in session:
+        return jsonify({'success': False, 'message': 'Please log in first'})
+    
+    data = request.get_json()
+    match_id = data.get('match_id')
+    match_score = data.get('match_score')  # Format: "11-5 6-11 11-9"
+    team1_sets_won = int(data.get('team1_sets_won', 0))
+    team2_sets_won = int(data.get('team2_sets_won', 0))
+    
+    player_id = session['player_id']
+    conn = get_db_connection()
+    
+    # Get the match and verify player is part of one of the teams
+    match = conn.execute('''
+        SELECT tm.*, 
+               t1.player1_id as team1_player1, t1.player2_id as team1_player2,
+               t2.player1_id as team2_player1, t2.player2_id as team2_player2
+        FROM team_matches tm
+        JOIN teams t1 ON tm.team1_id = t1.id
+        JOIN teams t2 ON tm.team2_id = t2.id
+        WHERE tm.id = ? AND tm.status = 'confirmed'
+    ''', (match_id,)).fetchone()
+    
+    if not match:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Match not found or not confirmed'})
+    
+    # Verify player is part of one of the teams
+    if player_id not in [match['team1_player1'], match['team1_player2'], 
+                        match['team2_player1'], match['team2_player2']]:
+        conn.close()
+        return jsonify({'success': False, 'message': 'You are not part of this match'})
+    
+    # Determine winner team
+    winner_team_id = match['team1_id'] if team1_sets_won > team2_sets_won else match['team2_id']
+    loser_team_id = match['team2_id'] if team1_sets_won > team2_sets_won else match['team1_id']
+    
+    # Update match with results
+    conn.execute('''
+        UPDATE team_matches 
+        SET team1_score = ?, team2_score = ?, winner_team_id = ?, 
+            status = 'completed', match_result = ?
+        WHERE id = ?
+    ''', (team1_sets_won, team2_sets_won, winner_team_id, match_score, match_id))
+    
+    # Update team win/loss records and ranking points
+    points_awarded = 15 if (team1_sets_won + team2_sets_won) == 3 else 10  # Bonus for 3-set matches
+    
+    # Update winner team
+    conn.execute('''
+        UPDATE teams 
+        SET wins = wins + 1, ranking_points = ranking_points + ?
+        WHERE id = ?
+    ''', (points_awarded, winner_team_id))
+    
+    # Update loser team  
+    conn.execute('''
+        UPDATE teams 
+        SET losses = losses + 1
+        WHERE id = ?
+    ''', (loser_team_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        'success': True, 
+        'message': f'Team match result submitted successfully! Final score: {match_score}'
+    })
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

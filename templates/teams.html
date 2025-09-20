@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}Teams - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="row">
+        <!-- Page Header -->
+        <div class="col-12">
+            <div class="card-modern mb-4 text-center">
+                <h1 class="mb-0">
+                    <i class="fas fa-users text-cyan me-3"></i>
+                    Doubles Teams
+                </h1>
+                <p class="lead-text mt-2 mb-0">Form teams, challenge other doubles teams, and climb the doubles rankings!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- My Teams Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <h3 class="mb-0">
+                        <i class="fas fa-users text-green me-2"></i>
+                        My Teams
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {% if user_teams %}
+                        {% for team in user_teams %}
+                        <div class="doubles-team-card mb-3 p-3">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h5 class="mb-1">
+                                        {% if team.team_name %}
+                                            {{ team.team_name }}
+                                        {% else %}
+                                            {{ team.player1_name }} & {{ team.player2_name }}
+                                        {% endif %}
+                                    </h5>
+                                    <p class="text-secondary mb-2">
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ team.location }}
+                                        <span class="ms-3">
+                                            <i class="fas fa-road me-1"></i>{{ team.travel_radius }} miles
+                                        </span>
+                                    </p>
+                                    <div class="team-stats">
+                                        <span class="badge bg-success me-2">
+                                            <i class="fas fa-trophy me-1"></i>{{ team.wins }} Wins
+                                        </span>
+                                        <span class="badge bg-danger me-2">
+                                            <i class="fas fa-times me-1"></i>{{ team.losses }} Losses
+                                        </span>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-star me-1"></i>{{ team.ranking_points }} Points
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <a href="{{ url_for('find_teams') }}" class="btn btn-cyan">
+                                        <i class="fas fa-search me-1"></i>Find Teams
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users text-muted display-1 mb-3"></i>
+                            <h5>No Teams Yet</h5>
+                            <p class="text-muted">Form your first doubles team by inviting another player!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Invitations Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <h3 class="mb-0">
+                        <i class="fas fa-envelope text-purple me-2"></i>
+                        Team Invitations
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Received Invitations -->
+                    {% if pending_invitations %}
+                        <h6 class="text-cyan mb-3">
+                            <i class="fas fa-inbox me-1"></i>Received ({{ pending_invitations|length }})
+                        </h6>
+                        {% for invitation in pending_invitations %}
+                        <div class="invitation-card mb-3 p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ invitation.inviter_name }}</h6>
+                                    <p class="text-muted mb-2">
+                                        {% if invitation.team_name %}
+                                            Team: {{ invitation.team_name }}
+                                        {% endif %}
+                                    </p>
+                                    <p class="small text-secondary mb-2">
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ invitation.location }}
+                                        <span class="ms-2">
+                                            <i class="fas fa-road me-1"></i>{{ invitation.travel_radius }} miles
+                                        </span>
+                                    </p>
+                                    <p class="small text-muted">{{ invitation.created_at }}</p>
+                                </div>
+                                <div class="d-flex flex-column gap-2">
+                                    <button class="btn btn-sm btn-success" onclick="respondToInvitation({{ invitation.id }}, 'accept')">
+                                        <i class="fas fa-check me-1"></i>Accept
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="respondToInvitation({{ invitation.id }}, 'decline')">
+                                        <i class="fas fa-times me-1"></i>Decline
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- Sent Invitations -->
+                    {% if sent_invitations %}
+                        <h6 class="text-green mb-3 mt-4">
+                            <i class="fas fa-paper-plane me-1"></i>Sent ({{ sent_invitations|length }})
+                        </h6>
+                        {% for invitation in sent_invitations %}
+                        <div class="invitation-card mb-3 p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ invitation.invitee_name }}</h6>
+                                    <p class="text-muted mb-1">
+                                        {% if invitation.team_name %}
+                                            Team: {{ invitation.team_name }}
+                                        {% endif %}
+                                    </p>
+                                    <p class="small text-secondary">{{ invitation.created_at }}</p>
+                                </div>
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-clock me-1"></i>Pending
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if not pending_invitations and not sent_invitations %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-envelope-open text-muted display-1 mb-3"></i>
+                            <h6>No Invitations</h6>
+                            <p class="text-muted">No pending team invitations</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invite Player Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <h3 class="mb-0">
+                        <i class="fas fa-user-plus text-orange me-2"></i>
+                        Invite a Player to Form a Team
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form id="inviteTeamForm" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="playerSelect" class="form-label">Select Player</label>
+                            <select class="form-select" id="playerSelect" required>
+                                <option value="">Choose a player...</option>
+                                <!-- Players will be loaded via JavaScript -->
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="teamName" class="form-label">Team Name (Optional)</label>
+                            <input type="text" class="form-control" id="teamName" placeholder="e.g., Thunder Paddles">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="teamLocation" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="teamLocation" placeholder="City, State" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="travelRadius" class="form-label">Travel Radius</label>
+                            <select class="form-select" id="travelRadius">
+                                <option value="5">5 miles</option>
+                                <option value="10" selected>10 miles</option>
+                                <option value="15">15 miles</option>
+                                <option value="25">25 miles</option>
+                                <option value="50">50 miles</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Send Team Invitation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSS Styles -->
+<style>
+.doubles-team-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-md);
+    backdrop-filter: blur(10px);
+    transition: var(--transition-normal);
+}
+
+.doubles-team-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--neon-cyan);
+}
+
+.invitation-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-sm);
+    backdrop-filter: blur(10px);
+    transition: var(--transition-normal);
+}
+
+.invitation-card:hover {
+    border-color: var(--neon-purple);
+    box-shadow: var(--shadow-neon-purple);
+}
+
+.team-stats .badge {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.btn-cyan {
+    background: var(--gradient-primary);
+    border: none;
+    color: white !important;
+    font-weight: 600;
+    transition: var(--transition-normal);
+}
+
+.btn-cyan:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-neon-cyan);
+    color: white !important;
+}
+</style>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadAvailablePlayers();
+    setupInviteForm();
+});
+
+function loadAvailablePlayers() {
+    // Fetch available players for team invitations
+    fetch('/api/available_players')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('playerSelect');
+                select.innerHTML = '<option value="">Choose a player...</option>';
+                
+                data.players.forEach(player => {
+                    const option = document.createElement('option');
+                    option.value = player.id;
+                    option.textContent = `${player.full_name} (${player.location1})`;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading players:', error));
+}
+
+function setupInviteForm() {
+    document.getElementById('inviteTeamForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            invitee_id: document.getElementById('playerSelect').value,
+            team_name: document.getElementById('teamName').value,
+            location: document.getElementById('teamLocation').value,
+            travel_radius: document.getElementById('travelRadius').value
+        };
+        
+        if (!formData.invitee_id) {
+            showNotification('Please select a player to invite', 'warning');
+            return;
+        }
+        
+        if (!formData.location) {
+            showNotification('Please enter a location', 'warning');
+            return;
+        }
+        
+        fetch('/send_team_invitation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                this.reset();
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error sending invitation', 'danger');
+        });
+    });
+}
+
+function respondToInvitation(invitationId, response) {
+    fetch('/respond_team_invitation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            invitation_id: invitationId,
+            response: response
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showNotification(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error responding to invitation', 'danger');
+    });
+}
+
+function showNotification(message, type) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.top = '100px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.style.minWidth = '300px';
+    
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

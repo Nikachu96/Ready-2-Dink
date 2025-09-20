@@ -1,0 +1,531 @@
+{% extends "base.html" %}
+
+{% block title %}Find Teams - Ready 2 Dink{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="row">
+        <!-- Page Header -->
+        <div class="col-12">
+            <div class="card-modern mb-4 text-center">
+                <h1 class="mb-0">
+                    <i class="fas fa-search text-cyan me-3"></i>
+                    Find Doubles Teams
+                </h1>
+                <p class="lead-text mt-2 mb-0">Challenge other doubles teams and compete for the top of the rankings!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Teams Selection -->
+    {% if user_teams %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <h3 class="mb-0">
+                        <i class="fas fa-users text-green me-2"></i>
+                        Select Your Team
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for team in user_teams %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="team-selection-card p-3" data-team-id="{{ team.id }}">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="mb-1">
+                                        {% if team.team_name %}
+                                            {{ team.team_name }}
+                                        {% else %}
+                                            {{ team.player1_name }} & {{ team.player2_name }}
+                                        {% endif %}
+                                    </h5>
+                                    <span class="badge bg-primary">Select</span>
+                                </div>
+                                <p class="text-secondary mb-2">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ team.location }}
+                                </p>
+                                <div class="team-stats">
+                                    <span class="badge bg-success me-1">{{ team.wins }}W</span>
+                                    <span class="badge bg-danger me-1">{{ team.losses }}L</span>
+                                    <span class="badge bg-info">{{ team.ranking_points }}pts</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Search Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <h3 class="mb-0">
+                        <i class="fas fa-filter text-purple me-2"></i>
+                        Search Filters
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="locationFilter" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="locationFilter" placeholder="City, State">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="maxDistanceFilter" class="form-label">Max Distance</label>
+                            <select class="form-select" id="maxDistanceFilter">
+                                <option value="">Any Distance</option>
+                                <option value="5">Within 5 miles</option>
+                                <option value="10">Within 10 miles</option>
+                                <option value="15">Within 15 miles</option>
+                                <option value="25">Within 25 miles</option>
+                                <option value="50">Within 50 miles</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="skillLevelFilter" class="form-label">Skill Level</label>
+                            <select class="form-select" id="skillLevelFilter">
+                                <option value="">Any Level</option>
+                                <option value="beginner">Beginner</option>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="advanced">Advanced</option>
+                                <option value="expert">Expert</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="sortBy" class="form-label">Sort By</label>
+                            <select class="form-select" id="sortBy">
+                                <option value="ranking">Ranking Points</option>
+                                <option value="wins">Most Wins</option>
+                                <option value="winrate">Win Rate</option>
+                                <option value="recent">Recently Active</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" onclick="applyFilters()">
+                                <i class="fas fa-search me-2"></i>Search Teams
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Teams -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <h3 class="mb-0">
+                        <i class="fas fa-trophy text-orange me-2"></i>
+                        Available Teams to Challenge
+                        <span class="badge bg-secondary ms-2" id="teamCount">{{ available_teams|length }} teams</span>
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div id="teamsContainer">
+                        {% if available_teams %}
+                            <div class="row g-4">
+                                {% for team in available_teams %}
+                                <div class="col-lg-6 col-xl-4 team-card-container" data-team-id="{{ team.id }}" data-location="{{ team.location }}" data-travel-radius="{{ team.travel_radius }}">
+                                    <div class="available-team-card h-100">
+                                        <div class="card-body p-4">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <div>
+                                                    <h5 class="card-title mb-2">
+                                                        {% if team.team_name %}
+                                                            {{ team.team_name }}
+                                                        {% else %}
+                                                            {{ team.player1_name }} & {{ team.player2_name }}
+                                                        {% endif %}
+                                                    </h5>
+                                                    <p class="text-secondary mb-2">
+                                                        <i class="fas fa-map-marker-alt me-1"></i>{{ team.location }}
+                                                        <span class="ms-2 small">
+                                                            <i class="fas fa-road me-1"></i>{{ team.travel_radius }} miles
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                                <div class="text-end">
+                                                    <div class="ranking-badge mb-2">
+                                                        #{{ loop.index }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="team-stats-grid mb-3">
+                                                <div class="stat-item">
+                                                    <div class="stat-label">Wins</div>
+                                                    <div class="stat-value text-success">{{ team.wins }}</div>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <div class="stat-label">Losses</div>
+                                                    <div class="stat-value text-danger">{{ team.losses }}</div>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <div class="stat-label">Win Rate</div>
+                                                    <div class="stat-value text-info">
+                                                        {% if team.wins + team.losses > 0 %}
+                                                            {{ "%.1f"|format(team.wins / (team.wins + team.losses) * 100) }}%
+                                                        {% else %}
+                                                            N/A
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <div class="stat-label">Points</div>
+                                                    <div class="stat-value text-warning">{{ team.ranking_points }}</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="text-center">
+                                                <button class="btn btn-challenge w-100" onclick="openChallengeModal({{ team.id }}, '{% if team.team_name %}{{ team.team_name }}{% else %}{{ team.player1_name }} & {{ team.player2_name }}{% endif %}')">
+                                                    <i class="fas fa-swords me-2"></i>Challenge Team
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-users text-muted display-1 mb-4"></i>
+                                <h5>No Teams Available</h5>
+                                <p class="text-muted">There are no other teams available to challenge at the moment.</p>
+                                <a href="{{ url_for('teams') }}" class="btn btn-primary mt-3">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Teams
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Challenge Modal -->
+<div class="modal fade" id="challengeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">
+                    <i class="fas fa-swords text-cyan me-2"></i>
+                    Challenge Team
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="challengeForm">
+                    <input type="hidden" id="challengerTeamId">
+                    <input type="hidden" id="challengedTeamId">
+                    
+                    <div class="mb-4">
+                        <h6 class="text-cyan mb-2">Challenge Details</h6>
+                        <p id="challengeTeamName" class="text-muted"></p>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="courtLocation" class="form-label">Court Location</label>
+                            <input type="text" class="form-control" id="courtLocation" placeholder="e.g., Central Park Courts" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="scheduledTime" class="form-label">Preferred Date & Time</label>
+                            <input type="datetime-local" class="form-control" id="scheduledTime" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="challengeNotes" class="form-label">Additional Notes (Optional)</label>
+                            <textarea class="form-control" id="challengeNotes" rows="3" placeholder="Any additional details or preferences..."></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitChallenge()">
+                    <i class="fas fa-paper-plane me-2"></i>Send Challenge
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSS Styles -->
+<style>
+.team-selection-card {
+    background: var(--glass-bg);
+    border: 2px solid var(--glass-border);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: var(--transition-normal);
+}
+
+.team-selection-card:hover,
+.team-selection-card.selected {
+    border-color: var(--neon-green);
+    box-shadow: var(--shadow-neon-green);
+    transform: translateY(-2px);
+}
+
+.available-team-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-lg);
+    backdrop-filter: blur(10px);
+    transition: var(--transition-normal);
+    height: 100%;
+}
+
+.available-team-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--neon-cyan);
+}
+
+.ranking-badge {
+    background: var(--gradient-primary);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-align: center;
+    min-width: 50px;
+}
+
+.team-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.btn-challenge {
+    background: var(--gradient-secondary);
+    border: none;
+    color: white !important;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius-md);
+    transition: var(--transition-normal);
+}
+
+.btn-challenge:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-neon-green);
+    color: white !important;
+}
+
+.modal-content {
+    background: var(--dark-surface) !important;
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+}
+
+.form-control,
+.form-select {
+    background: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
+    color: var(--text-primary) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background: var(--glass-bg) !important;
+    border-color: var(--neon-cyan) !important;
+    box-shadow: var(--shadow-neon-cyan) !important;
+    color: var(--text-primary) !important;
+}
+
+@media (max-width: 768px) {
+    .team-stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .stat-item {
+        padding: 0.5rem;
+    }
+    
+    .stat-value {
+        font-size: 1rem;
+    }
+}
+</style>
+
+<!-- JavaScript -->
+<script>
+let selectedTeamId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupTeamSelection();
+    setMinDateTime();
+});
+
+function setupTeamSelection() {
+    const teamCards = document.querySelectorAll('.team-selection-card');
+    
+    teamCards.forEach(card => {
+        card.addEventListener('click', function() {
+            // Remove selected class from all cards
+            teamCards.forEach(c => c.classList.remove('selected'));
+            
+            // Add selected class to clicked card
+            this.classList.add('selected');
+            
+            // Store selected team ID
+            selectedTeamId = this.dataset.teamId;
+        });
+    });
+    
+    // Auto-select first team if only one exists
+    if (teamCards.length === 1) {
+        teamCards[0].click();
+    }
+}
+
+function setMinDateTime() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    document.getElementById('scheduledTime').min = tomorrow.toISOString().slice(0, 16);
+}
+
+function applyFilters() {
+    const location = document.getElementById('locationFilter').value.toLowerCase();
+    const maxDistance = document.getElementById('maxDistanceFilter').value;
+    const skillLevel = document.getElementById('skillLevelFilter').value;
+    const sortBy = document.getElementById('sortBy').value;
+    
+    const teamCards = document.querySelectorAll('.team-card-container');
+    let visibleCount = 0;
+    
+    teamCards.forEach(card => {
+        let visible = true;
+        
+        // Location filter
+        if (location && !card.dataset.location.toLowerCase().includes(location)) {
+            visible = false;
+        }
+        
+        // Distance filter
+        if (maxDistance && parseInt(card.dataset.travelRadius) > parseInt(maxDistance)) {
+            visible = false;
+        }
+        
+        if (visible) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('teamCount').textContent = `${visibleCount} teams`;
+    
+    // TODO: Implement sorting logic based on sortBy value
+}
+
+function openChallengeModal(teamId, teamName) {
+    if (!selectedTeamId) {
+        showNotification('Please select your team first', 'warning');
+        return;
+    }
+    
+    document.getElementById('challengerTeamId').value = selectedTeamId;
+    document.getElementById('challengedTeamId').value = teamId;
+    document.getElementById('challengeTeamName').textContent = `Challenging: ${teamName}`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('challengeModal'));
+    modal.show();
+}
+
+function submitChallenge() {
+    const form = document.getElementById('challengeForm');
+    const formData = new FormData(form);
+    
+    const challengeData = {
+        challenger_team_id: document.getElementById('challengerTeamId').value,
+        challenged_team_id: document.getElementById('challengedTeamId').value,
+        court_location: document.getElementById('courtLocation').value,
+        scheduled_time: document.getElementById('scheduledTime').value
+    };
+    
+    if (!challengeData.court_location || !challengeData.scheduled_time) {
+        showNotification('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    fetch('/challenge_team', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(challengeData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('challengeModal')).hide();
+            form.reset();
+        } else {
+            showNotification(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error sending challenge', 'danger');
+    });
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.top = '100px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.style.minWidth = '300px';
+    
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}
