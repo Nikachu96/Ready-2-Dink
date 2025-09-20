@@ -1367,15 +1367,20 @@ function confirmLeaveTeam() {
 
 // GPS Location Function
 function getGPSLocation() {
-        if (!navigator.geolocation) {
-            showLocationStatus('GPS not supported by this browser', 'danger');
-            return;
-        }
-        
-        gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting Location...';
-        gpsBtn.disabled = true;
-        
-        showLocationStatus('Requesting GPS location...', 'info');
+    const gpsBtn = document.getElementById('gps_location_btn');
+    const locationStatus = document.getElementById('location_status');
+    
+    if (!navigator.geolocation) {
+        showLocationStatus('GPS not supported by this browser', 'danger');
+        return;
+    }
+    
+    if (!gpsBtn) return;
+    
+    gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting Location...';
+    gpsBtn.disabled = true;
+    
+    showLocationStatus('Requesting GPS location...', 'info');
         
         navigator.geolocation.getCurrentPosition(
             function(position) {
@@ -1423,10 +1428,17 @@ function getGPSLocation() {
             }
         );
     }
+}
+
+// Update Location from ZIP Code  
+function updateLocationFromZip() {
+    const zipCodeInput = document.getElementById('location_zip_code');
+    const updateLocationBtn = document.getElementById('update_location_btn');
+    const locationStatus = document.getElementById('location_status');
     
-    // Update Location from ZIP Code
-    function updateLocationFromZip() {
-        const zipCode = zipCodeInput.value.trim();
+    if (!zipCodeInput || !updateLocationBtn) return;
+    
+    const zipCode = zipCodeInput.value.trim();
         
         if (!zipCode || zipCode.length !== 5 || !/^\d{5}$/.test(zipCode)) {
             showLocationStatus('Please enter a valid 5-digit ZIP code', 'danger');
@@ -1471,11 +1483,12 @@ function getGPSLocation() {
             updateLocationBtn.innerHTML = '<i class="fas fa-sync me-1"></i>Update';
             updateLocationBtn.disabled = false;
         });
-    }
-    
-    // Show location status messages
-    function showLocationStatus(message, type) {
-        if (!locationStatus) return;
+}
+
+// Show location status messages
+function showLocationStatus(message, type) {
+    const locationStatus = document.getElementById('location_status');
+    if (!locationStatus) return;
         
         const alertClass = `alert alert-${type} alert-dismissible fade show`;
         locationStatus.innerHTML = `
@@ -1496,6 +1509,6 @@ function getGPSLocation() {
             }, 5000);
         }
     }
-});
+}
 </script>
 {% endblock %}
