@@ -965,6 +965,100 @@ def init_db():
         )
     ''')
     
+    # Match scheduling table for tournament match planning
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS match_schedules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tournament_match_id INTEGER NOT NULL,
+            proposer_id INTEGER NOT NULL,
+            proposed_location TEXT,
+            proposed_at TEXT NOT NULL,
+            confirmation_status TEXT DEFAULT 'pending' CHECK (confirmation_status IN ('pending', 'confirmed', 'rejected', 'counter_proposed')),
+            confirmed_by INTEGER,
+            confirmed_at TEXT,
+            counter_proposal_id INTEGER,
+            deadline_at TEXT NOT NULL,
+            forfeit_status TEXT DEFAULT NULL CHECK (forfeit_status IN (NULL, 'player1_forfeit', 'player2_forfeit', 'double_forfeit')),
+            forfeit_reason TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(tournament_match_id) REFERENCES tournament_matches(id),
+            FOREIGN KEY(proposer_id) REFERENCES players(id),
+            FOREIGN KEY(confirmed_by) REFERENCES players(id),
+            FOREIGN KEY(counter_proposal_id) REFERENCES match_schedules(id)
+        )
+    ''')
+    
+    # Create unique constraint to prevent multiple confirmed schedules per match
+    c.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_match_schedules_confirmed 
+        ON match_schedules(tournament_match_id) 
+        WHERE confirmation_status = 'confirmed'
+    ''')
+    
+    # Create indexes for performance
+    c.execute('''CREATE INDEX IF NOT EXISTS idx_match_schedules_tournament_match ON match_schedules(tournament_match_id)''')
+    c.execute('''CREATE INDEX IF NOT EXISTS idx_match_schedules_proposer ON match_schedules(proposer_id)''')
+    
+    # Score submissions table for match result approval workflow
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS score_submissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tournament_match_id INTEGER NOT NULL,
+            submitter_id INTEGER NOT NULL,
+            opponent_id INTEGER NOT NULL,
+            submitted_score TEXT NOT NULL,
+            winner_id INTEGER NOT NULL,
+            approval_status TEXT DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'disputed', 'auto_approved')),
+            approved_by INTEGER,
+            approved_at TEXT,
+            dispute_reason TEXT,
+            auto_approval_deadline_at TEXT,
+            admin_resolution TEXT,
+            resolved_by INTEGER,
+            resolved_at TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(tournament_match_id) REFERENCES tournament_matches(id),
+            FOREIGN KEY(submitter_id) REFERENCES players(id),
+            FOREIGN KEY(opponent_id) REFERENCES players(id),
+            FOREIGN KEY(winner_id) REFERENCES players(id),
+            FOREIGN KEY(approved_by) REFERENCES players(id),
+            FOREIGN KEY(resolved_by) REFERENCES players(id)
+        )
+    ''')
+    
+    # Create unique constraint to prevent multiple pending submissions per match
+    c.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_score_submissions_pending 
+        ON score_submissions(tournament_match_id) 
+        WHERE approval_status IN ('pending', 'disputed')
+    ''')
+    
+    # Create indexes for performance
+    c.execute('''CREATE INDEX IF NOT EXISTS idx_score_submissions_tournament_match ON score_submissions(tournament_match_id)''')
+    c.execute('''CREATE INDEX IF NOT EXISTS idx_score_submissions_submitter ON score_submissions(submitter_id)''')
+    c.execute('''CREATE INDEX IF NOT EXISTS idx_score_submissions_status ON score_submissions(approval_status)''')
+    
+    # Match reminders table for tracking notification history
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS match_reminders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tournament_match_id INTEGER NOT NULL,
+            player_id INTEGER NOT NULL,
+            reminder_type TEXT NOT NULL CHECK (reminder_type IN ('bracket_generated', 'match_scheduled', 'deadline_24h', 'deadline_12h', 'deadline_2h', 'forfeit_warning', 'score_submission_reminder')),
+            notification_method TEXT DEFAULT 'in_app' CHECK (notification_method IN ('in_app', 'email', 'sms', 'all')),
+            sent_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            delivery_status TEXT DEFAULT 'pending' CHECK (delivery_status IN ('sent', 'failed', 'pending')),
+            external_id TEXT,
+            error_message TEXT,
+            FOREIGN KEY(tournament_match_id) REFERENCES tournament_matches(id),
+            FOREIGN KEY(player_id) REFERENCES players(id)
+        )
+    ''')
+    
+    # Create composite index to prevent duplicate reminders and improve performance
+    c.execute('''CREATE INDEX IF NOT EXISTS idx_match_reminders_composite ON match_reminders(tournament_match_id, player_id, reminder_type)''')
+    c.execute('''CREATE INDEX IF NOT EXISTS idx_match_reminders_status ON match_reminders(delivery_status)''')
+    
     # Create default tournament instances if none exist
     existing_tournaments = c.execute('SELECT COUNT(*) as count FROM tournament_instances').fetchone()[0]
     
@@ -1012,6 +1106,8 @@ def get_db_connection():
     import sqlite3
     conn = sqlite3.connect('app.db', check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    # Enable foreign key constraints
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 def get_setting(key, default=None):
