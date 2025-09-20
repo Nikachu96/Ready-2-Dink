@@ -7571,6 +7571,68 @@ def reject_team_invitation_route(invitation_id):
     
     return redirect(url_for('profile_settings'))
 
+@app.route('/leave_team')
+def leave_team():
+    """Leave/dissolve current team"""
+    current_player_id = session.get('current_player_id')
+    
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
+    
+    try:
+        conn = get_db_connection()
+        
+        # Get player's current team
+        player = conn.execute('SELECT current_team_id FROM players WHERE id = ?', (current_player_id,)).fetchone()
+        
+        if not player or not player['current_team_id']:
+            flash('You are not currently in a team', 'info')
+            return redirect(url_for('profile_settings'))
+        
+        team_id = player['current_team_id']
+        
+        # Get team details for notification
+        team = conn.execute('''
+            SELECT player1_id, player2_id FROM teams WHERE id = ? AND status = 'active'
+        ''', (team_id,)).fetchone()
+        
+        if not team:
+            flash('Team not found', 'error')
+            return redirect(url_for('profile_settings'))
+        
+        # Dissolve the team
+        conn.execute('UPDATE teams SET status = "dissolved" WHERE id = ?', (team_id,))
+        
+        # Clear current_team_id for both players
+        conn.execute('UPDATE players SET current_team_id = NULL WHERE id IN (?, ?)', 
+                    (team['player1_id'], team['player2_id']))
+        
+        # Update match preferences back to singles for both players
+        conn.execute('UPDATE players SET match_preference = "singles" WHERE id IN (?, ?)', 
+                    (team['player1_id'], team['player2_id']))
+        
+        conn.commit()
+        conn.close()
+        
+        # Notify the partner
+        partner_id = team['player1_id'] if team['player1_id'] != current_player_id else team['player2_id']
+        current_player_name = get_player_name(current_player_id)
+        
+        send_push_notification(
+            partner_id,
+            f"{current_player_name} has left your doubles team. You can now form a new partnership.",
+            "Team Dissolved"
+        )
+        
+        flash('You have successfully left the team. You can now form a new partnership.', 'success')
+        
+    except Exception as e:
+        logging.error(f"Error leaving team: {e}")
+        flash('Error leaving team. Please try again.', 'error')
+    
+    return redirect(url_for('profile_settings'))
+
 @app.route('/team_search')
 def team_search():
     """Search for potential team partners"""

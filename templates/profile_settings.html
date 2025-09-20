@@ -451,9 +451,9 @@
                                         <small class="text-muted">Team formed on {{ current_team.created_at[:10] }}</small>
                                     </div>
                                     <div class="col-auto">
-                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="leaveTeam()">
-                                            <i class="fas fa-sign-out-alt me-1"></i>Leave Team
-                                        </button>
+                                        <a href="{{ url_for('leave_team') }}" class="btn btn-outline-primary btn-sm" onclick="return confirmLeaveTeam()">
+                                            <i class="fas fa-sync-alt me-1"></i>Switch Partner today
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -1280,12 +1280,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Leave team function
-    function leaveTeam() {
-        if (confirm('Are you sure you want to leave your current team? This action cannot be undone.')) {
-            // Implementation for leaving team would go here
-            alert('Team leave functionality to be implemented');
-        }
+    // Confirm leave team function
+    function confirmLeaveTeam() {
+        return confirm('Are you sure you want to switch partners? This will dissolve your current team and both players can form new partnerships. This action cannot be undone.');
     }
     
     // Cancel Membership Confirmation
