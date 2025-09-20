@@ -1177,72 +1177,60 @@ document.addEventListener('DOMContentLoaded', function() {
 alert('JavaScript is running!');
 console.log('=== IMMEDIATE TEST - JavaScript is working! ===');
 
-// Team Management Functions - Direct Approach with immediate testing
-(function() {
-    console.log('Script loading...');
+// Team Management Functions - Clean Fixed Version
+function handleRadioChange() {
+    console.log('Radio changed to:', this.value);
+    showTeamSection(this.value);
+}
+
+function showTeamSection(preference) {
+    console.log('showTeamSection called with:', preference);
+    const teamSection = document.getElementById('team_action_section');
+    const havePartner = document.getElementById('have_partner_section');
+    const needPartner = document.getElementById('need_partner_section');
     
-    // Test immediately when script loads
-    setTimeout(function() {
-        console.log('Testing elements...');
-        const radios = document.querySelectorAll('input[name="match_preference_radio"]');
-        const teamSection = document.getElementById('team_action_section');
-        const havePartner = document.getElementById('have_partner_section');
-        const needPartner = document.getElementById('need_partner_section');
-        
-        console.log('Found:', radios.length, 'radios');
-        console.log('Team section:', !!teamSection);
-        console.log('Have partner:', !!havePartner);
-        console.log('Need partner:', !!needPartner);
-        
-        if (radios.length > 0) {
-            radios.forEach(function(radio, index) {
-                console.log('Adding listener to radio', index, radio.value);
-                radio.addEventListener('change', function() {
-                    console.log('Radio changed to:', this.value);
-                    showTeamSection(this.value);
-                });
-            });
-        }
-    }, 500);
-    
-    function showTeamSection(preference) {
-        console.log('showTeamSection called with:', preference);
-        const teamSection = document.getElementById('team_action_section');
-        const havePartner = document.getElementById('have_partner_section');
-        const needPartner = document.getElementById('need_partner_section');
-        
-        if (!teamSection) {
-            console.log('Team section not found!');
-            return;
-        }
-        
-        // Hide all first
-        teamSection.style.display = 'none';
-        if (havePartner) havePartner.style.display = 'none';
-        if (needPartner) needPartner.style.display = 'none';
-        
-        if (preference === 'doubles_with_partner') {
-            console.log('Showing have partner section');
-            teamSection.style.display = 'block';
-            if (havePartner) havePartner.style.display = 'block';
-        } else if (preference === 'doubles_need_partner') {
-            console.log('Showing need partner section');
-            teamSection.style.display = 'block';
-            if (needPartner) needPartner.style.display = 'block';
-        }
+    if (!teamSection) {
+        console.log('Team section not found!');
+        return;
     }
     
-    // Also try with DOMContentLoaded
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM ready, testing again...');
-        const radios = document.querySelectorAll('input[name="match_preference_radio"]');
-        console.log('DOM ready - found', radios.length, 'radios');
-    });
-})();
+    // Hide all first
+    teamSection.style.display = 'none';
+    if (havePartner) havePartner.style.display = 'none';
+    if (needPartner) needPartner.style.display = 'none';
+    
+    if (preference === 'doubles_with_partner') {
+        console.log('Showing have partner section');
+        teamSection.style.display = 'block';
+        if (havePartner) havePartner.style.display = 'block';
+    } else if (preference === 'doubles_need_partner') {
+        console.log('Showing need partner section');
+        teamSection.style.display = 'block';
+        if (needPartner) needPartner.style.display = 'block';
+    }
+}
 
-// Send team invitation function - Fixed: Moved outside DOMContentLoaded
+// Add event listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Setting up radio listeners...');
+    const radios = document.querySelectorAll('input[name="match_preference_radio"]');
+    console.log('Found', radios.length, 'radios');
+    
+    radios.forEach(function(radio, index) {
+        console.log('Adding listener to radio', index, radio.value);
+        radio.addEventListener('change', handleRadioChange);
+    });
+    
+    // Initialize on page load
+    const checkedRadio = document.querySelector('input[name="match_preference_radio"]:checked');
+    if (checkedRadio) {
+        showTeamSection(checkedRadio.value);
+    }
+});
+
+// Send team invitation function
 function sendTeamInvitation() {
-        const selectedPartner = document.querySelector('input[name="partner_connection"]:checked');
+    const selectedPartner = document.querySelector('input[name="partner_connection"]:checked');
         const message = document.getElementById('invitation_message').value;
 
         if (!selectedPartner) {
