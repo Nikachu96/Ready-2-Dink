@@ -1437,6 +1437,48 @@ def advance_tournament_bracket(tournament_instance_id, current_round, current_ma
             conn.rollback()
             conn.close()
 
+def set_user_permissions(player_id, membership_type):
+    """Set user permissions based on membership type"""
+    conn = get_db_connection()
+    
+    if membership_type == 'free_search':
+        # Free Search permissions
+        conn.execute('''
+            UPDATE players SET 
+                can_search_players = 1,
+                can_send_challenges = 1,
+                can_receive_challenges = 1,
+                can_join_tournaments = 0,
+                can_view_leaderboard = 0,
+                can_view_premium_stats = 0
+            WHERE id = ?
+        ''', (player_id,))
+    elif membership_type == 'premium':
+        # Premium permissions
+        conn.execute('''
+            UPDATE players SET 
+                can_search_players = 1,
+                can_send_challenges = 1,
+                can_receive_challenges = 1,
+                can_join_tournaments = 1,
+                can_view_leaderboard = 1,
+                can_view_premium_stats = 1
+            WHERE id = ?
+        ''', (player_id,))
+    
+    conn.commit()
+    conn.close()
+
+def check_user_permission(player_id, permission):
+    """Check if a user has a specific permission"""
+    conn = get_db_connection()
+    result = conn.execute(f'SELECT {permission} FROM players WHERE id = ?', (player_id,)).fetchone()
+    conn.close()
+    
+    if result and result[permission]:
+        return True
+    return False
+
 def get_tournament_points(result):
     """Get points based on tournament result - DEPRECATED in favor of progressive system"""
     # This function is now deprecated since we award points progressively
@@ -3372,17 +3414,25 @@ def register():
             # Generate referral code for new user
             new_user_referral_code = generate_unique_referral_code()
             
+            # Set 30-day trial for new users
+            from datetime import datetime, timedelta
+            trial_end_date = (datetime.now() + timedelta(days=30)).isoformat()
+            
             cursor = conn.execute('''
                 INSERT INTO players 
                 (first_name, last_name, full_name, email, dob, username, password_hash, preferred_sport, 
                  guardian_email, account_status, guardian_consent_required, test_account, 
-                 address, location1, skill_level, latitude, longitude, search_radius_miles, referral_code)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 address, location1, skill_level, latitude, longitude, search_radius_miles, referral_code,
+                 membership_type, trial_end_date, subscription_status,
+                 can_search_players, can_send_challenges, can_receive_challenges, can_join_tournaments, can_view_leaderboard, can_view_premium_stats)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['first_name'], request.form['last_name'], full_name, request.form['email'], request.form['dob'], 
                   request.form['username'], password_hash, 'Pickleball',
                   guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0, 
                   f"ZIP {zip_code}" if zip_code else "Address not provided", location_description, 'Beginner',
-                  latitude, longitude, 15, new_user_referral_code))
+                  latitude, longitude, 15, new_user_referral_code,
+                  'premium', trial_end_date, 'trialing',
+                  1, 1, 1, 1, 1, 1))
             
             player_id = cursor.lastrowid
             
@@ -8647,17 +8697,12 @@ def create_membership_prices():
     import stripe
     stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
     
-    # Define membership plans
+    # Define membership plans - Updated pricing structure
     membership_plans = {
-        'discovery': {
-            'name': 'Discovery Membership',
-            'amount': 499,  # $4.99
-            'description': 'Access to player discovery and matching features'
-        },
-        'tournament': {
-            'name': 'Tournament Membership', 
+        'premium': {
+            'name': 'Premium Membership', 
             'amount': 999,  # $9.99
-            'description': 'Full access including tournaments and competitive features'
+            'description': 'Full access including tournaments, leaderboard, and all competitive features'
         }
     }
     
@@ -8730,7 +8775,7 @@ def membership_payment_page(membership_type):
         flash('Please log in to access memberships.', 'warning')
         return redirect(url_for('player_login'))
     
-    if membership_type not in ['discovery', 'tournament']:
+    if membership_type not in ['premium']:
         flash('Invalid membership type.', 'warning')
         return redirect(url_for('dashboard', player_id=session['player_id']))
     
@@ -8811,7 +8856,7 @@ def create_subscription_checkout():
     membership_type = membership_data['membership_type']
     player_id = membership_data['player_id']
     
-    if membership_type not in ['discovery', 'tournament']:
+    if membership_type not in ['premium']:
         return jsonify({'error': 'Invalid membership type'}), 400
     
     import stripe
@@ -9384,8 +9429,8 @@ def track_referral_conversion(player_id, membership_type):
     if not referral_code and not ambassador_id and not referrer_player_id:
         return
     
-    # Only count paid memberships as qualified referrals (both discovery and tournament)
-    if membership_type not in ['discovery', 'tournament']:
+    # Only count paid memberships as qualified referrals (premium only)
+    if membership_type not in ['premium']:
         return
     
     conn = get_db_connection()
