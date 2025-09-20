@@ -816,12 +816,7 @@ function togglePayoutFields() {
 }
 
 // Initialize payout fields on page load
-document.addEventListener('DOMContentLoaded', function() {
-    togglePayoutFields();
-});
-
-// Add event listener for payout preference changes
-document.getElementById('payout_preference').addEventListener('change', togglePayoutFields);
+// Payout field toggle function (called from main DOMContentLoaded)
 
 // Date of birth validation and formatting
 document.getElementById('dob').addEventListener('input', function(e) {
@@ -1057,121 +1052,7 @@ function searchCourt(query, mapId, inputId) {
         });
 }
 
-// Initialize court search functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const courtInputs = document.querySelectorAll('.court-search');
-    
-    courtInputs.forEach(input => {
-        const mapId = input.id + '-map';
-        let searchTimeout;
-        
-        // If input has a value, search for it immediately
-        if (input.value && input.value.length >= 3) {
-            setTimeout(() => {
-                const mapContainer = document.getElementById(mapId);
-                if (mapContainer) {
-                    mapContainer.style.display = 'block';
-                    initializeMap(mapId, input.id);
-                    searchCourt(input.value, mapId, input.id);
-                }
-            }, 500);
-        }
-        
-        input.addEventListener('input', function() {
-            const query = this.value.trim();
-            const mapContainer = document.getElementById(mapId);
-            
-            if (query.length >= 3) {
-                // Show map container
-                if (mapContainer) {
-                    mapContainer.style.display = 'block';
-                    
-                    // Initialize map if not already done
-                    if (!maps[mapId]) {
-                        setTimeout(() => {
-                            initializeMap(mapId, input.id);
-                        }, 100);
-                    }
-                    
-                    // Debounced search
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(() => {
-                        searchCourt(query, mapId, input.id);
-                    }, 500);
-                }
-            } else {
-                // Hide map container if query is too short
-                if (mapContainer) {
-                    mapContainer.style.display = 'none';
-                }
-            }
-        });
-        
-        input.addEventListener('focus', function() {
-            if (this.value.length >= 3) {
-                const mapContainer = document.getElementById(mapId);
-                if (mapContainer) {
-                    mapContainer.style.display = 'block';
-                    
-                    // Refresh map size when shown
-                    setTimeout(() => {
-                        if (maps[mapId]) {
-                            maps[mapId].invalidateSize();
-                        }
-                    }, 100);
-                }
-            }
-        });
-    });
-    
-    // Account Management Button Handlers
-    document.getElementById('resetPasswordBtn').addEventListener('click', function() {
-        const modal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
-        modal.show();
-    });
-    
-    document.getElementById('cancelMembershipBtn').addEventListener('click', function() {
-        const modal = new bootstrap.Modal(document.getElementById('cancelMembershipModal'));
-        modal.show();
-    });
-    
-    document.getElementById('deleteAccountBtn').addEventListener('click', function() {
-        const modal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
-        modal.show();
-    });
-    
-    // Delete account confirmation text validation
-    document.getElementById('deleteConfirmText').addEventListener('input', function() {
-        const confirmBtn = document.getElementById('confirmDeleteAccount');
-        const inputText = this.value.trim();
-        
-        if (inputText === 'DELETE') {
-            confirmBtn.disabled = false;
-            confirmBtn.classList.remove('disabled');
-        } else {
-            confirmBtn.disabled = true;
-            confirmBtn.classList.add('disabled');
-        }
-    });
-    
-    // Reset Password Confirmation
-    document.getElementById('confirmResetPassword').addEventListener('click', function() {
-        // Show loading state
-        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
-        this.disabled = true;
-        
-        // Simulate sending email (replace with actual backend call)
-        setTimeout(() => {
-            alert('Password reset email sent! Check your inbox for instructions.');
-            const modal = bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal'));
-            modal.hide();
-            
-            // Reset button
-            this.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Reset Email';
-            this.disabled = false;
-        }, 2000);
-    });
-});
+// Initialize court search functionality (moved to main DOMContentLoaded)
 
 // Team Management Functions - Clean Fixed Version
 function handleRadioChange() {
@@ -1310,6 +1191,104 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (updateLocationBtn) {
         updateLocationBtn.addEventListener('click', updateLocationFromZip);
+    }
+    
+    // === COURT SEARCH FUNCTIONALITY ===
+    const courtInputs = document.querySelectorAll('.court-search');
+    courtInputs.forEach(input => {
+        const mapId = input.id + '-map';
+        let searchTimeout;
+        
+        // If input has a value, search for it immediately
+        if (input.value && input.value.length >= 3) {
+            setTimeout(() => {
+                const mapContainer = document.getElementById(mapId);
+                if (mapContainer) {
+                    mapContainer.style.display = 'block';
+                    initializeMap(mapId, input.id);
+                    searchCourt(input.value, mapId, input.id);
+                }
+            }, 500);
+        }
+        
+        input.addEventListener('input', function() {
+            const query = this.value.trim();
+            const mapContainer = document.getElementById(mapId);
+            
+            if (query.length >= 3) {
+                if (mapContainer) {
+                    mapContainer.style.display = 'block';
+                    if (!maps[mapId]) {
+                        setTimeout(() => {
+                            initializeMap(mapId, input.id);
+                        }, 100);
+                    }
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        searchCourt(query, mapId, input.id);
+                    }, 500);
+                }
+            } else {
+                if (mapContainer) {
+                    mapContainer.style.display = 'none';
+                }
+            }
+        });
+        
+        input.addEventListener('focus', function() {
+            if (this.value.length >= 3) {
+                const mapContainer = document.getElementById(mapId);
+                if (mapContainer) {
+                    mapContainer.style.display = 'block';
+                    setTimeout(() => {
+                        if (maps[mapId]) {
+                            maps[mapId].invalidateSize();
+                        }
+                    }, 100);
+                }
+            }
+        });
+    });
+    
+    // === ACCOUNT MANAGEMENT BUTTONS ===
+    const resetPasswordBtn = document.getElementById('resetPasswordBtn');
+    const cancelMembershipBtn = document.getElementById('cancelMembershipBtn');
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+    const confirmResetPassword = document.getElementById('confirmResetPassword');
+    
+    if (resetPasswordBtn) {
+        resetPasswordBtn.addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+            modal.show();
+        });
+    }
+    
+    if (cancelMembershipBtn) {
+        cancelMembershipBtn.addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('cancelMembershipModal'));
+            modal.show();
+        });
+    }
+    
+    if (deleteAccountBtn) {
+        deleteAccountBtn.addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
+            modal.show();
+        });
+    }
+    
+    if (confirmResetPassword) {
+        confirmResetPassword.addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+            this.disabled = true;
+            setTimeout(() => {
+                alert('Password reset email sent! Check your inbox for instructions.');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal'));
+                modal.hide();
+                this.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Reset Email';
+                this.disabled = false;
+            }, 2000);
+        });
     }
     
     console.log('=== ALL PROFILE SETTINGS INITIALIZED ===');
