@@ -2496,16 +2496,18 @@ def get_player_team(player_id):
         return None
 
 def get_player_team_invitations(player_id):
-    """Get pending team invitations for a player"""
+    """Get pending team formation/pair-up requests for a player (NOT singles challenges)"""
     try:
         conn = get_pg_connection()
         cur = conn.cursor()
         
+        # Only get actual team formation requests, exclude singles challenges
         cur.execute('''
             SELECT ti.*, p.full_name as inviter_name, p.selfie as inviter_selfie
             FROM team_invitations ti
             JOIN players p ON ti.inviter_id = p.id
             WHERE ti.invitee_id = %s AND ti.status = 'pending'
+            AND (ti.meta_json->>'type' != 'singles' OR ti.meta_json->>'type' IS NULL)
             ORDER BY ti.created_at DESC
         ''', (player_id,))
         
@@ -2515,6 +2517,30 @@ def get_player_team_invitations(player_id):
         
     except Exception as e:
         logging.error(f"Error getting team invitations: {e}")
+        return []
+
+def get_player_match_challenges(player_id):
+    """Get pending singles match challenges for a player"""
+    try:
+        conn = get_pg_connection()
+        cur = conn.cursor()
+        
+        # Only get singles match challenges
+        cur.execute('''
+            SELECT ti.*, p.full_name as challenger_name, p.selfie as challenger_selfie
+            FROM team_invitations ti
+            JOIN players p ON ti.inviter_id = p.id
+            WHERE ti.invitee_id = %s AND ti.status = 'pending'
+            AND ti.meta_json->>'type' = 'singles'
+            ORDER BY ti.created_at DESC
+        ''', (player_id,))
+        
+        challenges = cur.fetchall()
+        conn.close()
+        return [dict(challenge) for challenge in challenges]
+        
+    except Exception as e:
+        logging.error(f"Error getting match challenges: {e}")
         return []
 
 def get_player_name(player_id):
@@ -4337,8 +4363,9 @@ def player_home(player_id):
     # Check if it's the player's birthday
     is_birthday = is_player_birthday(player['dob'])
     
-    # Get team invitations
+    # Get team invitations (pair-up requests) and match challenges separately
     team_invitations = get_player_team_invitations(player_id)
+    match_challenges = get_player_match_challenges(player_id)
     
     return render_template('player_home.html', 
                          player=player, 
@@ -4347,6 +4374,7 @@ def player_home(player_id):
                          tournaments=tournaments,
                          player_tournaments=player_tournaments,
                          team_invitations=team_invitations,
+                         match_challenges=match_challenges,
                          available_tournaments=available_tournaments,
                          player_ranking=player_ranking,
                          leaderboard=leaderboard,
