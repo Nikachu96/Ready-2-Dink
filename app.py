@@ -2507,7 +2507,7 @@ def get_player_team_invitations(player_id):
             FROM team_invitations ti
             JOIN players p ON ti.inviter_id = p.id
             WHERE ti.invitee_id = %s AND ti.status = 'pending'
-            AND (ti.meta_json->>'type' != 'singles' OR ti.meta_json->>'type' IS NULL)
+            AND (ti.meta_json::jsonb->>'type' != 'singles' OR ti.meta_json IS NULL)
             ORDER BY ti.created_at DESC
         ''', (player_id,))
         
@@ -2531,7 +2531,7 @@ def get_player_match_challenges(player_id):
             FROM team_invitations ti
             JOIN players p ON ti.inviter_id = p.id
             WHERE ti.invitee_id = %s AND ti.status = 'pending'
-            AND ti.meta_json->>'type' = 'singles'
+            AND ti.meta_json::jsonb->>'type' = 'singles'
             ORDER BY ti.created_at DESC
         ''', (player_id,))
         
@@ -8076,7 +8076,7 @@ def accept_pair_up_request(invitation_id):
         cursor.execute('''
             SELECT * FROM team_invitations 
             WHERE id = %s AND invitee_id = %s AND status = 'pending'
-            AND (meta_json->>'type' != 'singles' OR meta_json->>'type' IS NULL)
+            AND (meta_json::jsonb->>'type' != 'singles' OR meta_json IS NULL)
         ''', (invitation_id, current_player_id))
         invitation = cursor.fetchone()
         
@@ -8138,7 +8138,7 @@ def reject_pair_up_request(invitation_id):
             UPDATE team_invitations 
             SET status = 'rejected', responded_at = %s
             WHERE id = %s AND invitee_id = %s AND status = 'pending'
-            AND (meta_json->>'type' != 'singles' OR meta_json->>'type' IS NULL)
+            AND (meta_json::jsonb->>'type' != 'singles' OR meta_json IS NULL)
         ''', (datetime.now(), invitation_id, current_player_id))
         
         if cursor.rowcount == 0:
@@ -8172,7 +8172,7 @@ def accept_match_challenge(challenge_id):
         cursor.execute('''
             SELECT * FROM team_invitations 
             WHERE id = %s AND invitee_id = %s AND status = 'pending'
-            AND meta_json->>'type' = 'singles'
+            AND meta_json::jsonb->>'type' = 'singles'
         ''', (challenge_id, current_player_id))
         challenge = cursor.fetchone()
         
@@ -8214,7 +8214,7 @@ def reject_match_challenge(challenge_id):
             UPDATE team_invitations 
             SET status = 'rejected', responded_at = %s
             WHERE id = %s AND invitee_id = %s AND status = 'pending'
-            AND meta_json->>'type' = 'singles'
+            AND meta_json::jsonb->>'type' = 'singles'
         ''', (datetime.now(), challenge_id, current_player_id))
         
         if cursor.rowcount == 0:
