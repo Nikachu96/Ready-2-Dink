@@ -8059,6 +8059,178 @@ def accept_team_invitation_route(invitation_id):
     
     return redirect(url_for('profile_settings'))
 
+@app.route('/accept_pair_up_request/<int:invitation_id>', methods=['POST'])
+def accept_pair_up_request(invitation_id):
+    """Accept a pair-up request for team formation"""
+    current_player_id = session.get('current_player_id') or session.get('player_id')
+    
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
+    
+    try:
+        conn = get_pg_connection()
+        cursor = conn.cursor()
+        
+        # Get invitation details - only actual team formation requests
+        cursor.execute('''
+            SELECT * FROM team_invitations 
+            WHERE id = %s AND invitee_id = %s AND status = 'pending'
+            AND (meta_json->>'type' != 'singles' OR meta_json->>'type' IS NULL)
+        ''', (invitation_id, current_player_id))
+        invitation = cursor.fetchone()
+        
+        if not invitation:
+            flash('Invalid pair-up request', 'danger')
+            return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+        
+        # Check if either player is already in a team
+        cursor.execute('SELECT current_team_id FROM players WHERE id = %s', (invitation['inviter_id'],))
+        player1_team = cursor.fetchone()
+        cursor.execute('SELECT current_team_id FROM players WHERE id = %s', (current_player_id,))
+        player2_team = cursor.fetchone()
+        
+        if (player1_team and player1_team['current_team_id']) or (player2_team and player2_team['current_team_id']):
+            flash('One of you is already in a team', 'danger')
+            return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+        
+        # Create the team
+        team_result = create_team(invitation['inviter_id'], current_player_id, invitation['inviter_id'])
+        
+        if not team_result['success']:
+            flash(f'Failed to create team: {team_result["message"]}', 'danger')
+            return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+        
+        # Update invitation status
+        cursor.execute('''
+            UPDATE team_invitations 
+            SET status = 'accepted', responded_at = %s
+            WHERE id = %s
+        ''', (datetime.now(), invitation_id))
+        
+        conn.commit()
+        conn.close()
+        
+        # Show success message as requested by user
+        flash('Success, go compete as a team now!', 'success')
+        return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+        
+    except Exception as e:
+        logging.error(f"Error accepting pair-up request: {e}")
+        flash('Failed to accept pair-up request', 'danger')
+        return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+
+@app.route('/reject_pair_up_request/<int:invitation_id>', methods=['POST'])
+def reject_pair_up_request(invitation_id):
+    """Reject a pair-up request for team formation"""
+    current_player_id = session.get('current_player_id') or session.get('player_id')
+    
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
+    
+    try:
+        conn = get_pg_connection()
+        cursor = conn.cursor()
+        
+        # Update invitation status - only actual team formation requests
+        cursor.execute('''
+            UPDATE team_invitations 
+            SET status = 'rejected', responded_at = %s
+            WHERE id = %s AND invitee_id = %s AND status = 'pending'
+            AND (meta_json->>'type' != 'singles' OR meta_json->>'type' IS NULL)
+        ''', (datetime.now(), invitation_id, current_player_id))
+        
+        if cursor.rowcount == 0:
+            flash('Invalid pair-up request', 'danger')
+        else:
+            flash('Pair-up request declined', 'info')
+        
+        conn.commit()
+        conn.close()
+        return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+        
+    except Exception as e:
+        logging.error(f"Error rejecting pair-up request: {e}")
+        flash('Failed to reject pair-up request', 'danger')
+        return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+
+@app.route('/accept_match_challenge/<int:challenge_id>', methods=['POST'])
+def accept_match_challenge(challenge_id):
+    """Accept a singles match challenge"""
+    current_player_id = session.get('current_player_id') or session.get('player_id')
+    
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
+    
+    try:
+        conn = get_pg_connection()
+        cursor = conn.cursor()
+        
+        # Get challenge details - only singles challenges
+        cursor.execute('''
+            SELECT * FROM team_invitations 
+            WHERE id = %s AND invitee_id = %s AND status = 'pending'
+            AND meta_json->>'type' = 'singles'
+        ''', (challenge_id, current_player_id))
+        challenge = cursor.fetchone()
+        
+        if not challenge:
+            flash('Invalid match challenge', 'danger')
+            return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+        
+        # Handle the random match acceptance
+        result = handle_random_match_acceptance(challenge, current_player_id, conn)
+        
+        if result['success']:
+            flash('Match challenge accepted! Get ready to play.', 'success')
+        else:
+            flash(f'Failed to accept challenge: {result["message"]}', 'danger')
+        
+        conn.close()
+        return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+        
+    except Exception as e:
+        logging.error(f"Error accepting match challenge: {e}")
+        flash('Failed to accept match challenge', 'danger')
+        return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+
+@app.route('/reject_match_challenge/<int:challenge_id>', methods=['POST'])
+def reject_match_challenge(challenge_id):
+    """Reject a singles match challenge"""
+    current_player_id = session.get('current_player_id') or session.get('player_id')
+    
+    if not current_player_id:
+        flash('Please log in first', 'warning')
+        return redirect(url_for('player_login'))
+    
+    try:
+        conn = get_pg_connection()
+        cursor = conn.cursor()
+        
+        # Update challenge status - only singles challenges
+        cursor.execute('''
+            UPDATE team_invitations 
+            SET status = 'rejected', responded_at = %s
+            WHERE id = %s AND invitee_id = %s AND status = 'pending'
+            AND meta_json->>'type' = 'singles'
+        ''', (datetime.now(), challenge_id, current_player_id))
+        
+        if cursor.rowcount == 0:
+            flash('Invalid match challenge', 'danger')
+        else:
+            flash('Match challenge declined', 'info')
+        
+        conn.commit()
+        conn.close()
+        return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+        
+    except Exception as e:
+        logging.error(f"Error rejecting match challenge: {e}")
+        flash('Failed to reject match challenge', 'danger')
+        return redirect(request.referrer or url_for('player_home', player_id=current_player_id))
+
 @app.route('/reject_team_invitation/<int:invitation_id>')
 def reject_team_invitation_route(invitation_id):
     """Reject a team invitation or match challenge"""
