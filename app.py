@@ -1872,10 +1872,12 @@ def check_and_handle_trial_expiry(player_id):
     from datetime import datetime
     
     conn = get_db_connection()
-    player = conn.execute('''
+    cursor = conn.cursor()
+    cursor.execute('''
         SELECT id, trial_end_date, subscription_status, membership_type 
-        FROM players WHERE id = ?
-    ''', (player_id,)).fetchone()
+        FROM players WHERE id = %s
+    ''', (player_id,))
+    player = cursor.fetchone()
     
     if not player:
         conn.close()
