@@ -4759,7 +4759,9 @@ def show_disclaimers(player_id):
     """Show disclaimers page for a newly registered player"""
     # Verify player exists and hasn't already accepted disclaimers
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     conn.close()
     
     if not player:
@@ -11653,14 +11655,15 @@ def find_teams():
     user_teams = cursor.fetchall()
     
     # Get all other teams that could be challenged
-    available_teams = conn.execute('''
+    cursor.execute('''
         SELECT t.*, p1.full_name as player1_name, p2.full_name as player2_name
         FROM teams t
         JOIN players p1 ON t.player1_id = p1.id
         JOIN players p2 ON t.player2_id = p2.id
-        WHERE t.player1_id != ? AND t.player2_id != ?
+        WHERE t.player1_id != %s AND t.player2_id != %s
         ORDER BY t.ranking_points DESC, t.wins DESC
-    ''', (player_id, player_id)).fetchall()
+    ''', (player_id, player_id))
+    available_teams = cursor.fetchall()
     
     conn.close()
     
