@@ -11690,8 +11690,8 @@ def api_available_players():
     conn = get_pg_connection()
     cursor = conn.cursor()
     
-    # Get current player's skill level for filtering
-    cursor.execute('SELECT skill_level FROM players WHERE id = %s', (current_player_id,))
+    # Get current player's skill level and location for filtering
+    cursor.execute('SELECT skill_level, latitude, longitude, search_radius_miles FROM players WHERE id = %s', (current_player_id,))
     current_player = cursor.fetchone()
     
     if not current_player:
@@ -11699,6 +11699,9 @@ def api_available_players():
         return jsonify({'success': False, 'message': 'Player not found'})
     
     current_skill_level = current_player['skill_level']
+    current_lat = current_player['latitude']
+    current_lng = current_player['longitude']
+    search_radius = current_player['search_radius_miles'] or 25  # Default to 25 miles if not set
     
     # Define skill level compatibility (same or adjacent levels)
     skill_levels = ['Beginner', 'Intermediate', 'Advanced']
@@ -11712,25 +11715,54 @@ def api_available_players():
         if current_skill_idx < len(skill_levels) - 1:
             compatible_skills.append(skill_levels[current_skill_idx + 1])
     
-    # Get players who are discoverable, not on teams, and have compatible skill levels
-    cursor.execute('''
-        SELECT DISTINCT p.id, p.full_name, p.location1, p.skill_level
-        FROM players p
-        WHERE p.id != %s 
-        AND p.current_team_id IS NULL
-        AND (p.discoverability_preference = 'doubles' OR p.discoverability_preference = 'both' OR p.discoverability_preference IS NULL)
-        AND p.skill_level = ANY(%s)
-        AND p.id NOT IN (
-            SELECT CASE 
-                WHEN ti.inviter_id = %s THEN ti.invitee_id 
-                ELSE ti.inviter_id 
-            END
-            FROM team_invitations ti 
-            WHERE (ti.inviter_id = %s OR ti.invitee_id = %s) 
-            AND ti.status = 'pending'
-        )
-        ORDER BY p.full_name
-    ''', (current_player_id, compatible_skills, current_player_id, current_player_id, current_player_id))
+    # Get players who are discoverable, not on teams, have compatible skill levels, and are within travel distance
+    if current_lat is not None and current_lng is not None:
+        # Use GPS-based distance filtering with Haversine formula in subquery
+        cursor.execute('''
+            SELECT DISTINCT sub.id, sub.full_name, sub.location1, sub.skill_level, sub.distance_miles
+            FROM (
+                SELECT p.id, p.full_name, p.location1, p.skill_level,
+                       (3959 * acos(cos(radians(%s)) * cos(radians(p.latitude)) * cos(radians(p.longitude) - radians(%s)) + sin(radians(%s)) * sin(radians(p.latitude)))) AS distance_miles
+                FROM players p
+                WHERE p.id != %s 
+                AND p.current_team_id IS NULL
+                AND p.latitude IS NOT NULL 
+                AND p.longitude IS NOT NULL
+                AND (p.discoverability_preference = 'doubles' OR p.discoverability_preference = 'both' OR p.discoverability_preference IS NULL)
+                AND p.skill_level = ANY(%s)
+                AND p.id NOT IN (
+                    SELECT CASE 
+                        WHEN ti.inviter_id = %s THEN ti.invitee_id 
+                        ELSE ti.inviter_id 
+                    END
+                    FROM team_invitations ti 
+                    WHERE (ti.inviter_id = %s OR ti.invitee_id = %s) 
+                    AND ti.status = 'pending'
+                )
+            ) sub
+            WHERE sub.distance_miles <= %s
+            ORDER BY sub.distance_miles, sub.full_name
+        ''', (current_lat, current_lng, current_lat, current_player_id, compatible_skills, current_player_id, current_player_id, current_player_id, search_radius))
+    else:
+        # Fallback to location text matching if no GPS coordinates
+        cursor.execute('''
+            SELECT DISTINCT p.id, p.full_name, p.location1, p.skill_level
+            FROM players p
+            WHERE p.id != %s 
+            AND p.current_team_id IS NULL
+            AND (p.discoverability_preference = 'doubles' OR p.discoverability_preference = 'both' OR p.discoverability_preference IS NULL)
+            AND p.skill_level = ANY(%s)
+            AND p.id NOT IN (
+                SELECT CASE 
+                    WHEN ti.inviter_id = %s THEN ti.invitee_id 
+                    ELSE ti.inviter_id 
+                END
+                FROM team_invitations ti 
+                WHERE (ti.inviter_id = %s OR ti.invitee_id = %s) 
+                AND ti.status = 'pending'
+            )
+            ORDER BY p.full_name
+        ''', (current_player_id, compatible_skills, current_player_id, current_player_id, current_player_id))
     
     players = cursor.fetchall()
     conn.close()
