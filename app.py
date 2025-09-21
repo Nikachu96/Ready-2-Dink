@@ -4408,16 +4408,18 @@ def challenges():
         return redirect(url_for('player_login'))
     
     player_id = session['player_id']
-    conn = get_db_connection()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
     
     # Verify player exists
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('player_login'))
     
     # Get incoming challenges (matches where this player is player2 and status is pending/counter_proposed)
-    incoming_challenges = conn.execute('''
+    cursor.execute('''
         SELECT m.*, 
                p1.full_name as challenger_name, 
                p1.selfie as challenger_selfie,
@@ -4426,13 +4428,14 @@ def challenges():
                p1.losses as challenger_losses
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
-        WHERE m.player2_id = ? 
+        WHERE m.player2_id = %s 
         AND m.status IN ('pending', 'counter_proposed')
         ORDER BY m.created_at DESC
-    ''', (player_id,)).fetchall()
+    ''', (player_id,))
+    incoming_challenges = cursor.fetchall()
     
     # Get outgoing challenges (matches where this player is player1 and status is pending/counter_proposed)
-    outgoing_challenges = conn.execute('''
+    cursor.execute('''
         SELECT m.*, 
                p2.full_name as opponent_name, 
                p2.selfie as opponent_selfie,
@@ -4441,89 +4444,92 @@ def challenges():
                p2.losses as opponent_losses
         FROM matches m
         JOIN players p2 ON m.player2_id = p2.id
-        WHERE m.player1_id = ? 
+        WHERE m.player1_id = %s 
         AND m.status IN ('pending', 'counter_proposed')
         ORDER BY m.created_at DESC
-    ''', (player_id,)).fetchall()
+    ''', (player_id,))
+    outgoing_challenges = cursor.fetchall()
     
     # Get confirmed matches - separate upcoming from past due (need score submission)
     from datetime import datetime
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
     
-    confirmed_matches = conn.execute('''
+    cursor.execute('''
         SELECT m.*, 
                CASE 
-                   WHEN m.player1_id = ? THEN p2.full_name
+                   WHEN m.player1_id = %s THEN p2.full_name
                    ELSE p1.full_name 
                END as opponent_name,
                CASE 
-                   WHEN m.player1_id = ? THEN p2.selfie
+                   WHEN m.player1_id = %s THEN p2.selfie
                    ELSE p1.selfie 
                END as opponent_selfie,
                CASE 
-                   WHEN m.player1_id = ? THEN p2.skill_level
+                   WHEN m.player1_id = %s THEN p2.skill_level
                    ELSE p1.skill_level 
                END as opponent_skill,
                CASE 
-                   WHEN datetime(m.scheduled_time) <= datetime('now') THEN 'past_due'
+                   WHEN m.scheduled_time <= NOW() THEN 'past_due'
                    ELSE 'upcoming'
                END as time_status
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
-        WHERE (m.player1_id = ? OR m.player2_id = ?)
-        AND m.status = 'confirmed'
+        WHERE (m.player1_id = %s OR m.player2_id = %s)
+        AND m.status IN ('confirmed', 'scheduled')
         ORDER BY m.created_at DESC
         LIMIT 10
-    ''', (player_id, player_id, player_id, player_id, player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id, player_id))
+    confirmed_matches = cursor.fetchall()
     
     # Get completed matches (match history)
-    completed_matches = conn.execute('''
+    cursor.execute('''
         SELECT m.*, 
                CASE 
-                   WHEN m.player1_id = ? THEN p2.full_name
+                   WHEN m.player1_id = %s THEN p2.full_name
                    ELSE p1.full_name 
                END as opponent_name,
                CASE 
-                   WHEN m.player1_id = ? THEN p2.selfie
+                   WHEN m.player1_id = %s THEN p2.selfie
                    ELSE p1.selfie 
                END as opponent_selfie,
                CASE 
-                   WHEN m.player1_id = ? THEN p2.skill_level
+                   WHEN m.player1_id = %s THEN p2.skill_level
                    ELSE p1.skill_level 
                END as opponent_skill,
                CASE 
-                   WHEN m.winner_id = ? THEN 'won'
+                   WHEN m.winner_id = %s THEN 'won'
                    ELSE 'lost'
                END as result
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
-        WHERE (m.player1_id = ? OR m.player2_id = ?)
+        WHERE (m.player1_id = %s OR m.player2_id = %s)
         AND m.status = 'completed'
         ORDER BY m.created_at DESC
         LIMIT 20
-    ''', (player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id, player_id, player_id))
+    completed_matches = cursor.fetchall()
     
     # Get all available players for challenging (excluding current player and those with pending challenges)
-    existing_challenges_query = '''
+    cursor.execute('''
         SELECT DISTINCT 
             CASE 
-                WHEN player1_id = ? THEN player2_id
+                WHEN player1_id = %s THEN player2_id
                 ELSE player1_id
             END as opponent_id
         FROM matches 
-        WHERE (player1_id = ? OR player2_id = ?)
-        AND status IN ('pending', 'counter_proposed', 'confirmed')
-    '''
+        WHERE (player1_id = %s OR player2_id = %s)
+        AND status IN ('pending', 'counter_proposed', 'confirmed', 'scheduled')
+    ''', (player_id, player_id, player_id))
     
-    existing_challenge_ids = [row[0] for row in conn.execute(existing_challenges_query, (player_id, player_id, player_id)).fetchall()]
+    existing_challenge_ids = [row[0] for row in cursor.fetchall()]
     
     # Build exclusion list
     exclude_ids = [player_id] + existing_challenge_ids
-    placeholders = ','.join(['?'] * len(exclude_ids))
+    placeholders = ','.join(['%s'] * len(exclude_ids))
     
-    available_players = conn.execute(f'''
+    cursor.execute(f'''
         SELECT id, full_name, skill_level, selfie, wins, losses, ranking_points,
                preferred_court, location1
         FROM players 
@@ -4531,7 +4537,8 @@ def challenges():
         AND is_looking_for_match = 1
         ORDER BY skill_level, ranking_points DESC, wins DESC
         LIMIT 50
-    ''', exclude_ids).fetchall()
+    ''', exclude_ids)
+    available_players = cursor.fetchall()
     
     conn.close()
     
