@@ -4469,7 +4469,8 @@ def challenges():
                    ELSE p1.skill_level 
                END as opponent_skill,
                CASE 
-                   WHEN m.match_date <= NOW() THEN 'past_due'
+                   WHEN m.match_date IS NOT NULL AND m.match_date::timestamp <= NOW() THEN 'past_due'
+                   WHEN m.match_date IS NULL THEN 'upcoming'
                    ELSE 'upcoming'
                END as time_status
         FROM matches m
