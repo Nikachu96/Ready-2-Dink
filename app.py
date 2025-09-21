@@ -1945,7 +1945,7 @@ def require_permission(permission):
                 return redirect(url_for('player_login'))
             
             # Check if user is admin - admins bypass all permission checks
-            conn = get_pg_connection()
+            conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute('SELECT is_admin FROM players WHERE id = %s', (current_player_id,))
             player = cursor.fetchone()
@@ -2488,7 +2488,7 @@ def reject_team_invitation(invitation_id, player_id):
 def get_player_team(player_id):
     """Get player's current team information"""
     try:
-        conn = get_pg_connection()
+        conn = get_db_connection()
         cur = conn.cursor()
         
         cur.execute('''
@@ -2512,7 +2512,7 @@ def get_player_team(player_id):
 def get_player_team_invitations(player_id):
     """Get pending team formation/pair-up requests for a player (NOT singles challenges)"""
     try:
-        conn = get_pg_connection()
+        conn = get_db_connection()
         cur = conn.cursor()
         
         # Only get actual team formation requests, exclude singles challenges
@@ -2536,7 +2536,7 @@ def get_player_team_invitations(player_id):
 def get_player_match_challenges(player_id):
     """Get pending singles match challenges for a player"""
     try:
-        conn = get_pg_connection()
+        conn = get_db_connection()
         cur = conn.cursor()
         
         # Only get singles match challenges
@@ -4159,7 +4159,7 @@ def player_login_post():
         flash('Username and password are required', 'danger')
         return redirect(url_for('player_login'))
     
-    conn = get_pg_connection()
+    conn = get_db_connection()
     
     try:
         cursor = conn.cursor()
@@ -4408,7 +4408,7 @@ def challenges():
         return redirect(url_for('player_login'))
     
     player_id = session['player_id']
-    conn = get_pg_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Verify player exists
@@ -4788,7 +4788,8 @@ def accept_disclaimers():
     
     try:
         conn = get_db_connection()
-        conn.execute('UPDATE players SET disclaimers_accepted = 1 WHERE id = ?', (player_id,))
+        cursor = conn.cursor()
+        cursor.execute('UPDATE players SET disclaimers_accepted = TRUE WHERE id = %s', (player_id,))
         conn.commit()
         conn.close()
         
@@ -6190,7 +6191,7 @@ def dashboard(player_id):
 @app.route('/manage_tournaments')
 def manage_tournaments():
     """Tournament management interface"""
-    conn = get_pg_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Get all tournaments with player info
@@ -8099,7 +8100,7 @@ def accept_pair_up_request(invitation_id):
         return redirect(url_for('player_login'))
     
     try:
-        conn = get_pg_connection()
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Get invitation details - only actual team formation requests
@@ -8160,7 +8161,7 @@ def reject_pair_up_request(invitation_id):
         return redirect(url_for('player_login'))
     
     try:
-        conn = get_pg_connection()
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Update invitation status - only actual team formation requests
@@ -8195,7 +8196,7 @@ def accept_match_challenge(challenge_id):
         return redirect(url_for('player_login'))
     
     try:
-        conn = get_pg_connection()
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Get challenge details - only singles challenges
@@ -8236,7 +8237,7 @@ def reject_match_challenge(challenge_id):
         return redirect(url_for('player_login'))
     
     try:
-        conn = get_pg_connection()
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # Update challenge status - only singles challenges
@@ -11474,7 +11475,7 @@ def send_team_invitation():
     if inviter_id == invitee_id:
         return jsonify({'success': False, 'message': 'You cannot invite yourself'})
     
-    conn = get_pg_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Check if team name already exists
@@ -11546,7 +11547,7 @@ def respond_team_invitation():
     if response not in ['accept', 'decline']:
         return jsonify({'success': False, 'message': 'Invalid response'})
     
-    conn = get_pg_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Get the invitation
@@ -11741,7 +11742,7 @@ def api_available_players():
     if not current_player_id:
         return jsonify({'success': False, 'message': 'Please log in first'})
     
-    conn = get_pg_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Get current player's skill level and location for filtering

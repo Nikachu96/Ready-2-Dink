@@ -100,7 +100,7 @@ class RandomMatchupEngine:
                 SELECT id, full_name, skill_level, discoverability_preference, 
                        current_team_id, last_random_challenge_at, wins, losses, ranking_points
                 FROM players 
-                WHERE is_looking_for_match = TRUE
+                WHERE is_looking_for_match = 1
                 AND account_status != 'suspended'
                 AND (last_random_challenge_at IS NULL OR last_random_challenge_at < %s)
                 AND (discoverability_preference = %s OR discoverability_preference = 'both' OR discoverability_preference IS NULL)
@@ -196,7 +196,7 @@ class RandomMatchupEngine:
             
             # Get teams with valid names where both players have appropriate discoverability
             cursor.execute('''
-                SELECT t.id, t.team_name, t.player1_id, t.player2_id, t.ranking_points, t.wins, t.losses,
+                SELECT t.id, t.team_name, t.player1_id, t.player2_id, t.wins, t.losses,
                        p1.full_name as player1_name, p1.skill_level as player1_skill, 
                        p1.discoverability_preference as player1_discover, p1.last_random_challenge_at as player1_last_challenge,
                        p2.full_name as player2_name, p2.skill_level as player2_skill,
@@ -208,8 +208,8 @@ class RandomMatchupEngine:
                 AND t.team_name != ''
                 AND p1.account_status != 'suspended'
                 AND p2.account_status != 'suspended'
-                AND p1.is_looking_for_match = TRUE
-                AND p2.is_looking_for_match = TRUE
+                AND p1.is_looking_for_match = 1
+                AND p2.is_looking_for_match = 1
                 AND (p1.discoverability_preference = 'doubles' OR p1.discoverability_preference = 'both' OR p1.discoverability_preference IS NULL)
                 AND (p2.discoverability_preference = 'doubles' OR p2.discoverability_preference = 'both' OR p2.discoverability_preference IS NULL)
                 AND (p1.last_random_challenge_at IS NULL OR p1.last_random_challenge_at < %s)
