@@ -1948,6 +1948,16 @@ def require_permission(permission):
                 flash('Please log in first', 'warning')
                 return redirect(url_for('player_login'))
             
+            # Check if user is admin - admins bypass all permission checks
+            conn = get_pg_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT is_admin FROM players WHERE id = %s', (current_player_id,))
+            player = cursor.fetchone()
+            conn.close()
+            
+            if player and player.get('is_admin'):
+                return f(*args, **kwargs)  # Admin bypass
+            
             # Check and handle trial expiry first
             check_and_handle_trial_expiry(current_player_id)
             
@@ -2329,19 +2339,23 @@ def handle_random_match_acceptance(invitation, player_id, conn):
                 conn.close()
                 return {'success': False, 'message': 'Invalid singles match data'}
             
+            cursor = conn.cursor()
+            
             # Create match record
-            cursor = conn.execute('''
+            cursor.execute('''
                 INSERT INTO matches (player1_id, player2_id, sport, court_location, status, created_at)
-                VALUES (?, ?, 'pickleball', 'TBD', 'scheduled', ?)
+                VALUES (%s, %s, 'pickleball', 'TBD', 'scheduled', %s)
+                RETURNING id
             ''', (player_ids[0], player_ids[1], datetime.now()))
             
-            match_id = cursor.lastrowid
+            match_result = cursor.fetchone()
+            match_id = match_result['id']
             
             # Update invitation status
-            conn.execute('''
+            cursor.execute('''
                 UPDATE team_invitations 
-                SET status = 'accepted', responded_at = ?
-                WHERE id = ?
+                SET status = 'accepted', responded_at = %s
+                WHERE id = %s
             ''', (datetime.now(), invitation['id']))
             
             conn.commit()
@@ -2376,19 +2390,23 @@ def handle_random_match_acceptance(invitation, player_id, conn):
                 conn.close()
                 return {'success': False, 'message': 'Invalid doubles match data'}
             
+            cursor = conn.cursor()
+            
             # Create match record (using team1[0] and team2[0] as primary players)
-            cursor = conn.execute('''
+            cursor.execute('''
                 INSERT INTO matches (player1_id, player2_id, sport, court_location, status, created_at)
-                VALUES (?, ?, 'pickleball', 'TBD', 'scheduled', ?)
+                VALUES (%s, %s, 'pickleball', 'TBD', 'scheduled', %s)
+                RETURNING id
             ''', (team1[0], team2[0], datetime.now()))
             
-            match_id = cursor.lastrowid
+            match_result = cursor.fetchone()
+            match_id = match_result['id']
             
             # Update invitation status
-            conn.execute('''
+            cursor.execute('''
                 UPDATE team_invitations 
-                SET status = 'accepted', responded_at = ?
-                WHERE id = ?
+                SET status = 'accepted', responded_at = %s
+                WHERE id = %s
             ''', (datetime.now(), invitation['id']))
             
             conn.commit()
@@ -6162,15 +6180,17 @@ def dashboard(player_id):
 @app.route('/manage_tournaments')
 def manage_tournaments():
     """Tournament management interface"""
-    conn = get_db_connection()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
     
     # Get all tournaments with player info
-    tournaments = conn.execute('''
+    cursor.execute('''
         SELECT t.*, p.full_name, p.email
         FROM tournaments t
         JOIN players p ON t.player_id = p.id
         ORDER BY t.created_at DESC
-    ''').fetchall()
+    ''')
+    tournaments = cursor.fetchall()
     
     conn.close()
     
