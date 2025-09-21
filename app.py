@@ -11406,7 +11406,7 @@ def contact():
 def teams():
     """Teams dashboard showing user's teams, invitations, and team search"""
     if 'player_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('player_login'))
     
     player_id = session['player_id']
     conn = get_db_connection()
@@ -11591,7 +11591,7 @@ def respond_team_invitation():
 def find_teams():
     """Find other teams to challenge based on location and travel radius"""
     if 'player_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('player_login'))
     
     player_id = session['player_id']
     conn = get_db_connection()
@@ -11681,31 +11681,58 @@ def challenge_team():
 @app.route('/api/available_players')
 def api_available_players():
     """Get list of players available for team invitations"""
-    if 'player_id' not in session:
+    # Check both possible session variables
+    current_player_id = session.get('current_player_id') or session.get('player_id')
+    
+    if not current_player_id:
         return jsonify({'success': False, 'message': 'Please log in first'})
     
-    player_id = session['player_id']
-    conn = get_db_connection()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
     
-    # Get players who are discoverable and not already on teams
-    players = conn.execute('''
-        SELECT DISTINCT p.id, p.full_name, p.location1
+    # Get current player's skill level for filtering
+    cursor.execute('SELECT skill_level FROM players WHERE id = %s', (current_player_id,))
+    current_player = cursor.fetchone()
+    
+    if not current_player:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Player not found'})
+    
+    current_skill_level = current_player['skill_level']
+    
+    # Define skill level compatibility (same or adjacent levels)
+    skill_levels = ['Beginner', 'Intermediate', 'Advanced']
+    compatible_skills = [current_skill_level]
+    
+    if current_skill_level in skill_levels:
+        current_skill_idx = skill_levels.index(current_skill_level)
+        # Include adjacent skill levels
+        if current_skill_idx > 0:
+            compatible_skills.append(skill_levels[current_skill_idx - 1])
+        if current_skill_idx < len(skill_levels) - 1:
+            compatible_skills.append(skill_levels[current_skill_idx + 1])
+    
+    # Get players who are discoverable, not on teams, and have compatible skill levels
+    cursor.execute('''
+        SELECT DISTINCT p.id, p.full_name, p.location1, p.skill_level
         FROM players p
-        WHERE p.id != ? 
+        WHERE p.id != %s 
         AND p.current_team_id IS NULL
         AND (p.discoverability_preference = 'doubles' OR p.discoverability_preference = 'both' OR p.discoverability_preference IS NULL)
+        AND p.skill_level = ANY(%s)
         AND p.id NOT IN (
             SELECT CASE 
-                WHEN ti.inviter_id = ? THEN ti.invitee_id 
+                WHEN ti.inviter_id = %s THEN ti.invitee_id 
                 ELSE ti.inviter_id 
             END
             FROM team_invitations ti 
-            WHERE (ti.inviter_id = ? OR ti.invitee_id = ?) 
+            WHERE (ti.inviter_id = %s OR ti.invitee_id = %s) 
             AND ti.status = 'pending'
         )
         ORDER BY p.full_name
-    ''', (player_id, player_id, player_id, player_id)).fetchall()
+    ''', (current_player_id, compatible_skills, current_player_id, current_player_id, current_player_id))
     
+    players = cursor.fetchall()
     conn.close()
     
     players_list = [{'id': p['id'], 'full_name': p['full_name'], 'location1': p['location1']} for p in players]
