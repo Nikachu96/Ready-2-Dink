@@ -5586,10 +5586,12 @@ def tournaments_overview():
     
     # Get current tournament entries count for each level
     for level_key in tournament_levels:
-        count = conn.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
             SELECT COUNT(*) as count FROM tournaments 
-            WHERE tournament_level = ? AND completed = 0
-        ''', (level_key,)).fetchone()['count']
+            WHERE tournament_level = %s AND completed = 0
+        ''', (level_key,))
+        count = cursor.fetchone()['count']
         tournament_levels[level_key]['current_entries'] = count
         tournament_levels[level_key]['spots_remaining'] = tournament_levels[level_key]['max_players'] - count
     
@@ -5605,7 +5607,8 @@ def tournaments_overview():
             created_at DESC
     '''
     
-    all_tournament_instances = conn.execute(tournament_instances_query).fetchall()
+    cursor.execute(tournament_instances_query)
+    all_tournament_instances = cursor.fetchall()
     
     # Filter tournament instances by location if user location is provided
     tournament_instances = []
