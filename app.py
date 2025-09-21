@@ -1509,16 +1509,7 @@ def init_db():
     conn.close()
 
 def get_db_connection():
-    """Get database connection with dict cursor"""
-    import sqlite3
-    conn = sqlite3.connect('app.db', check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    # Enable foreign key constraints
-    conn.execute('PRAGMA foreign_keys = ON')
-    return conn
-
-def get_pg_connection():
-    """Get PostgreSQL database connection with dict cursor"""
+    """Get PostgreSQL database connection with dict cursor - standardized to PostgreSQL"""
     import psycopg2
     import psycopg2.extras
     conn = psycopg2.connect(
@@ -1527,19 +1518,24 @@ def get_pg_connection():
     )
     return conn
 
+
 def get_setting(key, default=None):
     """Get a setting value from database"""
     conn = get_db_connection()
-    setting = conn.execute('SELECT value FROM settings WHERE key = ?', (key,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT value FROM settings WHERE key = %s', (key,))
+    setting = cursor.fetchone()
     conn.close()
     return setting['value'] if setting else default
 
 def update_setting(key, value):
     """Update a setting in database"""
     conn = get_db_connection()
-    conn.execute('''
-        INSERT OR REPLACE INTO settings (key, value, updated_at)
-        VALUES (?, ?, CURRENT_TIMESTAMP)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO settings (key, value, updated_at)
+        VALUES (%s, %s, CURRENT_TIMESTAMP)
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at
     ''', (key, value))
     conn.commit()
     conn.close()
