@@ -5546,7 +5546,9 @@ def tournaments_overview():
     conn = get_db_connection()
     
     # Get current player's location data from database
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (current_player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (current_player_id,))
+    player = cursor.fetchone()
     if not player:
         flash('Player profile not found', 'danger')
         conn.close()
@@ -6883,7 +6885,9 @@ def profile_settings():
         return redirect(url_for('player_login'))
     
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (current_player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (current_player_id,))
+    player = cursor.fetchone()
     
     # Get player's team information
     current_team = get_player_team(current_player_id)
