@@ -5747,21 +5747,23 @@ def tournaments_overview():
     
     # Get recent tournament entries - FIXED TO SHOW ONLY CURRENT USER'S ENTRIES
     logging.info(f"DEBUG: Fetching recent tournament entries for current user {current_player_id}")
-    recent_entries = conn.execute('''
+    cursor.execute('''
         SELECT t.*, p.full_name, p.selfie
         FROM tournaments t
         JOIN players p ON t.player_id = p.id
         WHERE t.tournament_level IS NOT NULL 
-        AND t.player_id = ?
+        AND t.player_id = %s
         ORDER BY t.created_at DESC
         LIMIT 10
-    ''', (current_player_id,)).fetchall()
+    ''', (current_player_id,))
+    recent_entries = cursor.fetchall()
     logging.info(f"DEBUG: Found {len(recent_entries)} recent tournament entries for current user")
     for entry in recent_entries:
         logging.debug(f"Tournament entry details - ID: {entry['id']}, Player ID: {entry['player_id']}, Tournament: {entry['tournament_name']}, Level: {entry['tournament_level']}")
     
     # Get all registered players for quick access
-    players = conn.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name').fetchall()
+    cursor.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name')
+    players = cursor.fetchall()
     
     # Get tournament brackets for the current player - ADD DEBUG LOGGING
     logging.info(f"DEBUG: Fetching tournament brackets for current_player_id: {current_player_id}")
