@@ -4093,13 +4093,6 @@ def inject_user_context():
     logging.info(f"Context processor: Returning context = {context}")
     return context
 
-@app.route('/test_login')
-def test_login():
-    """Quick test login for debugging"""
-    session['current_player_id'] = 1
-    session['player_id'] = 1
-    flash('Test login successful!', 'success')
-    return redirect(url_for('player_home', player_id=1))
 
 @app.route('/logout')
 def logout():
@@ -4120,38 +4113,29 @@ def player_login_post():
     username = request.form.get('username')
     password = request.form.get('password')
     
-    logging.info(f"🔐 LOGIN ATTEMPT: username='{username}', password_length={len(password) if password else 'None'}")
-    logging.info(f"🔐 FORM DATA: {dict(request.form)}")
-    
     if not username or not password:
         flash('Username and password are required', 'danger')
-        logging.info("🔐 Missing username or password, redirecting to login")
         return redirect(url_for('player_login'))
     
-    conn = get_db_connection()
+    conn = get_pg_connection()
     
     try:
+        cursor = conn.cursor()
         # Find player by username
-        player = conn.execute('''
+        cursor.execute('''
             SELECT id, full_name, username, password_hash, is_admin
             FROM players 
-            WHERE username = ?
-        ''', (username,)).fetchone()
-        
-        logging.info(f"🔐 PLAYER FOUND: {dict(player) if player else 'None'}")
+            WHERE username = %s
+        ''', (username,))
+        player = cursor.fetchone()
         
         if not player:
             flash('Invalid username or password', 'danger')
-            logging.info("🔐 No player found with that username")
             return redirect(url_for('player_login'))
         
         # Check password
-        password_valid = check_password_hash(player['password_hash'], password)
-        logging.info(f"🔐 PASSWORD CHECK: hash_exists={bool(player['password_hash'])}, password_valid={password_valid}")
-        
-        if not player['password_hash'] or not password_valid:
+        if not player['password_hash'] or not check_password_hash(player['password_hash'], password):
             flash('Invalid username or password', 'danger')
-            logging.info("🔐 Password verification failed")
             return redirect(url_for('player_login'))
         
         # Login successful - set session
@@ -4163,9 +4147,10 @@ def player_login_post():
         # Check NDA acceptance for regular users
         if not player['is_admin']:
             # Check if NDA has been signed
-            nda_status = conn.execute('''
-                SELECT nda_accepted FROM players WHERE id = ?
-            ''', (player['id'],)).fetchone()
+            cursor.execute('''
+                SELECT nda_accepted FROM players WHERE id = %s
+            ''', (player['id'],))
+            nda_status = cursor.fetchone()
             
             if not nda_status or not nda_status['nda_accepted']:
                 # NDA not signed - redirect to NDA page
