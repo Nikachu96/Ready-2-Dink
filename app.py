@@ -4222,7 +4222,9 @@ def index():
         player_id = session['current_player_id']
         # Check if player still exists and has accepted disclaimers
         conn = get_db_connection()
-        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+        player = cursor.fetchone()
         conn.close()
         
         if player:
@@ -11418,22 +11420,24 @@ def teams():
     ''', (player_id, player_id)).fetchall()
     
     # Get pending invitations sent to this player
-    pending_invitations = conn.execute('''
+    cursor.execute('''
         SELECT ti.*, p.full_name as inviter_name
         FROM team_invitations ti
         JOIN players p ON ti.inviter_id = p.id
-        WHERE ti.invitee_id = ? AND ti.status = 'pending'
+        WHERE ti.invitee_id = %s AND ti.status = 'pending'
         ORDER BY ti.created_at DESC
-    ''', (player_id,)).fetchall()
+    ''', (player_id,))
+    pending_invitations = cursor.fetchall()
     
     # Get invitations sent by this player
-    sent_invitations = conn.execute('''
+    cursor.execute('''
         SELECT ti.*, p.full_name as invitee_name
         FROM team_invitations ti
         JOIN players p ON ti.invitee_id = p.id
-        WHERE ti.inviter_id = ? AND ti.status = 'pending'
+        WHERE ti.inviter_id = %s AND ti.status = 'pending'
         ORDER BY ti.created_at DESC
-    ''', (player_id,)).fetchall()
+    ''', (player_id,))
+    sent_invitations = cursor.fetchall()
     
     conn.close()
     
@@ -11638,13 +11642,15 @@ def find_teams():
     conn = get_db_connection()
     
     # Get user's teams
-    user_teams = conn.execute('''
+    cursor = conn.cursor()
+    cursor.execute('''
         SELECT t.*, p1.full_name as player1_name, p2.full_name as player2_name
         FROM teams t
         JOIN players p1 ON t.player1_id = p1.id
         JOIN players p2 ON t.player2_id = p2.id
-        WHERE t.player1_id = ? OR t.player2_id = ?
-    ''', (player_id, player_id)).fetchall()
+        WHERE t.player1_id = %s OR t.player2_id = %s
+    ''', (player_id, player_id))
+    user_teams = cursor.fetchall()
     
     # Get all other teams that could be challenged
     available_teams = conn.execute('''
