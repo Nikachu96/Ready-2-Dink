@@ -4383,15 +4383,16 @@ def player_home(player_id):
         })
     
     # Get player's tournaments with bracket info
-    player_tournaments = conn.execute('''
+    cursor.execute('''
         SELECT t.*, ti.name as tournament_instance_name, ti.status as tournament_status,
                ti.id as tournament_instance_id
         FROM tournaments t
         JOIN tournament_instances ti ON t.tournament_instance_id = ti.id
-        WHERE t.player_id = ? 
+        WHERE t.player_id = %s 
         ORDER BY t.created_at DESC
         LIMIT 5
-    ''', (player_id,)).fetchall()
+    ''', (player_id,))
+    player_tournaments = cursor.fetchall()
     
     conn.close()
     
