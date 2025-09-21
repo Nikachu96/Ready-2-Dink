@@ -4121,7 +4121,9 @@ def inject_user_context():
     
     if current_player_id:
         conn = get_db_connection()
-        player = conn.execute('SELECT is_admin FROM players WHERE id = ?', (current_player_id,)).fetchone()
+        cursor = conn.cursor()
+        cursor.execute('SELECT is_admin FROM players WHERE id = %s', (current_player_id,))
+        player = cursor.fetchone()
         conn.close()
         if player:
             is_admin = bool(player['is_admin'])
