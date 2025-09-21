@@ -5762,6 +5762,8 @@ def tournaments_overview():
         logging.debug(f"Tournament entry details - ID: {entry['id']}, Player ID: {entry['player_id']}, Tournament: {entry['tournament_name']}, Level: {entry['tournament_level']}")
     
     # Get all registered players for quick access
+    # Ensure cursor is properly created
+    cursor = conn.cursor() 
     cursor.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name')
     players = cursor.fetchall()
     
