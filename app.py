@@ -3471,7 +3471,9 @@ def get_filtered_compatible_players(player_id, match_type="", skill_level="", di
     conn = get_db_connection()
     
     # Get the player's preferences and location
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     if not player or not player['is_looking_for_match']:
         conn.close()
         return []
@@ -3565,7 +3567,9 @@ def get_compatible_players(player_id):
     conn = get_db_connection()
     
     # Get the player's preferences and location
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     if not player or not player['is_looking_for_match']:
         conn.close()
         return []
@@ -3702,7 +3706,9 @@ def find_match_for_player(player_id):
     conn = get_db_connection()
     
     # Get the player's preferences and location
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     if not player or not player['is_looking_for_match']:
         conn.close()
         return None
@@ -4267,48 +4273,50 @@ def player_home(player_id):
     check_and_handle_trial_expiry(player_id)
     
     # Get player info (refresh after potential trial expiry update)
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
     
     # Get connections (players they've played against)
-    connections = conn.execute('''
+    cursor.execute('''
         SELECT DISTINCT 
             CASE 
-                WHEN m.player1_id = ? THEN p2.id
+                WHEN m.player1_id = %s THEN p2.id
                 ELSE p1.id 
             END as opponent_id,
             CASE 
-                WHEN m.player1_id = ? THEN p2.full_name
+                WHEN m.player1_id = %s THEN p2.full_name
                 ELSE p1.full_name 
             END as opponent_name,
             CASE 
-                WHEN m.player1_id = ? THEN p2.selfie
+                WHEN m.player1_id = %s THEN p2.selfie
                 ELSE p1.selfie 
             END as opponent_selfie,
             CASE 
-                WHEN m.player1_id = ? THEN p2.wins
+                WHEN m.player1_id = %s THEN p2.wins
                 ELSE p1.wins 
             END as opponent_wins,
             CASE 
-                WHEN m.player1_id = ? THEN p2.losses
+                WHEN m.player1_id = %s THEN p2.losses
                 ELSE p1.losses 
             END as opponent_losses,
             CASE 
-                WHEN m.player1_id = ? THEN p2.tournament_wins
+                WHEN m.player1_id = %s THEN p2.tournament_wins
                 ELSE p1.tournament_wins 
             END as opponent_tournament_wins,
             CASE 
-                WHEN m.player1_id = ? THEN p2.latitude
+                WHEN m.player1_id = %s THEN p2.latitude
                 ELSE p1.latitude 
             END as opponent_latitude,
             CASE 
-                WHEN m.player1_id = ? THEN p2.longitude
+                WHEN m.player1_id = %s THEN p2.longitude
                 ELSE p1.longitude 
             END as opponent_longitude,
             CASE 
-                WHEN m.player1_id = ? THEN p2.location1
+                WHEN m.player1_id = %s THEN p2.location1
                 ELSE p1.location1 
             END as opponent_location1,
             COUNT(*) as matches_played,
@@ -4316,43 +4324,47 @@ def player_home(player_id):
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
-        WHERE m.player1_id = ? OR m.player2_id = ?
+        WHERE m.player1_id = %s OR m.player2_id = %s
         GROUP BY opponent_id, opponent_name, opponent_selfie, opponent_wins, opponent_losses, opponent_tournament_wins, opponent_latitude, opponent_longitude, opponent_location1
         ORDER BY last_played DESC
         LIMIT 10
-    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id))
+    connections = cursor.fetchall()
     
     # Get recent activity
-    recent_matches = conn.execute('''
+    cursor.execute('''
         SELECT m.*, 
                p1.full_name as player1_name, p1.selfie as player1_selfie,
                p2.full_name as player2_name, p2.selfie as player2_selfie
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
-        WHERE m.player1_id = ? OR m.player2_id = ?
+        WHERE m.player1_id = %s OR m.player2_id = %s
         ORDER BY m.created_at DESC
         LIMIT 5
-    ''', (player_id, player_id)).fetchall()
+    ''', (player_id, player_id))
+    recent_matches = cursor.fetchall()
     
     # Get player's tournaments
-    tournaments = conn.execute('''
+    cursor.execute('''
         SELECT * FROM tournaments 
-        WHERE player_id = ? 
+        WHERE player_id = %s 
         ORDER BY created_at DESC
         LIMIT 5
-    ''', (player_id,)).fetchall()
+    ''', (player_id,))
+    tournaments = cursor.fetchall()
     
     # Get available tournaments (call-to-action)
     tournament_levels = get_tournament_levels()
     available_tournaments = []
     
     # Get all open tournament instances ordered by price (lowest to highest)
-    open_tournaments = conn.execute('''
+    cursor.execute('''
         SELECT * FROM tournament_instances 
-        WHERE status = 'open' AND current_players < max_players
+        WHERE status = \'open\' AND current_players < max_players
         ORDER BY entry_fee ASC, created_at
-    ''').fetchall()
+    ''')
+    open_tournaments = cursor.fetchall()
     
     for tournament in open_tournaments:
         spots_remaining = tournament['max_players'] - tournament['current_players']
@@ -4820,7 +4832,9 @@ def accept_disclaimers():
 def guardian_consent_form(player_id):
     """Display guardian consent form for COPPA compliance"""
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     conn.close()
     
     if not player:
@@ -4852,17 +4866,19 @@ def submit_guardian_consent(player_id):
         consent_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         conn = get_db_connection()
-        conn.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
             UPDATE players 
             SET account_status = 'active', 
-                guardian_consent_date = ?,
+                guardian_consent_date = %s,
                 disclaimers_accepted = 1
-            WHERE id = ?
+            WHERE id = %s
         ''', (consent_date, player_id))
         conn.commit()
         
         # Get player details for notification
-        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+        cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+        player = cursor.fetchone()
         conn.close()
         
         if player:
@@ -4912,7 +4928,9 @@ def submit_guardian_consent(player_id):
 def pending_guardian_approval(player_id):
     """Show pending approval page for underage players"""
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     conn.close()
     
     if not player:
@@ -4939,7 +4957,9 @@ def show_tournament_rules(player_id):
     """Show tournament rules page before tournament entry"""
     # Verify player exists
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     conn.close()
     
     if not player:
@@ -5864,7 +5884,9 @@ def tournament_entry(player_id):
     """Tournament entry form with levels and fees for a specific player"""
     # Get player info first
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
@@ -6172,7 +6194,9 @@ def dashboard(player_id):
     conn = get_db_connection()
     
     # Get player info
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
@@ -6439,7 +6463,9 @@ def find_match(player_id):
     try:
         # Check if player exists and bypass disclaimers for test accounts
         conn = get_db_connection()
-        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+        player = cursor.fetchone()
         
         if not player:
             conn.close()
@@ -8539,7 +8565,9 @@ def admin_players():
 def admin_edit_player(player_id):
     """Admin edit specific player profile"""
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     conn.close()
     
     if not player:
@@ -8555,7 +8583,9 @@ def admin_update_player(player_id):
     from werkzeug.security import generate_password_hash
     
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     
     if not player:
         flash('Player not found', 'danger')
@@ -8639,7 +8669,9 @@ def admin_delete_player(player_id):
         return redirect(url_for('admin_players'))
     
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     
     if not player:
         flash('Player not found', 'danger')
@@ -9640,7 +9672,9 @@ def credit_transaction_history(player_id):
     conn = get_db_connection()
     
     # Get player information
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
@@ -9665,7 +9699,9 @@ def quick_join_tournament(player_id):
     level = request.args.get('level')
     
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     
     if not player:
         flash('Player not found', 'danger')
@@ -9736,8 +9772,11 @@ def process_format_selection():
     conn = get_db_connection()
     
     try:
-        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
-        tournament_instance = conn.execute('SELECT * FROM tournament_instances WHERE id = ?', (tournament_instance_id,)).fetchone()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+        player = cursor.fetchone()
+        cursor.execute('SELECT * FROM tournament_instances WHERE id = %s', (tournament_instance_id,))
+        tournament_instance = cursor.fetchone()
         
         if not player or not tournament_instance:
             flash('Invalid player or tournament', 'danger')
@@ -9815,7 +9854,9 @@ def quick_tournament_payment(player_id):
         return redirect(url_for('tournaments_overview'))
     
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     tournament_instance = conn.execute('SELECT * FROM tournament_instances WHERE id = ?', (quick_join_data['tournament_instance_id'],)).fetchone()
     
     if not player or not tournament_instance:
@@ -9844,8 +9885,11 @@ def process_quick_tournament_payment():
     conn = get_db_connection()
     
     try:
-        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
-        tournament_instance = conn.execute('SELECT * FROM tournament_instances WHERE id = ?', (quick_join_data['tournament_instance_id'],)).fetchone()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+        player = cursor.fetchone()
+        cursor.execute('SELECT * FROM tournament_instances WHERE id = %s', (quick_join_data['tournament_instance_id'],))
+        tournament_instance = cursor.fetchone()
         
         entry_fee = quick_join_data['entry_fee']
         credits_used = 0
@@ -10020,7 +10064,9 @@ def process_quick_tournament_payment():
 def partner_invitations(player_id):
     """View partner invitations for a player"""
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     
     if not player:
         flash('Player not found', 'danger')
@@ -10377,7 +10423,9 @@ def withdraw_tournament(tournament_id):
                         (tournament_entry['tournament_instance_id'],))
             
             # Add refund as tournament credits (easier than Stripe refund processing)
-            player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+            player = cursor.fetchone()
             current_credits = player['tournament_credits'] or 0
             new_credits = current_credits + refund_amount
             
@@ -10594,7 +10642,9 @@ def create_subscription_checkout():
     stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
     
     conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     
     if not player:
         conn.close()
