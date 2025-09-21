@@ -5747,29 +5747,25 @@ def tournaments_overview():
     
     # Get recent tournament entries - FIXED TO SHOW ONLY CURRENT USER'S ENTRIES
     logging.info(f"DEBUG: Fetching recent tournament entries for current user {current_player_id}")
-    cursor.execute('''
+    recent_entries = conn.execute('''
         SELECT t.*, p.full_name, p.selfie
         FROM tournaments t
         JOIN players p ON t.player_id = p.id
         WHERE t.tournament_level IS NOT NULL 
-        AND t.player_id = %s
+        AND t.player_id = ?
         ORDER BY t.created_at DESC
         LIMIT 10
-    ''', (current_player_id,))
-    recent_entries = cursor.fetchall()
+    ''', (current_player_id,)).fetchall()
     logging.info(f"DEBUG: Found {len(recent_entries)} recent tournament entries for current user")
     for entry in recent_entries:
         logging.debug(f"Tournament entry details - ID: {entry['id']}, Player ID: {entry['player_id']}, Tournament: {entry['tournament_name']}, Level: {entry['tournament_level']}")
     
     # Get all registered players for quick access
-    # Ensure cursor is properly created
-    cursor = conn.cursor() 
-    cursor.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name')
-    players = cursor.fetchall()
+    players = conn.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name').fetchall()
     
     # Get tournament brackets for the current player - ADD DEBUG LOGGING
     logging.info(f"DEBUG: Fetching tournament brackets for current_player_id: {current_player_id}")
-    cursor.execute('''
+    my_tournament_brackets = conn.execute('''
         SELECT DISTINCT 
             ti.id as tournament_instance_id,
             ti.name as tournament_name,
@@ -5811,8 +5807,7 @@ def tournaments_overview():
         ORDER BY t.entry_date DESC
     ''', (current_player_id, current_player_id, current_player_id, 
           current_player_id, current_player_id, current_player_id,
-          current_player_id))
-    my_tournament_brackets = cursor.fetchall()
+          current_player_id)).fetchall()
     logging.info(f"DEBUG: Found {len(my_tournament_brackets)} tournament brackets for player {current_player_id}")
     for bracket in my_tournament_brackets:
         logging.info(f"DEBUG: Bracket - Tournament: {bracket['tournament_name']}, Status: {bracket['tournament_status']}, Player Status: {bracket['player_status']}")
