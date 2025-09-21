@@ -5689,14 +5689,14 @@ def tournaments_overview():
             
             tournament_instances.append(instance_dict)
     
-    # Get custom tournaments created by users with location filtering
+    # Get custom tournaments created by users (using tournament_instances table)
     custom_tournaments_query = '''
-        SELECT ct.*, p.full_name as organizer_name, p.selfie as organizer_selfie
-        FROM custom_tournaments ct
-        JOIN players p ON ct.organizer_id = p.id
-        WHERE ct.status = 'open' 
-        AND datetime(ct.registration_deadline) > datetime('now')
-        ORDER BY ct.created_at DESC
+        SELECT ti.*, p.full_name as organizer_name, p.selfie as organizer_selfie
+        FROM tournament_instances ti
+        LEFT JOIN players p ON ti.created_by = p.id
+        WHERE ti.status = 'open' 
+        AND ti.current_players < ti.max_players
+        ORDER BY ti.created_at DESC
     '''
     
     cursor.execute(custom_tournaments_query)
@@ -6163,14 +6163,15 @@ def tournament_entry(player_id):
         })
 
     # Get player's connections for partner selection
-    connections = conn.execute('''
+    cursor = conn.cursor()
+    cursor.execute('''
         SELECT DISTINCT 
             CASE 
-                WHEN m.player1_id = ? THEN p2.id
+                WHEN m.player1_id = %s THEN p2.id
                 ELSE p1.id 
             END as opponent_id,
             CASE 
-                WHEN m.player1_id = ? THEN p2.full_name
+                WHEN m.player1_id = %s THEN p2.full_name
                 ELSE p1.full_name 
             END as opponent_name,
             COUNT(*) as matches_played,
@@ -6936,15 +6937,16 @@ def profile_settings():
     pending_invitations = get_player_team_invitations(current_player_id)
     
     # Get player's connections (players they've played matches with)
-    connections = conn.execute('''
+    cursor.execute('''
         SELECT DISTINCT p.id, p.full_name, p.selfie
         FROM players p
         JOIN matches m ON (p.id = m.player1_id OR p.id = m.player2_id)
-        WHERE ((m.player1_id = ? AND p.id = m.player2_id) OR (m.player2_id = ? AND p.id = m.player1_id))
+        WHERE ((m.player1_id = %s AND p.id = m.player2_id) OR (m.player2_id = %s AND p.id = m.player1_id))
         AND m.status = 'completed'
-        AND p.id != ?
+        AND p.id != %s
         ORDER BY p.full_name
-    ''', (current_player_id, current_player_id, current_player_id)).fetchall()
+    ''', (current_player_id, current_player_id, current_player_id))
+    connections = cursor.fetchall()
     
     conn.close()
     
