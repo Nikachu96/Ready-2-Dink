@@ -5691,9 +5691,8 @@ def tournaments_overview():
     
     # Get custom tournaments created by users (using tournament_instances table)
     custom_tournaments_query = '''
-        SELECT ti.*, p.full_name as organizer_name, p.selfie as organizer_selfie
+        SELECT ti.*, NULL as organizer_name, NULL as organizer_selfie
         FROM tournament_instances ti
-        LEFT JOIN players p ON ti.created_by = p.id
         WHERE ti.status = 'open' 
         AND ti.current_players < ti.max_players
         ORDER BY ti.created_at DESC
