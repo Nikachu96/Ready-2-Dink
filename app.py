@@ -5769,7 +5769,7 @@ def tournaments_overview():
     
     # Get tournament brackets for the current player - ADD DEBUG LOGGING
     logging.info(f"DEBUG: Fetching tournament brackets for current_player_id: {current_player_id}")
-    my_tournament_brackets = conn.execute('''
+    cursor.execute('''
         SELECT DISTINCT 
             ti.id as tournament_instance_id,
             ti.name as tournament_name,
@@ -5811,7 +5811,8 @@ def tournaments_overview():
         ORDER BY t.entry_date DESC
     ''', (current_player_id, current_player_id, current_player_id, 
           current_player_id, current_player_id, current_player_id,
-          current_player_id)).fetchall()
+          current_player_id))
+    my_tournament_brackets = cursor.fetchall()
     logging.info(f"DEBUG: Found {len(my_tournament_brackets)} tournament brackets for player {current_player_id}")
     for bracket in my_tournament_brackets:
         logging.info(f"DEBUG: Bracket - Tournament: {bracket['tournament_name']}, Status: {bracket['tournament_status']}, Player Status: {bracket['player_status']}")
