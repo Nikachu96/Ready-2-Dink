@@ -4524,7 +4524,7 @@ def challenges():
         AND status IN ('pending', 'counter_proposed', 'confirmed', 'scheduled')
     ''', (player_id, player_id, player_id))
     
-    existing_challenge_ids = [row[0] for row in cursor.fetchall()]
+    existing_challenge_ids = [row['opponent_id'] for row in cursor.fetchall()]
     
     # Build exclusion list
     exclude_ids = [player_id] + existing_challenge_ids
