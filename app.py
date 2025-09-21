@@ -11412,14 +11412,16 @@ def teams():
     conn = get_db_connection()
     
     # Get user's current teams
-    user_teams = conn.execute('''
+    cursor = conn.cursor()
+    cursor.execute('''
         SELECT t.*, p1.full_name as player1_name, p2.full_name as player2_name
         FROM teams t
         JOIN players p1 ON t.player1_id = p1.id
         JOIN players p2 ON t.player2_id = p2.id
-        WHERE t.player1_id = ? OR t.player2_id = ?
+        WHERE t.player1_id = %s OR t.player2_id = %s
         ORDER BY t.created_at DESC
-    ''', (player_id, player_id)).fetchall()
+    ''', (player_id, player_id))
+    user_teams = cursor.fetchall()
     
     # Get pending invitations sent to this player
     cursor.execute('''
