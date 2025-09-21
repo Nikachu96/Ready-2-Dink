@@ -180,8 +180,8 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label for="teamName" class="form-label">Team Name (Optional)</label>
-                            <input type="text" class="form-control" id="teamName" placeholder="e.g., Thunder Paddles">
+                            <label for="teamName" class="form-label">Team Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="teamName" placeholder="e.g., Thunder Paddles" required>
                         </div>
                         <div class="col-md-3">
                             <label for="teamLocation" class="form-label">Location</label>
@@ -298,6 +298,11 @@ function setupInviteForm() {
         
         if (!formData.invitee_id) {
             showNotification('Please select a player to invite', 'warning');
+            return;
+        }
+        
+        if (!formData.team_name) {
+            showNotification('Please enter a team name', 'warning');
             return;
         }
         

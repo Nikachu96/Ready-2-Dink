@@ -11462,43 +11462,61 @@ def send_team_invitation():
     if not invitee_id:
         return jsonify({'success': False, 'message': 'Please select a player to invite'})
     
+    if not team_name:
+        return jsonify({'success': False, 'message': 'Team name is required'})
+    
     if inviter_id == invitee_id:
         return jsonify({'success': False, 'message': 'You cannot invite yourself'})
     
-    conn = get_db_connection()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
+    
+    # Check if team name already exists
+    cursor.execute('''
+        SELECT id FROM teams WHERE LOWER(team_name) = LOWER(%s)
+    ''', (team_name,))
+    existing_team_name = cursor.fetchone()
+    
+    if existing_team_name:
+        conn.close()
+        return jsonify({'success': False, 'message': 'This team name is already taken. Please choose a different name.'})
     
     # Check if players already have a team together
-    existing_team = conn.execute('''
+    cursor.execute('''
         SELECT id FROM teams 
-        WHERE (player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?)
-    ''', (inviter_id, invitee_id, invitee_id, inviter_id)).fetchone()
+        WHERE (player1_id = %s AND player2_id = %s) OR (player1_id = %s AND player2_id = %s)
+    ''', (inviter_id, invitee_id, invitee_id, inviter_id))
+    existing_team = cursor.fetchone()
     
     if existing_team:
         conn.close()
         return jsonify({'success': False, 'message': 'You already have a team with this player'})
     
     # Check if there's already a pending invitation between these players
-    existing_invitation = conn.execute('''
+    cursor.execute('''
         SELECT id FROM team_invitations 
-        WHERE ((inviter_id = ? AND invitee_id = ?) OR (inviter_id = ? AND invitee_id = ?))
+        WHERE ((inviter_id = %s AND invitee_id = %s) OR (inviter_id = %s AND invitee_id = %s))
         AND status = 'pending'
-    ''', (inviter_id, invitee_id, invitee_id, inviter_id)).fetchone()
+    ''', (inviter_id, invitee_id, invitee_id, inviter_id))
+    existing_invitation = cursor.fetchone()
     
     if existing_invitation:
         conn.close()
         return jsonify({'success': False, 'message': 'There is already a pending team invitation between you two'})
     
     # Create the invitation
-    conn.execute('''
+    cursor.execute('''
         INSERT INTO team_invitations (inviter_id, invitee_id, team_name, location, travel_radius)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s)
     ''', (inviter_id, invitee_id, team_name, location, travel_radius))
     
     conn.commit()
     
     # Get player names for notification
-    inviter = conn.execute('SELECT full_name FROM players WHERE id = ?', (inviter_id,)).fetchone()
-    invitee = conn.execute('SELECT full_name FROM players WHERE id = ?', (invitee_id,)).fetchone()
+    cursor.execute('SELECT full_name FROM players WHERE id = %s', (inviter_id,))
+    inviter = cursor.fetchone()
+    cursor.execute('SELECT full_name FROM players WHERE id = %s', (invitee_id,))
+    invitee = cursor.fetchone()
     
     conn.close()
     
@@ -11522,38 +11540,63 @@ def respond_team_invitation():
     if response not in ['accept', 'decline']:
         return jsonify({'success': False, 'message': 'Invalid response'})
     
-    conn = get_db_connection()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
     
     # Get the invitation
-    invitation = conn.execute('''
+    cursor.execute('''
         SELECT * FROM team_invitations 
-        WHERE id = ? AND invitee_id = ? AND status = 'pending'
-    ''', (invitation_id, session['player_id'])).fetchone()
+        WHERE id = %s AND invitee_id = %s AND status = 'pending'
+    ''', (invitation_id, session['player_id']))
+    invitation = cursor.fetchone()
     
     if not invitation:
         conn.close()
         return jsonify({'success': False, 'message': 'Invitation not found or already processed'})
     
     if response == 'accept':
-        # Create the team
-        conn.execute('''
-            INSERT INTO teams (player1_id, player2_id, team_name, location, travel_radius)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (invitation['inviter_id'], invitation['invitee_id'], 
-              invitation['team_name'], invitation['location'], invitation['travel_radius']))
+        # Check if team name still available (in case someone else took it)
+        cursor.execute('''
+            SELECT id FROM teams WHERE LOWER(team_name) = LOWER(%s)
+        ''', (invitation['team_name'],))
+        existing_team_name = cursor.fetchone()
+        
+        if existing_team_name:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Team name is no longer available. Please create a new invitation with a different name.'})
+        
+        # Create the team with proper player ordering (lower ID first)
+        player1_id = min(invitation['inviter_id'], invitation['invitee_id'])
+        player2_id = max(invitation['inviter_id'], invitation['invitee_id'])
+        
+        cursor.execute('''
+            INSERT INTO teams (player1_id, player2_id, team_name, location, travel_radius, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        ''', (player1_id, player2_id, invitation['team_name'], 
+              invitation['location'], invitation['travel_radius'], invitation['inviter_id']))
+        
+        team_result = cursor.fetchone()
+        team_id = team_result['id']
+        
+        # Update both players' current_team_id
+        cursor.execute('UPDATE players SET current_team_id = %s WHERE id = %s', (team_id, player1_id))
+        cursor.execute('UPDATE players SET current_team_id = %s WHERE id = %s', (team_id, player2_id))
         
         # Update invitation status
-        conn.execute('''
+        cursor.execute('''
             UPDATE team_invitations 
             SET status = 'accepted', responded_at = CURRENT_TIMESTAMP
-            WHERE id = ?
+            WHERE id = %s
         ''', (invitation_id,))
         
         conn.commit()
         
         # Get player names for notifications
-        inviter = conn.execute('SELECT full_name FROM players WHERE id = ?', (invitation['inviter_id'],)).fetchone()
-        invitee = conn.execute('SELECT full_name FROM players WHERE id = ?', (invitation['invitee_id'],)).fetchone()
+        cursor.execute('SELECT full_name FROM players WHERE id = %s', (invitation['inviter_id'],))
+        inviter = cursor.fetchone()
+        cursor.execute('SELECT full_name FROM players WHERE id = %s', (invitation['invitee_id'],))
+        invitee = cursor.fetchone()
         
         conn.close()
         
@@ -11562,21 +11605,23 @@ def respond_team_invitation():
             message = f"🎉 {invitee['full_name']} accepted your team invitation! Your doubles team is now formed."
             send_push_notification(invitation['inviter_id'], message, "Team Formed")
         
-        return jsonify({'success': True, 'message': 'Team invitation accepted! Your doubles team has been formed.'})
+        return jsonify({'success': True, 'message': f'Team invitation accepted! Team "{invitation["team_name"]}" has been formed.'})
     
     else:  # decline
         # Update invitation status
-        conn.execute('''
+        cursor.execute('''
             UPDATE team_invitations 
             SET status = 'declined', responded_at = CURRENT_TIMESTAMP
-            WHERE id = ?
+            WHERE id = %s
         ''', (invitation_id,))
         
         conn.commit()
         
         # Get player names for notification
-        inviter = conn.execute('SELECT full_name FROM players WHERE id = ?', (invitation['inviter_id'],)).fetchone()
-        invitee = conn.execute('SELECT full_name FROM players WHERE id = ?', (invitation['invitee_id'],)).fetchone()
+        cursor.execute('SELECT full_name FROM players WHERE id = %s', (invitation['inviter_id'],))
+        inviter = cursor.fetchone()
+        cursor.execute('SELECT full_name FROM players WHERE id = %s', (invitation['invitee_id'],))
+        invitee = cursor.fetchone()
         
         conn.close()
         
