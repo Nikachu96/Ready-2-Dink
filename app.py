@@ -554,7 +554,9 @@ def require_disclaimers_accepted(f):
         
         if player_id:
             conn = get_db_connection()
-            player = conn.execute('SELECT disclaimers_accepted, test_account FROM players WHERE id = ?', (player_id,)).fetchone()
+            cursor = conn.cursor()
+            cursor.execute('SELECT disclaimers_accepted, test_account FROM players WHERE id = %s', (player_id,))
+            player = cursor.fetchone()
             conn.close()
             
             # Skip validation for test accounts
