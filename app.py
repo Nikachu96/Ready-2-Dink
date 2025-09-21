@@ -11687,19 +11687,13 @@ def api_available_players():
     player_id = session['player_id']
     conn = get_db_connection()
     
-    # Get all players except current user and those already on teams with current user
+    # Get players who are discoverable and not already on teams
     players = conn.execute('''
         SELECT DISTINCT p.id, p.full_name, p.location1
         FROM players p
         WHERE p.id != ? 
-        AND p.id NOT IN (
-            SELECT CASE 
-                WHEN t.player1_id = ? THEN t.player2_id 
-                ELSE t.player1_id 
-            END
-            FROM teams t 
-            WHERE t.player1_id = ? OR t.player2_id = ?
-        )
+        AND p.current_team_id IS NULL
+        AND (p.discoverability_preference = 'doubles' OR p.discoverability_preference = 'both' OR p.discoverability_preference IS NULL)
         AND p.id NOT IN (
             SELECT CASE 
                 WHEN ti.inviter_id = ? THEN ti.invitee_id 
@@ -11710,7 +11704,7 @@ def api_available_players():
             AND ti.status = 'pending'
         )
         ORDER BY p.full_name
-    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id)).fetchall()
     
     conn.close()
     
