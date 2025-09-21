@@ -188,94 +188,34 @@ class RandomMatchupEngine:
         logger.info(f"Created {len(matchups)} singles matchups")
         return matchups
     
-    def get_eligible_teams(self) -> List[Dict]:
-        """Get existing teams that are eligible for challenges"""
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            
-            # Get teams with valid names where both players have appropriate discoverability
-            cursor.execute('''
-                SELECT t.id, t.team_name, t.player1_id, t.player2_id, t.wins, t.losses,
-                       p1.full_name as player1_name, p1.skill_level as player1_skill, 
-                       p1.discoverability_preference as player1_discover, p1.last_random_challenge_at as player1_last_challenge,
-                       p2.full_name as player2_name, p2.skill_level as player2_skill,
-                       p2.discoverability_preference as player2_discover, p2.last_random_challenge_at as player2_last_challenge
-                FROM teams t
-                JOIN players p1 ON t.player1_id = p1.id  
-                JOIN players p2 ON t.player2_id = p2.id
-                WHERE t.team_name IS NOT NULL 
-                AND t.team_name != ''
-                AND p1.account_status != 'suspended'
-                AND p2.account_status != 'suspended'
-                AND p1.is_looking_for_match = 1
-                AND p2.is_looking_for_match = 1
-                AND (p1.discoverability_preference = 'doubles' OR p1.discoverability_preference = 'both' OR p1.discoverability_preference IS NULL)
-                AND (p2.discoverability_preference = 'doubles' OR p2.discoverability_preference = 'both' OR p2.discoverability_preference IS NULL)
-                AND (p1.last_random_challenge_at IS NULL OR p1.last_random_challenge_at < %s)
-                AND (p2.last_random_challenge_at IS NULL OR p2.last_random_challenge_at < %s)
-            ''', (datetime.now() - timedelta(hours=24), datetime.now() - timedelta(hours=24)))
-            
-            teams = cursor.fetchall()
-            
-            # Filter out teams with pending invitations
-            eligible_teams = []
-            for team in teams:
-                # Check for pending invitations involving either team member
-                cursor.execute('''
-                    SELECT COUNT(*) as count FROM team_invitations 
-                    WHERE (inviter_id IN (%s, %s) OR invitee_id IN (%s, %s)) AND status = 'pending'
-                ''', (team['player1_id'], team['player2_id'], team['player1_id'], team['player2_id']))
-                pending = cursor.fetchone()
-                
-                if pending['count'] == 0:
-                    eligible_teams.append(dict(team))
-            
-            conn.close()
-            logger.info(f"Found {len(eligible_teams)} eligible teams for challenges")
-            return eligible_teams
-            
-        except Exception as e:
-            logger.error(f"Error getting eligible teams: {e}")
+    def create_doubles_matchups(self, eligible_players: List[Dict]) -> List[Tuple[Tuple[Dict, Dict], Tuple[Dict, Dict]]]:
+        """Create random doubles matchups (team vs team)"""
+        if len(eligible_players) < 4:
             return []
-
-    def create_doubles_matchups(self, eligible_players: List[Dict]) -> List[Tuple[Dict, Dict]]:
-        """Create random doubles matchups between existing teams"""
-        # Get existing teams instead of creating temporary ones
-        eligible_teams = self.get_eligible_teams()
-        
-        if len(eligible_teams) < 2:
-            logger.info("Not enough eligible teams for doubles matchups")
-            return []
-        
-        # Group teams by skill level (use average skill level)
-        skill_levels = ['Beginner', 'Intermediate', 'Advanced']
-        team_skill_groups = {}
-        
-        for team in eligible_teams:
-            # Calculate average skill level
-            p1_skill_idx = skill_levels.index(team['player1_skill']) if team['player1_skill'] in skill_levels else 1
-            p2_skill_idx = skill_levels.index(team['player2_skill']) if team['player2_skill'] in skill_levels else 1
-            avg_skill_idx = (p1_skill_idx + p2_skill_idx) // 2
-            avg_skill = skill_levels[avg_skill_idx]
             
-            if avg_skill not in team_skill_groups:
-                team_skill_groups[avg_skill] = []
-            team_skill_groups[avg_skill].append(team)
-        
-        # Create matchups between teams of similar skill levels
+        skill_groups = self.group_by_skill_level(eligible_players)
         matchups = []
-        for skill, teams in team_skill_groups.items():
-            teams_copy = teams.copy()
-            random.shuffle(teams_copy)
-            
-            # Match teams against each other
-            while len(teams_copy) >= 2:
-                team1 = teams_copy.pop()
-                team2 = teams_copy.pop()
-                matchups.append((team1, team2))
         
-        logger.info(f"Created {len(matchups)} team vs team doubles matchups")
+        # Create teams first, then match teams against each other
+        teams = []
+        
+        for skill, players in skill_groups.items():
+            players_copy = players.copy()
+            random.shuffle(players_copy)
+            
+            # Create teams from same skill level
+            while len(players_copy) >= 2:
+                team = (players_copy.pop(), players_copy.pop())
+                teams.append(team)
+        
+        # Match teams against each other
+        random.shuffle(teams)
+        while len(teams) >= 2:
+            team1 = teams.pop()
+            team2 = teams.pop()
+            matchups.append((team1, team2))
+        
+        logger.info(f"Created {len(matchups)} doubles matchups")
         return matchups
     
     def send_singles_invitation(self, player1: Dict, player2: Dict) -> bool:
@@ -315,35 +255,30 @@ class RandomMatchupEngine:
             logger.error(f"Error sending singles invitation: {e}")
             return False
     
-    def send_doubles_invitation(self, team1: Dict, team2: Dict) -> bool:
-        """Send a team vs team doubles match invitation"""
+    def send_doubles_invitation(self, team1: Tuple[Dict, Dict], team2: Tuple[Dict, Dict]) -> bool:
+        """Send a doubles match invitation"""
         try:
             conn = get_db_connection()
-            cursor = conn.cursor()
             
             # Choose one player from team1 to send invitation to one player from team2
-            # Use player1 from each team as representatives
-            inviter_id = team1['player1_id'] 
-            invitee_id = team2['player1_id']
+            inviter = random.choice(team1)
+            invitee = random.choice(team2)
             
-            all_player_ids = [team1['player1_id'], team1['player2_id'], team2['player1_id'], team2['player2_id']]
+            all_player_ids = [team1[0]['id'], team1[1]['id'], team2[0]['id'], team2[1]['id']]
             
-            # Create invitation record with team challenge message
-            invitation_message = f'Team "{team1["team_name"]}" challenges Team "{team2["team_name"]}" to a doubles match!'
-            
+            # Create invitation record
+            cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO team_invitations (inviter_id, invitee_id, invitation_message, status, source, meta_json, created_at)
                 VALUES (%s, %s, %s, 'pending', 'random', %s, %s)
             ''', (
-                inviter_id, 
-                invitee_id,
-                invitation_message,
+                inviter['id'], 
+                invitee['id'],
+                "Hey! Want to play a doubles match?",
                 json.dumps({
-                    "type": "team_challenge", 
-                    "challenger_team_id": team1['id'],
-                    "challenged_team_id": team2['id'],
-                    "challenger_team_name": team1['team_name'],
-                    "challenged_team_name": team2['team_name'],
+                    "type": "doubles", 
+                    "team1": [team1[0]['id'], team1[1]['id']], 
+                    "team2": [team2[0]['id'], team2[1]['id']],
                     "all_players": all_player_ids
                 }),
                 datetime.now()
@@ -355,29 +290,13 @@ class RandomMatchupEngine:
             ''', (datetime.now(), *all_player_ids))
             
             conn.commit()
-            
-            # Import here to avoid circular imports
-            from app import send_push_notification
-            
-            # Send notifications to ALL team members (both teams)
-            challenge_message = f'🏓 Team Challenge! {team1["team_name"]} wants to play your team {team2["team_name"]} in doubles!'
-            
-            # Notify team2 members (challenged team)
-            send_push_notification(team2['player1_id'], challenge_message, "Team Challenge")
-            send_push_notification(team2['player2_id'], challenge_message, "Team Challenge")
-            
-            # Notify team1 members (challenging team) about the sent challenge  
-            confirmation_message = f'🎾 Challenge sent! Your team {team1["team_name"]} has challenged {team2["team_name"]} to a doubles match.'
-            send_push_notification(team1['player1_id'], confirmation_message, "Challenge Sent")
-            send_push_notification(team1['player2_id'], confirmation_message, "Challenge Sent")
-            
             conn.close()
             
-            logger.info(f"Created team challenge: {team1['team_name']} vs {team2['team_name']} (4 players notified)")
+            logger.info(f"Created doubles invitation: {inviter['full_name']} -> {invitee['full_name']} (4 players total)")
             return True
             
         except Exception as e:
-            logger.error(f"Error sending team challenge: {e}")
+            logger.error(f"Error sending doubles invitation: {e}")
             return False
     
     def run_matchup_cycle(self):
