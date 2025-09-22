@@ -4575,8 +4575,10 @@ def register():
             return render_template('register.html', form_data=request.form)
         
         # Check if username is already taken
-        conn = get_db_connection()
-        existing_username = conn.execute('SELECT id FROM players WHERE username = ?', (request.form['username'],)).fetchone()
+        conn = get_pg_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM players WHERE username = %s', (request.form['username'],))
+        existing_username = cursor.fetchone()
         if existing_username:
             conn.close()
             flash('Username already taken. Please choose a different username.', 'danger')
@@ -4640,7 +4642,8 @@ def register():
             except:
                 logging.warning(f"Could not calculate age from DOB: {dob_str}")
             
-            conn = get_db_connection()
+            conn = get_pg_connection()
+            cursor = conn.cursor()
             full_name = f"{request.form['first_name']} {request.form['last_name']}"
             # Create location description from ZIP code or coordinates
             if latitude is not None and longitude is not None:
@@ -4657,14 +4660,15 @@ def register():
             from datetime import datetime, timedelta
             trial_end_date = (datetime.now() + timedelta(days=30)).isoformat()
             
-            cursor = conn.execute('''
+            cursor.execute('''
                 INSERT INTO players 
                 (first_name, last_name, full_name, email, dob, username, password_hash, preferred_sport, 
                  guardian_email, account_status, guardian_consent_required, test_account, 
                  address, location1, skill_level, latitude, longitude, search_radius_miles, referral_code,
                  membership_type, trial_end_date, subscription_status,
                  can_search_players, can_send_challenges, can_receive_challenges, can_join_tournaments, can_view_leaderboard, can_view_premium_stats)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
             ''', (request.form['first_name'], request.form['last_name'], full_name, request.form['email'], request.form['dob'], 
                   request.form['username'], password_hash, 'Pickleball',
                   guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0, 
@@ -4673,12 +4677,13 @@ def register():
                   'premium', trial_end_date, 'trialing',
                   1, 1, 1, 1, 1, 1))
             
-            player_id = cursor.lastrowid
+            player_result = cursor.fetchone()
+            player_id = player_result['id']
             
             # Track referral signup if this user came through a referral link
             referrer_id=session.pop('referrer_player_id', None); code=session.pop('referral_code', None)
             if referrer_id and referrer_id!=player_id:
-                conn.execute('INSERT OR IGNORE INTO universal_referrals (referrer_player_id, referred_player_id, referral_code) VALUES (?,?,?)',(referrer_id,player_id,code))
+                cursor.execute('INSERT INTO universal_referrals (referrer_player_id, referred_player_id, referral_code) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING', (referrer_id, player_id, code))
             
             conn.commit()
             conn.close()
