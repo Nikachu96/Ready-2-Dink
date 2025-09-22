@@ -5693,7 +5693,8 @@ def tournaments_overview():
         ORDER BY ct.created_at DESC
     '''
     
-    all_custom_tournaments = conn.execute(custom_tournaments_query).fetchall()
+    cursor.execute(custom_tournaments_query)
+    all_custom_tournaments = cursor.fetchall()
     
     # Filter custom tournaments by location if user location is provided
     custom_tournaments = []
@@ -5741,25 +5742,27 @@ def tournaments_overview():
     
     # Get recent tournament entries - FIXED TO SHOW ONLY CURRENT USER'S ENTRIES
     logging.info(f"DEBUG: Fetching recent tournament entries for current user {current_player_id}")
-    recent_entries = conn.execute('''
+    cursor.execute('''
         SELECT t.*, p.full_name, p.selfie
         FROM tournaments t
         JOIN players p ON t.player_id = p.id
         WHERE t.tournament_level IS NOT NULL 
-        AND t.player_id = ?
+        AND t.player_id = %s
         ORDER BY t.created_at DESC
         LIMIT 10
-    ''', (current_player_id,)).fetchall()
+    ''', (current_player_id,))
+    recent_entries = cursor.fetchall()
     logging.info(f"DEBUG: Found {len(recent_entries)} recent tournament entries for current user")
     for entry in recent_entries:
         logging.debug(f"Tournament entry details - ID: {entry['id']}, Player ID: {entry['player_id']}, Tournament: {entry['tournament_name']}, Level: {entry['tournament_level']}")
     
     # Get all registered players for quick access
-    players = conn.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name').fetchall()
+    cursor.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name')
+    players = cursor.fetchall()
     
     # Get tournament brackets for the current player - ADD DEBUG LOGGING
     logging.info(f"DEBUG: Fetching tournament brackets for current_player_id: {current_player_id}")
-    my_tournament_brackets = conn.execute('''
+    cursor.execute('''
         SELECT DISTINCT 
             ti.id as tournament_instance_id,
             ti.name as tournament_name,
@@ -5783,25 +5786,26 @@ def tournaments_overview():
             CASE 
                 WHEN EXISTS (SELECT 1 FROM tournament_matches tm2 
                            WHERE tm2.tournament_instance_id = ti.id 
-                           AND (tm2.player1_id = ? OR tm2.player2_id = ?)
-                           AND tm2.winner_id = ?) THEN 'Advanced'
+                           AND (tm2.player1_id = %s OR tm2.player2_id = %s)
+                           AND tm2.winner_id = %s) THEN 'Advanced'
                 WHEN EXISTS (SELECT 1 FROM tournament_matches tm2 
                            WHERE tm2.tournament_instance_id = ti.id 
-                           AND (tm2.player1_id = ? OR tm2.player2_id = ?)
+                           AND (tm2.player1_id = %s OR tm2.player2_id = %s)
                            AND tm2.status = 'completed'
-                           AND tm2.winner_id != ?) THEN 'Eliminated'
+                           AND tm2.winner_id != %s) THEN 'Eliminated'
                 WHEN COUNT(DISTINCT CASE WHEN tm.status IN ('pending', 'active') THEN tm.id END) > 0 THEN 'Active'
                 ELSE 'Awaiting Bracket'
             END as player_status
         FROM tournaments t
         JOIN tournament_instances ti ON t.tournament_instance_id = ti.id
         LEFT JOIN tournament_matches tm ON ti.id = tm.tournament_instance_id
-        WHERE t.player_id = ?
+        WHERE t.player_id = %s
         GROUP BY ti.id, ti.name, ti.skill_level, ti.status, t.tournament_type, t.entry_date
         ORDER BY t.entry_date DESC
     ''', (current_player_id, current_player_id, current_player_id, 
           current_player_id, current_player_id, current_player_id,
-          current_player_id)).fetchall()
+          current_player_id))
+    my_tournament_brackets = cursor.fetchall()
     logging.info(f"DEBUG: Found {len(my_tournament_brackets)} tournament brackets for player {current_player_id}")
     for bracket in my_tournament_brackets:
         logging.info(f"DEBUG: Bracket - Tournament: {bracket['tournament_name']}, Status: {bracket['tournament_status']}, Player Status: {bracket['player_status']}")
