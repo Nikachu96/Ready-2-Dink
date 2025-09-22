@@ -5568,10 +5568,12 @@ def tournaments_overview():
     # User is already authenticated and has permission via decorator
     current_player_id = session.get('current_player_id')
     
-    conn = get_db_connection()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
     
     # Get current player's location data from database
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (current_player_id,)).fetchone()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (current_player_id,))
+    player = cursor.fetchone()
     if not player:
         flash('Player profile not found', 'danger')
         conn.close()
@@ -5605,10 +5607,11 @@ def tournaments_overview():
     
     # Get current tournament entries count for each level
     for level_key in tournament_levels:
-        count = conn.execute('''
+        cursor.execute('''
             SELECT COUNT(*) as count FROM tournaments 
-            WHERE tournament_level = ? AND completed = 0
-        ''', (level_key,)).fetchone()['count']
+            WHERE tournament_level = %s AND completed = 0
+        ''', (level_key,))
+        count = cursor.fetchone()['count']
         tournament_levels[level_key]['current_entries'] = count
         tournament_levels[level_key]['spots_remaining'] = tournament_levels[level_key]['max_players'] - count
     
@@ -5624,7 +5627,8 @@ def tournaments_overview():
             created_at DESC
     '''
     
-    all_tournament_instances = conn.execute(tournament_instances_query).fetchall()
+    cursor.execute(tournament_instances_query)
+    all_tournament_instances = cursor.fetchall()
     
     # Filter tournament instances by location if user location is provided
     tournament_instances = []
@@ -5859,8 +5863,10 @@ def tournaments_overview():
 def tournament():
     """Direct tournament entry for single-player app"""
     # Get the current player (should be the only player in the system)
-    conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players ORDER BY id LIMIT 1').fetchone()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players ORDER BY id LIMIT 1')
+    player = cursor.fetchone()
     if not player:
         flash('No player profile found. Please register first.', 'danger')
         return redirect(url_for('register'))
@@ -5873,8 +5879,10 @@ def tournament():
 def tournament_entry(player_id):
     """Tournament entry form with levels and fees for a specific player"""
     # Get player info first
-    conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
@@ -5906,9 +5914,10 @@ def tournament_entry(player_id):
                 return redirect(url_for('tournament_entry', player_id=player_id))
                 
             # Get tournament instance details
-            tournament_instance = conn.execute('''
-                SELECT * FROM tournament_instances WHERE id = ? AND status = 'open'
-            ''', (tournament_instance_id,)).fetchone()
+            cursor.execute('''
+                SELECT * FROM tournament_instances WHERE id = %s AND status = 'open'
+            ''', (tournament_instance_id,))
+            tournament_instance = cursor.fetchone()
             
             if not tournament_instance:
                 flash('Tournament not found or no longer accepting registrations.', 'danger')
@@ -5920,10 +5929,11 @@ def tournament_entry(player_id):
                 return redirect(url_for('tournament_entry', player_id=player_id))
             
             # Check if player already entered THIS specific tournament (allow multiple tournaments)
-            existing_entry = conn.execute('''
+            cursor.execute('''
                 SELECT COUNT(*) as count FROM tournaments 
-                WHERE player_id = ? AND tournament_instance_id = ?
-            ''', (player_id, tournament_instance_id)).fetchone()['count']
+                WHERE player_id = %s AND tournament_instance_id = %s
+            ''', (player_id, tournament_instance_id))
+            existing_entry = cursor.fetchone()['count']
             
             if existing_entry > 0:
                 flash('You are already registered for this tournament.', 'warning')
