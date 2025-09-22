@@ -4781,8 +4781,10 @@ def register():
 def show_disclaimers(player_id):
     """Show disclaimers page for a newly registered player"""
     # Verify player exists and hasn't already accepted disclaimers
-    conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     conn.close()
     
     if not player:
@@ -4806,8 +4808,9 @@ def accept_disclaimers():
         return redirect(url_for('show_disclaimers', player_id=player_id))
     
     try:
-        conn = get_db_connection()
-        conn.execute('UPDATE players SET disclaimers_accepted = 1 WHERE id = ?', (player_id,))
+        conn = get_pg_connection()
+        cursor = conn.cursor()
+        cursor.execute('UPDATE players SET disclaimers_accepted = 1 WHERE id = %s', (player_id,))
         conn.commit()
         conn.close()
         
@@ -4828,8 +4831,10 @@ def accept_disclaimers():
 @app.route('/guardian-consent/<int:player_id>')
 def guardian_consent_form(player_id):
     """Display guardian consent form for COPPA compliance"""
-    conn = get_db_connection()
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     conn.close()
     
     if not player:
@@ -4860,18 +4865,20 @@ def submit_guardian_consent(player_id):
         from datetime import datetime
         consent_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        conn = get_db_connection()
-        conn.execute('''
+        conn = get_pg_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
             UPDATE players 
             SET account_status = 'active', 
-                guardian_consent_date = ?,
+                guardian_consent_date = %s,
                 disclaimers_accepted = 1
-            WHERE id = ?
+            WHERE id = %s
         ''', (consent_date, player_id))
         conn.commit()
         
         # Get player details for notification
-        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+        cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+        player = cursor.fetchone()
         conn.close()
         
         if player:
