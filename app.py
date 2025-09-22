@@ -2615,15 +2615,17 @@ def get_tournament_points(result):
 
 def get_player_ranking(player_id):
     """Get player's current ranking position"""
-    conn = get_db_connection()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
     
     # Get all players ordered by points (descending), then by wins
-    players = conn.execute('''
+    cursor.execute('''
         SELECT id, ranking_points, wins
         FROM players 
         WHERE ranking_points > 0 OR wins > 0
         ORDER BY ranking_points DESC, wins DESC
-    ''').fetchall()
+    ''')
+    players = cursor.fetchall()
     
     conn.close()
     
@@ -2636,24 +2638,27 @@ def get_player_ranking(player_id):
 
 def get_leaderboard(limit=10, skill_level=None):
     """Get top players by ranking points, optionally filtered by skill level"""
-    conn = get_db_connection()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
     
     if skill_level:
-        leaderboard = conn.execute('''
+        cursor.execute('''
             SELECT id, full_name, ranking_points, wins, losses, tournament_wins, selfie, skill_level
             FROM players 
-            WHERE (ranking_points > 0 OR wins > 0) AND skill_level = ?
+            WHERE (ranking_points > 0 OR wins > 0) AND skill_level = %s
             ORDER BY ranking_points DESC, wins DESC, losses ASC
-            LIMIT ?
-        ''', (skill_level, limit)).fetchall()
+            LIMIT %s
+        ''', (skill_level, limit))
+        leaderboard = cursor.fetchall()
     else:
-        leaderboard = conn.execute('''
+        cursor.execute('''
             SELECT id, full_name, ranking_points, wins, losses, tournament_wins, selfie, skill_level
             FROM players 
             WHERE ranking_points > 0 OR wins > 0
             ORDER BY ranking_points DESC, wins DESC, losses ASC
-            LIMIT ?
-        ''', (limit,)).fetchall()
+            LIMIT %s
+        ''', (limit,))
+        leaderboard = cursor.fetchall()
     
     conn.close()
     
