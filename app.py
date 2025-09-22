@@ -1861,8 +1861,10 @@ def set_user_permissions(player_id, membership_type):
 
 def check_user_permission(player_id, permission):
     """Check if a user has a specific permission"""
-    conn = get_db_connection()
-    result = conn.execute(f'SELECT {permission} FROM players WHERE id = ?', (player_id,)).fetchone()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
+    cursor.execute(f'SELECT {permission} FROM players WHERE id = %s', (player_id,))
+    result = cursor.fetchone()
     conn.close()
     
     if result and result[permission]:
@@ -1983,8 +1985,10 @@ def require_admin():
                 return redirect(url_for('player_login'))
             
             # Check if user is admin
-            conn = get_db_connection()
-            player = conn.execute('SELECT is_admin FROM players WHERE id = ?', (current_player_id,)).fetchone()
+            conn = get_pg_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT is_admin FROM players WHERE id = %s', (current_player_id,))
+            player = cursor.fetchone()
             conn.close()
             
             if not player or not player.get('is_admin'):
