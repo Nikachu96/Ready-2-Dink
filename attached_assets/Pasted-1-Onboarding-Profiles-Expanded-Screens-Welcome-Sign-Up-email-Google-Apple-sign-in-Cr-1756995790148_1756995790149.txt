@@ -1,0 +1,99 @@
+1. Onboarding & Profiles (Expanded)
+
+Screens:
+
+Welcome / Sign Up (email, Google, Apple sign-in).
+
+Create Profile → must collect:
+
+Full Name
+
+Address (city + zip for location matching)
+
+Date of Birth (age eligibility)
+
+2 Preferred Locations to Play (parks, gyms, courts, etc.)
+
+Skill Level (self-assessed)
+
+Email Address (for communication + login)
+
+Selfie Upload (adds trust + verification)
+
+Purpose: Build trust and accountability in the community right from the start.
+
+2. Matchmaking (Core Feature #1)
+
+Screens:
+
+“Find a Match” button → User selects sport + type (casual or tournament).
+
+App assigns opponent based on:
+
+Skill level
+
+Location (one of the preferred spots if possible)
+
+Age range filter (optional later)
+
+Purpose: Prevents mismatches, keeps games local.
+
+3. Partner Browse (Backup Feature)
+
+Screens:
+
+Directory of players nearby with filters: sport, skill, age group, preferred location.
+
+Profile cards include selfie + basic info for authenticity.
+
+Purpose: Gives players flexibility if matchmaking pool is small.
+
+4. Tournament Registration (Core Feature #2)
+
+Screens:
+
+Tournament List (upcoming or open registration).
+
+Register → pay entry fee (Stripe/PayPal).
+
+Bracket auto-creates matches with deadlines.
+
+New Rule:
+
+Each round must be completed within 7 days.
+
+If a player fails to schedule/complete → automatic forfeit.
+
+Purpose: Keeps tournaments moving and avoids “stalling.”
+
+5. Score Reporting & Fair Play
+
+Screens:
+
+Winner enters match result.
+
+Loser confirms result + rates opponent’s skill level (Matched / Lower / Higher).
+
+App adjusts ranking accordingly.
+
+Purpose: Prevents cheating and keeps tournaments fair.
+
+6. Membership & Payments
+
+Screens:
+
+$4.99/month → Browse & match partners (casual play).
+
+$9.99/month → Includes tournament access.
+
+Stripe integration for recurring billing.
+
+Purpose: Monetization and membership tiers.
+
+7. Community Trust Features
+
+Profile Verification → selfie, DOB check.
+
+Play History → record of matches played, forfeits, and results.
+
+Optional: Rating system (sportsmanship/communication).

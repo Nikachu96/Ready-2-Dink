@@ -1,0 +1,87 @@
+# app.py
+from flask import Flask, render_template, request, redirect, url_for
+import sqlite3
+from datetime import datetime, timedelta
+
+app = Flask(__name__)
+
+# Initialize database
+def init_db():
+    conn = sqlite3.connect('app.db')
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS players (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name TEXT,
+            address TEXT,
+            dob TEXT,
+            location1 TEXT,
+            location2 TEXT,
+            skill_level TEXT,
+            email TEXT,
+            selfie TEXT
+        )
+    ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS tournaments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER,
+            tournament_name TEXT,
+            entry_date TEXT,
+            match_deadline TEXT,
+            completed INTEGER DEFAULT 0,
+            FOREIGN KEY(player_id) REFERENCES players(id)
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# Routes
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        data = request.form
+        conn = sqlite3.connect('app.db')
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO players 
+            (full_name, address, dob, location1, location2, skill_level, email, selfie)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (data['full_name'], data['address'], data['dob'], data['location1'],
+              data['location2'], data['skill_level'], data['email'], data['selfie']))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('index'))
+    return render_template('register.html')
+
+@app.route('/tournament', methods=['GET', 'POST'])
+def tournament():
+    if request.method == 'POST':
+        data = request.form
+        conn = sqlite3.connect('app.db')
+        c = conn.cursor()
+        entry_date = datetime.now()
+        match_deadline = entry_date + timedelta(days=7)  # matches must be completed in a week
+        c.execute('''
+            INSERT INTO tournaments (player_id, tournament_name, entry_date, match_deadline)
+            VALUES (?, ?, ?, ?)
+        ''', (data['player_id'], data['tournament_name'], entry_date.strftime('%Y-%m-%d'), match_deadline.strftime('%Y-%m-%d')))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('index'))
+    # List all players for selection
+    conn = sqlite3.connect('app.db')
+    c = conn.cursor()
+    c.execute('SELECT id, full_name FROM players')
+    players = c.fetchall()
+    conn.close()
+    return render_template('tournament.html', players=players)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=81)

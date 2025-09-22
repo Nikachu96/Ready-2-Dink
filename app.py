@@ -553,10 +553,8 @@ def require_disclaimers_accepted(f):
         player_id = kwargs.get('player_id') or request.form.get('player_id')
         
         if player_id:
-            conn = get_pg_connection()
-            cursor = conn.cursor()
-            cursor.execute('SELECT disclaimers_accepted, test_account FROM players WHERE id = %s', (player_id,))
-            player = cursor.fetchone()
+            conn = get_db_connection()
+            player = conn.execute('SELECT disclaimers_accepted, test_account FROM players WHERE id = ?', (player_id,)).fetchone()
             conn.close()
             
             # Skip validation for test accounts
@@ -1863,10 +1861,8 @@ def set_user_permissions(player_id, membership_type):
 
 def check_user_permission(player_id, permission):
     """Check if a user has a specific permission"""
-    conn = get_pg_connection()
-    cursor = conn.cursor()
-    cursor.execute(f'SELECT {permission} FROM players WHERE id = %s', (player_id,))
-    result = cursor.fetchone()
+    conn = get_db_connection()
+    result = conn.execute(f'SELECT {permission} FROM players WHERE id = ?', (player_id,)).fetchone()
     conn.close()
     
     if result and result[permission]:
@@ -1877,13 +1873,11 @@ def check_and_handle_trial_expiry(player_id):
     """Check if a user's trial has expired and downgrade if necessary"""
     from datetime import datetime
     
-    conn = get_pg_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
+    conn = get_db_connection()
+    player = conn.execute('''
         SELECT id, trial_end_date, subscription_status, membership_type 
-        FROM players WHERE id = %s
-    ''', (player_id,))
-    player = cursor.fetchone()
+        FROM players WHERE id = ?
+    ''', (player_id,)).fetchone()
     
     if not player:
         conn.close()
@@ -1899,7 +1893,7 @@ def check_and_handle_trial_expiry(player_id):
         trial_end = datetime.fromisoformat(player['trial_end_date'])
         if datetime.now() > trial_end and player['subscription_status'] == 'trialing':
             # Trial has expired, downgrade to Free Search
-            cursor.execute('''
+            conn.execute('''
                 UPDATE players SET 
                     membership_type = 'free_search',
                     subscription_status = 'expired',
@@ -1909,7 +1903,7 @@ def check_and_handle_trial_expiry(player_id):
                     can_join_tournaments = 0,
                     can_view_leaderboard = 0,
                     can_view_premium_stats = 0
-                WHERE id = %s
+                WHERE id = ?
             ''', (player_id,))
             conn.commit()
             conn.close()
@@ -1989,10 +1983,8 @@ def require_admin():
                 return redirect(url_for('player_login'))
             
             # Check if user is admin
-            conn = get_pg_connection()
-            cursor = conn.cursor()
-            cursor.execute('SELECT is_admin FROM players WHERE id = %s', (current_player_id,))
-            player = cursor.fetchone()
+            conn = get_db_connection()
+            player = conn.execute('SELECT is_admin FROM players WHERE id = ?', (current_player_id,)).fetchone()
             conn.close()
             
             if not player or not player.get('is_admin'):
@@ -2615,17 +2607,15 @@ def get_tournament_points(result):
 
 def get_player_ranking(player_id):
     """Get player's current ranking position"""
-    conn = get_pg_connection()
-    cursor = conn.cursor()
+    conn = get_db_connection()
     
     # Get all players ordered by points (descending), then by wins
-    cursor.execute('''
+    players = conn.execute('''
         SELECT id, ranking_points, wins
         FROM players 
         WHERE ranking_points > 0 OR wins > 0
         ORDER BY ranking_points DESC, wins DESC
-    ''')
-    players = cursor.fetchall()
+    ''').fetchall()
     
     conn.close()
     
@@ -2638,27 +2628,24 @@ def get_player_ranking(player_id):
 
 def get_leaderboard(limit=10, skill_level=None):
     """Get top players by ranking points, optionally filtered by skill level"""
-    conn = get_pg_connection()
-    cursor = conn.cursor()
+    conn = get_db_connection()
     
     if skill_level:
-        cursor.execute('''
+        leaderboard = conn.execute('''
             SELECT id, full_name, ranking_points, wins, losses, tournament_wins, selfie, skill_level
             FROM players 
-            WHERE (ranking_points > 0 OR wins > 0) AND skill_level = %s
+            WHERE (ranking_points > 0 OR wins > 0) AND skill_level = ?
             ORDER BY ranking_points DESC, wins DESC, losses ASC
-            LIMIT %s
-        ''', (skill_level, limit))
-        leaderboard = cursor.fetchall()
+            LIMIT ?
+        ''', (skill_level, limit)).fetchall()
     else:
-        cursor.execute('''
+        leaderboard = conn.execute('''
             SELECT id, full_name, ranking_points, wins, losses, tournament_wins, selfie, skill_level
             FROM players 
             WHERE ranking_points > 0 OR wins > 0
             ORDER BY ranking_points DESC, wins DESC, losses ASC
-            LIMIT %s
-        ''', (limit,))
-        leaderboard = cursor.fetchall()
+            LIMIT ?
+        ''', (limit,)).fetchall()
     
     conn.close()
     
@@ -4137,10 +4124,8 @@ def inject_user_context():
         logging.debug(f"Context processor: user authenticated: {bool(current_player_id)}")
     
     if current_player_id:
-        conn = get_pg_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT is_admin FROM players WHERE id = %s', (current_player_id,))
-        player = cursor.fetchone()
+        conn = get_db_connection()
+        player = conn.execute('SELECT is_admin FROM players WHERE id = ?', (current_player_id,)).fetchone()
         conn.close()
         if player:
             is_admin = bool(player['is_admin'])
@@ -4240,10 +4225,8 @@ def index():
     if 'current_player_id' in session:
         player_id = session['current_player_id']
         # Check if player still exists and has accepted disclaimers
-        conn = get_pg_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
-        player = cursor.fetchone()
+        conn = get_db_connection()
+        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
         conn.close()
         
         if player:
@@ -4265,8 +4248,7 @@ def index():
 @require_disclaimers_accepted
 def player_home(player_id):
     """Personalized home page for a player"""
-    conn = get_pg_connection()
-    cursor = conn.cursor()
+    conn = get_db_connection()
     
     # Set session for logged in user
     session['current_player_id'] = player_id
@@ -4276,49 +4258,48 @@ def player_home(player_id):
     check_and_handle_trial_expiry(player_id)
     
     # Get player info (refresh after potential trial expiry update)
-    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
-    player = cursor.fetchone()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
     
     # Get connections (players they've played against)
-    cursor.execute('''
+    connections = conn.execute('''
         SELECT DISTINCT 
             CASE 
-                WHEN m.player1_id = %s THEN p2.id
+                WHEN m.player1_id = ? THEN p2.id
                 ELSE p1.id 
             END as opponent_id,
             CASE 
-                WHEN m.player1_id = %s THEN p2.full_name
+                WHEN m.player1_id = ? THEN p2.full_name
                 ELSE p1.full_name 
             END as opponent_name,
             CASE 
-                WHEN m.player1_id = %s THEN p2.selfie
+                WHEN m.player1_id = ? THEN p2.selfie
                 ELSE p1.selfie 
             END as opponent_selfie,
             CASE 
-                WHEN m.player1_id = %s THEN p2.wins
+                WHEN m.player1_id = ? THEN p2.wins
                 ELSE p1.wins 
             END as opponent_wins,
             CASE 
-                WHEN m.player1_id = %s THEN p2.losses
+                WHEN m.player1_id = ? THEN p2.losses
                 ELSE p1.losses 
             END as opponent_losses,
             CASE 
-                WHEN m.player1_id = %s THEN p2.tournament_wins
+                WHEN m.player1_id = ? THEN p2.tournament_wins
                 ELSE p1.tournament_wins 
             END as opponent_tournament_wins,
             CASE 
-                WHEN m.player1_id = %s THEN p2.latitude
+                WHEN m.player1_id = ? THEN p2.latitude
                 ELSE p1.latitude 
             END as opponent_latitude,
             CASE 
-                WHEN m.player1_id = %s THEN p2.longitude
+                WHEN m.player1_id = ? THEN p2.longitude
                 ELSE p1.longitude 
             END as opponent_longitude,
             CASE 
-                WHEN m.player1_id = %s THEN p2.location1
+                WHEN m.player1_id = ? THEN p2.location1
                 ELSE p1.location1 
             END as opponent_location1,
             COUNT(*) as matches_played,
@@ -4326,47 +4307,43 @@ def player_home(player_id):
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
-        WHERE m.player1_id = %s OR m.player2_id = %s
+        WHERE m.player1_id = ? OR m.player2_id = ?
         GROUP BY opponent_id, opponent_name, opponent_selfie, opponent_wins, opponent_losses, opponent_tournament_wins, opponent_latitude, opponent_longitude, opponent_location1
         ORDER BY last_played DESC
         LIMIT 10
-    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id))
-    connections = cursor.fetchall()
+    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
     
     # Get recent activity
-    cursor.execute('''
+    recent_matches = conn.execute('''
         SELECT m.*, 
                p1.full_name as player1_name, p1.selfie as player1_selfie,
                p2.full_name as player2_name, p2.selfie as player2_selfie
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
-        WHERE m.player1_id = %s OR m.player2_id = %s
+        WHERE m.player1_id = ? OR m.player2_id = ?
         ORDER BY m.created_at DESC
         LIMIT 5
-    ''', (player_id, player_id))
-    recent_matches = cursor.fetchall()
+    ''', (player_id, player_id)).fetchall()
     
     # Get player's tournaments
-    cursor.execute('''
+    tournaments = conn.execute('''
         SELECT * FROM tournaments 
-        WHERE player_id = %s 
+        WHERE player_id = ? 
         ORDER BY created_at DESC
         LIMIT 5
-    ''', (player_id,))
-    tournaments = cursor.fetchall()
+    ''', (player_id,)).fetchall()
     
     # Get available tournaments (call-to-action)
     tournament_levels = get_tournament_levels()
     available_tournaments = []
     
     # Get all open tournament instances ordered by price (lowest to highest)
-    cursor.execute('''
+    open_tournaments = conn.execute('''
         SELECT * FROM tournament_instances 
         WHERE status = 'open' AND current_players < max_players
         ORDER BY entry_fee ASC, created_at
-    ''')
-    open_tournaments = cursor.fetchall()
+    ''').fetchall()
     
     for tournament in open_tournaments:
         spots_remaining = tournament['max_players'] - tournament['current_players']
@@ -4385,16 +4362,15 @@ def player_home(player_id):
         })
     
     # Get player's tournaments with bracket info
-    cursor.execute('''
+    player_tournaments = conn.execute('''
         SELECT t.*, ti.name as tournament_instance_name, ti.status as tournament_status,
                ti.id as tournament_instance_id
         FROM tournaments t
         JOIN tournament_instances ti ON t.tournament_instance_id = ti.id
-        WHERE t.player_id = %s 
+        WHERE t.player_id = ? 
         ORDER BY t.created_at DESC
         LIMIT 5
-    ''', (player_id,))
-    player_tournaments = cursor.fetchall()
+    ''', (player_id,)).fetchall()
     
     conn.close()
     
@@ -4599,10 +4575,8 @@ def register():
             return render_template('register.html', form_data=request.form)
         
         # Check if username is already taken
-        conn = get_pg_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT id FROM players WHERE username = %s', (request.form['username'],))
-        existing_username = cursor.fetchone()
+        conn = get_db_connection()
+        existing_username = conn.execute('SELECT id FROM players WHERE username = ?', (request.form['username'],)).fetchone()
         if existing_username:
             conn.close()
             flash('Username already taken. Please choose a different username.', 'danger')
@@ -4666,8 +4640,7 @@ def register():
             except:
                 logging.warning(f"Could not calculate age from DOB: {dob_str}")
             
-            conn = get_pg_connection()
-            cursor = conn.cursor()
+            conn = get_db_connection()
             full_name = f"{request.form['first_name']} {request.form['last_name']}"
             # Create location description from ZIP code or coordinates
             if latitude is not None and longitude is not None:
@@ -4684,15 +4657,14 @@ def register():
             from datetime import datetime, timedelta
             trial_end_date = (datetime.now() + timedelta(days=30)).isoformat()
             
-            cursor.execute('''
+            cursor = conn.execute('''
                 INSERT INTO players 
                 (first_name, last_name, full_name, email, dob, username, password_hash, preferred_sport, 
                  guardian_email, account_status, guardian_consent_required, test_account, 
                  address, location1, skill_level, latitude, longitude, search_radius_miles, referral_code,
                  membership_type, trial_end_date, subscription_status,
                  can_search_players, can_send_challenges, can_receive_challenges, can_join_tournaments, can_view_leaderboard, can_view_premium_stats)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (request.form['first_name'], request.form['last_name'], full_name, request.form['email'], request.form['dob'], 
                   request.form['username'], password_hash, 'Pickleball',
                   guardian_email if guardian_email else None, account_status, 1 if requires_consent else 0, 0, 
@@ -4701,13 +4673,12 @@ def register():
                   'premium', trial_end_date, 'trialing',
                   1, 1, 1, 1, 1, 1))
             
-            player_result = cursor.fetchone()
-            player_id = player_result['id']
+            player_id = cursor.lastrowid
             
             # Track referral signup if this user came through a referral link
             referrer_id=session.pop('referrer_player_id', None); code=session.pop('referral_code', None)
             if referrer_id and referrer_id!=player_id:
-                cursor.execute('INSERT INTO universal_referrals (referrer_player_id, referred_player_id, referral_code) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING', (referrer_id, player_id, code))
+                conn.execute('INSERT OR IGNORE INTO universal_referrals (referrer_player_id, referred_player_id, referral_code) VALUES (?,?,?)',(referrer_id,player_id,code))
             
             conn.commit()
             conn.close()
@@ -4781,10 +4752,8 @@ def register():
 def show_disclaimers(player_id):
     """Show disclaimers page for a newly registered player"""
     # Verify player exists and hasn't already accepted disclaimers
-    conn = get_pg_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
-    player = cursor.fetchone()
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
     conn.close()
     
     if not player:
@@ -4808,9 +4777,8 @@ def accept_disclaimers():
         return redirect(url_for('show_disclaimers', player_id=player_id))
     
     try:
-        conn = get_pg_connection()
-        cursor = conn.cursor()
-        cursor.execute('UPDATE players SET disclaimers_accepted = 1 WHERE id = %s', (player_id,))
+        conn = get_db_connection()
+        conn.execute('UPDATE players SET disclaimers_accepted = 1 WHERE id = ?', (player_id,))
         conn.commit()
         conn.close()
         
@@ -4831,10 +4799,8 @@ def accept_disclaimers():
 @app.route('/guardian-consent/<int:player_id>')
 def guardian_consent_form(player_id):
     """Display guardian consent form for COPPA compliance"""
-    conn = get_pg_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
-    player = cursor.fetchone()
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
     conn.close()
     
     if not player:
@@ -4865,20 +4831,18 @@ def submit_guardian_consent(player_id):
         from datetime import datetime
         consent_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        conn = get_pg_connection()
-        cursor = conn.cursor()
-        cursor.execute('''
+        conn = get_db_connection()
+        conn.execute('''
             UPDATE players 
             SET account_status = 'active', 
-                guardian_consent_date = %s,
+                guardian_consent_date = ?,
                 disclaimers_accepted = 1
-            WHERE id = %s
+            WHERE id = ?
         ''', (consent_date, player_id))
         conn.commit()
         
         # Get player details for notification
-        cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
-        player = cursor.fetchone()
+        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
         conn.close()
         
         if player:
@@ -5568,12 +5532,10 @@ def tournaments_overview():
     # User is already authenticated and has permission via decorator
     current_player_id = session.get('current_player_id')
     
-    conn = get_pg_connection()
-    cursor = conn.cursor()
+    conn = get_db_connection()
     
     # Get current player's location data from database
-    cursor.execute('SELECT * FROM players WHERE id = %s', (current_player_id,))
-    player = cursor.fetchone()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (current_player_id,)).fetchone()
     if not player:
         flash('Player profile not found', 'danger')
         conn.close()
@@ -5607,11 +5569,10 @@ def tournaments_overview():
     
     # Get current tournament entries count for each level
     for level_key in tournament_levels:
-        cursor.execute('''
+        count = conn.execute('''
             SELECT COUNT(*) as count FROM tournaments 
-            WHERE tournament_level = %s AND completed = 0
-        ''', (level_key,))
-        count = cursor.fetchone()['count']
+            WHERE tournament_level = ? AND completed = 0
+        ''', (level_key,)).fetchone()['count']
         tournament_levels[level_key]['current_entries'] = count
         tournament_levels[level_key]['spots_remaining'] = tournament_levels[level_key]['max_players'] - count
     
@@ -5627,8 +5588,7 @@ def tournaments_overview():
             created_at DESC
     '''
     
-    cursor.execute(tournament_instances_query)
-    all_tournament_instances = cursor.fetchall()
+    all_tournament_instances = conn.execute(tournament_instances_query).fetchall()
     
     # Filter tournament instances by location if user location is provided
     tournament_instances = []
@@ -5693,8 +5653,7 @@ def tournaments_overview():
         ORDER BY ct.created_at DESC
     '''
     
-    cursor.execute(custom_tournaments_query)
-    all_custom_tournaments = cursor.fetchall()
+    all_custom_tournaments = conn.execute(custom_tournaments_query).fetchall()
     
     # Filter custom tournaments by location if user location is provided
     custom_tournaments = []
@@ -5742,27 +5701,25 @@ def tournaments_overview():
     
     # Get recent tournament entries - FIXED TO SHOW ONLY CURRENT USER'S ENTRIES
     logging.info(f"DEBUG: Fetching recent tournament entries for current user {current_player_id}")
-    cursor.execute('''
+    recent_entries = conn.execute('''
         SELECT t.*, p.full_name, p.selfie
         FROM tournaments t
         JOIN players p ON t.player_id = p.id
         WHERE t.tournament_level IS NOT NULL 
-        AND t.player_id = %s
+        AND t.player_id = ?
         ORDER BY t.created_at DESC
         LIMIT 10
-    ''', (current_player_id,))
-    recent_entries = cursor.fetchall()
+    ''', (current_player_id,)).fetchall()
     logging.info(f"DEBUG: Found {len(recent_entries)} recent tournament entries for current user")
     for entry in recent_entries:
         logging.debug(f"Tournament entry details - ID: {entry['id']}, Player ID: {entry['player_id']}, Tournament: {entry['tournament_name']}, Level: {entry['tournament_level']}")
     
     # Get all registered players for quick access
-    cursor.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name')
-    players = cursor.fetchall()
+    players = conn.execute('SELECT id, full_name, skill_level FROM players ORDER BY full_name').fetchall()
     
     # Get tournament brackets for the current player - ADD DEBUG LOGGING
     logging.info(f"DEBUG: Fetching tournament brackets for current_player_id: {current_player_id}")
-    cursor.execute('''
+    my_tournament_brackets = conn.execute('''
         SELECT DISTINCT 
             ti.id as tournament_instance_id,
             ti.name as tournament_name,
@@ -5786,26 +5743,25 @@ def tournaments_overview():
             CASE 
                 WHEN EXISTS (SELECT 1 FROM tournament_matches tm2 
                            WHERE tm2.tournament_instance_id = ti.id 
-                           AND (tm2.player1_id = %s OR tm2.player2_id = %s)
-                           AND tm2.winner_id = %s) THEN 'Advanced'
+                           AND (tm2.player1_id = ? OR tm2.player2_id = ?)
+                           AND tm2.winner_id = ?) THEN 'Advanced'
                 WHEN EXISTS (SELECT 1 FROM tournament_matches tm2 
                            WHERE tm2.tournament_instance_id = ti.id 
-                           AND (tm2.player1_id = %s OR tm2.player2_id = %s)
+                           AND (tm2.player1_id = ? OR tm2.player2_id = ?)
                            AND tm2.status = 'completed'
-                           AND tm2.winner_id != %s) THEN 'Eliminated'
+                           AND tm2.winner_id != ?) THEN 'Eliminated'
                 WHEN COUNT(DISTINCT CASE WHEN tm.status IN ('pending', 'active') THEN tm.id END) > 0 THEN 'Active'
                 ELSE 'Awaiting Bracket'
             END as player_status
         FROM tournaments t
         JOIN tournament_instances ti ON t.tournament_instance_id = ti.id
         LEFT JOIN tournament_matches tm ON ti.id = tm.tournament_instance_id
-        WHERE t.player_id = %s
+        WHERE t.player_id = ?
         GROUP BY ti.id, ti.name, ti.skill_level, ti.status, t.tournament_type, t.entry_date
         ORDER BY t.entry_date DESC
     ''', (current_player_id, current_player_id, current_player_id, 
           current_player_id, current_player_id, current_player_id,
-          current_player_id))
-    my_tournament_brackets = cursor.fetchall()
+          current_player_id)).fetchall()
     logging.info(f"DEBUG: Found {len(my_tournament_brackets)} tournament brackets for player {current_player_id}")
     for bracket in my_tournament_brackets:
         logging.info(f"DEBUG: Bracket - Tournament: {bracket['tournament_name']}, Status: {bracket['tournament_status']}, Player Status: {bracket['player_status']}")
@@ -5867,10 +5823,8 @@ def tournaments_overview():
 def tournament():
     """Direct tournament entry for single-player app"""
     # Get the current player (should be the only player in the system)
-    conn = get_pg_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM players ORDER BY id LIMIT 1')
-    player = cursor.fetchone()
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players ORDER BY id LIMIT 1').fetchone()
     if not player:
         flash('No player profile found. Please register first.', 'danger')
         return redirect(url_for('register'))
@@ -5883,10 +5837,8 @@ def tournament():
 def tournament_entry(player_id):
     """Tournament entry form with levels and fees for a specific player"""
     # Get player info first
-    conn = get_pg_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
-    player = cursor.fetchone()
+    conn = get_db_connection()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
@@ -5918,10 +5870,9 @@ def tournament_entry(player_id):
                 return redirect(url_for('tournament_entry', player_id=player_id))
                 
             # Get tournament instance details
-            cursor.execute('''
-                SELECT * FROM tournament_instances WHERE id = %s AND status = 'open'
-            ''', (tournament_instance_id,))
-            tournament_instance = cursor.fetchone()
+            tournament_instance = conn.execute('''
+                SELECT * FROM tournament_instances WHERE id = ? AND status = 'open'
+            ''', (tournament_instance_id,)).fetchone()
             
             if not tournament_instance:
                 flash('Tournament not found or no longer accepting registrations.', 'danger')
@@ -5933,11 +5884,10 @@ def tournament_entry(player_id):
                 return redirect(url_for('tournament_entry', player_id=player_id))
             
             # Check if player already entered THIS specific tournament (allow multiple tournaments)
-            cursor.execute('''
+            existing_entry = conn.execute('''
                 SELECT COUNT(*) as count FROM tournaments 
-                WHERE player_id = %s AND tournament_instance_id = %s
-            ''', (player_id, tournament_instance_id))
-            existing_entry = cursor.fetchone()['count']
+                WHERE player_id = ? AND tournament_instance_id = ?
+            ''', (player_id, tournament_instance_id)).fetchone()['count']
             
             if existing_entry > 0:
                 flash('You are already registered for this tournament.', 'warning')
@@ -7635,7 +7585,7 @@ def admin_required(f):
     return decorated_function
 
 @app.route('/create_tournament', methods=['POST'])
-@require_admin()
+@admin_required
 def create_tournament():
     """Create a new tournament instance"""
     name = request.form.get('name')
@@ -8061,7 +8011,7 @@ def tournament_payment_success(tournament_id):
     return redirect(url_for('tournaments_overview'))
 
 @app.route('/admin/backfill_matches')
-@require_admin()
+@admin_required
 def admin_backfill_matches():
     """Admin route to backfill existing matches with team data"""
     try:
@@ -8459,36 +8409,27 @@ def team_search():
                          current_player_id=current_player_id)
 
 @app.route('/admin')
-@require_admin()
+@admin_required
 def admin_dashboard():
     """Admin dashboard with platform overview"""
-    conn = get_pg_connection()
-    cursor = conn.cursor()
+    conn = get_db_connection()
     
     # Get existing tournament instances for management
-    cursor.execute('''
+    existing_tournaments = conn.execute('''
         SELECT * FROM tournament_instances 
         ORDER BY skill_level, created_at
-    ''')
-    existing_tournaments = cursor.fetchall()
+    ''').fetchall()
     
     # Get key metrics
-    cursor.execute('SELECT COUNT(*) as count FROM players')
-    total_players = cursor.fetchone()['count']
-    cursor.execute('SELECT COUNT(*) as count FROM matches')
-    total_matches = cursor.fetchone()['count']
-    cursor.execute('SELECT COUNT(*) as count FROM tournaments')
-    total_tournaments = cursor.fetchone()['count']
-    cursor.execute('SELECT COUNT(*) as count FROM tournaments WHERE completed = 0')
-    active_tournaments = cursor.fetchone()['count']
+    total_players = conn.execute('SELECT COUNT(*) as count FROM players').fetchone()['count']
+    total_matches = conn.execute('SELECT COUNT(*) as count FROM matches').fetchone()['count']
+    total_tournaments = conn.execute('SELECT COUNT(*) as count FROM tournaments').fetchone()['count']
+    active_tournaments = conn.execute('SELECT COUNT(*) as count FROM tournaments WHERE completed = 0').fetchone()['count']
     
     # Get detailed player metrics by skill level
-    cursor.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = %s', ('Beginner',))
-    beginner_players = cursor.fetchone()['count']
-    cursor.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = %s', ('Intermediate',))
-    intermediate_players = cursor.fetchone()['count']
-    cursor.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = %s', ('Advanced',))
-    advanced_players = cursor.fetchone()['count']
+    beginner_players = conn.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = "Beginner"').fetchone()['count']
+    intermediate_players = conn.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = "Intermediate"').fetchone()['count']
+    advanced_players = conn.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = "Advanced"').fetchone()['count']
     
     # Get tournament financial metrics
     tournament_levels = get_tournament_levels()
@@ -8499,11 +8440,10 @@ def admin_dashboard():
         entry_fee = level_info['entry_fee']
         
         # Count entries for this level
-        cursor.execute('''
+        level_entries = conn.execute('''
             SELECT COUNT(*) as count FROM tournaments 
-            WHERE tournament_level = %s
-        ''', (level_key,))
-        level_entries = cursor.fetchone()['count']
+            WHERE tournament_level = ?
+        ''', (level_key,)).fetchone()['count']
         
         # Calculate revenue for this level
         level_revenue = level_entries * entry_fee
@@ -8514,26 +8454,23 @@ def admin_dashboard():
         total_payouts += level_payouts
     
     # Recent activity
-    cursor.execute('''
+    recent_players = conn.execute('''
         SELECT * FROM players ORDER BY created_at DESC LIMIT 5
-    ''')
-    recent_players = cursor.fetchall()
+    ''').fetchall()
     
-    cursor.execute('''
+    recent_matches = conn.execute('''
         SELECT m.*, p1.full_name as player1_name, p2.full_name as player2_name
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
         ORDER BY m.created_at DESC LIMIT 10
-    ''')
-    recent_matches = cursor.fetchall()
+    ''').fetchall()
     
-    cursor.execute('''
+    recent_tournaments = conn.execute('''
         SELECT t.*, p.full_name FROM tournaments t
         JOIN players p ON t.player_id = p.id
         ORDER BY t.created_at DESC LIMIT 10
-    ''')
-    recent_tournaments = cursor.fetchall()
+    ''').fetchall()
     
     conn.close()
     
@@ -8558,7 +8495,7 @@ def admin_dashboard():
                          existing_tournaments=existing_tournaments)
 
 @app.route('/admin/players')
-@require_admin()
+@admin_required
 def admin_players():
     """Admin player management"""
     conn = get_db_connection()
@@ -8570,7 +8507,7 @@ def admin_players():
     return render_template('admin/players.html', players=players)
 
 @app.route('/admin/players/<int:player_id>/edit')
-@require_admin()
+@admin_required
 def admin_edit_player(player_id):
     """Admin edit specific player profile"""
     conn = get_db_connection()
@@ -8584,7 +8521,7 @@ def admin_edit_player(player_id):
     return render_template('admin/edit_player.html', player=player)
 
 @app.route('/admin/players/<int:player_id>/edit', methods=['POST'])
-@require_admin()
+@admin_required
 def admin_update_player(player_id):
     """Handle admin player profile update"""
     from werkzeug.security import generate_password_hash
@@ -8665,7 +8602,7 @@ def admin_update_player(player_id):
         return redirect(url_for('admin_edit_player', player_id=player_id))
 
 @app.route('/admin/players/<int:player_id>/delete', methods=['POST'])
-@require_admin()
+@admin_required
 def admin_delete_player(player_id):
     """Delete a test player (except ID 1)"""
     # Prevent deletion of the main admin account (ID 1)
@@ -8695,7 +8632,7 @@ def admin_delete_player(player_id):
     return redirect(url_for('admin_players'))
 
 @app.route('/update_tournament_instance', methods=['POST'])
-@require_admin()
+@admin_required
 def update_tournament_instance():
     """Update individual tournament instance"""
     tournament_id = request.form.get('tournament_id')
@@ -8716,7 +8653,7 @@ def update_tournament_instance():
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/tournaments')
-@require_admin()
+@admin_required
 def admin_tournaments():
     """Admin tournament management"""
     conn = get_db_connection()
@@ -8731,7 +8668,7 @@ def admin_tournaments():
     return render_template('admin/tournaments.html', tournaments=tournaments)
 
 @app.route('/admin/ambassadors')
-@require_admin()
+@admin_required
 def admin_ambassadors():
     """Admin ambassador management with state tracking"""
     conn = get_db_connection()
@@ -8781,7 +8718,7 @@ def admin_ambassadors():
                          total_referrals=total_referrals)
 
 @app.route('/admin/toggle_admin/<int:player_id>', methods=['POST'])
-@require_admin()
+@admin_required
 def toggle_admin(player_id):
     """Toggle admin status for a player"""
     conn = get_db_connection()
@@ -8805,7 +8742,7 @@ def set_player_session(player_id):
     return redirect(url_for('player_home', player_id=player_id))
 
 @app.route('/admin/create_test_player', methods=['POST'])
-@require_admin()
+@admin_required
 def create_test_player():
     """Create a test player for admin testing purposes"""
     import secrets
@@ -8939,7 +8876,7 @@ def setup_first_admin():
 
 
 @app.route('/admin/matches')
-@require_admin()
+@admin_required
 def admin_matches():
     """Admin match management and dispute resolution"""
     conn = get_db_connection()
@@ -8975,7 +8912,7 @@ def admin_matches():
                          pending_matches=pending_matches)
 
 @app.route('/admin/force_complete_match/<int:match_id>', methods=['POST'])
-@require_admin()
+@admin_required
 def force_complete_match(match_id):
     """Force complete a match with admin scores"""
     player1_score = request.form.get('player1_score', type=int)
@@ -9017,7 +8954,7 @@ def force_complete_match(match_id):
     return redirect(url_for('admin_matches'))
 
 @app.route('/admin/cancel_match/<int:match_id>', methods=['POST'])
-@require_admin()
+@admin_required
 def cancel_match(match_id):
     """Cancel a match"""
     conn = get_db_connection()
@@ -9036,7 +8973,7 @@ def cancel_match(match_id):
     return jsonify({'success': True, 'message': 'Match canceled successfully'})
 
 @app.route('/admin/settings')
-@require_admin()
+@admin_required
 def admin_settings():
     """Admin system settings management"""
     conn = get_db_connection()
@@ -9046,7 +8983,7 @@ def admin_settings():
     return render_template('admin/settings.html', settings=settings)
 
 @app.route('/admin/payouts')
-@require_admin()
+@admin_required
 def admin_payouts():
     """Admin payout management interface"""
     conn = get_db_connection()
@@ -9101,7 +9038,7 @@ def admin_payouts():
                          total_paid_this_month=total_paid_this_month)
 
 @app.route('/admin/update_payout_status/<int:payout_id>', methods=['POST'])
-@require_admin()
+@admin_required
 def update_payout_status(payout_id):
     """Update payout status"""
     new_status = request.form.get('status')
@@ -9151,7 +9088,7 @@ def update_payout_status(payout_id):
     return redirect(url_for('admin_payouts'))
 
 @app.route('/admin/bank_settings')
-@require_admin()
+@admin_required
 def admin_bank_settings():
     """Display bank account settings page"""
     conn = get_db_connection()
@@ -9164,7 +9101,7 @@ def admin_bank_settings():
     return render_template('admin/bank_settings.html', bank_settings=bank_settings)
 
 @app.route('/admin/save_bank_settings', methods=['POST'])
-@require_admin()
+@admin_required
 def save_bank_settings():
     """Save or update bank account settings"""
     admin_id = session.get('current_player_id')
@@ -9237,7 +9174,7 @@ def save_bank_settings():
     return redirect(url_for('admin_bank_settings'))
 
 @app.route('/admin/staff')
-@require_admin()
+@admin_required
 def admin_staff():
     """Display admin staff management page"""
     conn = get_db_connection()
@@ -9254,7 +9191,7 @@ def admin_staff():
     return render_template('admin/staff.html', admin_staff=admin_staff)
 
 @app.route('/admin/create_admin_staff', methods=['POST'])
-@require_admin()
+@admin_required
 def create_admin_staff():
     """Create a new admin staff member"""
     from datetime import datetime
@@ -9338,7 +9275,7 @@ def create_admin_staff():
     return redirect(url_for('admin_staff'))
 
 @app.route('/admin/remove_admin_staff/<int:player_id>', methods=['POST'])
-@require_admin()
+@admin_required
 def remove_admin_staff(player_id):
     """Remove admin access from a staff member"""
     conn = get_db_connection()
@@ -9502,7 +9439,7 @@ def admin_change_password_post():
         conn.close()
 
 @app.route('/issue_tournament_credit', methods=['POST'])
-@require_admin()
+@admin_required
 def issue_tournament_credit():
     """Issue tournament credit to a player"""
     player_id = request.form.get('player_id')
@@ -10235,7 +10172,7 @@ def decline_partner_invitation(invitation_id):
     return redirect(url_for('dashboard', player_id=invitation['invitee_id']))
 
 @app.route('/admin/update_settings', methods=['POST'])
-@require_admin()
+@admin_required
 def update_settings():
     """Update system settings"""
     # Get all form data
@@ -11328,7 +11265,7 @@ def track_referral_conversion(player_id, membership_type):
     session.pop('referrer_player_id', None)
 
 @app.route('/admin/create-bulk-test-accounts', methods=['POST'])
-@require_admin()
+@admin_required
 def create_bulk_test_accounts():
     """Create multiple test accounts for testing purposes"""
     import secrets
