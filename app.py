@@ -4231,8 +4231,10 @@ def index():
     if 'current_player_id' in session:
         player_id = session['current_player_id']
         # Check if player still exists and has accepted disclaimers
-        conn = get_db_connection()
-        player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+        conn = get_pg_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+        player = cursor.fetchone()
         conn.close()
         
         if player:
@@ -4254,7 +4256,8 @@ def index():
 @require_disclaimers_accepted
 def player_home(player_id):
     """Personalized home page for a player"""
-    conn = get_db_connection()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
     
     # Set session for logged in user
     session['current_player_id'] = player_id
@@ -4264,48 +4267,49 @@ def player_home(player_id):
     check_and_handle_trial_expiry(player_id)
     
     # Get player info (refresh after potential trial expiry update)
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    cursor.execute('SELECT * FROM players WHERE id = %s', (player_id,))
+    player = cursor.fetchone()
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
     
     # Get connections (players they've played against)
-    connections = conn.execute('''
+    cursor.execute('''
         SELECT DISTINCT 
             CASE 
-                WHEN m.player1_id = ? THEN p2.id
+                WHEN m.player1_id = %s THEN p2.id
                 ELSE p1.id 
             END as opponent_id,
             CASE 
-                WHEN m.player1_id = ? THEN p2.full_name
+                WHEN m.player1_id = %s THEN p2.full_name
                 ELSE p1.full_name 
             END as opponent_name,
             CASE 
-                WHEN m.player1_id = ? THEN p2.selfie
+                WHEN m.player1_id = %s THEN p2.selfie
                 ELSE p1.selfie 
             END as opponent_selfie,
             CASE 
-                WHEN m.player1_id = ? THEN p2.wins
+                WHEN m.player1_id = %s THEN p2.wins
                 ELSE p1.wins 
             END as opponent_wins,
             CASE 
-                WHEN m.player1_id = ? THEN p2.losses
+                WHEN m.player1_id = %s THEN p2.losses
                 ELSE p1.losses 
             END as opponent_losses,
             CASE 
-                WHEN m.player1_id = ? THEN p2.tournament_wins
+                WHEN m.player1_id = %s THEN p2.tournament_wins
                 ELSE p1.tournament_wins 
             END as opponent_tournament_wins,
             CASE 
-                WHEN m.player1_id = ? THEN p2.latitude
+                WHEN m.player1_id = %s THEN p2.latitude
                 ELSE p1.latitude 
             END as opponent_latitude,
             CASE 
-                WHEN m.player1_id = ? THEN p2.longitude
+                WHEN m.player1_id = %s THEN p2.longitude
                 ELSE p1.longitude 
             END as opponent_longitude,
             CASE 
-                WHEN m.player1_id = ? THEN p2.location1
+                WHEN m.player1_id = %s THEN p2.location1
                 ELSE p1.location1 
             END as opponent_location1,
             COUNT(*) as matches_played,
@@ -4313,43 +4317,47 @@ def player_home(player_id):
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
-        WHERE m.player1_id = ? OR m.player2_id = ?
+        WHERE m.player1_id = %s OR m.player2_id = %s
         GROUP BY opponent_id, opponent_name, opponent_selfie, opponent_wins, opponent_losses, opponent_tournament_wins, opponent_latitude, opponent_longitude, opponent_location1
         ORDER BY last_played DESC
         LIMIT 10
-    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id, player_id))
+    connections = cursor.fetchall()
     
     # Get recent activity
-    recent_matches = conn.execute('''
+    cursor.execute('''
         SELECT m.*, 
                p1.full_name as player1_name, p1.selfie as player1_selfie,
                p2.full_name as player2_name, p2.selfie as player2_selfie
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
-        WHERE m.player1_id = ? OR m.player2_id = ?
+        WHERE m.player1_id = %s OR m.player2_id = %s
         ORDER BY m.created_at DESC
         LIMIT 5
-    ''', (player_id, player_id)).fetchall()
+    ''', (player_id, player_id))
+    recent_matches = cursor.fetchall()
     
     # Get player's tournaments
-    tournaments = conn.execute('''
+    cursor.execute('''
         SELECT * FROM tournaments 
-        WHERE player_id = ? 
+        WHERE player_id = %s 
         ORDER BY created_at DESC
         LIMIT 5
-    ''', (player_id,)).fetchall()
+    ''', (player_id,))
+    tournaments = cursor.fetchall()
     
     # Get available tournaments (call-to-action)
     tournament_levels = get_tournament_levels()
     available_tournaments = []
     
     # Get all open tournament instances ordered by price (lowest to highest)
-    open_tournaments = conn.execute('''
+    cursor.execute('''
         SELECT * FROM tournament_instances 
         WHERE status = 'open' AND current_players < max_players
         ORDER BY entry_fee ASC, created_at
-    ''').fetchall()
+    ''')
+    open_tournaments = cursor.fetchall()
     
     for tournament in open_tournaments:
         spots_remaining = tournament['max_players'] - tournament['current_players']
@@ -4368,15 +4376,16 @@ def player_home(player_id):
         })
     
     # Get player's tournaments with bracket info
-    player_tournaments = conn.execute('''
+    cursor.execute('''
         SELECT t.*, ti.name as tournament_instance_name, ti.status as tournament_status,
                ti.id as tournament_instance_id
         FROM tournaments t
         JOIN tournament_instances ti ON t.tournament_instance_id = ti.id
-        WHERE t.player_id = ? 
+        WHERE t.player_id = %s 
         ORDER BY t.created_at DESC
         LIMIT 5
-    ''', (player_id,)).fetchall()
+    ''', (player_id,))
+    player_tournaments = cursor.fetchall()
     
     conn.close()
     
