@@ -553,8 +553,10 @@ def require_disclaimers_accepted(f):
         player_id = kwargs.get('player_id') or request.form.get('player_id')
         
         if player_id:
-            conn = get_db_connection()
-            player = conn.execute('SELECT disclaimers_accepted, test_account FROM players WHERE id = ?', (player_id,)).fetchone()
+            conn = get_pg_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT disclaimers_accepted, test_account FROM players WHERE id = %s', (player_id,))
+            player = cursor.fetchone()
             conn.close()
             
             # Skip validation for test accounts
@@ -1875,11 +1877,13 @@ def check_and_handle_trial_expiry(player_id):
     """Check if a user's trial has expired and downgrade if necessary"""
     from datetime import datetime
     
-    conn = get_db_connection()
-    player = conn.execute('''
+    conn = get_pg_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
         SELECT id, trial_end_date, subscription_status, membership_type 
-        FROM players WHERE id = ?
-    ''', (player_id,)).fetchone()
+        FROM players WHERE id = %s
+    ''', (player_id,))
+    player = cursor.fetchone()
     
     if not player:
         conn.close()
@@ -1895,7 +1899,7 @@ def check_and_handle_trial_expiry(player_id):
         trial_end = datetime.fromisoformat(player['trial_end_date'])
         if datetime.now() > trial_end and player['subscription_status'] == 'trialing':
             # Trial has expired, downgrade to Free Search
-            conn.execute('''
+            cursor.execute('''
                 UPDATE players SET 
                     membership_type = 'free_search',
                     subscription_status = 'expired',
@@ -1905,7 +1909,7 @@ def check_and_handle_trial_expiry(player_id):
                     can_join_tournaments = 0,
                     can_view_leaderboard = 0,
                     can_view_premium_stats = 0
-                WHERE id = ?
+                WHERE id = %s
             ''', (player_id,))
             conn.commit()
             conn.close()
