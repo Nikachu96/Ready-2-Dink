@@ -8440,7 +8440,7 @@ def admin_dashboard():
     total_matches = cursor.fetchone()['count']
     cursor.execute('SELECT COUNT(*) as count FROM tournaments')
     total_tournaments = cursor.fetchone()['count']
-    cursor.execute('SELECT COUNT(*) as count FROM tournaments WHERE completed = FALSE')
+    cursor.execute('SELECT COUNT(*) as count FROM tournaments WHERE completed = 0')
     active_tournaments = cursor.fetchone()['count']
     
     # Get detailed player metrics by skill level
