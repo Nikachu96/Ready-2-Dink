@@ -8423,24 +8423,33 @@ def team_search():
 @admin_required
 def admin_dashboard():
     """Admin dashboard with platform overview"""
-    conn = get_db_connection()
+    conn = get_pg_connection()
+    cursor = conn.cursor()
     
     # Get existing tournament instances for management
-    existing_tournaments = conn.execute('''
+    cursor.execute('''
         SELECT * FROM tournament_instances 
         ORDER BY skill_level, created_at
-    ''').fetchall()
+    ''')
+    existing_tournaments = cursor.fetchall()
     
     # Get key metrics
-    total_players = conn.execute('SELECT COUNT(*) as count FROM players').fetchone()['count']
-    total_matches = conn.execute('SELECT COUNT(*) as count FROM matches').fetchone()['count']
-    total_tournaments = conn.execute('SELECT COUNT(*) as count FROM tournaments').fetchone()['count']
-    active_tournaments = conn.execute('SELECT COUNT(*) as count FROM tournaments WHERE completed = 0').fetchone()['count']
+    cursor.execute('SELECT COUNT(*) as count FROM players')
+    total_players = cursor.fetchone()['count']
+    cursor.execute('SELECT COUNT(*) as count FROM matches')
+    total_matches = cursor.fetchone()['count']
+    cursor.execute('SELECT COUNT(*) as count FROM tournaments')
+    total_tournaments = cursor.fetchone()['count']
+    cursor.execute('SELECT COUNT(*) as count FROM tournaments WHERE completed = FALSE')
+    active_tournaments = cursor.fetchone()['count']
     
     # Get detailed player metrics by skill level
-    beginner_players = conn.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = "Beginner"').fetchone()['count']
-    intermediate_players = conn.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = "Intermediate"').fetchone()['count']
-    advanced_players = conn.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = "Advanced"').fetchone()['count']
+    cursor.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = %s', ('Beginner',))
+    beginner_players = cursor.fetchone()['count']
+    cursor.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = %s', ('Intermediate',))
+    intermediate_players = cursor.fetchone()['count']
+    cursor.execute('SELECT COUNT(*) as count FROM players WHERE skill_level = %s', ('Advanced',))
+    advanced_players = cursor.fetchone()['count']
     
     # Get tournament financial metrics
     tournament_levels = get_tournament_levels()
@@ -8451,10 +8460,11 @@ def admin_dashboard():
         entry_fee = level_info['entry_fee']
         
         # Count entries for this level
-        level_entries = conn.execute('''
+        cursor.execute('''
             SELECT COUNT(*) as count FROM tournaments 
-            WHERE tournament_level = ?
-        ''', (level_key,)).fetchone()['count']
+            WHERE tournament_level = %s
+        ''', (level_key,))
+        level_entries = cursor.fetchone()['count']
         
         # Calculate revenue for this level
         level_revenue = level_entries * entry_fee
@@ -8465,23 +8475,26 @@ def admin_dashboard():
         total_payouts += level_payouts
     
     # Recent activity
-    recent_players = conn.execute('''
+    cursor.execute('''
         SELECT * FROM players ORDER BY created_at DESC LIMIT 5
-    ''').fetchall()
+    ''')
+    recent_players = cursor.fetchall()
     
-    recent_matches = conn.execute('''
+    cursor.execute('''
         SELECT m.*, p1.full_name as player1_name, p2.full_name as player2_name
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
         ORDER BY m.created_at DESC LIMIT 10
-    ''').fetchall()
+    ''')
+    recent_matches = cursor.fetchall()
     
-    recent_tournaments = conn.execute('''
+    cursor.execute('''
         SELECT t.*, p.full_name FROM tournaments t
         JOIN players p ON t.player_id = p.id
         ORDER BY t.created_at DESC LIMIT 10
-    ''').fetchall()
+    ''')
+    recent_tournaments = cursor.fetchall()
     
     conn.close()
     
