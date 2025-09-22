@@ -7596,7 +7596,7 @@ def admin_required(f):
     return decorated_function
 
 @app.route('/create_tournament', methods=['POST'])
-@admin_required
+@require_admin()
 def create_tournament():
     """Create a new tournament instance"""
     name = request.form.get('name')
@@ -8022,7 +8022,7 @@ def tournament_payment_success(tournament_id):
     return redirect(url_for('tournaments_overview'))
 
 @app.route('/admin/backfill_matches')
-@admin_required
+@require_admin()
 def admin_backfill_matches():
     """Admin route to backfill existing matches with team data"""
     try:
@@ -8420,7 +8420,7 @@ def team_search():
                          current_player_id=current_player_id)
 
 @app.route('/admin')
-@admin_required
+@require_admin()
 def admin_dashboard():
     """Admin dashboard with platform overview"""
     conn = get_pg_connection()
@@ -8519,7 +8519,7 @@ def admin_dashboard():
                          existing_tournaments=existing_tournaments)
 
 @app.route('/admin/players')
-@admin_required
+@require_admin()
 def admin_players():
     """Admin player management"""
     conn = get_db_connection()
@@ -8531,7 +8531,7 @@ def admin_players():
     return render_template('admin/players.html', players=players)
 
 @app.route('/admin/players/<int:player_id>/edit')
-@admin_required
+@require_admin()
 def admin_edit_player(player_id):
     """Admin edit specific player profile"""
     conn = get_db_connection()
@@ -8545,7 +8545,7 @@ def admin_edit_player(player_id):
     return render_template('admin/edit_player.html', player=player)
 
 @app.route('/admin/players/<int:player_id>/edit', methods=['POST'])
-@admin_required
+@require_admin()
 def admin_update_player(player_id):
     """Handle admin player profile update"""
     from werkzeug.security import generate_password_hash
@@ -8626,7 +8626,7 @@ def admin_update_player(player_id):
         return redirect(url_for('admin_edit_player', player_id=player_id))
 
 @app.route('/admin/players/<int:player_id>/delete', methods=['POST'])
-@admin_required
+@require_admin()
 def admin_delete_player(player_id):
     """Delete a test player (except ID 1)"""
     # Prevent deletion of the main admin account (ID 1)
@@ -8656,7 +8656,7 @@ def admin_delete_player(player_id):
     return redirect(url_for('admin_players'))
 
 @app.route('/update_tournament_instance', methods=['POST'])
-@admin_required
+@require_admin()
 def update_tournament_instance():
     """Update individual tournament instance"""
     tournament_id = request.form.get('tournament_id')
@@ -8677,7 +8677,7 @@ def update_tournament_instance():
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/tournaments')
-@admin_required
+@require_admin()
 def admin_tournaments():
     """Admin tournament management"""
     conn = get_db_connection()
@@ -8692,7 +8692,7 @@ def admin_tournaments():
     return render_template('admin/tournaments.html', tournaments=tournaments)
 
 @app.route('/admin/ambassadors')
-@admin_required
+@require_admin()
 def admin_ambassadors():
     """Admin ambassador management with state tracking"""
     conn = get_db_connection()
@@ -8742,7 +8742,7 @@ def admin_ambassadors():
                          total_referrals=total_referrals)
 
 @app.route('/admin/toggle_admin/<int:player_id>', methods=['POST'])
-@admin_required
+@require_admin()
 def toggle_admin(player_id):
     """Toggle admin status for a player"""
     conn = get_db_connection()
@@ -8766,7 +8766,7 @@ def set_player_session(player_id):
     return redirect(url_for('player_home', player_id=player_id))
 
 @app.route('/admin/create_test_player', methods=['POST'])
-@admin_required
+@require_admin()
 def create_test_player():
     """Create a test player for admin testing purposes"""
     import secrets
@@ -8900,7 +8900,7 @@ def setup_first_admin():
 
 
 @app.route('/admin/matches')
-@admin_required
+@require_admin()
 def admin_matches():
     """Admin match management and dispute resolution"""
     conn = get_db_connection()
@@ -8936,7 +8936,7 @@ def admin_matches():
                          pending_matches=pending_matches)
 
 @app.route('/admin/force_complete_match/<int:match_id>', methods=['POST'])
-@admin_required
+@require_admin()
 def force_complete_match(match_id):
     """Force complete a match with admin scores"""
     player1_score = request.form.get('player1_score', type=int)
@@ -8978,7 +8978,7 @@ def force_complete_match(match_id):
     return redirect(url_for('admin_matches'))
 
 @app.route('/admin/cancel_match/<int:match_id>', methods=['POST'])
-@admin_required
+@require_admin()
 def cancel_match(match_id):
     """Cancel a match"""
     conn = get_db_connection()
@@ -8997,7 +8997,7 @@ def cancel_match(match_id):
     return jsonify({'success': True, 'message': 'Match canceled successfully'})
 
 @app.route('/admin/settings')
-@admin_required
+@require_admin()
 def admin_settings():
     """Admin system settings management"""
     conn = get_db_connection()
@@ -9007,7 +9007,7 @@ def admin_settings():
     return render_template('admin/settings.html', settings=settings)
 
 @app.route('/admin/payouts')
-@admin_required
+@require_admin()
 def admin_payouts():
     """Admin payout management interface"""
     conn = get_db_connection()
@@ -9062,7 +9062,7 @@ def admin_payouts():
                          total_paid_this_month=total_paid_this_month)
 
 @app.route('/admin/update_payout_status/<int:payout_id>', methods=['POST'])
-@admin_required
+@require_admin()
 def update_payout_status(payout_id):
     """Update payout status"""
     new_status = request.form.get('status')
@@ -9112,7 +9112,7 @@ def update_payout_status(payout_id):
     return redirect(url_for('admin_payouts'))
 
 @app.route('/admin/bank_settings')
-@admin_required
+@require_admin()
 def admin_bank_settings():
     """Display bank account settings page"""
     conn = get_db_connection()
@@ -9125,7 +9125,7 @@ def admin_bank_settings():
     return render_template('admin/bank_settings.html', bank_settings=bank_settings)
 
 @app.route('/admin/save_bank_settings', methods=['POST'])
-@admin_required
+@require_admin()
 def save_bank_settings():
     """Save or update bank account settings"""
     admin_id = session.get('current_player_id')
@@ -9198,7 +9198,7 @@ def save_bank_settings():
     return redirect(url_for('admin_bank_settings'))
 
 @app.route('/admin/staff')
-@admin_required
+@require_admin()
 def admin_staff():
     """Display admin staff management page"""
     conn = get_db_connection()
@@ -9215,7 +9215,7 @@ def admin_staff():
     return render_template('admin/staff.html', admin_staff=admin_staff)
 
 @app.route('/admin/create_admin_staff', methods=['POST'])
-@admin_required
+@require_admin()
 def create_admin_staff():
     """Create a new admin staff member"""
     from datetime import datetime
@@ -9299,7 +9299,7 @@ def create_admin_staff():
     return redirect(url_for('admin_staff'))
 
 @app.route('/admin/remove_admin_staff/<int:player_id>', methods=['POST'])
-@admin_required
+@require_admin()
 def remove_admin_staff(player_id):
     """Remove admin access from a staff member"""
     conn = get_db_connection()
@@ -9463,7 +9463,7 @@ def admin_change_password_post():
         conn.close()
 
 @app.route('/issue_tournament_credit', methods=['POST'])
-@admin_required
+@require_admin()
 def issue_tournament_credit():
     """Issue tournament credit to a player"""
     player_id = request.form.get('player_id')
@@ -10196,7 +10196,7 @@ def decline_partner_invitation(invitation_id):
     return redirect(url_for('dashboard', player_id=invitation['invitee_id']))
 
 @app.route('/admin/update_settings', methods=['POST'])
-@admin_required
+@require_admin()
 def update_settings():
     """Update system settings"""
     # Get all form data
@@ -11289,7 +11289,7 @@ def track_referral_conversion(player_id, membership_type):
     session.pop('referrer_player_id', None)
 
 @app.route('/admin/create-bulk-test-accounts', methods=['POST'])
-@admin_required
+@require_admin()
 def create_bulk_test_accounts():
     """Create multiple test accounts for testing purposes"""
     import secrets
