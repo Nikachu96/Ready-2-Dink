@@ -396,7 +396,7 @@ def send_nda_confirmation_email(player_data, signature, nda_date, ip_address):
             return False
         
         # Admin email - using verified address
-        admin_email = "admin@ready2dink.com"
+        admin_email = "torreswebdevelop@gmail.com"
         
         subject = f"NDA Signed: {player_data['full_name']} - Ready 2 Dink Beta"
         
