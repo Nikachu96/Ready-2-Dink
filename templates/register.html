@@ -37,7 +37,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -62,7 +62,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -92,7 +92,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Location Permission Section -->
                     <div class="row">
                         <div class="col-12">
@@ -117,12 +117,12 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Hidden GPS coordinate fields -->
                     <input type="hidden" id="latitude" name="latitude" value="">
                     <input type="hidden" id="longitude" name="longitude" value="">
                     <input type="hidden" id="location_method" name="location_method" value="zip">
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -151,16 +151,16 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Hidden field for guardian email -->
                     <input type="hidden" id="guardian_email" name="guardian_email" value="">
-                    
+
                     <div class="alert alert-info mb-4">
                         <i class="fas fa-info-circle me-2"></i>
                         <strong>Quick Registration:</strong> 
                         <p class="mb-0 mt-2">Get started with just the basics! After joining, you can complete your profile with courts, skill level, and photos in your account settings.</p>
                     </div>
-                    
+
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">Cancel</a>
                         <button type="submit" class="btn btn-primary" id="register-btn">
@@ -189,7 +189,7 @@
                     <h6><i class="fas fa-info-circle me-2"></i>Children's Online Privacy Protection Act (COPPA) Compliance</h6>
                     <p class="mb-0">Since you are 13 years old or younger, we need permission from your parent or legal guardian before you can create an account. This is required by federal law to protect children's privacy online.</p>
                 </div>
-                
+
                 <div class="mb-4">
                     <h6><i class="fas fa-user-friends me-2"></i>What happens next?</h6>
                     <ol class="ps-3">
@@ -199,7 +199,7 @@
                         <li>Once approved, you'll be able to use all Ready 2 Dink features!</li>
                     </ol>
                 </div>
-                
+
                 <div class="mb-3">
                     <label for="guardian_email_input" class="form-label">
                         <i class="fas fa-envelope me-1"></i>Parent/Guardian Email Address *
@@ -211,7 +211,7 @@
                         We'll send the consent form to this email address
                     </div>
                 </div>
-                
+
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     <strong>Important:</strong> Make sure this is your parent or legal guardian's email address. They must review and sign the consent form before your account can be activated.
@@ -242,13 +242,13 @@ let guardianModalShown = false;
 document.getElementById('confirm-guardian-email').addEventListener('click', function() {
     const guardianEmailInput = document.getElementById('guardian_email_input');
     const guardianEmail = guardianEmailInput.value.trim();
-    
+
     if (!guardianEmail) {
         guardianEmailInput.classList.add('is-invalid');
         guardianEmailInput.setCustomValidity('Guardian email is required');
         return;
     }
-    
+
     // Basic email validation
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(guardianEmail)) {
@@ -256,16 +256,16 @@ document.getElementById('confirm-guardian-email').addEventListener('click', func
         guardianEmailInput.setCustomValidity('Please enter a valid email address');
         return;
     }
-    
+
     // Set the guardian email in the hidden field
     document.getElementById('guardian_email').value = guardianEmail;
     guardianEmailInput.classList.remove('is-invalid');
     guardianEmailInput.setCustomValidity('');
-    
+
     // Close the modal
     const guardianModal = bootstrap.Modal.getInstance(document.getElementById('guardianConsentModal'));
     guardianModal.hide();
-    
+
     // Show success message
     const alertDiv = document.createElement('div');
     alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
@@ -274,7 +274,7 @@ document.getElementById('confirm-guardian-email').addEventListener('click', func
         <strong>Guardian Email Saved!</strong> Your registration will be processed pending guardian approval.
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
+
     // Insert before the form buttons
     const buttonContainer = document.querySelector('.d-grid.gap-2');
     buttonContainer.parentNode.insertBefore(alertDiv, buttonContainer);
@@ -287,7 +287,7 @@ document.querySelector('form').addEventListener('submit', function(e) {
         alert('Please complete the guardian consent process before submitting your registration.');
         return false;
     }
-    
+
     // Prevent multiple submissions
     const submitBtn = document.getElementById('register-btn');
     submitBtn.disabled = true;
@@ -323,26 +323,26 @@ let markers = {};
 function initializeMap(containerId, inputId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
+
     // Default to a general location (USA center)
     const map = L.map(containerId).setView([39.8283, -98.5795], 4);
-    
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
-    
+
     maps[containerId] = map;
     markers[containerId] = null;
-    
+
     return map;
 }
 
 function searchCourt(query, mapId, inputId) {
     if (!query || query.length < 3) return;
-    
+
     // Enhanced search for pickleball courts and venues
     const searchQuery = `pickleball court ${query}`;
-    
+
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=8&addressdetails=1`)
         .then(response => response.json())
         .then(data => {
@@ -350,7 +350,7 @@ function searchCourt(query, mapId, inputId) {
                 const result = data[0];
                 const lat = parseFloat(result.lat);
                 const lon = parseFloat(result.lon);
-                
+
                 // Store coordinates for database (create hidden input)
                 let coordinatesInput = document.getElementById(inputId + '_coordinates');
                 if (!coordinatesInput) {
@@ -361,14 +361,14 @@ function searchCourt(query, mapId, inputId) {
                     document.getElementById(inputId).parentNode.appendChild(coordinatesInput);
                 }
                 coordinatesInput.value = JSON.stringify({lat: lat, lng: lon, address: result.display_name});
-                
+
                 const map = maps[mapId];
                 if (map) {
                     // Remove existing marker
                     if (markers[mapId]) {
                         map.removeLayer(markers[mapId]);
                     }
-                    
+
                     // Add new marker with enhanced popup for exact directions
                     const popupContent = `
                         <div class="text-center" style="min-width: 200px;">
@@ -391,12 +391,12 @@ function searchCourt(query, mapId, inputId) {
                             </div>
                         </div>
                     `;
-                    
+
                     markers[mapId] = L.marker([lat, lon])
                         .addTo(map)
                         .bindPopup(popupContent)
                         .openPopup();
-                    
+
                     // Center map on court with higher zoom for precision
                     map.setView([lat, lon], 16);
                 }
@@ -410,27 +410,27 @@ function searchCourt(query, mapId, inputId) {
 // Initialize court search functionality
 document.addEventListener('DOMContentLoaded', function() {
     const courtInputs = document.querySelectorAll('.court-search');
-    
+
     courtInputs.forEach(input => {
         const mapId = input.id + '-map';
         let searchTimeout;
-        
+
         input.addEventListener('input', function() {
             const query = this.value.trim();
             const mapContainer = document.getElementById(mapId);
-            
+
             if (query.length >= 3) {
                 // Show map container
                 if (mapContainer) {
                     mapContainer.style.display = 'block';
-                    
+
                     // Initialize map if not already done
                     if (!maps[mapId]) {
                         setTimeout(() => {
                             initializeMap(mapId, input.id);
                         }, 100);
                     }
-                    
+
                     // Debounced search
                     clearTimeout(searchTimeout);
                     searchTimeout = setTimeout(() => {
@@ -453,10 +453,10 @@ function requestLocationPermission() {
     const latField = document.getElementById('latitude');
     const lngField = document.getElementById('longitude');
     const methodField = document.getElementById('location_method');
-    
+
     gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting Location...';
     gpsBtn.disabled = true;
-    
+
     if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
             function(position) {
@@ -464,10 +464,10 @@ function requestLocationPermission() {
                 latField.value = position.coords.latitude;
                 lngField.value = position.coords.longitude;
                 methodField.value = 'gps';
-                
+
                 gpsBtn.innerHTML = '<i class="fas fa-check me-1"></i>GPS Enabled';
                 gpsBtn.className = 'btn btn-sm btn-success';
-                
+
                 // Show success message
                 const alertDiv = document.createElement('div');
                 alertDiv.className = 'alert alert-success alert-dismissible fade show mt-2';
@@ -483,7 +483,7 @@ function requestLocationPermission() {
                 console.error('GPS Error:', error);
                 gpsBtn.innerHTML = '<i class="fas fa-location-dot me-1"></i>Enable GPS';
                 gpsBtn.disabled = false;
-                
+
                 let errorMsg = 'Unable to get your location. ';
                 switch(error.code) {
                     case error.PERMISSION_DENIED:
@@ -499,7 +499,7 @@ function requestLocationPermission() {
                         errorMsg += 'An unknown error occurred.';
                         break;
                 }
-                
+
                 // Show error message
                 const alertDiv = document.createElement('div');
                 alertDiv.className = 'alert alert-warning alert-dismissible fade show mt-2';
@@ -521,7 +521,7 @@ function requestLocationPermission() {
         gpsBtn.innerHTML = '<i class="fas fa-times me-1"></i>GPS Not Available';
         gpsBtn.className = 'btn btn-sm btn-secondary';
         gpsBtn.disabled = true;
-        
+
         const alertDiv = document.createElement('div');
         alertDiv.className = 'alert alert-info alert-dismissible fade show mt-2';
         alertDiv.innerHTML = `
