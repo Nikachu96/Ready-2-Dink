@@ -62,6 +62,21 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="gender" class="form-label">
+                                    <i class="fas fa-venus-mars me-1"></i>Gender
+                                </label>
+                                <select class="form-select" id="gender" name="gender" required>
+                                    <option value="" disabled selected>Select your gender</option>
+                                    <option value="man" {% if form_data and form_data.gender == 'man' %}selected{% endif %}>Male</option>
+                                    <option value="woman" {% if form_data and form_data.gender == 'woman' %}selected{% endif %}>Female</option>
+                                    <option value="prefer_not_to_say" {% if form_data and form_data.gender == 'prefer_not_to_say' %}selected{% endif %}>Prefer not to say</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="row">
                         <div class="col-md-6">
@@ -156,8 +171,8 @@
                     <input type="hidden" id="guardian_email" name="guardian_email" value="">
 
                     <div class="alert alert-info mb-4">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Quick Registration:</strong> 
+                        
+                        <strong>⚡ Quick Registration  </strong> 
                         <p class="mb-0 mt-2">Get started with just the basics! After joining, you can complete your profile with courts, skill level, and photos in your account settings.</p>
                     </div>
 
