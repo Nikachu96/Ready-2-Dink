@@ -70,8 +70,8 @@
                                 </label>
                                 <select class="form-select" id="gender" name="gender" required>
                                     <option value="" disabled selected>Select your gender</option>
-                                    <option value="man" {% if form_data and form_data.gender == 'man' %}selected{% endif %}>Male</option>
-                                    <option value="woman" {% if form_data and form_data.gender == 'woman' %}selected{% endif %}>Female</option>
+                                    <option value="male" {% if form_data and form_data.gender == 'male' %}selected{% endif %}>Male</option>
+                                    <option value="female" {% if form_data and form_data.gender == 'female' %}selected{% endif %}>Female</option>
                                     <option value="prefer_not_to_say" {% if form_data and form_data.gender == 'prefer_not_to_say' %}selected{% endif %}>Prefer not to say</option>
                                 </select>
                             </div>

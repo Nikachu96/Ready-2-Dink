@@ -676,6 +676,11 @@ def init_db():
         pass  # Column already exists
 
     try:
+        c.execute('ALTER TABLE players ADD COLUMN gender TEXT NOT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+
+    try:
         c.execute('ALTER TABLE players ADD COLUMN preferred_court TEXT')
     except sqlite3.OperationalError:
         pass  # Column already exists
@@ -2234,8 +2239,8 @@ def require_permission(permission):
             player = cursor.fetchone()
             conn.close()
 
-            if player and player.get('is_admin'):
-                return f(*args, **kwargs)  # Admin bypass
+           # if player and player.get('is_admin'):
+            #    return f(*args, **kwargs)  # Admin bypass
 
             # Check and handle trial expiry first
             check_and_handle_trial_expiry(current_player_id)
@@ -4719,6 +4724,7 @@ def send_new_registration_notification(player_data):
                 <p><strong>Location:</strong> {player_data['location1']}</p>
                 <p><strong>Preferred Court:</strong> {player_data['preferred_court']}</p>
                 <p><strong>Address:</strong> {player_data['address']}</p>
+                <p><strong>gender:</strong> {player_data['gender']}</p>
                 <p><strong>Date of Birth:</strong> {player_data['dob']}</p>
                 {f"<p><strong>Secondary Location:</strong> {player_data['location2']}</p>" if player_data.get('location2') else ''}
             </div>
@@ -5245,6 +5251,7 @@ def register():
             full_name = f"{first_name} {last_name}".strip()
             username = request.form.get("username", "").strip()
             email = request.form.get("email", "").strip()
+            gender = request.form.get("gender", "prefer_not_to_say").strip()
             dob = request.form.get("dob", "").strip()
             address = request.form.get("address", "N/A").strip()
             location1 = request.form.get("location1", "Unknown").strip()
@@ -5252,7 +5259,7 @@ def register():
             password = request.form.get("password", "")
 
             if not all([
-                    full_name, username, email, dob, address, location1,
+                    full_name, username, email, dob, address, location1, gender,
                     skill_level, password
             ]):
                 flash("All required fields must be filled.", "danger")
@@ -5275,13 +5282,13 @@ def register():
             # Insert new player
             query = f"""
                 INSERT INTO players
-                (first_name, last_name, full_name, username, email,
-                 dob, address, location1, skill_level, password_hash, created_at)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
+                (first_name, last_name, full_name, username, email, dob,
+                 gender, address, location1, skill_level, password_hash, created_at)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
                         {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, 
                         CURRENT_TIMESTAMP)
             """
-            values = (first_name, last_name, full_name, username, email, dob,
+            values = (first_name, last_name, full_name, username, email, dob, gender, 
                       address, location1, skill_level, password_hash)
 
             cursor.execute(query, values)
@@ -8023,7 +8030,7 @@ def update_profile():
 
     # Form validation
     required_fields = [
-        'full_name', 'address', 'zip_code', 'city', 'state', 'dob',
+        'full_name', 'address', 'zip_code', 'city', 'state', 'dob', 'gender',
         'preferred_court_1', 'skill_level', 'email', 'player_id'
     ]
     for field in required_fields:
@@ -8124,7 +8131,7 @@ def update_profile():
                 '''
                 UPDATE players 
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?, 
-                    dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
+                    dob = ?, preferred_court_1 = ?, preferred_court_2 = ?, gender = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
                     skill_level = ?, email = ?, selfie = ?, player_id = ?, payout_preference = ?,
                     paypal_email = ?, venmo_username = ?, zelle_info = ?,
@@ -8132,7 +8139,7 @@ def update_profile():
                 WHERE id = ?
             ''', (request.form['full_name'], request.form['address'],
                   request.form['zip_code'], request.form['city'],
-                  request.form['state'], request.form['dob'],
+                  request.form['state'], request.form['dob'], request.form['gender'],
                   request.form.get('preferred_court_1', ''),
                   request.form.get('preferred_court_2', ''),
                   request.form.get('preferred_court_1_coordinates', ''),
@@ -8149,7 +8156,7 @@ def update_profile():
                 '''
                 UPDATE players 
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?,
-                    dob = ?, preferred_court_1 = ?, preferred_court_2 = ?,
+                    dob = ?, preferred_court_1 = ?, preferred_court_2 = ?, gender = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
                     skill_level = ?, email = ?, player_id = ?, payout_preference = ?,
                     paypal_email = ?, venmo_username = ?, zelle_info = ?,
@@ -9922,6 +9929,7 @@ def admin_update_player(player_id):
             'address': request.form.get('address', ''),
             'zip_code': request.form.get('zip_code', ''),
             'city': request.form.get('city', ''),
+            'gender': request.form.get('gender', ''),
             'state': request.form.get('state', ''),
             'dob': request.form.get('dob', ''),
             'location1': request.form.get('location1', ''),

@@ -43,8 +43,8 @@
         <div class="col-md-6 col-lg-4 mb-4">
             <div class="neon-frame h-100">
                 
-                <!-- Ranking Badge -->
-                <div class="position-relative">
+                <!-- Ranking Badge 
+                /<div class="position-relative">
                     <div class="position-absolute top-0 start-0 w-100 text-center" style="z-index: 10;">
                         <div class="badge badge-success mt-3">
                             {% if player.ranking_points > 0 %}
@@ -54,7 +54,7 @@
                             {% endif %}
                         </div>
                     </div>
-                </div>
+                </div>-->
 
                 <!-- Player Name Section -->
                 <div class="text-center py-3 mb-3" style="background: var(--gradient-primary);">
@@ -62,6 +62,9 @@
                         {{ player.name }}
                     </h3>
                 </div>
+                <script>
+                    console.log({{ player|tojson }});
+                </script>
 
                 <div class="p-4">
                     <div class="row g-0">
@@ -77,6 +80,13 @@
                                         <i class="fas fa-user fa-4x text-white"></i>
                                     </div>
                                 {% endif %}
+                            </div>
+                            <!-- Spacer -->
+                            <div style="height: 10px;"></div>
+                            <!-- Gender Badge -->
+                            <div class="w-100 d-flex justify-content-center">
+                                <span class="badge badge-info">Gender: 
+                                    <br>                                    {{ player.gender }}</span>
                             </div>
                         </div>
                         
