@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import logging
+import uuid
 import traceback
 import stripe
 import sys
@@ -677,6 +678,16 @@ def init_db():
 
     try:
         c.execute('ALTER TABLE players ADD COLUMN gender TEXT NOT NULL')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN player_id INTEGER')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+
+    try:
+        c.execute('ALTER TABLE players ADD COLUMN travel_radius TEXT')
     except sqlite3.OperationalError:
         pass  # Column already exists
 
@@ -5240,6 +5251,22 @@ def challenges():
 
     return response
 
+def generate_unique_player_id(conn, cursor, use_sqlite):
+    while True:
+        new_id = uuid.uuid4().hex[:8]  # short unique ID like "a3f9c1e2"
+
+        if use_sqlite:
+            existing = conn.execute(
+                "SELECT 1 FROM players WHERE player_id = ?", (new_id,)
+            ).fetchone()
+        else:
+            cursor.execute("SELECT 1 FROM players WHERE player_id = %s", (new_id,))
+            existing = cursor.fetchone()
+
+        if not existing:
+            return new_id
+
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -5259,8 +5286,8 @@ def register():
             password = request.form.get("password", "")
 
             if not all([
-                    full_name, username, email, dob, address, location1, gender,
-                    skill_level, password
+                full_name, username, email, dob, address, location1, gender,
+                skill_level, password
             ]):
                 flash("All required fields must be filled.", "danger")
                 return redirect(url_for("register"))
@@ -5273,27 +5300,29 @@ def register():
             if use_sqlite:
                 conn = get_db_connection()
                 placeholder = "?"
-                cursor = conn  # sqlite lets us call .execute directly
+                cursor = conn
             else:
                 conn = get_pg_connection()
                 placeholder = "%s"
                 cursor = conn.cursor()
 
+            # Generate unique player_id
+            player_id = generate_unique_player_id(conn, cursor, use_sqlite)
+
             # Insert new player
             query = f"""
                 INSERT INTO players
                 (first_name, last_name, full_name, username, email, dob,
-                 gender, address, location1, skill_level, password_hash, created_at)
+                 gender, address, location1, skill_level, password_hash, player_id, created_at)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
-                        {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, 
-                        CURRENT_TIMESTAMP)
+                        {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
+                        {placeholder}, CURRENT_TIMESTAMP)
             """
-            values = (first_name, last_name, full_name, username, email, dob, gender, 
-                      address, location1, skill_level, password_hash)
+            values = (first_name, last_name, full_name, username, email, dob, gender,
+                      address, location1, skill_level, password_hash, player_id)
 
             cursor.execute(query, values)
 
-            # Commit
             conn.commit()
             if not use_sqlite:
                 cursor.close()
@@ -5311,10 +5340,9 @@ def register():
                 cursor.close()
             conn.close()
             return f"<pre>Registration failed:\n{tb}</pre>", 500
-            sys.stdout.flush()  # force flush to console
+            sys.stdout.flush()
 
     return render_template("register.html")
-
 
 @app.route('/disclaimers/<int:player_id>')
 def show_disclaimers(player_id):
@@ -7888,11 +7916,12 @@ def profile_settings():
         SELECT DISTINCT p.id, p.full_name, p.selfie
         FROM players p
         JOIN matches m ON (p.id = m.player1_id OR p.id = m.player2_id)
-        WHERE ((m.player1_id = ? AND p.id = m.player2_id) OR (m.player2_id = ? AND p.id = m.player1_id))
+        WHERE ((m.player1_id = ? AND p.id = m.player2_id) 
+               OR (m.player2_id = ? AND p.id = m.player1_id))
         AND m.status = 'completed'
         AND p.id != ?
         ORDER BY p.full_name
-    ''', (current_player_id, current_player_id, current_player_id)).fetchall()
+        ''', (current_player_id, current_player_id, current_player_id)).fetchall()
 
     conn.close()
 
@@ -7900,12 +7929,14 @@ def profile_settings():
         flash('Player not found', 'danger')
         return redirect(url_for('player_login'))
 
-    return render_template('profile_settings.html',
-                           player=player,
-                           current_team=current_team,
-                           pending_invitations=pending_invitations,
-                           connections=[dict(c) for c in connections])
-
+    return render_template(
+        'profile_settings.html',
+        player=player,
+        player_id=player['player_id'],   # 👈 pass player_id explicitly
+        current_team=current_team,
+        pending_invitations=pending_invitations,
+        connections=[dict(c) for c in connections]
+    )
 
 @app.route('/update-availability/<int:player_id>', methods=['POST'])
 def update_availability(player_id):
@@ -8031,33 +8062,12 @@ def update_profile():
     # Form validation
     required_fields = [
         'full_name', 'address', 'zip_code', 'city', 'state', 'dob', 'gender',
-        'preferred_court_1', 'skill_level', 'email', 'player_id'
+        'preferred_court_1', 'skill_level', 'email'
     ]
     for field in required_fields:
         if not request.form.get(field):
             flash(f'{field.replace("_", " ").title()} is required', 'danger')
             return redirect(url_for('profile_settings'))
-
-    # Validate player_id format (4 digits, 1000-9999)
-    player_id_input = request.form.get('player_id', '').strip()
-    if not player_id_input.isdigit() or len(player_id_input) != 4:
-        flash('Player ID must be exactly 4 digits', 'danger')
-        return redirect(url_for('profile_settings'))
-
-    player_id_num = int(player_id_input)
-    if player_id_num < 1000 or player_id_num > 9999:
-        flash('Player ID must be between 1000 and 9999', 'danger')
-        return redirect(url_for('profile_settings'))
-
-    # Check if player_id is already taken by another player
-    existing_player = conn.execute(
-        'SELECT id FROM players WHERE player_id = ? AND id != ?',
-        (player_id_input, player_id)).fetchone()
-    if existing_player:
-        flash(
-            'This Player ID is already taken. Please choose a different number.',
-            'danger')
-        return redirect(url_for('profile_settings'))
 
     # Handle file upload
     selfie_filename = None
@@ -8066,15 +8076,11 @@ def update_profile():
         if file and file.filename and file.filename != '':
             if allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                # Add timestamp to avoid filename conflicts
-                timestamp = datetime.now().strftime('%Y%m%d_%H% ?_')
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
                 selfie_filename = timestamp + filename
-
-                # Ensure upload directory exists
                 static_folder = app.static_folder or 'static'
                 upload_path = os.path.join(static_folder, 'uploads')
                 os.makedirs(upload_path, exist_ok=True)
-
                 file.save(os.path.join(upload_path, selfie_filename))
 
     # Process location data updates
@@ -8082,50 +8088,36 @@ def update_profile():
     user_longitude = request.form.get('longitude', '').strip()
     search_radius = request.form.get('search_radius_miles', '').strip()
 
-    # Parse coordinates if provided
-    latitude = None
-    longitude = None
+    latitude, longitude = None, None
     if user_latitude and user_longitude:
         try:
             latitude = float(user_latitude)
             longitude = float(user_longitude)
-            logging.info(
-                f"Profile update: GPS coordinates updated - {latitude}, {longitude}"
-            )
         except (ValueError, TypeError):
-            logging.warning(
-                f"Profile update: Invalid GPS coordinates provided")
+            logging.warning("Invalid GPS coordinates provided")
 
-    # Parse search radius
-    search_radius_miles = 15  # Default
+    search_radius_miles = 15
     if search_radius:
         try:
-            search_radius_miles = max(15, min(
-                50, int(search_radius)))  # Clamp between 15-50
+            search_radius_miles = max(15, min(50, int(search_radius)))
         except (ValueError, TypeError):
-            logging.warning(
-                f"Profile update: Invalid search radius provided, using default 15"
-            )
+            logging.warning("Invalid search radius provided, using default 15")
 
-    # Validate and process gender
     gender = request.form.get('gender', 'prefer_not_to_say').strip()
     valid_genders = ['male', 'female', 'non_binary', 'prefer_not_to_say']
     if gender not in valid_genders:
         flash('Please select a valid gender option', 'danger')
         return redirect(url_for('profile_settings'))
 
-    # Validate and process travel radius
     travel_radius_input = request.form.get('travel_radius', '25').strip()
     try:
-        travel_radius = max(5, min(
-            100, int(travel_radius_input)))  # Clamp between 5-100 miles
+        travel_radius = max(5, min(100, int(travel_radius_input)))
     except (ValueError, TypeError):
         flash('Travel radius must be a number between 5 and 100 miles',
               'danger')
         return redirect(url_for('profile_settings'))
 
     try:
-        # Update player information
         if selfie_filename:
             conn.execute(
                 '''
@@ -8133,24 +8125,28 @@ def update_profile():
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?, 
                     dob = ?, preferred_court_1 = ?, preferred_court_2 = ?, gender = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
-                    skill_level = ?, email = ?, selfie = ?, player_id = ?, payout_preference = ?,
+                    skill_level = ?, email = ?, selfie = ?, payout_preference = ?,
                     paypal_email = ?, venmo_username = ?, zelle_info = ?,
-                    latitude = ?, longitude = ?, search_radius_miles = ?, gender = ?, travel_radius = ?
+                    latitude = ?, longitude = ?, search_radius_miles = ?, travel_radius = ?
                 WHERE id = ?
-            ''', (request.form['full_name'], request.form['address'],
-                  request.form['zip_code'], request.form['city'],
-                  request.form['state'], request.form['dob'], request.form['gender'],
-                  request.form.get('preferred_court_1', ''),
-                  request.form.get('preferred_court_2', ''),
-                  request.form.get('preferred_court_1_coordinates', ''),
-                  request.form.get('preferred_court_2_coordinates',
-                                   ''), request.form['skill_level'],
-                  request.form['email'], selfie_filename, player_id_input,
-                  request.form.get('payout_preference',
-                                   ''), request.form.get('paypal_email', ''),
-                  request.form.get('venmo_username', ''),
-                  request.form.get('zelle_info', ''), latitude, longitude,
-                  search_radius_miles, gender, travel_radius, player_id))
+                ''',
+                (request.form['full_name'], request.form['address'],
+                 request.form['zip_code'], request.form['city'],
+                 request.form['state'], request.form['dob'],
+                 request.form.get('preferred_court_1', ''),
+                 request.form.get('preferred_court_2', ''),
+                 request.form['gender'],
+                 request.form.get('preferred_court_1_coordinates', ''),
+                 request.form.get('preferred_court_2_coordinates', ''),
+                 request.form['skill_level'], request.form['email'],
+                 selfie_filename,
+                 request.form.get('payout_preference', ''),
+                 request.form.get('paypal_email', ''),
+                 request.form.get('venmo_username', ''),
+                 request.form.get('zelle_info', ''),
+                 latitude, longitude, search_radius_miles, travel_radius,
+                 player_id)
+            )
         else:
             conn.execute(
                 '''
@@ -8158,23 +8154,27 @@ def update_profile():
                 SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?,
                     dob = ?, preferred_court_1 = ?, preferred_court_2 = ?, gender = ?,
                     court1_coordinates = ?, court2_coordinates = ?,
-                    skill_level = ?, email = ?, player_id = ?, payout_preference = ?,
+                    skill_level = ?, email = ?, payout_preference = ?,
                     paypal_email = ?, venmo_username = ?, zelle_info = ?,
-                    latitude = ?, longitude = ?, search_radius_miles = ?, gender = ?, travel_radius = ?
+                    latitude = ?, longitude = ?, search_radius_miles = ?, travel_radius = ?
                 WHERE id = ?
-            ''', (request.form['full_name'], request.form['address'],
-                  request.form['zip_code'], request.form['city'],
-                  request.form['state'], request.form['dob'],
-                  request.form.get('preferred_court_1', ''),
-                  request.form.get('preferred_court_2', ''),
-                  request.form.get('preferred_court_1_coordinates', ''),
-                  request.form.get('preferred_court_2_coordinates', ''),
-                  request.form['skill_level'], request.form['email'],
-                  player_id_input, request.form.get('payout_preference', ''),
-                  request.form.get('paypal_email',
-                                   ''), request.form.get('venmo_username', ''),
-                  request.form.get('zelle_info', ''), latitude, longitude,
-                  search_radius_miles, gender, travel_radius, player_id))
+                ''',
+                (request.form['full_name'], request.form['address'],
+                 request.form['zip_code'], request.form['city'],
+                 request.form['state'], request.form['dob'],
+                 request.form.get('preferred_court_1', ''),
+                 request.form.get('preferred_court_2', ''),
+                 request.form['gender'],
+                 request.form.get('preferred_court_1_coordinates', ''),
+                 request.form.get('preferred_court_2_coordinates', ''),
+                 request.form['skill_level'], request.form['email'],
+                 request.form.get('payout_preference', ''),
+                 request.form.get('paypal_email', ''),
+                 request.form.get('venmo_username', ''),
+                 request.form.get('zelle_info', ''),
+                 latitude, longitude, search_radius_miles, travel_radius,
+                 player_id)
+            )
 
         conn.commit()
         conn.close()
@@ -8186,7 +8186,6 @@ def update_profile():
         conn.close()
         flash(f'Error updating profile: {str(e)}', 'danger')
         return redirect(url_for('profile_settings'))
-
 
 @app.route('/clear_profile_completion_flag', methods=['POST'])
 def clear_profile_completion_flag():

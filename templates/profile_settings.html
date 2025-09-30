@@ -177,14 +177,10 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="player_id" class="form-label">
-                                    <i class="fas fa-id-card me-1"></i>Player ID *
+                                    <i class="fas fa-id-card me-1"></i>Player ID
                                 </label>
                                 <input type="text" class="form-control" id="player_id" name="player_id" 
-                                       value="{{ player.player_id or '' }}" placeholder="1234" maxlength="4" required>
-                                <div class="form-text">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Choose a unique 4-digit number (1000-9999)
-                                </div>
+                                       value={{player_id}} maxlength="4" readonly disabled>
                             </div>
                         </div>
                         <div class="col-md-4">

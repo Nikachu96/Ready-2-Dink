@@ -434,6 +434,7 @@ CREATE TABLE public.players (
     referral_code text,
     match_preference text DEFAULT 'singles'::text,
     current_team_id integer,
+    player_id integer,
     discoverability_preference text DEFAULT 'both'::text,
     last_random_challenge_at timestamp without time zone,
     CONSTRAINT players_search_radius_miles_check CHECK (((search_radius_miles >= 15) AND (search_radius_miles <= 50)))
