@@ -509,8 +509,8 @@
                     
                     <div class="mb-3">
                         <label class="form-label text-white text-bold">Proposed Location (Optional):</label>
-                        <input type="text" class="form-control dark-input" name="court_location" 
-                               placeholder="Court or location preference">
+                        <input type="text" id="courtLocation" class="form-control dark-input" 
+                            name="court_location" placeholder="Court or location preference">
                     </div>
                     
                     <div class="mb-3">
@@ -622,7 +622,74 @@
     </div>
 </div>
 
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4YOunqgW9gRhHybDYmY_78KXytRx9XZ4&libraries=places&callback=initGooglePlaces">
+</script>
+
 <script>
+let map, service;
+
+function initGooglePlaces() {
+    console.log("Google Places API initialized");
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const input = document.getElementById("courtLocation");
+
+    input.addEventListener("focus", function () {
+        // Player's coordinates injected from Flask
+        const playerLat = {{ player['location1'].split(',')[0] | safe }};
+        const playerLng = {{ player['location1'].split(',')[1] | safe }};
+
+        const playerLocation = new google.maps.LatLng(playerLat, playerLng);
+
+        // Create a dummy map (required by PlacesService, but won’t be shown)
+        map = new google.maps.Map(document.createElement("div"));
+        service = new google.maps.places.PlacesService(map);
+
+        const request = {
+            location: playerLocation,
+            radius: 24140, // 15 miles in meters
+            keyword: "pickleball court"
+        };
+
+        service.nearbySearch(request, function (results, status) {
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                console.log("Nearby pickleball courts:", results);
+
+                // Build a dropdown list under the input
+                let dropdown = document.getElementById("courtDropdown");
+                if (!dropdown) {
+                    dropdown = document.createElement("ul");
+                    dropdown.id = "courtDropdown";
+                    dropdown.className = "list-group mt-2";
+                    input.parentNode.appendChild(dropdown);
+                }
+                dropdown.innerHTML = "";
+
+                results.forEach(place => {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item list-group-item-action";
+                    li.textContent = place.name + " – " + (place.vicinity || "");
+                    li.onclick = () => {
+                        input.value = place.name;
+                        console.log("Selected court:", place);
+                        dropdown.innerHTML = "";
+                    };
+                    dropdown.appendChild(li);
+                });
+            } else {
+                console.error("Places search failed:", status);
+            }
+        });
+    });
+});
+</script>
+
+<script>
+    
+
+    
 // Challenge Modal Functions
 function showChallengeModal(playerId, playerName) {
     document.getElementById('challengePlayerName').textContent = playerName;

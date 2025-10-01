@@ -4,6 +4,15 @@
 
 {% block content %}
 
+<script>
+window.initGooglePlaces = function() {
+    console.log("Google Places API initialized");
+};
+</script>
+
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4YOunqgW9gRhHybDYmY_78KXytRx9XZ4&libraries=places&callback=initGooglePlaces">
+</script>
 
 <div class="container py-4">
         <div class="text-center mb-4">
@@ -276,45 +285,138 @@
 </div>
 
 <!-- Challenge Modal -->
-<div class="modal fade" id="challengeModal" tabindex="-1" aria-labelledby="challengeModalLabel" aria-hidden="true">
+<div class="modal fade" id="challengeModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content" style="background: var(--dark-surface); border: 1px solid var(--glass-border);">
-            <div class="modal-header" style="border-bottom: 1px solid var(--glass-border);">
-                <h5 class="modal-title text-white text-bold neon-text" id="challengeModalLabel">
-                    <i class="fas fa-handshake me-2"></i>Challenge Player
+        <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-handshake me-2"></i>Challenge <span id="challengePlayerName"></span>
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <h6 class="text-white text-bold">Challenging: <span id="challengePlayerName"></span></h6>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label text-white text-bold">Proposed Location (Optional):</label>
-                    <input type="text" class="form-control dark-input" id="proposedLocation" 
-                           placeholder="Court or location preference">
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label text-white text-bold">Proposed Date & Time (Optional):</label>
-                    <input type="datetime-local" class="form-control dark-input" id="proposedDateTime">
-                </div>
-                
-                <div class="text-muted small">
-                    <i class="fas fa-info-circle me-1"></i>
-                    Leave fields empty to let the system suggest optimal match details.
-                </div>
-            </div>
-            <div class="modal-footer" style="border-top: 1px solid var(--glass-border);">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success text-bold" onclick="sendChallenge()">
-                    <i class="fas fa-paper-plane me-1"></i>Send Challenge
-                </button>
+                <form id="challengeForm" method="POST" action="{{ url_for('send_challenge_route') }}">
+                    <input type="hidden" id="challengeOpponentId" name="opponent_id">
+
+                    <div class="mb-3">
+                        <label class="form-label text-white text-bold">Proposed Location (Optional):</label>
+                        <input type="text" id="courtLocation" class="form-control dark-input" name="court_location" placeholder="Court or location preference">
+                        <!-- Dropdown will be inserted here -->
+                        <div id="courtDropdownContainer"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-white text-bold">Proposed Date & Time (Optional):</label>
+                        <input type="datetime-local" class="form-control dark-input" name="scheduled_time">
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg text-bold">
+                            <i class="fas fa-paper-plane me-2"></i>Send Challenge
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+let map, service;
+
+// Global callback for Google Maps
+window.initGooglePlaces = function() {
+    console.log("Google Places API initialized");
+};
+
+// Wait for DOM
+document.addEventListener("DOMContentLoaded", function() {
+    const modal = document.getElementById("challengeModal");
+
+    if (!modal) return;
+
+    // Listen for modal opening
+    modal.addEventListener("shown.bs.modal", function() {
+        const input = document.getElementById("courtLocation");
+        if (!input) {
+            console.error("Input #courtLocation not found");
+            return;
+        }
+
+        input.addEventListener("focus", function() {
+            console.log("Court input focused");
+
+            // Get player's location from Flask
+            const playerLocationRaw = {{ current_player['location1']|tojson|safe }};
+            if (!playerLocationRaw) {
+                console.error("No player location available");
+                return;
+            }
+
+            const coords = playerLocationRaw.split(",");
+            if (coords.length !== 2) {
+                console.error("Invalid coordinates:", coords);
+                return;
+            }
+
+            const playerLat = parseFloat(coords[0]);
+            const playerLng = parseFloat(coords[1]);
+            const playerLocation = new google.maps.LatLng(playerLat, playerLng);
+
+            // Dummy map for PlacesService
+            map = new google.maps.Map(document.createElement("div"));
+            service = new google.maps.places.PlacesService(map);
+
+            const request = {
+                location: playerLocation,
+                radius: 24140, // 15 miles
+                keyword: "pickleball court"
+            };
+
+            service.nearbySearch(request, function(results, status) {
+                console.log("Places API status:", status);
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    console.log("Nearby pickleball courts:", results);
+
+                    const container = document.getElementById("courtDropdownContainer");
+                    container.innerHTML = ""; // clear previous results
+
+                    const dropdown = document.createElement("ul");
+                    dropdown.className = "list-group mt-2";
+
+                   results.forEach(place => {
+    const li = document.createElement("li");
+    li.className = "list-group-item list-group-item-action";
+    li.textContent = place.name + " – " + (place.vicinity || "");
+    
+    li.onclick = () => {
+        const input = document.getElementById("courtLocation");  // get fresh
+        if (!input) {
+            console.error("Court input not found when selecting court");
+            return;
+        }
+        input.value = place.name;
+        console.log("Selected court:", place);
+
+        const container = document.getElementById("courtDropdownContainer");
+        if (container) container.innerHTML = "";
+    };
+    dropdown.appendChild(li);
+});
+                    container.appendChild(dropdown);
+                } else {
+                    console.error("Places search failed:", status);
+                }
+            });
+        }, { once: true }); // attach only once
+    });
+});
+</script>
+
+<!-- Google Maps API -->
+<script async
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4YOunqgW9gRhHybDYmY_78KXytRx9XZ4&libraries=places&callback=initGooglePlaces">
+</script>
 
 <script>
 let currentChallengePlayerId = null;
@@ -392,18 +494,22 @@ document.addEventListener('DOMContentLoaded', function() {
     displayActiveFilters();
 });
 
-function challengePlayer(playerId, playerName) {
-    currentChallengePlayerId = playerId;
-    document.getElementById('challengePlayerName').textContent = playerName;
-    
-    // Reset form fields
-    document.getElementById('proposedLocation').value = '';
-    document.getElementById('proposedDateTime').value = '';
-    
-    // Show the modal
-    const modal = new bootstrap.Modal(document.getElementById('challengeModal'));
+function challengePlayer(opponentId, opponentName) {
+    const input = document.getElementById("courtLocation");
+    if (!input) {
+        console.error("Court input not found in modal");
+        return;
+    }
+    input.value = ""; // or some default
+    // set opponent id somewhere
+    document.getElementById("challengeOpponentId").value = opponentId;
+    document.getElementById("challengePlayerName").textContent = opponentName;
+
+    // show modal
+    const modal = new bootstrap.Modal(document.getElementById("challengeModal"));
     modal.show();
 }
+
 
 function sendChallenge() {
     if (!currentChallengePlayerId) {
