@@ -1098,10 +1098,19 @@ def init_db():
 
     try:
         c.execute(
+            'ALTER TABLE matches ADD COLUMN scheduled_time TEXT DEFAULT NULL'
+        )
+    except sqlite3.OperationalError:
+        pass  # already exists
+
+    try:
+        c.execute(
             'ALTER TABLE matches ADD COLUMN notification_sent INTEGER DEFAULT 0'
         )
     except sqlite3.OperationalError:
         pass  # Column already exists
+
+    
 
     try:
         c.execute(
