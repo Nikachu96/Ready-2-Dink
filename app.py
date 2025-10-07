@@ -1250,6 +1250,20 @@ def init_db():
         pass  # Column already exists
 
     try:
+        c.execute(
+            'ALTER TABLE matches ADD COLUMN loser_id INTEGER'
+        )
+    except Exception:
+        pass  # Column already exists
+
+    try:
+        c.execute(
+            'ALTER TABLE matches ADD COLUMN completed_at TEXT'
+        )
+    except Exception:
+        pass  # Column already exists
+
+    try:
         c.execute('ALTER TABLE matches ADD COLUMN player1_skill_feedback TEXT')
     except Exception:
         pass  # Column already exists
@@ -5274,7 +5288,68 @@ def generate_unique_player_id(conn, cursor, use_sqlite):
 
         if not existing:
             return new_id
+        
 
+@app.route('/start_match/<int:match_id>', methods=['GET'])
+def start_match(match_id):
+    """Fetch match and player info for live scoring popup"""
+    if 'player_id' not in session:
+        return jsonify({'success': False, 'message': 'Login required'}), 403
+
+    conn = get_db_connection()
+    match = conn.execute('''
+        SELECT m.*, 
+               p1.full_name AS player1_name,
+               p2.full_name AS player2_name
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        WHERE m.id = ?
+    ''', (match_id,)).fetchone()
+    conn.close()
+
+    if not match:
+        return jsonify({'success': False, 'message': 'Match not found'})
+
+    return jsonify({
+        'success': True,
+        'match_id': match['id'],
+        'player1_name': match['player1_name'],
+        'player2_name': match['player2_name']
+    })            
+
+@app.route('/complete_match', methods=['POST'])
+def complete_match():
+    """Submit final scores and update match history"""
+    data = request.get_json()
+    match_id = data.get('match_id')
+    p1_score = int(data.get('player1_score', 0))
+    p2_score = int(data.get('player2_score', 0))
+
+    conn = get_db_connection()
+    match = conn.execute('SELECT * FROM matches WHERE id = ?', (match_id,)).fetchone()
+    if not match:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Match not found'})
+
+    winner_id = match['player1_id'] if p1_score > p2_score else match['player2_id']
+    loser_id = match['player2_id'] if p1_score > p2_score else match['player1_id']
+
+    conn.execute('''
+        UPDATE matches
+        SET status = 'completed',
+            player1_score = ?, player2_score = ?, 
+            winner_id = ?, loser_id = ?, completed_at = datetime('now')
+        WHERE id = ?
+    ''', (p1_score, p2_score, winner_id, loser_id, match_id))
+
+    # Update player records
+    conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (winner_id,))
+    conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (loser_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'Match completed successfully'})
 
 
 @app.route("/register", methods=["GET", "POST"])
