@@ -1105,6 +1105,20 @@ def init_db():
 
     try:
         c.execute(
+            'ALTER TABLE matches ADD COLUMN player4_id INTEGER DEFAULT NULL'
+        )
+    except sqlite3.OperationalError:
+        pass  # already exists
+
+    try:
+        c.execute(
+            'ALTER TABLE matches ADD COLUMN player3_id INTEGER DEFAULT NULL'
+        )
+    except sqlite3.OperationalError:
+        pass  # already exists
+
+    try:
+        c.execute(
             'ALTER TABLE matches ADD COLUMN notification_sent INTEGER DEFAULT 0'
         )
     except sqlite3.OperationalError:
@@ -1301,6 +1315,24 @@ def init_db():
         )
     ''')
 
+    try:
+        c.execute(
+            'ALTER TABLE matches ADD COLUMN match_type TEXT DEFAULT "singles"')
+    except Exception:
+        pass  # Column already exists
+
+    try:
+        c.execute(
+            'ALTER TABLE matches ADD COLUMN winner_team INTEGER DEFAULT NULL')
+    except Exception:
+        pass  # Column already exists
+
+    try:
+        c.execute(
+            'ALTER TABLE matches ADD COLUMN loser_team INTEGER DEFAULT NULL')
+    except Exception:
+        pass  # Column already exists
+   
     # Create teams table for permanent player partnerships
     c.execute('''
         CREATE TABLE IF NOT EXISTS teams (
@@ -5113,8 +5145,7 @@ def player_home(player_id):
 
 @app.route('/challenges')
 def challenges():
-    """Display challenges page for the current player"""
-    # Check if user is logged in
+    """Display challenges page for the current player (supports singles & doubles)"""
     if 'player_id' not in session:
         flash('Please log in to view challenges', 'warning')
         return redirect(url_for('player_login'))
@@ -5123,208 +5154,203 @@ def challenges():
     conn = get_db_connection()
 
     # Verify player exists
-    player = conn.execute('SELECT * FROM players WHERE id = ?',
-                          (player_id, )).fetchone()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('player_login'))
 
-    # Get incoming challenges (matches where this player is player2 and status is pending/counter_proposed)
-    incoming_challenges = conn.execute(
-        '''
-        SELECT m.*, 
-               p1.full_name as challenger_name, 
-               p1.selfie as challenger_selfie,
-               p1.skill_level as challenger_skill,
-               p1.wins as challenger_wins,
-               p1.losses as challenger_losses
-        FROM matches m
-        JOIN players p1 ON m.player1_id = p1.id
-        WHERE m.player2_id = ? 
-        AND m.status IN ('pending', 'counter_proposed')
-        ORDER BY m.created_at DESC
-    ''', (player_id, )).fetchall()
-
-    # Get outgoing challenges (matches where this player is player1 and status is pending/counter_proposed)
-    outgoing_challenges = conn.execute(
-        '''
-        SELECT m.*, 
-               p2.full_name as opponent_name, 
-               p2.selfie as opponent_selfie,
-               p2.skill_level as opponent_skill,
-               p2.wins as opponent_wins,
-               p2.losses as opponent_losses
-        FROM matches m
-        JOIN players p2 ON m.player2_id = p2.id
-        WHERE m.player1_id = ? 
-        AND m.status IN ('pending', 'counter_proposed')
-        ORDER BY m.created_at DESC
-    ''', (player_id, )).fetchall()
-
-    # Get confirmed matches - separate upcoming from past due (need score submission)
-    from datetime import datetime
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
-
-    confirmed_matches = conn.execute(
-        '''
-        SELECT m.*, 
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.full_name
-                   ELSE p1.full_name 
-               END as opponent_name,
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.selfie
-                   ELSE p1.selfie 
-               END as opponent_selfie,
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.skill_level
-                   ELSE p1.skill_level 
-               END as opponent_skill,
-               CASE 
-                   WHEN datetime(m.scheduled_time) <= datetime('now') THEN 'past_due'
-                   ELSE 'upcoming'
-               END as time_status
+    # --- INCOMING CHALLENGES ---
+    incoming_challenges = conn.execute('''
+        SELECT m.*,
+               p1.full_name AS player1_name, p1.selfie AS player1_selfie,
+               p2.full_name AS player2_name, p2.selfie AS player2_selfie,
+               p3.full_name AS player3_name, p3.selfie AS player3_selfie,
+               p4.full_name AS player4_name, p4.selfie AS player4_selfie
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
-        WHERE (m.player1_id = ? OR m.player2_id = ?)
+        LEFT JOIN players p3 ON m.player3_id = p3.id
+        LEFT JOIN players p4 ON m.player4_id = p4.id
+        WHERE (m.player2_id = ? OR m.player4_id = ?)
+        AND m.status IN ('pending', 'counter_proposed')
+        ORDER BY m.created_at DESC
+    ''', (player_id, player_id)).fetchall()
+
+    # --- OUTGOING CHALLENGES ---
+    outgoing_challenges = conn.execute('''
+        SELECT m.*,
+               p1.full_name AS player1_name, p1.selfie AS player1_selfie,
+               p2.full_name AS player2_name, p2.selfie AS player2_selfie,
+               p3.full_name AS player3_name, p3.selfie AS player3_selfie,
+               p4.full_name AS player4_name, p4.selfie AS player4_selfie
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        LEFT JOIN players p3 ON m.player3_id = p3.id
+        LEFT JOIN players p4 ON m.player4_id = p4.id
+        WHERE (m.player1_id = ? OR m.player3_id = ?)
+        AND m.status IN ('pending', 'counter_proposed')
+        ORDER BY m.created_at DESC
+    ''', (player_id, player_id)).fetchall()
+
+    # --- CONFIRMED MATCHES ---
+    confirmed_matches = conn.execute('''
+        SELECT m.*,
+               p1.full_name AS player1_name, p1.selfie AS player1_selfie,
+               p2.full_name AS player2_name, p2.selfie AS player2_selfie,
+               p3.full_name AS player3_name, p3.selfie AS player3_selfie,
+               p4.full_name AS player4_name, p4.selfie AS player4_selfie,
+               CASE WHEN datetime(m.scheduled_time) <= datetime('now') THEN 'past_due'
+                    ELSE 'upcoming' END AS time_status
+        FROM matches m
+        JOIN players p1 ON m.player1_id = p1.id
+        JOIN players p2 ON m.player2_id = p2.id
+        LEFT JOIN players p3 ON m.player3_id = p3.id
+        LEFT JOIN players p4 ON m.player4_id = p4.id
+        WHERE (m.player1_id = ? OR m.player2_id = ? OR m.player3_id = ? OR m.player4_id = ?)
         AND m.status = 'confirmed'
         ORDER BY m.created_at DESC
         LIMIT 10
-    ''', (player_id, player_id, player_id, player_id, player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id)).fetchall()
 
-    # Get completed matches (match history)
-    completed_matches = conn.execute(
-        '''
-        SELECT m.*, 
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.full_name
-                   ELSE p1.full_name 
-               END as opponent_name,
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.selfie
-                   ELSE p1.selfie 
-               END as opponent_selfie,
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.skill_level
-                   ELSE p1.skill_level 
-               END as opponent_skill,
-               CASE 
-                   WHEN m.winner_id = ? THEN 'won'
-                   ELSE 'lost'
-               END as result
+    # --- COMPLETED MATCHES ---
+    completed_matches = conn.execute('''
+        SELECT m.*,
+               p1.full_name AS player1_name, p1.selfie AS player1_selfie,
+               p2.full_name AS player2_name, p2.selfie AS player2_selfie,
+               p3.full_name AS player3_name, p3.selfie AS player3_selfie,
+               p4.full_name AS player4_name, p4.selfie AS player4_selfie,
+               CASE WHEN m.winner_id = ? THEN 'won' ELSE 'lost' END AS result
         FROM matches m
         JOIN players p1 ON m.player1_id = p1.id
         JOIN players p2 ON m.player2_id = p2.id
-        WHERE (m.player1_id = ? OR m.player2_id = ?)
+        LEFT JOIN players p3 ON m.player3_id = p3.id
+        LEFT JOIN players p4 ON m.player4_id = p4.id
+        WHERE (m.player1_id = ? OR m.player2_id = ? OR m.player3_id = ? OR m.player4_id = ?)
         AND m.status = 'completed'
         ORDER BY m.created_at DESC
         LIMIT 20
-    ''', (player_id, player_id, player_id, player_id, player_id,
-          player_id)).fetchall()
+    ''', (player_id, player_id, player_id, player_id, player_id)).fetchall()
 
-    # Get all available players for challenging (excluding current player and those with pending challenges)
+    # --- AVAILABLE PLAYERS ---
     existing_challenges_query = '''
-        SELECT DISTINCT 
-            CASE 
-                WHEN player1_id = ? THEN player2_id
-                ELSE player1_id
-            END as opponent_id
-        FROM matches 
-        WHERE (player1_id = ? OR player2_id = ?)
+        SELECT DISTINCT CASE
+            WHEN player1_id = ? THEN player2_id
+            WHEN player3_id = ? THEN player4_id
+            WHEN player2_id = ? THEN player1_id
+            WHEN player4_id = ? THEN player3_id
+        END AS opponent_id
+        FROM matches
+        WHERE (player1_id = ? OR player2_id = ? OR player3_id = ? OR player4_id = ?)
         AND status IN ('pending', 'counter_proposed', 'confirmed')
     '''
-
     existing_challenge_ids = [
-        row[0] for row in conn.execute(existing_challenges_query, (
-            player_id, player_id, player_id)).fetchall()
+        row[0] for row in conn.execute(existing_challenges_query,
+                                       (player_id, player_id, player_id, player_id,
+                                        player_id, player_id, player_id, player_id)).fetchall()
+        if row[0]
     ]
 
-    # Build exclusion list
     exclude_ids = [player_id] + existing_challenge_ids
     placeholders = ','.join(['?'] * len(exclude_ids))
 
-    available_players = conn.execute(
-        f'''
+    available_players = conn.execute(f'''
         SELECT id, full_name, skill_level, selfie, wins, losses, ranking_points,
                preferred_court, location1
-        FROM players 
+        FROM players
         WHERE id NOT IN ({placeholders})
         AND is_looking_for_match = 1
         ORDER BY skill_level, ranking_points DESC, wins DESC
         LIMIT 50
     ''', exclude_ids).fetchall()
 
+    # --- 🩵 ADD BACKWARD-COMPATIBLE FIELDS FOR TEMPLATE ---
+    def add_legacy_fields(match):
+        m = dict(match)
+        if not m.get('match_type') or m.get('match_type') == 'singles':
+            if m.get('player1_id') == player_id:
+                m['opponent_name'] = m.get('player2_name') or ''
+                m['opponent_selfie'] = m.get('player2_selfie') or ''
+            else:
+                m['opponent_name'] = m.get('player1_name') or ''
+                m['opponent_selfie'] = m.get('player1_selfie') or ''
+        else:
+            left_team = ' & '.join(filter(None, [m.get('player1_name'), m.get('player3_name')]))
+            right_team = ' & '.join(filter(None, [m.get('player2_name'), m.get('player4_name')]))
+            if player_id in (m.get('player1_id'), m.get('player3_id')):
+                m['opponent_name'] = right_team
+            else:
+                m['opponent_name'] = left_team
+            m['opponent_selfie'] = m.get('player2_selfie') or m.get('player4_selfie')
+        return m
+
+    incoming_challenges = [add_legacy_fields(m) for m in incoming_challenges]
+    outgoing_challenges = [add_legacy_fields(m) for m in outgoing_challenges]
+    confirmed_matches = [add_legacy_fields(m) for m in confirmed_matches]
+    completed_matches = [add_legacy_fields(m) for m in completed_matches]
+
     conn.close()
 
-    response = make_response(
-        render_template('challenges.html',
-                        player=player,
-                        incoming_challenges=incoming_challenges,
-                        outgoing_challenges=outgoing_challenges,
-                        confirmed_matches=confirmed_matches,
-                        completed_matches=completed_matches,
-                        available_players=available_players))
-
-    # Add cache-busting headers to prevent stale data display
-    response.headers[
-        'Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response = make_response(render_template(
+        'challenges.html',
+        player=player,
+        incoming_challenges=incoming_challenges,
+        outgoing_challenges=outgoing_challenges,
+        confirmed_matches=confirmed_matches,
+        completed_matches=completed_matches,
+        available_players=available_players
+    ))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '-1'
 
     return response
-
-def generate_unique_player_id(conn, cursor, use_sqlite):
-    while True:
-        new_id = uuid.uuid4().hex[:8]  # short unique ID like "a3f9c1e2"
-
-        if use_sqlite:
-            existing = conn.execute(
-                "SELECT 1 FROM players WHERE player_id = ?", (new_id,)
-            ).fetchone()
-        else:
-            cursor.execute("SELECT 1 FROM players WHERE player_id = %s", (new_id,))
-            existing = cursor.fetchone()
-
-        if not existing:
-            return new_id
         
 
-@app.route('/start_match/<int:match_id>', methods=['GET'])
+@app.route('/start_match/<int:match_id>')
 def start_match(match_id):
-    """Fetch match and player info for live scoring popup"""
-    if 'player_id' not in session:
-        return jsonify({'success': False, 'message': 'Login required'}), 403
-
     conn = get_db_connection()
-    match = conn.execute('''
-        SELECT m.*, 
-               p1.full_name AS player1_name,
-               p2.full_name AS player2_name
-        FROM matches m
-        JOIN players p1 ON m.player1_id = p1.id
-        JOIN players p2 ON m.player2_id = p2.id
-        WHERE m.id = ?
-    ''', (match_id,)).fetchone()
-    conn.close()
+    match = conn.execute(
+        'SELECT id, match_type FROM matches WHERE id = ?', 
+        (match_id,)
+    ).fetchone()
 
     if not match:
+        conn.close()
         return jsonify({'success': False, 'message': 'Match not found'})
 
+    # Fetch all players grouped by team
+    teams = conn.execute('''
+        SELECT 
+            CAST(mt.team_number AS INTEGER) AS team_number,
+            COALESCE(p.full_name, 'Unknown Player') AS full_name
+        FROM match_teams mt
+        JOIN players p ON mt.player_id = p.id
+        WHERE mt.match_id = ?
+        ORDER BY mt.team_number, p.full_name
+    ''', (match_id,)).fetchall()
+    conn.close()
+
+    # Build team arrays (only real usernames)
+    team1 = [row['full_name'] for row in teams if row['team_number'] == 1 and row['full_name']]
+    team2 = [row['full_name'] for row in teams if row['team_number'] == 2 and row['full_name']]
+
+    # If there’s only one player per team (singles), still return arrays
+    # Example: {team1: ["Alice"], team2: ["Bob"]}
     return jsonify({
         'success': True,
-        'match_id': match['id'],
-        'player1_name': match['player1_name'],
-        'player2_name': match['player2_name']
-    })            
+        'match_id': match_id,
+        'match_type': match['match_type'],
+        'team1': team1 or [],
+        'team2': team2 or []
+    })
 
 @app.route('/complete_match', methods=['POST'])
 def complete_match():
-    """Submit final scores and update match history"""
     data = request.get_json()
     match_id = data.get('match_id')
-    p1_score = int(data.get('player1_score', 0))
-    p2_score = int(data.get('player2_score', 0))
+    t1_score = int(data.get('team1_score', 0))
+    t2_score = int(data.get('team2_score', 0))
 
     conn = get_db_connection()
     match = conn.execute('SELECT * FROM matches WHERE id = ?', (match_id,)).fetchone()
@@ -5332,25 +5358,44 @@ def complete_match():
         conn.close()
         return jsonify({'success': False, 'message': 'Match not found'})
 
-    winner_id = match['player1_id'] if p1_score > p2_score else match['player2_id']
-    loser_id = match['player2_id'] if p1_score > p2_score else match['player1_id']
+    winner_team = 1 if t1_score > t2_score else 2
+    loser_team = 2 if t1_score > t2_score else 1
 
     conn.execute('''
         UPDATE matches
         SET status = 'completed',
-            player1_score = ?, player2_score = ?, 
-            winner_id = ?, loser_id = ?, completed_at = datetime('now')
+            player1_score = ?, player2_score = ?,
+            winner_team = ?, loser_team = ?, completed_at = datetime('now')
         WHERE id = ?
-    ''', (p1_score, p2_score, winner_id, loser_id, match_id))
+    ''', (t1_score, t2_score, winner_team, loser_team, match_id))
 
-    # Update player records
-    conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (winner_id,))
-    conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (loser_id,))
+    # update player records
+    winners = conn.execute('SELECT player_id FROM match_teams WHERE match_id = ? AND team_number = ?', (match_id, winner_team)).fetchall()
+    losers = conn.execute('SELECT player_id FROM match_teams WHERE match_id = ? AND team_number = ?', (match_id, loser_team)).fetchall()
+
+    for w in winners:
+        conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (w['player_id'],))
+    for l in losers:
+        conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (l['player_id'],))
+
     conn.commit()
     conn.close()
 
-    return jsonify({'success': True, 'message': 'Match completed successfully'})
+    return jsonify({'success': True, 'message': 'Doubles match completed!'})
 
+@app.route('/search_players')
+def search_players():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify({'players': []})
+    conn = get_db_connection()
+    players = conn.execute('''
+        SELECT id, full_name, player_id FROM players
+        WHERE full_name LIKE ? OR player_id LIKE ?
+        LIMIT 10
+    ''', (f'%{q}%', f'%{q}%')).fetchall()
+    conn.close()
+    return jsonify({'players': [dict(p) for p in players]})
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -7731,6 +7776,8 @@ def send_challenge_route():
 
     challenger_id = session['player_id']
     opponent_id = request.form.get('opponent_id')
+    player3_id = request.form.get('player3_id') or None
+    player4_id = request.form.get('player4_id') or None
     court_location = request.form.get('court_location', '').strip()
     scheduled_time = request.form.get('scheduled_time', '').strip()
 
@@ -7740,54 +7787,51 @@ def send_challenge_route():
 
     try:
         opponent_id = int(opponent_id)
+        player3_id = int(player3_id) if player3_id else None
+        player4_id = int(player4_id) if player4_id else None
     except ValueError:
-        flash('Invalid opponent selected', 'danger')
+        flash('Invalid player selection', 'danger')
         return redirect(url_for('challenges'))
 
     # Prevent self-challenges
-    if challenger_id == opponent_id:
+    if challenger_id == opponent_id or challenger_id in (player3_id, player4_id):
         flash('You cannot challenge yourself!', 'warning')
         return redirect(url_for('challenges'))
 
     conn = get_db_connection()
-
     try:
-        # Check if challenger exists and get their info
-        challenger = conn.execute('SELECT * FROM players WHERE id = ?',
-                                  (challenger_id, )).fetchone()
-        if not challenger:
+        challenger = conn.execute('SELECT * FROM players WHERE id = ?', (challenger_id,)).fetchone()
+        opponent = conn.execute('SELECT * FROM players WHERE id = ?', (opponent_id,)).fetchone()
+
+        if not challenger or not opponent:
             flash('Player not found', 'danger')
             return redirect(url_for('challenges'))
 
-        # Check if opponent exists
-        opponent = conn.execute('SELECT * FROM players WHERE id = ?',
-                                (opponent_id, )).fetchone()
-        if not opponent:
-            flash('Opponent not found', 'danger')
-            return redirect(url_for('challenges'))
-
-        # Check for existing pending challenges between these players
-        existing_challenge = conn.execute(
-            '''
+        # Check for duplicate pending challenges
+        existing_challenge = conn.execute('''
             SELECT id FROM matches 
             WHERE ((player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?))
             AND status IN ('pending', 'counter_proposed')
-        ''', (challenger_id, opponent_id, opponent_id,
-              challenger_id)).fetchone()
+        ''', (challenger_id, opponent_id, opponent_id, challenger_id)).fetchone()
 
         if existing_challenge:
-            flash(
-                f'You already have a pending challenge with {opponent["full_name"]}',
-                'warning')
+            flash(f'You already have a pending challenge with {opponent["full_name"]}', 'warning')
             return redirect(url_for('challenges'))
 
-        # Create the challenge
-        conn.execute(
-            '''
-            INSERT INTO matches (player1_id, player2_id, sport, court_location, scheduled_time, status, created_at)
-            VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))
-        ''', (challenger_id, opponent_id, 'Pickleball', court_location
-              or 'TBD', scheduled_time or 'Flexible'))
+        # Detect match type
+        match_type = 'doubles' if (player3_id and player4_id) else 'singles'
+
+        # Insert match directly (no match_teams)
+        conn.execute('''
+            INSERT INTO matches (
+                player1_id, player2_id, player3_id, player4_id,
+                sport, court_location, scheduled_time, status, match_type, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, datetime('now'))
+        ''', (
+            challenger_id, opponent_id, player3_id, player4_id,
+            'Pickleball', court_location or 'TBD', scheduled_time or 'Flexible', match_type
+        ))
 
         conn.commit()
         flash(f'Challenge sent to {opponent["full_name"]}! 🎾', 'success')
@@ -7801,42 +7845,79 @@ def send_challenge_route():
     return redirect(url_for('challenges'))
 
 
+@app.route('/send_challenge', methods=['POST'])
+def send_challenge():
+    """JSON API version of challenge sending"""
+    data = request.get_json()
+    challenger_id = session.get('player_id')
+    opponent_id = data.get('opponent_id')
+    player3_id = data.get('teammate_id')
+    player4_id = data.get('opponent_teammate_id')
+    court_location = data.get('court_location')
+    scheduled_time = data.get('scheduled_time')
+    sport = 'Pickleball'
+
+    if not challenger_id or not opponent_id:
+        return jsonify({'success': False, 'message': 'Missing players'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        match_type = 'doubles' if (player3_id and player4_id) else 'singles'
+
+        cursor.execute('''
+            INSERT INTO matches (
+                player1_id, player2_id, player3_id, player4_id,
+                sport, court_location, scheduled_time, status, match_type, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, datetime('now'))
+        ''', (
+            challenger_id, opponent_id, player3_id, player4_id,
+            sport, court_location, scheduled_time, match_type
+        ))
+
+        match_id = cursor.lastrowid
+        conn.commit()
+
+        print(f"DEBUG → Created {match_type} match ID {match_id}")
+        return jsonify({'success': True, 'message': 'Challenge created', 'match_id': match_id})
+
+    except Exception as e:
+        conn.rollback()
+        print("ERROR → Failed to insert match:", e)
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        conn.close()
+
+
 @app.route('/challenges/<int:challenge_id>/accept', methods=['POST'])
 def accept_challenge_route(challenge_id):
-    """Accept an incoming challenge using HTML form"""
+    """Accept an incoming challenge"""
     if 'player_id' not in session:
         flash('Please log in to accept challenges', 'warning')
         return redirect(url_for('player_login'))
 
     player_id = session['player_id']
     conn = get_db_connection()
-
     try:
-        # Get challenge details and verify ownership
-        challenge = conn.execute(
-            '''
+        challenge = conn.execute('''
             SELECT m.*, p1.full_name as challenger_name
             FROM matches m
             JOIN players p1 ON m.player1_id = p1.id
-            WHERE m.id = ? AND m.player2_id = ? AND m.status IN ('pending', 'counter_proposed')
-        ''', (challenge_id, player_id)).fetchone()
+            WHERE m.id = ? AND (m.player2_id = ? OR m.player4_id = ?) AND m.status IN ('pending', 'counter_proposed')
+        ''', (challenge_id, player_id, player_id)).fetchone()
 
         if not challenge:
-            flash('Challenge not found or you are not authorized to accept it',
-                  'danger')
+            flash('Challenge not found or unauthorized', 'danger')
             return redirect(url_for('challenges'))
 
-        # Accept the challenge by updating status
-        conn.execute('UPDATE matches SET status = ? WHERE id = ?',
-                     ('confirmed', challenge_id))
+        # Confirm match
+        conn.execute('UPDATE matches SET status = ?, match_type = ? WHERE id = ?',
+                     ('confirmed', challenge['match_type'], challenge_id))
         conn.commit()
 
-        # Format success message
-        location = challenge['court_location'] or 'TBD'
-        time = challenge['scheduled_time'] or 'Flexible'
-        flash(
-            f'Challenge accepted! 🎾 Match with {challenge["challenger_name"]} confirmed at {location} for {time}',
-            'success')
+        flash(f'Challenge accepted! 🎾 Match confirmed at {challenge["court_location"] or "TBD"} for {challenge["scheduled_time"] or "Flexible"}',
+              'success')
 
     except Exception as e:
         logging.error(f"Error accepting challenge {challenge_id}: {e}")
@@ -7845,7 +7926,6 @@ def accept_challenge_route(challenge_id):
         conn.close()
 
     return redirect(url_for('challenges'))
-
 
 @app.route('/challenges/<int:challenge_id>/decline', methods=['POST'])
 def decline_challenge_route(challenge_id):

@@ -534,6 +534,14 @@
                         <input type="datetime-local" class="form-control dark-input" name="scheduled_time">
                     </div>
                     
+                    <label class="form-label text-white mt-3">Add Teammate (optional)</label>
+<input type="text" id="teammateSearch" class="form-control" placeholder="Search by username or ID">
+<div id="teammateResults" class="list-group"></div>
+
+<label class="form-label text-white mt-3">Add Opponent Teammate (optional)</label>
+<input type="text" id="opponentTeammateSearch" class="form-control" placeholder="Search by username or ID">
+<div id="opponentTeammateResults" class="list-group"></div>
+                    
                     <div class="text-center">
                         <button type="submit" class="btn btn-primary btn-lg text-bold">
                             <i class="fas fa-paper-plane me-2"></i>Send Challenge
@@ -707,24 +715,36 @@ document.addEventListener("DOMContentLoaded", function () {
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content bg-dark text-white p-4 rounded-4">
       <h4 class="neon-text mb-3">Match in Progress</h4>
-      <div id="matchPlayers" class="mb-4"></div>
-
+      <div id="teamNames" class="mb-4"></div>
+            
       <div class="scoreboard text-center">
         <div class="d-flex justify-content-around align-items-center mb-4">
           <div>
-            <h5 id="player1Name"></h5>
+            <h5 id="team1Names"></h5>
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button class="btn btn-outline-light" id="p1Minus">-</button>
-              <span class="fs-3" id="p1Score">0</span>
-              <button class="btn btn-outline-light" id="p1Plus">+</button>
+              <button class="btn btn-outline-light" id="t1Minus">-</button>
+              <span class="fs-3" id="t1Score">0</span>
+              <button class="btn btn-outline-light" id="t1Plus">+</button>
             </div>
           </div>
+          <div class="score-popup">
+    <div class="team team-left">
+        {% for match in confirmed_matches %}
+        <span>{{ match.player1_name }}</span>
+        {% if match.player3_name %}<span>{{ match.player3_name }}</span>{% endif %}
+    </div>
+    <div class="team team-right">
+        <span>{{ match.player2_name }}</span>
+        {% if match.player4_name %}<span>{{ match.player4_name }}</span>{% endif %}
+        {% endfor %}
+    </div>
+</div>
           <div>
-            <h5 id="player2Name"></h5>
+            <h5 id="team2Names"></h5>
             <div class="d-flex justify-content-center align-items-center gap-2">
-              <button class="btn btn-outline-light" id="p2Minus">-</button>
-              <span class="fs-3" id="p2Score">0</span>
-              <button class="btn btn-outline-light" id="p2Plus">+</button>
+              <button class="btn btn-outline-light" id="t2Minus">-</button>
+              <span class="fs-3" id="t2Score">0</span>
+              <button class="btn btn-outline-light" id="t2Plus">+</button>
             </div>
           </div>
         </div>
@@ -747,50 +767,69 @@ document.querySelectorAll('.start-match-btn').forEach(btn => {
     const data = await res.json();
 
     if (data.success) {
-      document.getElementById('player1Name').innerText = data.player1_name;
-      document.getElementById('player2Name').innerText = data.player2_name;
+      // Create a list of usernames for each team
+      const team1Usernames = data.team1.map(player => player.username).join(' & ');
+      const team2Usernames = data.team2.map(player => player.username).join(' & ');
+
+      // Set team names
+      document.getElementById('team1Names').innerText = team1Usernames;
+      document.getElementById('team2Names').innerText = team2Usernames;
+
+      // Set match ID in modal
       document.getElementById('matchModal').dataset.matchId = matchId;
+      
+      // Show modal
       new bootstrap.Modal(document.getElementById('matchModal')).show();
     }
   });
 });
 
-function setupScoreControls(pId, scoreId) {
-  const plus = document.getElementById(`${pId}Plus`);
-  const minus = document.getElementById(`${pId}Minus`);
-  const score = document.getElementById(`${pId}Score`);
-  plus.addEventListener('click', () => score.innerText = parseInt(score.innerText) + 1);
-  minus.addEventListener('click', () => {
-    if (parseInt(score.innerText) > 0)
-      score.innerText = parseInt(score.innerText) - 1;
-  });
+fetch('/send_challenge', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload)
+})
+.then(res => res.json())
+.then(data => {
+  if (data.success) {
+    console.log('Match created:', data);
+
+    // Optional: Show modal immediately with team names
+    document.getElementById('team1Names').innerText = data.team1.join(' & ');
+    document.getElementById('team2Names').innerText = data.team2.join(' & ');
+
+    new bootstrap.Modal(document.getElementById('matchModal')).show();
+  } else {
+    alert('Error: ' + data.message);
+  }
+});
+
+function setupScore(team) {
+  const plus = document.getElementById(`${team}Plus`);
+  const minus = document.getElementById(`${team}Minus`);
+  const score = document.getElementById(`${team}Score`);
+  plus.onclick = () => score.innerText = parseInt(score.innerText) + 1;
+  minus.onclick = () => {
+    if (parseInt(score.innerText) > 0) score.innerText = parseInt(score.innerText) - 1;
+  };
 }
+setupScore('t1'); setupScore('t2');
 
-setupScoreControls('p1', 'p1Score');
-setupScoreControls('p2', 'p2Score');
-
-document.getElementById('finishGame').addEventListener('click', async () => {
-  const modal = document.getElementById('matchModal');
-  const matchId = modal.dataset.matchId;
-  const p1Score = parseInt(document.getElementById('p1Score').innerText);
-  const p2Score = parseInt(document.getElementById('p2Score').innerText);
+document.getElementById('finishGame').onclick = async () => {
+  const matchId = document.getElementById('matchModal').dataset.matchId;
+  const t1Score = parseInt(document.getElementById('t1Score').innerText);
+  const t2Score = parseInt(document.getElementById('t2Score').innerText);
 
   const res = await fetch('/complete_match', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({match_id: matchId, player1_score: p1Score, player2_score: p2Score})
+    body: JSON.stringify({match_id: matchId, team1_score: t1Score, team2_score: t2Score})
   });
   const result = await res.json();
-
-  if (result.success) {
-    alert('Game finished! ' + result.message);
-    location.reload();
-  } else {
-    alert('Error: ' + result.message);
-  }
-});
+  if (result.success) location.reload();
+  else alert(result.message);
+};
 </script>
-
 <script>
     
 
@@ -1045,6 +1084,46 @@ function showPlayerStats(playerId) {
             `;
         });
 }
+</script>
+<script>
+    async function searchPlayers(inputId, resultId, callback) {
+  const query = document.getElementById(inputId).value.trim();
+  if (query.length < 2) return;
+
+  const res = await fetch(`/search_players?q=${encodeURIComponent(query)}`);
+  const data = await res.json();
+  const container = document.getElementById(resultId);
+  container.innerHTML = '';
+
+  if (data.players.length === 0) {
+    container.innerHTML = '<div class="list-group-item text-muted">No matches</div>';
+    return;
+  }
+
+  data.players.forEach(p => {
+    const item = document.createElement('button');
+    item.className = 'list-group-item list-group-item-action';
+    item.textContent = `${p.full_name} (${p.player_id})`;
+    item.onclick = () => callback(p);
+    container.appendChild(item);
+  });
+}
+
+document.getElementById('teammateSearch').addEventListener('input', () => 
+  searchPlayers('teammateSearch', 'teammateResults', (p) => {
+    window.selectedTeammate = p.id;
+    document.getElementById('teammateSearch').value = p.full_name;
+    document.getElementById('teammateResults').innerHTML = '';
+  })
+);
+
+document.getElementById('opponentTeammateSearch').addEventListener('input', () => 
+  searchPlayers('opponentTeammateSearch', 'opponentTeammateResults', (p) => {
+    window.selectedOpponentTeammate = p.id;
+    document.getElementById('opponentTeammateSearch').value = p.full_name;
+    document.getElementById('opponentTeammateResults').innerHTML = '';
+  })
+);
 </script>
 
 <script>

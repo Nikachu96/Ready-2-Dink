@@ -294,6 +294,7 @@ window.initGooglePlaces = function() {
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+            
             <div class="modal-body">
                 <form id="challengeForm" method="POST" action="{{ url_for('send_challenge_route') }}">
                     <input type="hidden" id="challengeOpponentId" name="opponent_id">
@@ -308,6 +309,20 @@ window.initGooglePlaces = function() {
                     <div class="mb-3">
                         <label class="form-label text-white text-bold">Proposed Date & Time (Optional):</label>
                         <input type="datetime-local" class="form-control dark-input" name="scheduled_time">
+                    </div>
+
+                    <!-- Teammate Search (optional) -->
+                    <div class="mb-3">
+                        <label class="form-label text-white text-bold">Add Teammate (optional):</label>
+                        <input type="text" id="teammateSearch" class="form-control dark-input" placeholder="Search by username or ID">
+                        <div id="teammateResults" class="list-group mt-2"></div>
+                    </div>
+
+                    <!-- Opponent Teammate Search (optional) -->
+                    <div class="mb-3">
+                        <label class="form-label text-white text-bold">Add Opponent Teammate (optional):</label>
+                        <input type="text" id="opponentTeammateSearch" class="form-control dark-input" placeholder="Search by username or ID">
+                        <div id="opponentTeammateResults" class="list-group mt-2"></div>
                     </div>
 
                     <div class="text-center">
@@ -419,6 +434,52 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 
 <script>
+// Player Search Logic
+let selectedTeammate = null;
+let selectedOpponentTeammate = null;
+
+async function searchPlayers(inputId, resultId, onSelect) {
+    const query = document.getElementById(inputId).value.trim();
+    if (query.length < 2) return;
+
+    const res = await fetch(`/search_players?q=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    const container = document.getElementById(resultId);
+    container.innerHTML = '';
+
+    if (!data.players.length) {
+        container.innerHTML = '<div class="list-group-item text-muted">No players found</div>';
+        return;
+    }
+
+    data.players.forEach(p => {
+        const btn = document.createElement('button');
+        btn.className = 'list-group-item list-group-item-action';
+        btn.textContent = `${p.full_name} (${p.player_id})`;
+        btn.onclick = () => onSelect(p);
+        container.appendChild(btn);
+    });
+}
+
+document.getElementById('teammateSearch').addEventListener('input', () => {
+    searchPlayers('teammateSearch', 'teammateResults', (p) => {
+        selectedTeammate = p.id;
+        document.getElementById('teammateSearch').value = p.full_name;
+        document.getElementById('teammateResults').innerHTML = '';
+    });
+});
+
+document.getElementById('opponentTeammateSearch').addEventListener('input', () => {
+    searchPlayers('opponentTeammateSearch', 'opponentTeammateResults', (p) => {
+        selectedOpponentTeammate = p.id;
+        document.getElementById('opponentTeammateSearch').value = p.full_name;
+        document.getElementById('opponentTeammateResults').innerHTML = '';
+    });
+});
+
+</script>
+
+<script>
 let currentChallengePlayerId = null;
 
 // Search Filter Functions
@@ -512,85 +573,37 @@ function challengePlayer(opponentId, opponentName) {
 
 
 function sendChallenge() {
-    if (!currentChallengePlayerId) {
-        alert('Error: No player selected');
-        return;
-    }
-    
-    const location = document.getElementById('proposedLocation').value.trim();
-    const dateTime = document.getElementById('proposedDateTime').value;
-    
-    // Prepare the challenge data
-    const challengeData = {
-        target_player_id: currentChallengePlayerId
+    const opponentId = document.getElementById("challengeOpponentId").value;
+    const courtLocation = document.getElementById("courtLocation").value.trim();
+    const scheduledTime = document.querySelector('input[name="scheduled_time"]').value;
+
+    const payload = {
+        opponent_id: opponentId,
+        court_location: courtLocation,
+        scheduled_time: scheduledTime,
+        teammate_id: selectedTeammate,
+        opponent_teammate_id: selectedOpponentTeammate
     };
-    
-    if (location) {
-        challengeData.proposed_location = location;
-    }
-    
-    if (dateTime) {
-        // Split datetime-local into date and time components
-        const [date, time] = dateTime.split('T');
-        challengeData.proposed_date = date;
-        challengeData.proposed_time = time;
-    }
-    
-    // Check if we have a valid player ID
-    const playerId = '{{ current_player_id }}';
-    console.log('Player ID passed to template:', playerId);
-    
-    if (!playerId || playerId === 'None' || playerId === 'undefined') {
-        alert('Error: You must be logged in to send challenges. Please refresh the page and try again.');
-        return;
-    }
-    
-    // Debug the URL being called - v2 (cache busting)
-    const findMatchUrl = '/find_match/' + playerId;
-    console.log('*** UPDATED VERSION - Calling URL:', findMatchUrl);
-    console.log('Challenge data:', challengeData);
-    
-    // Send the challenge
-    fetch(findMatchUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(challengeData)
+
+    fetch("/send_challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        
-        if (!response.ok) {
-            console.log('Response not ok, getting text...');
-            return response.text().then(text => {
-                console.log('Error response text:', text);
-                throw new Error(`HTTP ${response.status}: ${text}`);
-            });
-        }
-        
-        return response.json();
-    })
+    .then(res => res.json())
     .then(data => {
-        console.log('Success response:', data);
         if (data.success) {
-            // Close modal and show success message
-            const modal = bootstrap.Modal.getInstance(document.getElementById('challengeModal'));
+            alert("Challenge sent successfully!");
+            const modal = bootstrap.Modal.getInstance(document.getElementById("challengeModal"));
             modal.hide();
-            
-            // Show success message (you can customize this)
-            alert('Challenge sent successfully! 🎾');
-            
-            // Optionally redirect to challenges page
-            window.location.href = '/challenges';
+            window.location.href = "/challenges";
         } else {
-            alert('Failed to send challenge: ' + (data.message || 'Unknown error'));
+            alert("Error: " + data.message);
         }
     })
-    .catch(error => {
-        console.error('Error sending challenge:', error);
-        alert('Failed to send challenge: ' + error.message);
+    .catch(err => {
+        console.error(err);
+        alert("Failed to send challenge");
     });
 }
 </script>
