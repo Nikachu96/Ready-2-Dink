@@ -264,22 +264,12 @@
                                     <div class="text-white text-bold"><i class="fas fa-calendar me-2 text-neon"></i>Confirmed {{ match.created_at[:10] }}</div>
                                 </div>
                             </div>
-                            {% for match in confirmed_matches %}
-<div class="neon-frame challenge-card confirmed mb-4">
-  <div class="card-body p-4">
-    <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <h5 class="text-white text-bold neon-text">{{ match.opponent_name }}</h5>
-        <div class="text-white"><i class="fas fa-map-marker-alt me-2"></i>{{ match.court_location or 'TBD' }}</div>
-      </div>
-      <button class="btn btn-success btn-lg start-match-btn" 
-              data-match-id="{{ match.id }}">
-        <i class="fas fa-play-circle me-1"></i>Start Match
-      </button>
-    </div>
-  </div>
-</div>
-{% endfor %}
+                            <div class="col-auto">
+                                <button class="btn btn-success btn-lg start-match-btn"
+                                    data-match-id="{{ match.id }}">
+                                    <i class="fas fa-play-circle me-1"></i>Start Match
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -741,53 +731,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <script>
 document.querySelectorAll('.start-match-btn').forEach(btn => {
-  btn.addEventListener('click', async () => {
+  btn.addEventListener('click', () => {
     const matchId = btn.dataset.matchId;
-    const res = await fetch(`/start_match/${matchId}`);
-    const data = await res.json();
-
-    if (data.success) {
-      document.getElementById('player1Name').innerText = data.player1_name;
-      document.getElementById('player2Name').innerText = data.player2_name;
-      document.getElementById('matchModal').dataset.matchId = matchId;
-      new bootstrap.Modal(document.getElementById('matchModal')).show();
-    }
+    const opponentName = btn.closest('.challenge-card').querySelector('h5').innerText.trim();
+    showSubmitScore(matchId, opponentName);
   });
-});
-
-function setupScoreControls(pId, scoreId) {
-  const plus = document.getElementById(`${pId}Plus`);
-  const minus = document.getElementById(`${pId}Minus`);
-  const score = document.getElementById(`${pId}Score`);
-  plus.addEventListener('click', () => score.innerText = parseInt(score.innerText) + 1);
-  minus.addEventListener('click', () => {
-    if (parseInt(score.innerText) > 0)
-      score.innerText = parseInt(score.innerText) - 1;
-  });
-}
-
-setupScoreControls('p1', 'p1Score');
-setupScoreControls('p2', 'p2Score');
-
-document.getElementById('finishGame').addEventListener('click', async () => {
-  const modal = document.getElementById('matchModal');
-  const matchId = modal.dataset.matchId;
-  const p1Score = parseInt(document.getElementById('p1Score').innerText);
-  const p2Score = parseInt(document.getElementById('p2Score').innerText);
-
-  const res = await fetch('/complete_match', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({match_id: matchId, player1_score: p1Score, player2_score: p2Score})
-  });
-  const result = await res.json();
-
-  if (result.success) {
-    alert('Game finished! ' + result.message);
-    location.reload();
-  } else {
-    alert('Error: ' + result.message);
-  }
 });
 </script>
 
