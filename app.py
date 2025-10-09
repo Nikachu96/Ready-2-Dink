@@ -315,6 +315,7 @@ def get_distance_from_current_player(player_data, current_player_id):
         return None
 
 
+
 # Email configuration for SendGrid
 def send_admin_credentials_email(full_name, email, username, password,
                                  login_url):
@@ -7723,82 +7724,75 @@ def decline_challenge():
 
 # Form-based challenge endpoints (non-JSON)
 @app.route('/challenges/send', methods=['POST'])
-def send_challenge_route():
-    """Send a new challenge to another player using HTML form"""
-    if 'player_id' not in session:
-        flash('Please log in to send challenges', 'warning')
-        return redirect(url_for('player_login'))
-
-    challenger_id = session['player_id']
-    opponent_id = request.form.get('opponent_id')
-    court_location = request.form.get('court_location', '').strip()
-    scheduled_time = request.form.get('scheduled_time', '').strip()
-
-    if not opponent_id:
-        flash('Please select an opponent to challenge', 'danger')
-        return redirect(url_for('challenges'))
-
+def send_challenge():
     try:
-        opponent_id = int(opponent_id)
-    except ValueError:
-        flash('Invalid opponent selected', 'danger')
-        return redirect(url_for('challenges'))
+        data = request.get_json()
+        challenger_id = session.get('player_id')
+        if not challenger_id:
+            return jsonify({'error': 'Not logged in'}), 401
 
-    # Prevent self-challenges
-    if challenger_id == opponent_id:
-        flash('You cannot challenge yourself!', 'warning')
-        return redirect(url_for('challenges'))
+        opponent_id = data.get('opponent_id')
+        partner1_id = data.get('partner1_id')  # Challenger’s partner (optional)
+        partner2_id = data.get('partner2_id')  # Opponent’s partner (optional)
+        sport = data.get('sport', 'Pickleball')
+        court_location = data.get('court_location', 'TBD')
+        match_date = data.get('match_date')
+        scheduled_time = data.get('scheduled_time')
 
-    conn = get_db_connection()
+        match_type = 'doubles' if partner1_id and partner2_id else 'singles'
 
-    try:
-        # Check if challenger exists and get their info
-        challenger = conn.execute('SELECT * FROM players WHERE id = ?',
-                                  (challenger_id, )).fetchone()
-        if not challenger:
-            flash('Player not found', 'danger')
-            return redirect(url_for('challenges'))
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-        # Check if opponent exists
-        opponent = conn.execute('SELECT * FROM players WHERE id = ?',
-                                (opponent_id, )).fetchone()
-        if not opponent:
-            flash('Opponent not found', 'danger')
-            return redirect(url_for('challenges'))
+        # Create match record
+        cursor.execute("""
+            INSERT INTO matches (player1_id, player2_id, sport, court_location, match_date, scheduled_time, status, match_type)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+        """, (challenger_id, opponent_id, sport, court_location, match_date, scheduled_time, match_type))
+        match_id = cursor.lastrowid
 
-        # Check for existing pending challenges between these players
-        existing_challenge = conn.execute(
-            '''
-            SELECT id FROM matches 
-            WHERE ((player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?))
-            AND status IN ('pending', 'counter_proposed')
-        ''', (challenger_id, opponent_id, opponent_id,
-              challenger_id)).fetchone()
-
-        if existing_challenge:
-            flash(
-                f'You already have a pending challenge with {opponent["full_name"]}',
-                'warning')
-            return redirect(url_for('challenges'))
-
-        # Create the challenge
-        conn.execute(
-            '''
-            INSERT INTO matches (player1_id, player2_id, sport, court_location, scheduled_time, status, created_at)
-            VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))
-        ''', (challenger_id, opponent_id, 'Pickleball', court_location
-              or 'TBD', scheduled_time or 'Flexible'))
+        # Insert team members
+        if match_type == 'doubles':
+            # Team 1 = challenger + their partner
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)", (match_id, challenger_id))
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)", (match_id, partner1_id))
+            # Team 2 = opponent + their partner
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)", (match_id, opponent_id))
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)", (match_id, partner2_id))
+        else:
+            # Singles
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)", (match_id, challenger_id))
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)", (match_id, opponent_id))
 
         conn.commit()
-        flash(f'Challenge sent to {opponent["full_name"]}! 🎾', 'success')
 
-    except Exception as e:
-        logging.error(f"Error sending challenge: {e}")
-        flash('Failed to send challenge. Please try again.', 'danger')
-    finally:
+        # Fetch player names for confirmation modal display
+        cursor.execute("""
+            SELECT p.full_name, mt.team_number
+            FROM match_teams mt
+            JOIN players p ON mt.player_id = p.id
+            WHERE mt.match_id = ?
+            ORDER BY mt.team_number ASC
+        """, (match_id,))
+        teams = cursor.fetchall()
+
+        # Format data for modal window
+        team1 = [row['full_name'] for row in teams if row['team_number'] == 1]
+        team2 = [row['full_name'] for row in teams if row['team_number'] == 2]
+
         conn.close()
 
-    return redirect(url_for('challenges'))
+        return jsonify({
+            'success': True,
+            'match_id': match_id,
+            'match_type': match_type,
+            'team1': team1,
+            'team2': team2
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error sending challenge: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/challenges/<int:challenge_id>/accept', methods=['POST'])
@@ -11107,6 +11101,33 @@ def api_search_players():
         })
 
     return jsonify({'players': players_list})
+
+@app.route('/search_players')
+def search_players():
+    query = request.args.get('query', '').strip().lower()
+    if not query:
+        return jsonify([])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Exclude the current player from results
+    current_player_id = session.get('player_id')
+
+    cursor.execute("""
+        SELECT id, full_name, username
+        FROM players
+        WHERE lower(full_name) LIKE ? OR lower(username) LIKE ?
+        AND id != ?
+        LIMIT 10
+    """, (f'%{query}%', f'%{query}%', current_player_id))
+
+    results = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+
+    return jsonify(results)
+
+
 
 
 @app.route('/api/recent_credit_transactions')
