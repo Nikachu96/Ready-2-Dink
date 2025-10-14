@@ -500,109 +500,129 @@
 {% endfor %}
 
 <!-- Challenge Modal -->
+!-- Challenge Modal -->
 <div class="modal fade" id="challengeModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-handshake me-2"></i>Challenge <span id="challengePlayerName"></span>
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="challengeForm" method="POST" action="{{ url_for('send_challenge_route') }}">
-                    <input type="hidden" id="challengeOpponentId" name="opponent_id">
-                    
-                    <div class="mb-3">
-                        <label class="form-label text-white text-bold">Proposed Location (Optional):</label>
-                        <input type="text" id="courtLocation" class="form-control dark-input" 
-                            name="court_location" placeholder="Court or location preference">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label text-white text-bold">Proposed Date & Time (Optional):</label>
-                        <input type="datetime-local" class="form-control dark-input" name="scheduled_time">
-                    </div>
-                    
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-primary btn-lg text-bold">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-handshake me-2"></i>
+          Challenge <span id="challengePlayerName" class="text-info"></span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="challengeForm" onsubmit="event.preventDefault(); sendChallenge();">
+          <!-- Hidden IDs -->
+          <input type="hidden" id="opponent_id">
+          <input type="hidden" id="partner1_id">
+          <input type="hidden" id="partner2_id">
+
+          <div class="mb-3">
+            <label for="partner1" class="form-label">Your Partner</label>
+            <input type="text" id="partner1" class="form-control" placeholder="Search your partner...">
+          </div>
+
+          <div class="mb-3">
+            <label for="partner2" class="form-label">Opponent’s Partner</label>
+            <input type="text" id="partner2" class="form-control" placeholder="Search opponent’s partner...">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-white text-bold">Proposed Location (Optional):</label>
+            <input type="text" id="courtLocation" class="form-control dark-input" placeholder="Court or location preference">
+            <div id="courtDropdownContainer"></div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-white text-bold">Proposed Date & Time (Optional):</label>
+            <input type="datetime-local" id="scheduled_time" class="form-control dark-input">
+          </div>
+
+          <div class="text-center">
+                        <button type="submit" id="challengePlayerName" class="btn btn-primary btn-lg text-bold">
                             <i class="fas fa-paper-plane me-2"></i>Send Challenge
                         </button>
                     </div>
-                </form>
-            </div>
-        </div>
+        </form>
+      </div>
     </div>
+  </div>
 </div>
 
 <!-- Submit Score Modal -->
 <div class="modal fade" id="submitScoreModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-trophy me-2"></i>Submit Score vs <span id="scoreOpponentName"></span>
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog">
+    <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-trophy me-2"></i>
+          Submit Score: <span id="team1Label"></span> <span class="text-warning mx-1">vs</span> <span id="team2Label"></span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="submitScoreForm">
+          <input type="hidden" id="scoreMatchId" name="match_id">
+
+          <div class="mb-4">
+            <h6 class="text-white text-bold mb-3">Game Scores (Best of 3 Sets):</h6>
+
+            <!-- Score Input Table -->
+            <div class="table-responsive">
+              <table class="table table-dark table-bordered">
+                <thead>
+                  <tr class="text-center">
+                    <th width="30%">Team</th>
+                    <th width="20%">Set 1</th>
+                    <th width="20%">Set 2</th>
+                    <th width="20%">Set 3</th>
+                    <th width="10%">Sets Won</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <!-- Team 1 label (Player 1 + Player 3 if doubles) -->
+                    <td class="text-white text-bold"><span id="team1Name">Your Team</span></td>
+                    <td><input type="number" class="form-control form-control-sm text-center dark-input" id="team1Set1" min="0" max="21" onchange="calculateWinner()"></td>
+                    <td><input type="number" class="form-control form-control-sm text-center dark-input" id="team1Set2" min="0" max="21" onchange="calculateWinner()"></td>
+                    <td><input type="number" class="form-control form-control-sm text-center dark-input" id="team1Set3" min="0" max="21" onchange="calculateWinner()"></td>
+                    <td class="text-center text-bold" id="team1SetsWon">0</td>
+                  </tr>
+                  <tr>
+                    <!-- Team 2 label (Player 2 + Player 4 if doubles) -->
+                    <td class="text-white text-bold"><span id="team2Name">Opponent Team</span></td>
+                    <td><input type="number" class="form-control form-control-sm text-center dark-input" id="team2Set1" min="0" max="21" onchange="calculateWinner()"></td>
+                    <td><input type="number" class="form-control form-control-sm text-center dark-input" id="team2Set2" min="0" max="21" onchange="calculateWinner()"></td>
+                    <td><input type="number" class="form-control form-control-sm text-center dark-input" id="team2Set3" min="0" max="21" onchange="calculateWinner()"></td>
+                    <td class="text-center text-bold" id="team2SetsWon">0</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="modal-body">
-                <form id="submitScoreForm">
-                    <input type="hidden" id="scoreMatchId" name="match_id">
-                    
-                    <div class="mb-4">
-                        <h6 class="text-white text-bold mb-3">Game Scores (Best of 3 Sets):</h6>
-                        
-                        <!-- Score Input Table -->
-                        <div class="table-responsive">
-                            <table class="table table-dark table-bordered">
-                                <thead>
-                                    <tr class="text-center">
-                                        <th width="30%">Player</th>
-                                        <th width="20%">Set 1</th>
-                                        <th width="20%">Set 2</th>
-                                        <th width="20%">Set 3</th>
-                                        <th width="10%">Sets Won</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="text-white text-bold">You</td>
-                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="yourSet1" min="0" max="21" onchange="calculateWinner()"></td>
-                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="yourSet2" min="0" max="21" onchange="calculateWinner()"></td>
-                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="yourSet3" min="0" max="21" onchange="calculateWinner()"></td>
-                                        <td class="text-center text-bold" id="yourSetsWon">0</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-white text-bold"><span id="opponentNameLabel"></span></td>
-                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="oppSet1" min="0" max="21" onchange="calculateWinner()"></td>
-                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="oppSet2" min="0" max="21" onchange="calculateWinner()"></td>
-                                        <td><input type="number" class="form-control form-control-sm text-center dark-input" id="oppSet3" min="0" max="21" onchange="calculateWinner()"></td>
-                                        <td class="text-center text-bold" id="oppSetsWon">0</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="alert alert-info text-center" id="winnerDisplay" style="display: none;">
-                            <i class="fas fa-trophy me-2"></i><span id="winnerText"></span>
-                        </div>
-                        
-                        <div class="text-muted small mt-2">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Enter the score for each set. Games are typically played to 11 points (must win by 2).
-                        </div>
-                    </div>
-                    
-                    <div class="text-center">
-                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-warning text-bold" onclick="submitMatchScore()">
-                            <i class="fas fa-paper-plane me-2"></i>Submit Score
-                        </button>
-                    </div>
-                </form>
+
+            <div class="alert alert-info text-center" id="winnerDisplay" style="display: none;">
+              <i class="fas fa-trophy me-2"></i><span id="winnerText"></span>
             </div>
-        </div>
+
+            <div class="text-muted small mt-2">
+              <i class="fas fa-info-circle me-1"></i>
+              Enter the score for each set. Games are typically played to 11 points (must win by 2).
+            </div>
+          </div>
+
+          <div class="text-center">
+            <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-warning text-bold" onclick="submitMatchScore()">
+              <i class="fas fa-paper-plane me-2"></i>Submit Score
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
 </div>
 
 <!-- Player Stats Modal -->
@@ -744,158 +764,171 @@ document.querySelectorAll('.start-match-btn').forEach(btn => {
 
     
 // Challenge Modal Functions
-function showChallengeModal(playerId, playerName) {
-    document.getElementById('challengePlayerName').textContent = playerName;
-    document.getElementById('challengeOpponentId').value = playerId;
-    const modal = new bootstrap.Modal(document.getElementById('challengeModal'));
+function showChallengeModal(opponentId, opponentName) {
+    // Fill in opponent info
+    document.getElementById("opponent_id").value = opponentId;
+    document.getElementById("challengePlayerName").innerText = opponentName;
+
+    // Reset partner fields
+    document.getElementById("partner1").value = "";
+    document.getElementById("partner2").value = "";
+    document.getElementById("partner1_id").value = "";
+    document.getElementById("partner2_id").value = "";
+
+    const modal = new bootstrap.Modal(document.getElementById("challengeModal"));
     modal.show();
 }
+
 
 // Submit Score Modal Functions
 function showSubmitScore(matchId, opponentName) {
-    document.getElementById('scoreMatchId').value = matchId;
-    document.getElementById('scoreOpponentName').textContent = opponentName;
-    document.getElementById('opponentNameLabel').textContent = opponentName;
-    
-    // Reset form - clear all score inputs
-    ['yourSet1', 'yourSet2', 'yourSet3', 'oppSet1', 'oppSet2', 'oppSet3'].forEach(id => {
-        document.getElementById(id).value = '';
+  fetch(`/start_match/${matchId}`)
+    .then(response => response.json())
+    .then(data => {
+      if (!data.success) return alert("Error loading match info.");
+
+      // Build team labels
+      const team1 = [data.player1_name];
+      const team2 = [data.player2_name];
+      if (data.player3_name) team1.push(data.player3_name);
+      if (data.player4_name) team2.push(data.player4_name);
+
+      const team1Label = team1.join(" & ");
+      const team2Label = team2.join(" & ");
+
+      // Set modal values
+      document.getElementById("scoreMatchId").value = matchId;
+      document.getElementById("team1Label").textContent = team1Label;
+      document.getElementById("team2Label").textContent = team2Label;
+      document.getElementById("team1Name").textContent = team1Label;
+      document.getElementById("team2Name").textContent = team2Label;
+
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById("submitScoreModal"));
+      modal.show();
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Failed to load match info.");
     });
-    document.getElementById('yourSetsWon').textContent = '0';
-    document.getElementById('oppSetsWon').textContent = '0';
-    document.getElementById('winnerDisplay').style.display = 'none';
-    
-    const modal = new bootstrap.Modal(document.getElementById('submitScoreModal'));
-    modal.show();
 }
 
 function calculateWinner() {
-    const yourScores = [
-        parseInt(document.getElementById('yourSet1').value) || null,
-        parseInt(document.getElementById('yourSet2').value) || null,
-        parseInt(document.getElementById('yourSet3').value) || null
+    const team1Scores = [
+        parseInt(document.getElementById('team1Set1').value) || null,
+        parseInt(document.getElementById('team1Set2').value) || null,
+        parseInt(document.getElementById('team1Set3').value) || null
     ];
     
-    const oppScores = [
-        parseInt(document.getElementById('oppSet1').value) || null,
-        parseInt(document.getElementById('oppSet2').value) || null,
-        parseInt(document.getElementById('oppSet3').value) || null
+    const team2Scores = [
+        parseInt(document.getElementById('team2Set1').value) || null,
+        parseInt(document.getElementById('team2Set2').value) || null,
+        parseInt(document.getElementById('team2Set3').value) || null
     ];
     
-    let yourSets = 0;
-    let oppSets = 0;
+    let team1Sets = 0;
+    let team2Sets = 0;
     
     // Calculate sets won
     for (let i = 0; i < 3; i++) {
-        if (yourScores[i] !== null && oppScores[i] !== null) {
-            if (yourScores[i] > oppScores[i]) {
-                yourSets++;
-            } else if (oppScores[i] > yourScores[i]) {
-                oppSets++;
+        if (team1Scores[i] !== null && team2Scores[i] !== null) {
+            if (team1Scores[i] > team2Scores[i]) {
+                team1Sets++;
+            } else if (team2Scores[i] > team1Scores[i]) {
+                team2Sets++;
             }
         }
     }
     
-    // Update sets won display
-    document.getElementById('yourSetsWon').textContent = yourSets;
-    document.getElementById('oppSetsWon').textContent = oppSets;
+    // Update set totals in table
+    document.getElementById('team1SetsWon').textContent = team1Sets;
+    document.getElementById('team2SetsWon').textContent = team2Sets;
     
-    // Show winner if match is complete
+    // Winner alert logic
     const winnerDisplay = document.getElementById('winnerDisplay');
     const winnerText = document.getElementById('winnerText');
+    const team1Name = document.getElementById('team1Name').textContent;
+    const team2Name = document.getElementById('team2Name').textContent;
     
-    if (yourSets === 2) {
-        winnerText.textContent = 'You Win!';
+    if (team1Sets === 2) {
+        winnerText.textContent = `${team1Name} Win!`;
         winnerDisplay.className = 'alert alert-success text-center';
         winnerDisplay.style.display = 'block';
-    } else if (oppSets === 2) {
-        winnerText.textContent = document.getElementById('opponentNameLabel').textContent + ' Wins!';
+    } else if (team2Sets === 2) {
+        winnerText.textContent = `${team2Name} Win!`;
         winnerDisplay.className = 'alert alert-warning text-center';
         winnerDisplay.style.display = 'block';
     } else {
         winnerDisplay.style.display = 'none';
     }
 }
-
 function submitMatchScore() {
-    const matchId = document.getElementById('scoreMatchId').value;
-    
-    // Collect all scores
-    const yourScores = [
-        parseInt(document.getElementById('yourSet1').value) || null,
-        parseInt(document.getElementById('yourSet2').value) || null,
-        parseInt(document.getElementById('yourSet3').value) || null
+    const matchId = document.getElementById("scoreMatchId").value;
+    //const match_score = `${team1Scores[0]}-${team2Scores[0]} ${team1Scores[1]}-${team2Scores[1]} ${team1Scores[2]}-${team2Scores[2]}`;
+
+    // Collect per-set scores
+    const team1Scores = [
+        parseInt(document.getElementById('team1Set1').value) || 0,
+        parseInt(document.getElementById('team1Set2').value) || 0,
+        parseInt(document.getElementById('team1Set3').value) || 0
     ];
-    
-    const oppScores = [
-        parseInt(document.getElementById('oppSet1').value) || null,
-        parseInt(document.getElementById('oppSet2').value) || null,
-        parseInt(document.getElementById('oppSet3').value) || null
+
+    const team2Scores = [
+        parseInt(document.getElementById('team2Set1').value) || 0,
+        parseInt(document.getElementById('team2Set2').value) || 0,
+        parseInt(document.getElementById('team2Set3').value) || 0
     ];
-    
-    // Calculate sets won
-    let yourSets = 0;
-    let oppSets = 0;
-    let validSets = 0;
-    let scoreString = '';
-    
+
+    // Compute total points for tie-breaking or verification
+    const team1Total = team1Scores.reduce((a, b) => a + b, 0);
+    const team2Total = team2Scores.reduce((a, b) => a + b, 0);
+
+    // Count sets won
+    let team1Sets = 0;
+    let team2Sets = 0;
     for (let i = 0; i < 3; i++) {
-        if (yourScores[i] !== null && oppScores[i] !== null) {
-            validSets++;
-            if (scoreString) scoreString += ' ';
-            scoreString += `${yourScores[i]}-${oppScores[i]}`;
-            
-            if (yourScores[i] > oppScores[i]) {
-                yourSets++;
-            } else if (oppScores[i] > yourScores[i]) {
-                oppSets++;
-            }
-        }
+        if (team1Scores[i] > team2Scores[i]) team1Sets++;
+        else if (team2Scores[i] > team1Scores[i]) team2Sets++;
     }
-    
-    // Validation
-    if (validSets < 2) {
-        alert('Please enter scores for at least 2 sets');
+
+    // Determine winner
+    let winner = null;
+    if (team1Sets > team2Sets) {
+        winner = "team1";
+    } else if (team2Sets > team1Sets) {
+        winner = "team2";
+    }
+
+    if (!winner) {
+        alert("Please complete the sets before submitting a final score.");
         return;
     }
-    
-    if (yourSets === oppSets) {
-        alert('Please enter a winner - matches cannot be tied');
-        return;
+
+    const payload = {
+    match_id: matchId,
+    match_score: `${team1Scores.join('-')} ${team2Scores.join('-')}`,
+    player1_sets_won: team1Sets,
+    player2_sets_won: team2Sets
+    };
+
+   fetch("/submit_match_result", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        alert("✅ Score submitted successfully!");
+        location.reload();
+    } else {
+        alert("⚠️ Error submitting score: " + data.message);
     }
-    
-    if (yourSets < 2 && oppSets < 2) {
-        alert('One player must win at least 2 sets');
-        return;
-    }
-    
-    // Submit to server
-    fetch('/submit_match_result', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            match_id: matchId,
-            player1_sets_won: yourSets,
-            player2_sets_won: oppSets,
-            match_score: scoreString
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Score submitted successfully! Waiting for opponent validation.');
-            bootstrap.Modal.getInstance(document.getElementById('submitScoreModal')).hide();
-            location.reload(); // Refresh to update the UI
-        } else {
-            alert('Error: ' + (data.message || 'Unable to submit score'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error submitting score. Please try again.');
-    });
+})
+.catch(err => {
+    console.error(err);
+    alert("Error submitting match score.");
+});
 }
 
 // Player Stats Modal Functions
@@ -1034,6 +1067,104 @@ function handleCounterProposal(challengeId) {
 }
 </script>
 
+<script>
+  async function sendChallenge() {
+    try {
+        const opponent_id = document.getElementById("opponent_id").value;
+        if (!opponent_id) {
+            alert("Opponent not found — please reselect a player.");
+            return;
+        }
 
+        const partner1_id = document.getElementById("partner1_id").value || null;
+        const partner2_id = document.getElementById("partner2_id").value || null;
+        const court_location = document.getElementById("courtLocation").value || "TBD";
+        const scheduled_time = document.getElementById("scheduled_time").value || null;
+
+        const payload = {
+            opponent_id,
+            partner1_id,
+            partner2_id,
+            sport: "Pickleball",
+            court_location,
+            match_date: scheduled_time ? scheduled_time.split("T")[0] : null,
+            scheduled_time
+        };
+
+        const res = await fetch("/challenges/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        if (result.success) {
+            alert(`Challenge sent!\n${result.team1.join(" & ")} vs ${result.team2.join(" & ")}`);
+            bootstrap.Modal.getInstance(document.getElementById("challengeModal")).hide();
+        } else {
+            alert("Error: " + (result.error || "Unable to send challenge"));
+        }
+    } catch (err) {
+        console.error("Error sending challenge:", err);
+        alert("Something went wrong while sending the challenge.");
+    }
+}
+
+/* Optional: Lightweight partner search (replace /search_players with your endpoint) */
+function setupPartnerSearch(inputId, hiddenId) {
+    const input = document.getElementById(inputId);
+    const hidden = document.getElementById(hiddenId);
+
+    input.addEventListener("input", async () => {
+        const term = input.value.trim();
+        if (term.length < 2) return;
+
+        const res = await fetch(`/search_players?query=${encodeURIComponent(term)}`);
+        const players = await res.json();
+        if (players.length > 0) {
+            hidden.value = players[0].id;
+            input.value = players[0].username || players[0].full_name;
+        }
+    });
+}
+
+// Initialize partner autocompletes
+setupPartnerSearch("partner1", "partner1_id");
+setupPartnerSearch("partner2", "partner2_id");
+
+function setupPartnerSearch(inputId, hiddenId) {
+    const input = document.getElementById(inputId);
+    const hidden = document.getElementById(hiddenId);
+    let dropdown;
+
+    input.addEventListener("input", async () => {
+        const term = input.value.trim();
+        if (term.length < 2) return;
+
+        const res = await fetch(`/search_players?query=${encodeURIComponent(term)}`);
+        const players = await res.json();
+
+        // remove old dropdown
+        if (dropdown) dropdown.remove();
+
+        dropdown = document.createElement("ul");
+        dropdown.className = "list-group w-100 z-10";
+        players.forEach(player => {
+            const li = document.createElement("li");
+            li.className = "list-group-item list-group-item-action";
+            li.textContent = player.full_name || player.username;
+            li.onclick = () => {
+                input.value = player.full_name || player.username;
+                hidden.value = player.id;
+                dropdown.remove();
+            };
+            dropdown.appendChild(li);
+        });
+
+        input.parentNode.appendChild(dropdown);
+    });
+}
+
+</script>
 
 {% endblock %}

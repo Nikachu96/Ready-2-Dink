@@ -315,6 +315,7 @@ def get_distance_from_current_player(player_data, current_player_id):
         return None
 
 
+
 # Email configuration for SendGrid
 def send_admin_credentials_email(full_name, email, username, password,
                                  login_url):
@@ -5195,33 +5196,59 @@ def challenges():
 
     # Get completed matches (match history)
     completed_matches = conn.execute(
-        '''
-        SELECT m.*, 
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.full_name
-                   ELSE p1.full_name 
-               END as opponent_name,
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.selfie
-                   ELSE p1.selfie 
-               END as opponent_selfie,
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.skill_level
-                   ELSE p1.skill_level 
-               END as opponent_skill,
-               CASE 
-                   WHEN m.winner_id = ? THEN 'won'
-                   ELSE 'lost'
-               END as result
-        FROM matches m
-        JOIN players p1 ON m.player1_id = p1.id
-        JOIN players p2 ON m.player2_id = p2.id
-        WHERE (m.player1_id = ? OR m.player2_id = ?)
-        AND m.status = 'completed'
-        ORDER BY m.created_at DESC
-        LIMIT 20
-    ''', (player_id, player_id, player_id, player_id, player_id,
-          player_id)).fetchall()
+    '''
+    SELECT
+        m.id AS match_id,
+        m.match_type,
+        m.match_result,
+        m.status,
+        m.completed_at,
+        m.created_at,
+        -- Determine opponent(s)
+        GROUP_CONCAT(
+            CASE 
+                WHEN mt2.team_number != mt.team_number THEN p2.full_name
+                ELSE NULL
+            END, ' & '
+        ) AS opponent_name,
+        -- Opponent selfie (just pick first opponent)
+        MAX(
+            CASE 
+                WHEN mt2.team_number != mt.team_number THEN p2.selfie
+                ELSE NULL
+            END
+        ) AS opponent_selfie,
+        -- Opponent skill level (first opponent)
+        MAX(
+            CASE 
+                WHEN mt2.team_number != mt.team_number THEN p2.skill_level
+                ELSE NULL
+            END
+        ) AS opponent_skill,
+        -- Result for current player
+        CASE
+            WHEN m.winner_id IN (
+                SELECT mtw.player_id
+                FROM match_teams mtw
+                WHERE mtw.match_id = m.id
+                AND mtw.team_number = mt.team_number
+            )
+            THEN 'won'
+            ELSE 'lost'
+        END AS result
+    FROM matches m
+    JOIN match_teams mt ON m.id = mt.match_id
+    JOIN match_teams mt2 ON m.id = mt2.match_id
+    JOIN players p2 ON mt2.player_id = p2.id
+    WHERE mt.player_id = ?
+      AND m.status = 'completed'
+      AND mt2.player_id != mt.player_id
+    GROUP BY m.id
+    ORDER BY m.completed_at DESC, m.created_at DESC
+    LIMIT 20
+    ''',
+        (player_id,)
+        ).fetchall()
 
     # Get all available players for challenging (excluding current player and those with pending challenges)
     existing_challenges_query = '''
@@ -5292,39 +5319,68 @@ def generate_unique_player_id(conn, cursor, use_sqlite):
 
 @app.route('/start_match/<int:match_id>', methods=['GET'])
 def start_match(match_id):
-    """Fetch match and player info for live scoring popup"""
-    if 'player_id' not in session:
-        return jsonify({'success': False, 'message': 'Login required'}), 403
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-    conn = get_db_connection()
-    match = conn.execute('''
-        SELECT m.*, 
-               p1.full_name AS player1_name,
-               p2.full_name AS player2_name
-        FROM matches m
-        JOIN players p1 ON m.player1_id = p1.id
-        JOIN players p2 ON m.player2_id = p2.id
-        WHERE m.id = ?
-    ''', (match_id,)).fetchone()
-    conn.close()
+        match = cursor.execute(
+            "SELECT * FROM matches WHERE id = ?", (match_id,)
+        ).fetchone()
 
-    if not match:
-        return jsonify({'success': False, 'message': 'Match not found'})
+        if not match:
+            conn.close()
+            return jsonify({"success": False, "error": "Match not found"}), 404
 
-    return jsonify({
-        'success': True,
-        'match_id': match['id'],
-        'player1_name': match['player1_name'],
-        'player2_name': match['player2_name']
-    })            
+        # get players from match_teams (for doubles)
+        cursor.execute("""
+            SELECT mt.team_number, p.full_name
+            FROM match_teams mt
+            JOIN players p ON mt.player_id = p.id
+            WHERE mt.match_id = ?
+            ORDER BY mt.team_number, p.full_name
+        """, (match_id,))
+        team_data = cursor.fetchall()
+        conn.close()
+
+        # Default placeholders
+        player1_name = player2_name = player3_name = player4_name = None
+
+        # Assign based on team number
+        for t in team_data:
+            if t["team_number"] == 1:
+                if not player1_name:
+                    player1_name = t["full_name"]
+                else:
+                    player3_name = t["full_name"]
+            elif t["team_number"] == 2:
+                if not player2_name:
+                    player2_name = t["full_name"]
+                else:
+                    player4_name = t["full_name"]
+
+        return jsonify({
+            "success": True,
+            "match_id": match_id,
+            "match_type": match["match_type"],
+            "player1_name": player1_name,
+            "player2_name": player2_name,
+            "player3_name": player3_name,
+            "player4_name": player4_name
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+    
 
 @app.route('/complete_match', methods=['POST'])
 def complete_match():
-    """Submit final scores and update match history"""
     data = request.get_json()
     match_id = data.get('match_id')
-    p1_score = int(data.get('player1_score', 0))
-    p2_score = int(data.get('player2_score', 0))
+    team1_scores = data.get('team1_scores', [])
+    team2_scores = data.get('team2_scores', [])
+    winner_team = data.get('winner_team')
 
     conn = get_db_connection()
     match = conn.execute('SELECT * FROM matches WHERE id = ?', (match_id,)).fetchone()
@@ -5332,24 +5388,40 @@ def complete_match():
         conn.close()
         return jsonify({'success': False, 'message': 'Match not found'})
 
-    winner_id = match['player1_id'] if p1_score > p2_score else match['player2_id']
-    loser_id = match['player2_id'] if p1_score > p2_score else match['player1_id']
+    # Compute total points
+    team1_total = sum(team1_scores)
+    team2_total = sum(team2_scores)
 
+    # Determine winners/losers
+    if winner_team == 'team1':
+        winner_ids = [match['player1_id'], match['player3_id']]
+        loser_ids = [match['player2_id'], match['player4_id']]
+    else:
+        winner_ids = [match['player2_id'], match['player4_id']]
+        loser_ids = [match['player1_id'], match['player3_id']]
+
+    # Store match results
     conn.execute('''
         UPDATE matches
         SET status = 'completed',
-            player1_score = ?, player2_score = ?, 
-            winner_id = ?, loser_id = ?, completed_at = datetime('now')
+            player1_score = ?,
+            player2_score = ?,
+            winner_id = ?,
+            loser_id = ?,
+            completed_at = datetime('now')
         WHERE id = ?
-    ''', (p1_score, p2_score, winner_id, loser_id, match_id))
+    ''', (team1_total, team2_total, winner_ids[0], loser_ids[0], match_id))
 
     # Update player records
-    conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (winner_id,))
-    conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (loser_id,))
+    for pid in [p for p in winner_ids if p]:
+        conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (pid,))
+    for pid in [p for p in loser_ids if p]:
+        conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (pid,))
+
     conn.commit()
     conn.close()
 
-    return jsonify({'success': True, 'message': 'Match completed successfully'})
+    return jsonify({'success': True, 'message': 'Match results recorded successfully'})
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -7723,82 +7795,75 @@ def decline_challenge():
 
 # Form-based challenge endpoints (non-JSON)
 @app.route('/challenges/send', methods=['POST'])
-def send_challenge_route():
-    """Send a new challenge to another player using HTML form"""
-    if 'player_id' not in session:
-        flash('Please log in to send challenges', 'warning')
-        return redirect(url_for('player_login'))
-
-    challenger_id = session['player_id']
-    opponent_id = request.form.get('opponent_id')
-    court_location = request.form.get('court_location', '').strip()
-    scheduled_time = request.form.get('scheduled_time', '').strip()
-
-    if not opponent_id:
-        flash('Please select an opponent to challenge', 'danger')
-        return redirect(url_for('challenges'))
-
+def send_challenge():
     try:
-        opponent_id = int(opponent_id)
-    except ValueError:
-        flash('Invalid opponent selected', 'danger')
-        return redirect(url_for('challenges'))
+        data = request.get_json()
+        challenger_id = session.get('player_id')
+        if not challenger_id:
+            return jsonify({'error': 'Not logged in'}), 401
 
-    # Prevent self-challenges
-    if challenger_id == opponent_id:
-        flash('You cannot challenge yourself!', 'warning')
-        return redirect(url_for('challenges'))
+        opponent_id = data.get('opponent_id')
+        partner1_id = data.get('partner1_id')  # Challenger’s partner (optional)
+        partner2_id = data.get('partner2_id')  # Opponent’s partner (optional)
+        sport = data.get('sport', 'Pickleball')
+        court_location = data.get('court_location', 'TBD')
+        match_date = data.get('match_date')
+        scheduled_time = data.get('scheduled_time')
 
-    conn = get_db_connection()
+        match_type = 'doubles' if partner1_id and partner2_id else 'singles'
 
-    try:
-        # Check if challenger exists and get their info
-        challenger = conn.execute('SELECT * FROM players WHERE id = ?',
-                                  (challenger_id, )).fetchone()
-        if not challenger:
-            flash('Player not found', 'danger')
-            return redirect(url_for('challenges'))
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-        # Check if opponent exists
-        opponent = conn.execute('SELECT * FROM players WHERE id = ?',
-                                (opponent_id, )).fetchone()
-        if not opponent:
-            flash('Opponent not found', 'danger')
-            return redirect(url_for('challenges'))
+        # Create match record
+        cursor.execute("""
+            INSERT INTO matches (player1_id, player2_id, sport, court_location, match_date, scheduled_time, status, match_type)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+        """, (challenger_id, opponent_id, sport, court_location, match_date, scheduled_time, match_type))
+        match_id = cursor.lastrowid
 
-        # Check for existing pending challenges between these players
-        existing_challenge = conn.execute(
-            '''
-            SELECT id FROM matches 
-            WHERE ((player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?))
-            AND status IN ('pending', 'counter_proposed')
-        ''', (challenger_id, opponent_id, opponent_id,
-              challenger_id)).fetchone()
-
-        if existing_challenge:
-            flash(
-                f'You already have a pending challenge with {opponent["full_name"]}',
-                'warning')
-            return redirect(url_for('challenges'))
-
-        # Create the challenge
-        conn.execute(
-            '''
-            INSERT INTO matches (player1_id, player2_id, sport, court_location, scheduled_time, status, created_at)
-            VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))
-        ''', (challenger_id, opponent_id, 'Pickleball', court_location
-              or 'TBD', scheduled_time or 'Flexible'))
+        # Insert team members
+        if match_type == 'doubles':
+            # Team 1 = challenger + their partner
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)", (match_id, challenger_id))
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)", (match_id, partner1_id))
+            # Team 2 = opponent + their partner
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)", (match_id, opponent_id))
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)", (match_id, partner2_id))
+        else:
+            # Singles
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)", (match_id, challenger_id))
+            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)", (match_id, opponent_id))
 
         conn.commit()
-        flash(f'Challenge sent to {opponent["full_name"]}! 🎾', 'success')
 
-    except Exception as e:
-        logging.error(f"Error sending challenge: {e}")
-        flash('Failed to send challenge. Please try again.', 'danger')
-    finally:
+        # Fetch player names for confirmation modal display
+        cursor.execute("""
+            SELECT p.full_name, mt.team_number
+            FROM match_teams mt
+            JOIN players p ON mt.player_id = p.id
+            WHERE mt.match_id = ?
+            ORDER BY mt.team_number ASC
+        """, (match_id,))
+        teams = cursor.fetchall()
+
+        # Format data for modal window
+        team1 = [row['full_name'] for row in teams if row['team_number'] == 1]
+        team2 = [row['full_name'] for row in teams if row['team_number'] == 2]
+
         conn.close()
 
-    return redirect(url_for('challenges'))
+        return jsonify({
+            'success': True,
+            'match_id': match_id,
+            'match_type': match_type,
+            'team1': team1,
+            'team2': team2
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error sending challenge: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/challenges/<int:challenge_id>/accept', methods=['POST'])
@@ -11107,6 +11172,33 @@ def api_search_players():
         })
 
     return jsonify({'players': players_list})
+
+@app.route('/search_players')
+def search_players():
+    query = request.args.get('query', '').strip().lower()
+    if not query:
+        return jsonify([])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Exclude the current player from results
+    current_player_id = session.get('player_id')
+
+    cursor.execute("""
+        SELECT id, full_name, username
+        FROM players
+        WHERE lower(full_name) LIKE ? OR lower(username) LIKE ?
+        AND id != ?
+        LIMIT 10
+    """, (f'%{query}%', f'%{query}%', current_player_id))
+
+    results = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+
+    return jsonify(results)
+
+
 
 
 @app.route('/api/recent_credit_transactions')
