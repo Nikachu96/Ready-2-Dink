@@ -1598,6 +1598,27 @@ def init_db():
         '''CREATE INDEX IF NOT EXISTS idx_match_schedules_proposer ON match_schedules(proposer_id)'''
     )
 
+    #custom tournaments 
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS custom_tournaments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        organizer_id INTEGER,
+        tournament_name TEXT,
+        description TEXT,
+        location TEXT,
+        max_players INTEGER,
+        entry_fee REAL,
+        format TEXT,
+        start_date TEXT,
+        registration_deadline TEXT,
+        status TEXT DEFAULT 'open',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        latitude REAL,
+        longitude REAL,
+        FOREIGN KEY (organizer_id) REFERENCES players(id)
+    );
+              ''')
+
     # Score submissions table for match result approval workflow
     c.execute('''
         CREATE TABLE IF NOT EXISTS score_submissions (
@@ -6438,7 +6459,6 @@ def withdraw_from_tournament():
 
 
 @app.route('/tournaments')
-@require_permission('can_join_tournaments')
 def tournaments_overview():
     """Tournament overview page - requires premium membership"""
     # User is already authenticated and has permission via decorator
