@@ -1598,6 +1598,27 @@ def init_db():
         '''CREATE INDEX IF NOT EXISTS idx_match_schedules_proposer ON match_schedules(proposer_id)'''
     )
 
+    #custom tournaments 
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS custom_tournaments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        organizer_id INTEGER,
+        tournament_name TEXT,
+        description TEXT,
+        location TEXT,
+        max_players INTEGER,
+        entry_fee REAL,
+        format TEXT,
+        start_date TEXT,
+        registration_deadline TEXT,
+        status TEXT DEFAULT 'open',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        latitude REAL,
+        longitude REAL,
+        FOREIGN KEY (organizer_id) REFERENCES players(id)
+    );
+              ''')
+
     # Score submissions table for match result approval workflow
     c.execute('''
         CREATE TABLE IF NOT EXISTS score_submissions (
@@ -6438,7 +6459,6 @@ def withdraw_from_tournament():
 
 
 @app.route('/tournaments')
-@require_permission('can_join_tournaments')
 def tournaments_overview():
     """Tournament overview page - requires premium membership"""
     # User is already authenticated and has permission via decorator
@@ -7865,6 +7885,95 @@ def send_challenge():
         logging.error(f"Error sending challenge: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/rematch/<int:match_id>', methods=['POST'])
+def rematch(match_id):
+    """
+    Create a rematch identical to an existing completed match,
+    using the same players, court, sport, and challenge logic.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Fetch the original match
+        match = cursor.execute("SELECT * FROM matches WHERE id = ?", (match_id,)).fetchone()
+        if not match:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Original match not found'}), 404
+
+        # Copy key fields (sqlite3.Row behaves like a dict)
+        challenger_id = match['player1_id']
+        challenged_id = match['player2_id']
+        court_location = match['court_location'] if match['court_location'] else 'TBD'
+        sport = match['sport'] if match['sport'] else 'Pickleball'
+        match_type = match['match_type'] if match['match_type'] else 'singles'
+        match_date = match['match_date'] if match['match_date'] else None
+        scheduled_time = match['scheduled_time'] if match['scheduled_time'] else None
+
+        # Insert the new match (pending)
+        cursor.execute("""
+            INSERT INTO matches (
+                player1_id, player2_id, sport, court_location,
+                match_date, scheduled_time, status, match_type,
+                player1_confirmed, player2_confirmed
+            )
+            VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, 0, 0)
+        """, (
+            challenger_id,
+            challenged_id,
+            sport,
+            court_location,
+            match_date,
+            scheduled_time,
+            match_type
+        ))
+        new_match_id = cursor.lastrowid
+
+        # Copy teams (for doubles)
+        teams = cursor.execute(
+            "SELECT team_number, player_id FROM match_teams WHERE match_id = ?", (match_id,)
+        ).fetchall()
+        for t in teams:
+            cursor.execute("""
+                INSERT INTO match_teams (match_id, team_number, player_id)
+                VALUES (?, ?, ?)
+            """, (new_match_id, t['team_number'], t['player_id']))
+
+        # Get player names for notifications
+        challenger = cursor.execute("SELECT full_name FROM players WHERE id = ?", (challenger_id,)).fetchone()
+        challenged = cursor.execute("SELECT full_name FROM players WHERE id = ?", (challenged_id,)).fetchone()
+
+        challenger_name = challenger['full_name'] if challenger else "Player 1"
+        challenged_name = challenged['full_name'] if challenged else "Player 2"
+
+        # Create rematch challenge notifications
+        title = "Rematch Challenge"
+        msg_for_challenger = f"You've started a rematch against {challenged_name}!"
+        msg_for_challenged = f"{challenger_name} has challenged you to a rematch!"
+
+        cursor.execute("""
+            INSERT INTO notifications (player_id, type, title, message, data)
+            VALUES (?, 'challenge', ?, ?, json_object('match_id', ?))
+        """, (challenger_id, title, msg_for_challenger, new_match_id))
+
+        cursor.execute("""
+            INSERT INTO notifications (player_id, type, title, message, data)
+            VALUES (?, 'challenge', ?, ?, json_object('match_id', ?))
+        """, (challenged_id, title, msg_for_challenged, new_match_id))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'new_match_id': new_match_id,
+            'message': f"Rematch challenge created successfully between {challenger_name} and {challenged_name}!"
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/challenges/<int:challenge_id>/accept', methods=['POST'])
 def accept_challenge_route(challenge_id):
