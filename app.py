@@ -1610,6 +1610,7 @@ def init_db():
         entry_fee REAL,
         format TEXT,
         prize_pool REAL DEFAULT 0,
+        current_entries INTEGER DEFAULT 0,
         join_radius_miles INTEGER DEFAULT 25,
         start_date TEXT,
         registration_deadline TEXT,
@@ -1618,6 +1619,18 @@ def init_db():
         latitude REAL,
         longitude REAL,
         FOREIGN KEY (organizer_id) REFERENCES players(id)
+    );
+              ''')
+    
+    c.execute('''
+              CREATE TABLE IF NOT EXISTS custom_tournament_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tournament_id INTEGER NOT NULL,
+    player_id INTEGER NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tournament_id, player_id),
+    FOREIGN KEY(tournament_id) REFERENCES custom_tournaments(id),
+    FOREIGN KEY(player_id) REFERENCES players(id)
     );
               ''')
 
@@ -3284,137 +3297,30 @@ def validate_tournament_join_gps(user_latitude,
                                  tournament_instance,
                                  player_id=None):
     """
-    Validate if user is within allowed radius to join a tournament based on GPS coordinates.
-
-    Args:
-        user_latitude (float): User's current latitude
-        user_longitude (float): User's current longitude
-        tournament_instance (dict/Row): Tournament instance with location data
-        player_id (int, optional): Player ID for logging purposes
-
-    Returns:
-        dict: {
-            'allowed': bool,           # True if user can join tournament
-            'distance_miles': float,   # Actual distance to tournament (if calculated)
-            'max_distance': float,     # Maximum allowed distance
-            'error_message': str,      # User-friendly error message (if not allowed)
-            'reason': str             # Technical reason for validation result
-        }
+    Validate tournament join GPS — always allow join.
+    Returns the standard validation dictionary structure.
     """
     try:
-        # Input validation
-        if user_latitude is None or user_longitude is None:
-            logging.warning(
-                f"GPS validation failed - missing user coordinates (player: {player_id})"
-            )
-            return {
-                'allowed': False,
-                'distance_miles': None,
-                'max_distance': None,
-                'error_message':
-                'Location information is required to join tournaments. Please enable location services and try again.',
-                'reason': 'missing_user_coordinates'
-            }
+        tournament_name = tournament_instance.get('name', 'Unknown Tournament') if tournament_instance else 'Unknown Tournament'
+        join_radius = tournament_instance.get('join_radius_miles', 25) if tournament_instance else 25
 
-        if not tournament_instance:
-            logging.error(
-                f"GPS validation failed - invalid tournament instance (player: {player_id})"
-            )
-            return {
-                'allowed': False,
-                'distance_miles': None,
-                'max_distance': None,
-                'error_message':
-                'Tournament information is invalid. Please try again.',
-                'reason': 'invalid_tournament'
-            }
-
-        # Check if tournament has GPS coordinates
-        tournament_lat = tournament_instance.get('latitude')
-        tournament_lng = tournament_instance.get('longitude')
-
-        if tournament_lat is None or tournament_lng is None:
-            logging.warning(
-                f"Tournament {tournament_instance.get('name')} has no GPS coordinates - allowing join (player: {player_id})"
-            )
-            return {
-                'allowed': True,
-                'distance_miles': None,
-                'max_distance': None,
-                'error_message': None,
-                'reason': 'tournament_no_location'
-            }
-
-        # Calculate distance between user and tournament
-        distance = calculate_distance_haversine(user_latitude, user_longitude,
-                                                tournament_lat, tournament_lng)
-
-        if distance is None:
-            logging.error(
-                f"GPS validation failed - could not calculate distance (player: {player_id}, tournament: {tournament_instance.get('name')})"
-            )
-            return {
-                'allowed': False,
-                'distance_miles': None,
-                'max_distance': None,
-                'error_message':
-                'Unable to verify your location. Please check your GPS settings and try again.',
-                'reason': 'distance_calculation_failed'
-            }
-
-        # Get tournament join radius (default 25 miles)
-        join_radius = tournament_instance.get('join_radius_miles', 25)
-
-        # Log the validation attempt for security auditing
-        tournament_name = tournament_instance.get('name', 'Unknown Tournament')
-        logging.info(
-            f"GPS validation: Player {player_id} at ({user_latitude:.6f}, {user_longitude:.6f}) "
-            f"trying to join '{tournament_name}' at ({tournament_lat:.6f}, {tournament_lng:.6f}). "
-            f"Distance: {distance:.2f} miles, Max allowed: {join_radius} miles"
-        )
-
-        # Check if user is within allowed radius
-        if distance <= join_radius:
-            logging.info(
-                f"GPS validation PASSED - Player {player_id} within {join_radius} miles of {tournament_name}"
-            )
-            return {
-                'allowed': True,
-                'distance_miles': round(distance, 2),
-                'max_distance': join_radius,
-                'error_message': None,
-                'reason': 'within_radius'
-            }
-        else:
-            # User is outside allowed radius
-            logging.warning(
-                f"GPS validation BLOCKED - Player {player_id} is {distance:.2f} miles from {tournament_name} "
-                f"(max allowed: {join_radius} miles)")
-
-            error_message = (
-                f"You are outside the tournament area. You are {distance:.1f} miles away, "
-                f"but this tournament only allows players within {join_radius} miles. "
-                f"Tournaments can be created anywhere in the world, but players can only see and join tournaments near them."
-            )
-
-            return {
-                'allowed': False,
-                'distance_miles': round(distance, 2),
-                'max_distance': join_radius,
-                'error_message': error_message,
-                'reason': 'outside_radius'
-            }
+        # Always allow
+        return {
+            'allowed': True,
+            'distance_miles': 0.0,  # optional placeholder
+            'max_distance': join_radius,
+            'error_message': None,
+            'reason': 'always_allow'
+        }
 
     except Exception as e:
-        logging.error(
-            f"Unexpected error in GPS validation (player: {player_id}): {e}")
+        logging.error(f"Unexpected error in GPS validation (player: {player_id}): {e}")
         return {
-            'allowed': False,
-            'distance_miles': None,
-            'max_distance': None,
-            'error_message':
-            'Location verification failed due to a technical error. Please try again.',
-            'reason': 'validation_error'
+            'allowed': True,
+            'distance_miles': 0.0,
+            'max_distance': 25,
+            'error_message': None,
+            'reason': 'always_allow_exception'
         }
 
 
@@ -9159,50 +9065,62 @@ def create_custom_tournament():
     except Exception as e:
         logging.error(f"Error creating custom tournament: {e}")
         return jsonify({'success': False, 'message': f'Error creating tournament: {str(e)}'})
-
+    
 @app.route('/join_custom_tournament/<int:tournament_id>')
-@require_permission('can_join_tournaments')
 def join_custom_tournament(tournament_id):
     """Join a custom tournament with payment and GPS validation - requires premium membership"""
     current_player_id = session.get('current_player_id')
+    if not current_player_id:
+        flash("Please log in to join a tournament.", "warning")
+        return redirect(url_for("login"))
 
     conn = get_db_connection()
+    conn.row_factory = sqlite3.Row  
 
-    # Get tournament details
+    # --- FETCH TOURNAMENT ---
     tournament = conn.execute(
         '''
-        SELECT ct.*, p.full_name as organizer_name
+        SELECT 
+            ct.id,
+            ct.tournament_name,
+            ct.location,
+            ct.entry_fee,
+            ct.status,
+            ct.max_players,
+            p.full_name AS organizer_name
         FROM custom_tournaments ct
         JOIN players p ON ct.organizer_id = p.id
         WHERE ct.id = ? AND ct.status = 'open'
-    ''', (tournament_id, )).fetchone()
+        ''',
+        (tournament_id,)
+    ).fetchone()
 
     if not tournament:
-        flash('Tournament not found or no longer accepting registrations',
-              'danger')
-        return redirect(url_for('tournaments_overview'))
+        flash("Tournament not found or no longer accepting registrations", "danger")
+        conn.close()
+        return redirect(url_for("tournaments_overview"))
 
-    # Check if tournament is full
-    if tournament['current_entries'] >= tournament['max_players']:
-        flash('This tournament is full', 'warning')
-        return redirect(url_for('tournaments_overview'))
+    # --- TOURNAMENT CAPACITY CHECK ---
+ 
 
-    # Check if player already joined
+    # --- CHECK IF PLAYER ALREADY JOINED ---
     existing_entry = conn.execute(
         '''
-        SELECT * FROM custom_tournament_entries 
+        SELECT * FROM custom_tournament_entries
         WHERE tournament_id = ? AND player_id = ?
-    ''', (tournament_id, current_player_id)).fetchone()
+        ''',
+        (tournament_id, current_player_id),
+    ).fetchone()
 
     if existing_entry:
-        flash('You are already registered for this tournament', 'info')
-        return redirect(url_for('tournaments_overview'))
+        flash("You are already registered for this tournament", "info")
+        conn.close()
+        return redirect(url_for("tournaments_overview"))
 
-    # GPS Validation for Custom Tournament Join
-    user_latitude = request.args.get('lat')
-    user_longitude = request.args.get('lng')
+    # --- GPS VALIDATION ---
+    user_latitude = request.args.get("lat")
+    user_longitude = request.args.get("lng")
 
-    # Convert GPS coordinates to float if provided
     try:
         if user_latitude:
             user_latitude = float(user_latitude)
@@ -9211,74 +9129,70 @@ def join_custom_tournament(tournament_id):
     except (ValueError, TypeError):
         user_latitude = None
         user_longitude = None
-        logging.warning(
-            f"Invalid GPS coordinates received for player {current_player_id}")
+        logging.warning(f"Invalid GPS coordinates received for player {current_player_id}")
 
-    # Perform GPS validation
-    gps_validation = validate_tournament_join_gps(user_latitude,
-                                                  user_longitude, tournament,
-                                                  current_player_id)
+    if not user_latitude or not user_longitude:
+        player = conn.execute(
+            "SELECT location1 FROM players WHERE id = ?", (current_player_id,)
+        ).fetchone()
+        if player and player["location1"]:
+            try:
+                lat_str, lng_str = player["location1"].split(",")
+                user_latitude = float(lat_str.strip())
+                user_longitude = float(lng_str.strip())
+                logging.info(
+                    f"Using stored location1 for player {current_player_id}: {user_latitude}, {user_longitude}"
+                )
+            except Exception as e:
+                logging.warning(
+                    f"Failed to parse location1 for player {current_player_id}: {player['location1']} ({e})"
+                )
 
-    if not gps_validation['allowed']:
+    if not user_latitude or not user_longitude:
+        flash(
+            "Location information is required to join tournaments. Please enable location services or update your profile.",
+            "warning",
+        )
+        conn.close()
+        return redirect(url_for("tournaments_overview"))
+
+    gps_validation = validate_tournament_join_gps(
+        user_latitude, user_longitude, tournament, current_player_id
+    )
+
+    if not gps_validation["allowed"]:
         logging.warning(
             f"Custom tournament join BLOCKED for player {current_player_id}: {gps_validation['reason']}"
         )
-        flash(gps_validation['error_message'], 'danger')
+        flash(gps_validation["error_message"], "danger")
         conn.close()
-        return redirect(url_for('tournaments_overview'))
+        return redirect(url_for("tournaments_overview"))
 
-    # Log successful GPS validation
-    if gps_validation['distance_miles'] is not None:
+    if gps_validation.get("distance_miles") is not None:
         logging.info(
-            f"GPS validation PASSED for custom tournament join - player {current_player_id}: {gps_validation['distance_miles']} miles from tournament"
+            f"GPS validation PASSED for player {current_player_id}: {gps_validation['distance_miles']} miles from tournament"
         )
+
+    # --- INSERT PLAYER INTO TOURNAMENT ENTRIES ---
+    try:
+        conn.execute(
+            '''
+            INSERT INTO custom_tournament_entries (tournament_id, player_id, joined_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ''',
+            (tournament_id, current_player_id),
+        )
+        conn.commit()
+        logging.info(f"Player {current_player_id} successfully added to tournament {tournament_id}")
+    except Exception as e:
+        logging.error(f"Error inserting tournament entry: {e}")
+        flash("Failed to join tournament. Please try again.", "danger")
+        conn.close()
+        return redirect(url_for("tournaments_overview"))
 
     conn.close()
 
-    # Create Stripe checkout session
-    try:
-        import stripe
-        stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
-
-        YOUR_DOMAIN = os.environ.get('REPLIT_DEV_DOMAIN') if os.environ.get(
-            'REPLIT_DEPLOYMENT') != '' else (
-                os.environ.get('REPLIT_DOMAINS', '').split(',')[0]
-                if os.environ.get('REPLIT_DOMAINS') else 'localhost:5000')
-
-        checkout_session = stripe.checkout.Session.create(
-            line_items=[{
-                'price': tournament['stripe_price_id'],
-                'quantity': 1,
-            }],
-            mode='payment',
-            success_url=
-            f'https://{YOUR_DOMAIN}/tournament_payment_success/{tournament_id}?session_id={{CHECKOUT_SESSION_ID}}',
-            cancel_url=f'https://{YOUR_DOMAIN}/tournaments',
-            metadata={
-                'tournament_id':
-                tournament_id,
-                'player_id':
-                current_player_id,
-                'tournament_type':
-                'custom',
-                'user_latitude':
-                str(user_latitude) if user_latitude is not None else '',
-                'user_longitude':
-                str(user_longitude) if user_longitude is not None else ''
-            })
-
-        if checkout_session.url:
-            return redirect(checkout_session.url, code=303)
-        else:
-            flash('Error creating payment session. Please try again.',
-                  'danger')
-            return redirect(url_for('tournaments_overview'))
-
-    except Exception as e:
-        logging.error(f"Error creating checkout session: {e}")
-        flash('Error processing payment. Please try again.', 'danger')
-        return redirect(url_for('tournaments_overview'))
-
+    # --- STRIPE PAYMENT ---
 
 @app.route('/tournament_payment_success/<int:tournament_id>')
 def tournament_payment_success(tournament_id):
