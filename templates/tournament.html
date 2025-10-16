@@ -4,6 +4,7 @@
 
 {% block content %}
 
+
 <style>
 /* Dark Theme Tournament Entry Design */
 :root {
@@ -313,8 +314,8 @@ h1, h2, h3, h4, h5, h6 {
 
                     <form method="POST" id="tournament-entry-form">
                         <!-- Hidden GPS coordinate fields -->
-                        <input type="hidden" name="user_latitude" id="user_latitude" value="">
-                        <input type="hidden" name="user_longitude" id="user_longitude" value="">
+                        <input type="hidden" name="user_latitude" id="user_latitude">
+                        <input type="hidden" name="user_longitude" id="user_longitude">
                         
                         <div class="row">
                             <div class="col-12">
@@ -523,6 +524,8 @@ h1, h2, h3, h4, h5, h6 {
 {% endblock %}
 
 {% block scripts %}
+
+
 <script>
 function selectTournament(tournamentId, cardElement) {
     // Check the radio button
