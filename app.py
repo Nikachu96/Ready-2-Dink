@@ -17,6 +17,26 @@ import stripe
 import sys
 from haversine import haversine, Unit
 from dotenv import load_dotenv
+import random
+import string
+
+def generate_unique_player_id(conn, cursor, use_sqlite):
+    """Generate a unique player_id string that doesn’t already exist in the DB."""
+    while True:
+        # Example ID format: PLY-8K2H9A
+        player_id = "PLY-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+        if use_sqlite:
+            cursor.execute("SELECT COUNT(*) AS count FROM players WHERE player_id = ?", (player_id,))
+            result = cursor.fetchone()
+            exists = result["count"] > 0
+        else:
+            cursor.execute("SELECT COUNT(*) FROM players WHERE player_id = %s", (player_id,))
+            result = cursor.fetchone()
+            exists = result[0] > 0
+
+        if not exists:
+            return player_id
 
 # Import Random Matchup Engine
 try:
@@ -5177,6 +5197,11 @@ def challenges():
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
 
+    # --- Get current player info ---
+    player = conn.execute("""
+        SELECT * FROM players WHERE id = ?
+    """, (current_player_id,)).fetchone()
+
     # --- Incoming Challenges ---
     incoming_challenges = conn.execute("""
         SELECT m.*, 
@@ -5244,6 +5269,7 @@ def challenges():
 
     return render_template(
         "challenges.html",
+        player=player,  # ✅ added this
         incoming_challenges=incoming_challenges,
         outgoing_challenges=outgoing_challenges,
         completed_matches=completed_matches
@@ -5469,6 +5495,7 @@ def register():
             skill_level = request.form.get("skill_level", "Beginner").strip()
             password = request.form.get("password", "")
 
+            # Validation
             if not all([
                 full_name, username, email, dob, address, location1, gender,
                 skill_level, password
@@ -5483,12 +5510,12 @@ def register():
             use_sqlite = os.environ.get("USE_SQLITE") == "1"
             if use_sqlite:
                 conn = get_db_connection()
+                cursor = conn.cursor()   # ✅ FIXED
                 placeholder = "?"
-                cursor = conn
             else:
                 conn = get_pg_connection()
-                placeholder = "%s"
                 cursor = conn.cursor()
+                placeholder = "%s"
 
             # Generate unique player_id
             player_id = generate_unique_player_id(conn, cursor, use_sqlite)
@@ -5506,8 +5533,9 @@ def register():
                       address, location1, skill_level, password_hash, player_id)
 
             cursor.execute(query, values)
-
             conn.commit()
+
+            # Cleanup
             if not use_sqlite:
                 cursor.close()
             conn.close()
@@ -5519,12 +5547,17 @@ def register():
             tb = traceback.format_exc()
             print(">>> REGISTRATION ERROR <<<")
             print(tb)
-            conn.commit()
-            if not use_sqlite:
-                cursor.close()
-            conn.close()
+            try:
+                conn.rollback()
+            except:
+                pass
+            try:
+                if not use_sqlite:
+                    cursor.close()
+                conn.close()
+            except:
+                pass
             return f"<pre>Registration failed:\n{tb}</pre>", 500
-            sys.stdout.flush()
 
     return render_template("register.html")
 
