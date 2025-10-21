@@ -33,6 +33,88 @@ if os.environ.get('FLASK_ENV') == 'development' or os.environ.get(
 else:
     logging.basicConfig(level=logging.INFO)
 
+# --- Bracket progression helper ---
+def advance_winner_to_next_round(tournament_id, winner_team_id, current_round):
+    """
+    Automatically advance winners in custom tournament brackets.
+    Handles both singles (player IDs) and doubles (match_teams).
+    """
+    import random
+    conn = get_db_connection()
+
+    # Check if tournament uses doubles format
+    tournament = conn.execute(
+        "SELECT format FROM custom_tournaments WHERE id = ?", (tournament_id,)
+    ).fetchone()
+    if not tournament:
+        conn.close()
+        logging.warning(f"Tournament {tournament_id} not found during bracket advance.")
+        return
+
+    format_type = tournament["format"]
+    next_round = current_round + 1
+
+    # Collect all winners from the completed round
+    if format_type == "doubles":
+        winners = [
+            row["winner_team_id"]
+            for row in conn.execute("""
+                SELECT winner_team_id FROM matches
+                WHERE tournament_id = ? AND round = ? AND status = 'completed'
+                AND winner_team_id IS NOT NULL
+            """, (tournament_id, current_round)).fetchall()
+        ]
+    else:  # Singles
+        winners = [
+            row["winner_id"]
+            for row in conn.execute("""
+                SELECT winner_id FROM matches
+                WHERE tournament_id = ? AND round = ? AND status = 'completed'
+                AND winner_id IS NOT NULL
+            """, (tournament_id, current_round)).fetchall()
+        ]
+
+    # No winners yet? nothing to do.
+    if not winners:
+        conn.close()
+        return
+
+    # Generate next round
+    if len(winners) >= 2 and len(winners) % 2 == 0:
+        random.shuffle(winners)
+        for i in range(0, len(winners), 2):
+            if format_type == "doubles":
+                conn.execute("""
+                    INSERT INTO matches (tournament_id, team1_id, team2_id, round, status)
+                    VALUES (?, ?, ?, ?, 'pending')
+                """, (tournament_id, winners[i], winners[i + 1], next_round))
+            else:
+                conn.execute("""
+                    INSERT INTO matches (tournament_id, player1_id, player2_id, round, status)
+                    VALUES (?, ?, ?, ?, 'pending')
+                """, (tournament_id, winners[i], winners[i + 1], next_round))
+        conn.commit()
+        logging.info(f"✅ Created Round {next_round} matches for tournament {tournament_id}")
+
+    # If only one winner remains → tournament complete
+    elif len(winners) == 1:
+        if format_type == "doubles":
+            conn.execute("""
+                UPDATE custom_tournaments
+                SET status = 'completed', winner_team_id = ?
+                WHERE id = ?
+            """, (winners[0], tournament_id))
+        else:
+            conn.execute("""
+                UPDATE custom_tournaments
+                SET status = 'completed', winner_id = ?
+                WHERE id = ?
+            """, (winners[0], tournament_id))
+
+        conn.commit()
+        logging.info(f"🏆 Tournament {tournament_id} completed. Winner ID: {winners[0]}")
+
+    conn.close()
 
 # Distance calculation functions
 def estimate_coordinates_from_location(location_text):
@@ -1215,8 +1297,13 @@ def init_db():
         CREATE TABLE IF NOT EXISTS matches (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             player1_id INTEGER NOT NULL,
+            tournament_id INTEGER,
             player2_id INTEGER NOT NULL,
             sport TEXT NOT NULL,
+            team1_id INTEGER,
+            team2_id INTEGER,
+            winner_team_id INTEGER,
+            round INTEGER DEFAULT 1,
             court_location TEXT NOT NULL,
             match_date TEXT,
             status TEXT DEFAULT 'pending',
@@ -1239,6 +1326,41 @@ def init_db():
     try:
         c.execute(
             'ALTER TABLE matches ADD COLUMN player1_validated INTEGER DEFAULT 0'
+        )
+    except Exception:
+        pass  # Column already exists
+
+    try:
+        c.execute(
+            'ALTER TABLE matches ADD COLUMN tournament_id INTEGER DEFAULT NULL'
+        )
+    except Exception:
+        pass  # Column already exists
+
+    try:
+        c.execute(
+            'ALTER TABLE matches ADD COLUMN team1_id INTEGER DEFAULT NULL'
+        )
+    except Exception:
+        pass  # Column already exists
+
+    try:
+        c.execute(
+            'ALTER TABLE matches ADD COLUMN team2_id INTEGER DEFAULT NULL'
+        )
+    except Exception:
+        pass  # Column already exists
+
+    try:
+        c.execute(
+            'ALTER TABLE matches ADD COLUMN round INTEGER DEFAULT 1'
+        )
+    except Exception:
+        pass  # Column already exists
+
+    try:
+        c.execute(
+            'ALTER TABLE matches ADD COLUMN winner_team_id INTEGER'
         )
     except Exception:
         pass  # Column already exists
@@ -1609,6 +1731,7 @@ def init_db():
         max_players INTEGER,
         entry_fee REAL,
         format TEXT,
+        winner_id TEXT,
         prize_pool REAL DEFAULT 0,
         current_entries INTEGER DEFAULT 0,
         join_radius_miles INTEGER DEFAULT 25,
@@ -1621,6 +1744,8 @@ def init_db():
         FOREIGN KEY (organizer_id) REFERENCES players(id)
     );
               ''')
+
+
     
     c.execute('''
               CREATE TABLE IF NOT EXISTS custom_tournament_entries (
@@ -5041,268 +5166,241 @@ def player_home(player_id):
                            is_birthday=is_birthday,
                            current_player_id=player_id)
 
-
-@app.route('/challenges')
+@app.route("/challenges")
 def challenges():
-    """Display challenges page for the current player"""
-    # Check if user is logged in
-    if 'player_id' not in session:
-        flash('Please log in to view challenges', 'warning')
-        return redirect(url_for('player_login'))
+    """Display challenges, excluding completed tournaments."""
+    current_player_id = session.get("current_player_id")
+    if not current_player_id:
+        flash("Please log in to view your challenges.", "warning")
+        return redirect(url_for("login"))
 
-    player_id = session['player_id']
     conn = get_db_connection()
+    conn.row_factory = sqlite3.Row
 
-    # Verify player exists
-    player = conn.execute('SELECT * FROM players WHERE id = ?',
-                          (player_id, )).fetchone()
-    if not player:
-        flash('Player not found', 'danger')
-        return redirect(url_for('player_login'))
-
-    # Get incoming challenges (matches where this player is player2 and status is pending/counter_proposed)
-    incoming_challenges = conn.execute(
-        '''
+    # --- Incoming Challenges ---
+    incoming_challenges = conn.execute("""
         SELECT m.*, 
-               p1.full_name as challenger_name, 
-               p1.selfie as challenger_selfie,
-               p1.skill_level as challenger_skill,
-               p1.wins as challenger_wins,
-               p1.losses as challenger_losses
+               c.full_name AS challenger_name,
+               c.selfie AS challenger_selfie,
+               c.skill_level AS challenger_skill,
+               c.wins AS challenger_wins,
+               c.losses AS challenger_losses
         FROM matches m
-        JOIN players p1 ON m.player1_id = p1.id
-        WHERE m.player2_id = ? 
-        AND m.status IN ('pending', 'counter_proposed')
+        JOIN players c ON m.player1_id = c.id
+        WHERE m.player2_id = ?
+          AND m.status IN ('pending','confirmed','counter_proposed')
+          AND (
+                m.tournament_id IS NULL
+                OR m.tournament_id NOT IN (
+                    SELECT id FROM custom_tournaments WHERE status = 'completed'
+                )
+              )
         ORDER BY m.created_at DESC
-    ''', (player_id, )).fetchall()
+    """, (current_player_id,)).fetchall()
 
-    # Get outgoing challenges (matches where this player is player1 and status is pending/counter_proposed)
-    outgoing_challenges = conn.execute(
-        '''
+    # --- Outgoing Challenges ---
+    outgoing_challenges = conn.execute("""
         SELECT m.*, 
-               p2.full_name as opponent_name, 
-               p2.selfie as opponent_selfie,
-               p2.skill_level as opponent_skill,
-               p2.wins as opponent_wins,
-               p2.losses as opponent_losses
+               o.full_name AS opponent_name,
+               o.selfie AS opponent_selfie,
+               o.skill_level AS opponent_skill,
+               o.wins AS opponent_wins,
+               o.losses AS opponent_losses
         FROM matches m
-        JOIN players p2 ON m.player2_id = p2.id
-        WHERE m.player1_id = ? 
-        AND m.status IN ('pending', 'counter_proposed')
+        JOIN players o ON m.player2_id = o.id
+        WHERE m.player1_id = ?
+          AND m.status IN ('pending','confirmed','counter_proposed')
+          AND (
+                m.tournament_id IS NULL
+                OR m.tournament_id NOT IN (
+                    SELECT id FROM custom_tournaments WHERE status = 'completed'
+                )
+              )
         ORDER BY m.created_at DESC
-    ''', (player_id, )).fetchall()
+    """, (current_player_id,)).fetchall()
 
-    # Get confirmed matches - separate upcoming from past due (need score submission)
-    from datetime import datetime
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
-
-    confirmed_matches = conn.execute(
-        '''
+    # --- Completed Matches (Match History) ---
+    completed_matches = conn.execute("""
         SELECT m.*, 
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.full_name
-                   ELSE p1.full_name 
-               END as opponent_name,
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.selfie
-                   ELSE p1.selfie 
-               END as opponent_selfie,
-               CASE 
-                   WHEN m.player1_id = ? THEN p2.skill_level
-                   ELSE p1.skill_level 
-               END as opponent_skill,
-               CASE 
-                   WHEN datetime(m.scheduled_time) <= datetime('now') THEN 'past_due'
-                   ELSE 'upcoming'
-               END as time_status
+               p2.full_name AS opponent_name,
+               p2.selfie AS opponent_selfie
         FROM matches m
-        JOIN players p1 ON m.player1_id = p1.id
-        JOIN players p2 ON m.player2_id = p2.id
+        JOIN players p2 ON (CASE 
+                                WHEN m.player1_id = ? THEN m.player2_id
+                                ELSE m.player1_id
+                            END) = p2.id
         WHERE (m.player1_id = ? OR m.player2_id = ?)
-        AND m.status = 'confirmed'
-        ORDER BY m.created_at DESC
-        LIMIT 10
-    ''', (player_id, player_id, player_id, player_id, player_id)).fetchall()
-
-    # Get completed matches (match history)
-    completed_matches = conn.execute(
-    '''
-    SELECT
-        m.id AS match_id,
-        m.match_type,
-        m.match_result,
-        m.status,
-        m.completed_at,
-        m.created_at,
-        -- Determine opponent(s)
-        GROUP_CONCAT(
-            CASE 
-                WHEN mt2.team_number != mt.team_number THEN p2.full_name
-                ELSE NULL
-            END, ' & '
-        ) AS opponent_name,
-        -- Opponent selfie (just pick first opponent)
-        MAX(
-            CASE 
-                WHEN mt2.team_number != mt.team_number THEN p2.selfie
-                ELSE NULL
-            END
-        ) AS opponent_selfie,
-        -- Opponent skill level (first opponent)
-        MAX(
-            CASE 
-                WHEN mt2.team_number != mt.team_number THEN p2.skill_level
-                ELSE NULL
-            END
-        ) AS opponent_skill,
-        -- Result for current player
-        CASE
-            WHEN m.winner_id IN (
-                SELECT mtw.player_id
-                FROM match_teams mtw
-                WHERE mtw.match_id = m.id
-                AND mtw.team_number = mt.team_number
-            )
-            THEN 'won'
-            ELSE 'lost'
-        END AS result
-    FROM matches m
-    JOIN match_teams mt ON m.id = mt.match_id
-    JOIN match_teams mt2 ON m.id = mt2.match_id
-    JOIN players p2 ON mt2.player_id = p2.id
-    WHERE mt.player_id = ?
-      AND m.status = 'completed'
-      AND mt2.player_id != mt.player_id
-    GROUP BY m.id
-    ORDER BY m.completed_at DESC, m.created_at DESC
-    LIMIT 20
-    ''',
-        (player_id,)
-        ).fetchall()
-
-    # Get all available players for challenging (excluding current player and those with pending challenges)
-    existing_challenges_query = '''
-        SELECT DISTINCT 
-            CASE 
-                WHEN player1_id = ? THEN player2_id
-                ELSE player1_id
-            END as opponent_id
-        FROM matches 
-        WHERE (player1_id = ? OR player2_id = ?)
-        AND status IN ('pending', 'counter_proposed', 'confirmed')
-    '''
-
-    existing_challenge_ids = [
-        row[0] for row in conn.execute(existing_challenges_query, (
-            player_id, player_id, player_id)).fetchall()
-    ]
-
-    # Build exclusion list
-    exclude_ids = [player_id] + existing_challenge_ids
-    placeholders = ','.join(['?'] * len(exclude_ids))
-
-    available_players = conn.execute(
-        f'''
-        SELECT id, full_name, skill_level, selfie, wins, losses, ranking_points,
-               preferred_court, location1
-        FROM players 
-        WHERE id NOT IN ({placeholders})
-        AND is_looking_for_match = 1
-        ORDER BY skill_level, ranking_points DESC, wins DESC
-        LIMIT 50
-    ''', exclude_ids).fetchall()
+          AND m.status = 'completed'
+          AND (
+                m.tournament_id IS NULL
+                OR m.tournament_id NOT IN (
+                    SELECT id FROM custom_tournaments WHERE status = 'completed'
+                )
+              )
+        ORDER BY m.id DESC
+    """, (current_player_id, current_player_id, current_player_id)).fetchall()
 
     conn.close()
 
-    response = make_response(
-        render_template('challenges.html',
-                        player=player,
-                        incoming_challenges=incoming_challenges,
-                        outgoing_challenges=outgoing_challenges,
-                        confirmed_matches=confirmed_matches,
-                        completed_matches=completed_matches,
-                        available_players=available_players))
+    return render_template(
+        "challenges.html",
+        incoming_challenges=incoming_challenges,
+        outgoing_challenges=outgoing_challenges,
+        completed_matches=completed_matches
+    )
 
-    # Add cache-busting headers to prevent stale data display
-    response.headers[
-        'Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '-1'
+@app.route('/start_custom_tournament/<int:tournament_id>', methods=['POST'])
+def start_custom_tournament(tournament_id):
+    """Start a custom tournament — organizer only, auto-generate bracket."""
+    import random
+    current_player_id = session.get('current_player_id')
+    conn = get_db_connection()
+    conn.row_factory = sqlite3.Row
 
-    return response
-
-def generate_unique_player_id(conn, cursor, use_sqlite):
-    while True:
-        new_id = uuid.uuid4().hex[:8]  # short unique ID like "a3f9c1e2"
-
-        if use_sqlite:
-            existing = conn.execute(
-                "SELECT 1 FROM players WHERE player_id = ?", (new_id,)
-            ).fetchone()
-        else:
-            cursor.execute("SELECT 1 FROM players WHERE player_id = %s", (new_id,))
-            existing = cursor.fetchone()
-
-        if not existing:
-            return new_id
-        
-
-@app.route('/start_match/<int:match_id>', methods=['GET'])
-def start_match(match_id):
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        match = cursor.execute(
-            "SELECT * FROM matches WHERE id = ?", (match_id,)
+        # Fetch the tournament
+        tournament = conn.execute(
+            "SELECT * FROM custom_tournaments WHERE id = ?", (tournament_id,)
         ).fetchone()
+        if not tournament:
+            flash("Tournament not found.", "danger")
+            return redirect(url_for("tournaments_overview"))
 
-        if not match:
-            conn.close()
-            return jsonify({"success": False, "error": "Match not found"}), 404
+        # Check organizer
+        if tournament["organizer_id"] != current_player_id:
+            flash("You are not authorized to start this tournament.", "danger")
+            return redirect(url_for("tournaments_overview"))
 
-        # get players from match_teams (for doubles)
-        cursor.execute("""
-            SELECT mt.team_number, p.full_name
-            FROM match_teams mt
-            JOIN players p ON mt.player_id = p.id
-            WHERE mt.match_id = ?
-            ORDER BY mt.team_number, p.full_name
-        """, (match_id,))
-        team_data = cursor.fetchall()
+        # Check status
+        if tournament["status"] != "open":
+            flash("Tournament already started or closed.", "info")
+            return redirect(url_for("tournaments_overview"))
+
+        format_type = tournament["format"] or "singles"
+        sport = "pickleball"  # Always pickleball
+        court_location = tournament["location"] or "TBD"  # Use tournament location
+
+        # Fetch participants
+        if format_type == "doubles":
+            participants = conn.execute("""
+                SELECT mt.id AS team_id
+                FROM custom_tournament_entries e
+                JOIN match_teams mt ON e.team_id = mt.id
+                WHERE e.tournament_id = ?
+            """, (tournament_id,)).fetchall()
+        else:
+            participants = conn.execute("""
+                SELECT player_id FROM custom_tournament_entries
+                WHERE tournament_id = ?
+            """, (tournament_id,)).fetchall()
+
+        if len(participants) < 2:
+            flash("Not enough participants to start the tournament.", "warning")
+            return redirect(url_for("tournaments_overview"))
+
+        # Shuffle participants for random matchups
+        random.shuffle(participants)
+
+        # Build match data
+        matches_to_insert = []
+        for i in range(0, len(participants), 2):
+            if i + 1 < len(participants):
+                if format_type == "doubles":
+                    matches_to_insert.append(
+                        (tournament_id, participants[i]["team_id"], participants[i + 1]["team_id"],
+                         1, "pending", sport, court_location)
+                    )
+                else:
+                    matches_to_insert.append(
+                        (tournament_id, participants[i]["player_id"], participants[i + 1]["player_id"],
+                         1, "pending", sport, court_location)
+                    )
+
+        # Bulk insert matches
+        if format_type == "doubles":
+            conn.executemany("""
+                INSERT INTO matches (tournament_id, team1_id, team2_id, round, status, sport, court_location)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, matches_to_insert)
+        else:
+            conn.executemany("""
+                INSERT INTO matches (tournament_id, player1_id, player2_id, round, status, sport, court_location)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, matches_to_insert)
+
+        # Mark tournament as in-progress
+        conn.execute(
+            "UPDATE custom_tournaments SET status = 'in_progress' WHERE id = ?",
+            (tournament_id,)
+        )
+        conn.commit()
+
+        flash("Tournament started successfully! First-round matches generated.", "success")
+
+    except sqlite3.IntegrityError as e:
+        conn.rollback()
+        flash(f"Data integrity error: {e}", "danger")
+
+    except sqlite3.OperationalError as e:
+        conn.rollback()
+        flash(f"Database busy — please try again shortly. ({e})", "warning")
+
+    finally:
         conn.close()
 
-        # Default placeholders
-        player1_name = player2_name = player3_name = player4_name = None
+    return redirect(url_for("tournaments_overview"))
 
-        # Assign based on team number
-        for t in team_data:
-            if t["team_number"] == 1:
-                if not player1_name:
-                    player1_name = t["full_name"]
-                else:
-                    player3_name = t["full_name"]
-            elif t["team_number"] == 2:
-                if not player2_name:
-                    player2_name = t["full_name"]
-                else:
-                    player4_name = t["full_name"]
+@app.route("/start_match/<int:match_id>")
+def start_match(match_id):
+    """Return match player names for the score modal."""
+    conn = get_db_connection()
+    conn.row_factory = sqlite3.Row
 
-        return jsonify({
-            "success": True,
-            "match_id": match_id,
-            "match_type": match["match_type"],
-            "player1_name": player1_name,
-            "player2_name": player2_name,
-            "player3_name": player3_name,
-            "player4_name": player4_name
+    match = conn.execute("SELECT * FROM matches WHERE id = ?", (match_id,)).fetchone()
+    if not match:
+        conn.close()
+        return jsonify({"success": False, "error": "Match not found"})
+
+    data = {"success": True}
+
+    # Singles
+    if match["player1_id"] and match["player2_id"]:
+        p1 = conn.execute("SELECT full_name FROM players WHERE id = ?", (match["player1_id"],)).fetchone()
+        p2 = conn.execute("SELECT full_name FROM players WHERE id = ?", (match["player2_id"],)).fetchone()
+        data.update({
+            "player1_name": p1["full_name"] if p1 else "Unknown",
+            "player2_name": p2["full_name"] if p2 else "Unknown",
+            "player3_name": None,
+            "player4_name": None
         })
 
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"success": False, "error": str(e)}), 500
-    
+    # Doubles
+    elif match["team1_id"] and match["team2_id"]:
+        t1 = conn.execute("""
+            SELECT p1.full_name AS p1_name, p2.full_name AS p2_name
+            FROM match_teams mt
+            JOIN players p1 ON mt.player1_id = p1.id
+            JOIN players p2 ON mt.player2_id = p2.id
+            WHERE mt.id = ?
+        """, (match["team1_id"],)).fetchone()
+
+        t2 = conn.execute("""
+            SELECT p1.full_name AS p1_name, p2.full_name AS p2_name
+            FROM match_teams mt
+            JOIN players p1 ON mt.player1_id = p1.id
+            JOIN players p2 ON mt.player2_id = p2.id
+            WHERE mt.id = ?
+        """, (match["team2_id"],)).fetchone()
+
+        data.update({
+            "player1_name": t1["p1_name"],
+            "player3_name": t1["p2_name"],
+            "player2_name": t2["p1_name"],
+            "player4_name": t2["p2_name"],
+        })
+
+    conn.close()
+    return jsonify(data)
 
 @app.route('/complete_match', methods=['POST'])
 def complete_match():
@@ -6369,355 +6467,68 @@ def withdraw_from_tournament():
 
 @app.route('/tournaments')
 def tournaments_overview():
-    """Tournament overview page - requires premium membership"""
-    # User is already authenticated and has permission via decorator
+    """Tournament overview page with support for custom tournament start permissions"""
     current_player_id = session.get('current_player_id')
-
     conn = get_db_connection()
-    cursor = conn.cursor()
+    conn.row_factory = sqlite3.Row
 
-    # Get current player's location data from database
-    cursor.execute('SELECT * FROM players WHERE id = ?', (current_player_id, ))
-    player = cursor.fetchone()
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (current_player_id,)).fetchone()
     if not player:
         flash('Player profile not found', 'danger')
         conn.close()
         return redirect(url_for('player_login'))
 
-    # Use player's stored GPS coordinates and search radius
-    try:
-        user_lat = player['latitude'] if player[
-            'latitude'] is not None else None
-    except (KeyError, TypeError):
-        user_lat = None
-
-    try:
-        user_lng = player['longitude'] if player[
-            'longitude'] is not None else None
-    except (KeyError, TypeError):
-        user_lng = None
-
-    try:
-        search_radius = player['travel_radius'] if player[
-            'travel_radius'] is not None else 25
-    except (KeyError, TypeError):
-        search_radius = 25  # Default to 25 miles
-
-    # Enable location filtering if player has GPS coordinates
-    location_filter_enabled = (user_lat is not None and user_lng is not None)
-
-    if not location_filter_enabled:
-        logging.info(
-            f"Player {current_player_id} has no GPS coordinates - showing all tournaments"
-        )
-    else:
-        logging.info(
-            f"Player {current_player_id} location filtering: {search_radius} mile travel radius from ({user_lat:.4f}, {user_lng:.4f})"
-        )
-
-    tournament_levels = get_tournament_levels()
-
-    # Get current tournament entries count for each level
-    for level_key in tournament_levels:
-        cursor.execute(
-            '''
-            SELECT COUNT(*) as count FROM tournaments 
-            WHERE tournament_level = ? AND completed = 0
-        ''', (level_key, ))
-        count = cursor.fetchone()['count']
-        tournament_levels[level_key]['current_entries'] = count
-        tournament_levels[level_key]['spots_remaining'] = tournament_levels[
-            level_key]['max_players'] - count
-
-    # Get tournament instances (like upcoming championship) with location filtering
-    tournament_instances_query = '''
-        SELECT * FROM tournament_instances 
-        WHERE status IN ('open', 'upcoming')
-        ORDER BY 
-            CASE 
-                WHEN status = 'open' THEN 1 
-                WHEN status = 'upcoming' THEN 2 
-            END,
-            created_at DESC
-    '''
-
-    cursor.execute(tournament_instances_query)
-    all_tournament_instances = cursor.fetchall()
-
-    # Filter tournament instances by location if user location is provided
-    tournament_instances = []
-    if location_filter_enabled and user_lat is not None and user_lng is not None:
-        logging.info(
-            f"Filtering tournaments by user location: {user_lat}, {user_lng}")
-
-        for instance in all_tournament_instances:
-            # Skip tournaments without location data
-            if instance['latitude'] is None or instance['longitude'] is None:
-                logging.debug(
-                    f"Skipping tournament {instance['name']} - no GPS coordinates"
-                )
-                continue
-
-            # Calculate distance between user and tournament
-            distance = calculate_distance_haversine(user_lat, user_lng,
-                                                    instance['latitude'],
-                                                    instance['longitude'])
-
-            if distance is None:
-                logging.warning(
-                    f"Could not calculate distance for tournament {instance['name']}"
-                )
-                continue
-
-            # Check if tournament is within player's search radius
-            if distance <= search_radius:
-                # Convert to dict and add distance info
-                instance_dict = dict(instance)
-                instance_dict['distance_miles'] = round(distance, 1)
-                tournament_instances.append(instance_dict)
-                logging.debug(
-                    f"Including tournament {instance['name']} - {distance:.1f} miles away (within {search_radius} mi radius)"
-                )
-            else:
-                logging.debug(
-                    f"Excluding tournament {instance['name']} - {distance:.1f} miles away (outside {search_radius} mi radius)"
-                )
-
-        # Sort by distance (closest first)
-        tournament_instances.sort(
-            key=lambda x: x.get('distance_miles', float('inf')))
-
-        logging.info(
-            f"Found {len(tournament_instances)} tournaments within range out of {len(all_tournament_instances)} total"
-        )
-    else:
-        # No location filtering - show all tournaments but add distance info if possible
-        tournament_instances = []
-        for instance in all_tournament_instances:
-            instance_dict = dict(instance)
-
-            # Add distance info if both user and tournament have coordinates
-            if (user_lat is not None and user_lng is not None
-                    and instance['latitude'] is not None
-                    and instance['longitude'] is not None):
-                distance = calculate_distance_haversine(
-                    user_lat, user_lng, instance['latitude'],
-                    instance['longitude'])
-                if distance is not None:
-                    instance_dict['distance_miles'] = round(distance, 1)
-
-            tournament_instances.append(instance_dict)
-
-    # Get custom tournaments created by users with location filtering
-    custom_tournaments_query = '''
-        SELECT ct.*, p.full_name as organizer_name, p.selfie as organizer_selfie
+    # Load all custom tournaments
+    custom_tournaments_raw = conn.execute('''
+        SELECT ct.*, p.full_name AS organizer_name
         FROM custom_tournaments ct
-        JOIN players p ON ct.organizer_id = p.id
-        WHERE ct.status = 'open' 
-        AND datetime(ct.registration_deadline) > datetime('now')
+        LEFT JOIN players p ON ct.organizer_id = p.id
+        WHERE status NOT IN ('completed', 'cancelled')
         ORDER BY ct.created_at DESC
-    '''
+    ''').fetchall()
 
-    cursor.execute(custom_tournaments_query)
-    all_custom_tournaments = cursor.fetchall()
-
-    # Filter custom tournaments by location if user location is provided
     custom_tournaments = []
-    if location_filter_enabled and user_lat is not None and user_lng is not None:
-        for tournament in all_custom_tournaments:
-            # Skip tournaments without location data
-            if tournament['latitude'] is None or tournament[
-                    'longitude'] is None:
-                continue
+    for row in custom_tournaments_raw:
+        tournament = dict(row)  # ✅ make it editable
 
-            # Calculate distance
-            distance = calculate_distance_haversine(user_lat, user_lng,
-                                                    tournament['latitude'],
-                                                    tournament['longitude'])
+        # Count entries
+        count = conn.execute(
+            "SELECT COUNT(*) AS total FROM custom_tournament_entries WHERE tournament_id = ?",
+            (tournament['id'],)
+        ).fetchone()['total']
 
-            if distance is None:
-                continue
-
-            # Check if tournament is within user's search radius (not tournament's join radius)
-            # Use the user's preferred search distance for consistency
-            if distance <= search_radius:
-                tournament_dict = dict(tournament)
-                tournament_dict['distance_miles'] = round(distance, 1)
-                custom_tournaments.append(tournament_dict)
-
-        # Sort by distance
-        custom_tournaments.sort(
-            key=lambda x: x.get('distance_miles', float('inf')))
-    else:
-        # No location filtering - show all custom tournaments but add distance info if possible
-        custom_tournaments = []
-        for tournament in all_custom_tournaments:
-            tournament_dict = dict(tournament)
-
-            # Add distance info if both user and tournament have coordinates
-            if (user_lat is not None and user_lng is not None
-                    and tournament['latitude'] is not None
-                    and tournament['longitude'] is not None):
-                distance = calculate_distance_haversine(
-                    user_lat, user_lng, tournament['latitude'],
-                    tournament['longitude'])
-                if distance is not None:
-                    tournament_dict['distance_miles'] = round(distance, 1)
-
-            custom_tournaments.append(tournament_dict)
-
-    # Get recent tournament entries - FIXED TO SHOW ONLY CURRENT USER'S ENTRIES
-    logging.info(
-        f"DEBUG: Fetching recent tournament entries for current user {current_player_id}"
-    )
-    cursor.execute(
-        '''
-        SELECT t.*, p.full_name, p.selfie
-        FROM tournaments t
-        JOIN players p ON t.player_id = p.id
-        WHERE t.tournament_level IS NOT NULL 
-        AND t.player_id = ?
-        ORDER BY t.created_at DESC
-        LIMIT 10
-    ''', (current_player_id, ))
-    recent_entries = cursor.fetchall()
-    logging.info(
-        f"DEBUG: Found {len(recent_entries)} recent tournament entries for current user"
-    )
-    for entry in recent_entries:
-        logging.debug(
-            f"Tournament entry details - ID: {entry['id']}, Player ID: {entry['player_id']}, Tournament: {entry['tournament_name']}, Level: {entry['tournament_level']}"
+        # Calculate derived fields
+        tournament['current_entries'] = count
+        tournament['spots_remaining'] = max(
+            0, (tournament.get('max_players') or 0) - count
+        )
+        tournament['is_organizer'] = (tournament['organizer_id'] == current_player_id)
+        tournament['can_start'] = (
+            tournament['is_organizer']
+            and tournament['status'] == 'open'
+            and count >= 2
         )
 
-    # Get all registered players for quick access
-    cursor.execute(
-        'SELECT id, full_name, skill_level FROM players ORDER BY full_name')
-    players = cursor.fetchall()
+        custom_tournaments.append(tournament)
 
-    # Get tournament brackets for the current player - ADD DEBUG LOGGING
-    logging.info(
-        f"DEBUG: Fetching tournament brackets for current_player_id: {current_player_id}"
-    )
-    cursor.execute(
-        '''
-        SELECT DISTINCT 
-            ti.id as tournament_instance_id,
-            ti.name as tournament_name,
-            ti.skill_level,
-            ti.status as tournament_status,
-            t.tournament_type,
-            t.entry_date,
-            COUNT(DISTINCT tm.id) as total_matches,
-            COUNT(DISTINCT CASE WHEN tm.status = 'completed' THEN tm.id END) as completed_matches,
-            MAX(tm.round_number) as current_round,
-            (SELECT COUNT(DISTINCT round_number) FROM tournament_matches 
-             WHERE tournament_instance_id = ti.id) as total_rounds,
-            CASE 
-                WHEN COUNT(DISTINCT tm.id) = 0 THEN 'No Bracket Yet'
-                WHEN ti.status = 'completed' THEN 'Tournament Complete'
-                WHEN MAX(tm.round_number) = (SELECT MAX(round_number) FROM tournament_matches 
-                                           WHERE tournament_instance_id = ti.id
-                                           AND status = 'completed') THEN 'Final Round'
-                ELSE 'Round ' || COALESCE(MAX(CASE WHEN tm.status IN ('pending', 'active') THEN tm.round_number END), 1)
-            END as bracket_status,
-            CASE 
-                WHEN EXISTS (SELECT 1 FROM tournament_matches tm2 
-                           WHERE tm2.tournament_instance_id = ti.id 
-                           AND (tm2.player1_id = ? OR tm2.player2_id = ?)
-                           AND tm2.winner_id = ?) THEN 'Advanced'
-                WHEN EXISTS (SELECT 1 FROM tournament_matches tm2 
-                           WHERE tm2.tournament_instance_id = ti.id 
-                           AND (tm2.player1_id = ? OR tm2.player2_id = ?)
-                           AND tm2.status = 'completed'
-                           AND tm2.winner_id != ?) THEN 'Eliminated'
-                WHEN COUNT(DISTINCT CASE WHEN tm.status IN ('pending', 'active') THEN tm.id END) > 0 THEN 'Active'
-                ELSE 'Awaiting Bracket'
-            END as player_status
-        FROM tournaments t
-        JOIN tournament_instances ti ON t.tournament_instance_id = ti.id
-        LEFT JOIN tournament_matches tm ON ti.id = tm.tournament_instance_id
-        WHERE t.player_id = ?
-        GROUP BY ti.id, ti.name, ti.skill_level, ti.status, t.tournament_type, t.entry_date
-        ORDER BY t.entry_date DESC
-    ''', (current_player_id, current_player_id, current_player_id,
-          current_player_id, current_player_id, current_player_id,
-          current_player_id))
-    my_tournament_brackets = cursor.fetchall()
-    logging.info(
-        f"DEBUG: Found {len(my_tournament_brackets)} tournament brackets for player {current_player_id}"
-    )
-    for bracket in my_tournament_brackets:
-        logging.info(
-            f"DEBUG: Bracket - Tournament: {bracket['tournament_name']}, Status: {bracket['tournament_status']}, Player Status: {bracket['player_status']}"
-        )
-        logging.info(
-            f"DEBUG: Bracket Details - Total Matches: {bracket['total_matches']}, Bracket Status: {bracket['bracket_status']}, Current Round: {bracket['current_round']}, Total Rounds: {bracket['total_rounds']}"
+    # Load regular tournament levels
+    tournament_levels = get_tournament_levels()
+    # ✅ Ensure all levels have a spots_remaining key to prevent template errors
+    for level_name, level_info in tournament_levels.items():
+        if 'spots_remaining' not in level_info:
+            level_info['spots_remaining'] = (
+                level_info.get('max_players', 0) - level_info.get('current_entries', 0)
+                if 'max_players' in level_info and 'current_entries' in level_info
+            else 0
         )
 
     conn.close()
-
-    # Add comprehensive location filter info to template context
-    total_tournaments = len(all_tournament_instances)
-    total_custom_tournaments = len(all_custom_tournaments)
-
-    # Count tournaments with GPS data
-    tournaments_with_gps = sum(
-        1 for t in all_tournament_instances
-        if t['latitude'] is not None and t['longitude'] is not None)
-    custom_tournaments_with_gps = sum(
-        1 for t in all_custom_tournaments
-        if t['latitude'] is not None and t['longitude'] is not None)
-
-    # Calculate average distance for displayed tournaments (if user location available)
-    avg_distance = None
-    min_distance = None
-    max_distance = None
-
-    if user_lat is not None and user_lng is not None:
-        displayed_tournaments_with_distance = [
-            t for t in tournament_instances if 'distance_miles' in t
-        ]
-        displayed_custom_with_distance = [
-            t for t in custom_tournaments if 'distance_miles' in t
-        ]
-        all_distances = [
-            t['distance_miles'] for t in displayed_tournaments_with_distance +
-            displayed_custom_with_distance
-        ]
-
-        if all_distances:
-            avg_distance = round(sum(all_distances) / len(all_distances), 1)
-            min_distance = round(min(all_distances), 1)
-            max_distance = round(max(all_distances), 1)
-
-    location_context = {
-        'location_filter_enabled': location_filter_enabled,
-        'user_latitude': user_lat,
-        'user_longitude': user_lng,
-        'tournaments_found': len(tournament_instances),
-        'custom_tournaments_found': len(custom_tournaments),
-        'total_tournaments': total_tournaments,
-        'total_custom_tournaments': total_custom_tournaments,
-        'tournaments_with_gps': tournaments_with_gps,
-        'custom_tournaments_with_gps': custom_tournaments_with_gps,
-        'tournaments_without_gps': total_tournaments - tournaments_with_gps,
-        'custom_tournaments_without_gps':
-        total_custom_tournaments - custom_tournaments_with_gps,
-        'has_user_location': user_lat is not None and user_lng is not None,
-        'avg_distance': avg_distance,
-        'min_distance': min_distance,
-        'max_distance': max_distance
-    }
-
-    return render_template('tournaments_overview.html',
-                           tournament_levels=tournament_levels,
-                           tournament_instances=tournament_instances,
-                           custom_tournaments=custom_tournaments,
-                           recent_entries=recent_entries,
-                           my_tournament_brackets=my_tournament_brackets,
-                           players=players,
-                           location_info=location_context)
-
+    return render_template(
+        'tournaments_overview.html',
+        tournament_levels=tournament_levels,
+        custom_tournaments=custom_tournaments,
+        player=player
+    )
 
 @app.route('/tournament', methods=['GET', 'POST'])
 def tournament():
@@ -8459,126 +8270,178 @@ def get_unread_count(player_id):
     return jsonify({'unread_count': count})
 
 
-@app.route('/submit_match_result', methods=['POST'])
+@app.route("/submit_match_result", methods=["POST"])
 def submit_match_result():
-    """Submit match result with pickleball set-based scores"""
-    data = request.get_json()
-    match_id = data.get('match_id')
-    match_score = data.get('match_score')  # Format: "11-5 6-11 11-9"
-    player1_sets_won = int(data.get('player1_sets_won', 0))
-    player2_sets_won = int(data.get('player2_sets_won', 0))
+    import traceback
+    try:
+        """
+        Submit final score, update player/team stats & ranking points,
+        auto-generate next-round matches (singles or doubles),
+        and update tournament status when completed.
+        """
+        data = request.get_json()
+        match_id = data.get("match_id")
+        score = data.get("match_score")
+        team1_sets = int(data.get("player1_sets_won", 0))
+        team2_sets = int(data.get("player2_sets_won", 0))
 
-    # SECURITY FIX: Get submitter_id from server-side session, not client input
-    submitter_id = session.get('current_player_id') or session.get('player_id')
-    if not submitter_id:
-        return jsonify({
-            'success': False,
-            'message': 'Authentication required. Please login.'
-        })
+        conn = get_db_connection()
+        conn.row_factory = sqlite3.Row
+        match = conn.execute("SELECT * FROM matches WHERE id = ?", (match_id,)).fetchone()
+        if not match:
+            conn.close()
+            return jsonify({"success": False, "message": "Match not found."})
 
-    # Validate input
-    if not match_score or player1_sets_won == player2_sets_won:
-        return jsonify({
-            'success': False,
-            'message': 'Invalid match result. Sets cannot be tied.'
-        })
+        is_doubles = bool(match["team1_id"] and match["team2_id"])
 
-    # Validate best of 3 format
-    if (player1_sets_won + player2_sets_won) < 2 or (player1_sets_won +
-                                                     player2_sets_won) > 3:
-        return jsonify({
-            'success': False,
-            'message': 'Invalid pickleball match format.'
-        })
+        # --- Determine winner & loser ---
+        if team1_sets > team2_sets:
+            winner_id = match["team1_id"] if is_doubles else match["player1_id"]
+            loser_id  = match["team2_id"] if is_doubles else match["player2_id"]
+        else:
+            winner_id = match["team2_id"] if is_doubles else match["player2_id"]
+            loser_id  = match["team1_id"] if is_doubles else match["player1_id"]
 
-    conn = get_db_connection()
+        # --- Update match record ---
+        conn.execute("""
+            UPDATE matches
+            SET status = 'completed', match_result = ?, winner_id = ?
+            WHERE id = ?
+        """, (score, winner_id, match_id))
+        conn.commit()
 
-    # Get match details
-    match = conn.execute(
-        '''
-        SELECT * FROM matches WHERE id = ?
-    ''', (match_id, )).fetchone()
+        # --- Update wins/losses & ranking points ---
+        WIN_POINTS  = 10
+        ROUND_POINTS = 5
 
-    if not match:
+        if is_doubles:
+            conn.execute("UPDATE match_teams SET wins = COALESCE(wins,0)+1 WHERE id = ?", (winner_id,))
+            conn.execute("UPDATE match_teams SET losses = COALESCE(losses,0)+1 WHERE id = ?", (loser_id,))
+
+            for tid, won in [(winner_id, True), (loser_id, False)]:
+                team = conn.execute("SELECT player1_id, player2_id FROM match_teams WHERE id = ?", (tid,)).fetchone()
+                if team:
+                    for pid in [team["player1_id"], team["player2_id"]]:
+                        if won:
+                            conn.execute("""
+                                UPDATE players
+                                SET wins = COALESCE(wins,0)+1,
+                                    ranking_points = COALESCE(ranking_points,0)+?
+                                WHERE id = ?
+                            """, (WIN_POINTS + ROUND_POINTS, pid))
+                        else:
+                            conn.execute("""
+                                UPDATE players
+                                SET losses = COALESCE(losses,0)+1
+                                WHERE id = ?
+                            """, (pid,))
+        else:
+            conn.execute("""
+                UPDATE players
+                SET wins = COALESCE(wins,0)+1,
+                    ranking_points = COALESCE(ranking_points,0)+?
+                WHERE id = ?
+            """, (WIN_POINTS + ROUND_POINTS, winner_id))
+            conn.execute("""
+                UPDATE players
+                SET losses = COALESCE(losses,0)+1
+                WHERE id = ?
+            """, (loser_id,))
+        conn.commit()
+
+        # --- Check if tournament round is complete ---
+        remaining = conn.execute("""
+            SELECT COUNT(*) AS c FROM matches
+            WHERE tournament_id = ? AND round = ? AND status != 'completed'
+        """, (match["tournament_id"], match["round"])).fetchone()
+
+        tournament_winner_name = None
+        tournament_completed = False
+
+        if remaining["c"] == 0:
+            winners = conn.execute("""
+                SELECT winner_id FROM matches
+                WHERE tournament_id = ? AND round = ? ORDER BY id
+            """, (match["tournament_id"], match["round"])).fetchall()
+
+            if len(winners) > 1:
+                # --- Create next round ---
+                next_round = match["round"] + 1
+                new_matches = []
+                for i in range(0, len(winners), 2):
+                    if i + 1 < len(winners):
+                        new_matches.append((
+                            match["tournament_id"],
+                            winners[i]["winner_id"],
+                            winners[i + 1]["winner_id"],
+                            next_round,
+                            "pending",
+                            match["sport"],
+                            match["court_location"]
+                        ))
+
+                insert_sql = """
+                    INSERT INTO matches (tournament_id, {type}1_id, {type}2_id, round, status, sport, court_location)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """.format(type="team" if is_doubles else "player")
+
+                conn.executemany(insert_sql, new_matches)
+                conn.commit()
+
+            else:
+                # --- Final match completed — tournament ends ---
+                final_winner_id = winners[0]["winner_id"]
+                conn.execute("""
+                    UPDATE custom_tournaments
+                    SET status = 'completed', winner_id = ?
+                    WHERE id = ?
+                """, (final_winner_id, match["tournament_id"]))
+                conn.commit()
+                tournament_completed = True
+
+                # --- Get winner name(s) for the message ---
+                if is_doubles:
+                    team = conn.execute("""
+                        SELECT p1.full_name AS p1_name, p2.full_name AS p2_name
+                        FROM match_teams mt
+                        JOIN players p1 ON mt.player1_id = p1.id
+                        JOIN players p2 ON mt.player2_id = p2.id
+                        WHERE mt.id = ?
+                    """, (final_winner_id,)).fetchone()
+                    tournament_winner_name = f"{team['p1_name']} & {team['p2_name']}"
+                else:
+                    p = conn.execute("SELECT full_name FROM players WHERE id = ?", (final_winner_id,)).fetchone()
+                    tournament_winner_name = p["full_name"]
+
+                # 🏆 --- Post-tournament winner logic placeholder ---
+                # ------------------------------------------------
+                #  Here’s where you can later:
+                #   - Send notifications or emails
+                #   - Award badges or prizes
+                #   - Log tournament results to history
+                #   - Post updates to a leaderboard or feed
+                #   - Trigger custom automations (Discord, email, etc.)
+                # ------------------------------------------------
+                print(f"🏆 Tournament Winner: {tournament_winner_name} (Tournament ID: {match['tournament_id']})")
+
         conn.close()
-        return jsonify({'success': False, 'message': 'Match not found'})
 
-    # Check if submitter is part of this match
-    if submitter_id not in [match['player1_id'], match['player2_id']]:
-        conn.close()
-        return jsonify({
-            'success': False,
-            'message': 'You are not part of this match'
-        })
+        # --- Response ---
+        if tournament_completed:
+            return jsonify({
+                "success": True,
+                "message": f"🏆 {tournament_winner_name} has won the entire tournament! Congratulations!"
+            })
+        else:
+            return jsonify({
+                "success": True,
+                "message": "✅ Match result recorded and stats updated successfully."
+            })
 
-    # Determine winner based on sets won
-    winner_id = match[
-        'player1_id'] if player1_sets_won > player2_sets_won else match[
-            'player2_id']
-    loser_id = match[
-        'player2_id'] if player1_sets_won > player2_sets_won else match[
-            'player1_id']
-
-    # Update match with results (store sets won in score fields for backward compatibility)
-    conn.execute(
-        '''
-        UPDATE matches 
-        SET player1_score = ?, player2_score = ?, winner_id = ?, 
-            status = 'completed', match_result = ?
-        WHERE id = ?
-    ''',
-        (player1_sets_won, player2_sets_won, winner_id, match_score, match_id))
-
-    # DOUBLES TEAM SCORING: Update win/loss records for all team members
-    # Get team members for both winner and loser
-    winner_team_members = get_match_team_members(match_id, winner_id)
-    loser_team_members = get_match_team_members(match_id, loser_id)
-
-    # Calculate points based on match type
-    points_awarded = 15 if (
-        player1_sets_won +
-        player2_sets_won) == 3 else 10  # Bonus for 3-set matches
-    points_description = 'Match victory'
-
-    # Update records for all winning team members
-    for player_id in winner_team_members:
-        update_player_match_record(player_id, True, points_awarded,
-                                   points_description, conn)
-
-    # Update records for all losing team members
-    for player_id in loser_team_members:
-        update_player_match_record(player_id, False, 0, "", conn)
-
-    logging.info(
-        f"Regular match {match_id}: Updated {len(winner_team_members)} winning players, {len(loser_team_members)} losing players"
-    )
-
-    conn.commit()
-    conn.close()
-
-    # Send notifications
-    conn = get_db_connection()
-    winner = conn.execute('SELECT full_name FROM players WHERE id = ?',
-                          (winner_id, )).fetchone()
-    loser = conn.execute('SELECT full_name FROM players WHERE id = ?',
-                         (loser_id, )).fetchone()
-    conn.close()
-
-    if winner and loser:
-        sets_result = f"{player1_sets_won}-{player2_sets_won}" if winner_id == match[
-            'player1_id'] else f"{player2_sets_won}-{player1_sets_won}"
-        winner_message = f"🏆 Victory! You beat {loser['full_name']} ({sets_result}) and earned {points_awarded} ranking points!"
-        loser_message = f"Good match against {winner['full_name']} ({match_score})! Keep practicing and you'll get them next time!"
-
-        send_push_notification(winner_id, winner_message, "Match Result")
-        send_push_notification(loser_id, loser_message, "Match Result")
-
-    return jsonify({
-        'success':
-        True,
-        'message':
-        f'Match result submitted successfully! Final score: {match_score}'
-    })
+    except Exception as e:
+        print("❌ SUBMIT MATCH RESULT ERROR:", e)
+        traceback.print_exc()
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 @app.route('/submit_tournament_match_result', methods=['POST'])
@@ -8638,6 +8501,28 @@ def submit_tournament_match_result_route():
             f"Tournament match {tournament_match_id} submitted successfully. "
             f"Points awarded: {result.get('points_awarded', 0)}, "
             f"Round: {result.get('round_name', 'Unknown')}")
+        # 🧩 Auto-advance bracket after successful result
+    try:
+        conn = get_db_connection()
+        match = conn.execute("""
+            SELECT tournament_id, round, 
+                   CASE 
+                       WHEN winner_team_id IS NOT NULL THEN winner_team_id 
+                       ELSE winner_id 
+                   END AS winner_reference
+            FROM matches
+            WHERE id = ?
+        """, (tournament_match_id,)).fetchone()
+        conn.close()
+
+        if match and match['tournament_id'] and match['winner_reference']:
+            advance_winner_to_next_round(
+                match['tournament_id'],
+                match['winner_reference'],
+                match['round']
+            )
+    except Exception as e:
+        logging.error(f"Bracket auto-advance error: {e}")
     else:
         logging.error(
             f"Tournament match {tournament_match_id} submission failed: {result.get('message', 'Unknown error')}"
