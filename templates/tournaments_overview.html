@@ -395,6 +395,13 @@
                                     {% endif %}
                                     <small class="text-muted">by {{ tournament.organizer_name|default('Unknown') }}</small>
                                 </div>
+                                {% if tournament.organizer_id == current_player_id and tournament.status == 'open' %}
+<form method="POST" action="{{ url_for('start_custom_tournament', tournament_id=tournament.id) }}">
+    <button type="submit" class="btn btn-warning btn-sm w-100">
+        <i class="fas fa-play me-1"></i>Start Tournament
+    </button>
+</form>
+{% endif %}
                                 
                                 {% if tournament.description %}
                                 <p class="card-text small text-muted mb-2">{{ tournament.description }}</p>
@@ -736,6 +743,8 @@
 
 <script>
 // GPS Location Functions
+
+// GPS Location Functions
 function getCurrentLocation() {
     const btn = document.getElementById('getLocationBtn');
     const status = document.getElementById('locationStatus');
@@ -744,8 +753,10 @@ function getCurrentLocation() {
         status.innerHTML = '<span class="text-danger">Geolocation is not supported by this browser</span>';
         return;
     }
-    
-    // Update button state
+
+    // Disable hidden longitude/latitude inputs to prevent browser validation errors
+    disableHiddenCoordinateInputs();
+
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting Location...';
     status.innerHTML = '<span class="text-info">Requesting location permission...</span>';
@@ -762,7 +773,6 @@ function getCurrentLocation() {
             // Update status
             status.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-1"></i>Location captured: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}</span>`;
             
-            // Try to get readable address
             getReadableAddress(latitude, longitude);
             
             // Reset button
@@ -791,8 +801,6 @@ function getCurrentLocation() {
             }
             
             status.innerHTML = `<span class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>${errorMessage}</span>`;
-            
-            // Reset button
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-location-arrow me-1"></i>Try Again';
         },
@@ -805,8 +813,6 @@ function getCurrentLocation() {
 }
 
 function getReadableAddress(latitude, longitude) {
-    // Optional reverse geocoding - using a free service without API key
-    // This provides approximate location for user confirmation
     fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`)
         .then(response => response.json())
         .then(data => {
@@ -818,16 +824,13 @@ function getReadableAddress(latitude, longitude) {
                 status.innerHTML += `<br><small class="text-muted">Near: ${displayLocation}</small>`;
             }
         })
-        .catch(error => {
-            // Silently fail - address lookup is optional enhancement
-            console.log('Address lookup failed (optional feature):', error);
-        });
+        .catch(() => {});
 }
 
 function toggleManualLocation(forceShow = false) {
     const manualSection = document.getElementById('manualLocationSection');
     const isHidden = manualSection.style.display === 'none';
-    
+
     if (forceShow || isHidden) {
         manualSection.style.display = 'block';
         document.getElementById('locationStatus').innerHTML = '<span class="text-info">Enter coordinates manually below</span>';
@@ -835,7 +838,24 @@ function toggleManualLocation(forceShow = false) {
         manualSection.style.display = 'none';
         document.getElementById('locationStatus').innerHTML = 'Click "Get My Location" to set tournament location';
     }
+
+    // Toggle required/disabled state for validation safety
+    disableHiddenCoordinateInputs();
 }
+
+function disableHiddenCoordinateInputs() {
+    document.querySelectorAll('input[name="latitude"], input[name="longitude"]').forEach(el => {
+        if (el.offsetParent === null) {
+            el.disabled = true; // prevent invalid form control errors
+        } else {
+            el.disabled = false;
+        }
+    });
+}
+
+// Ensure validation safety on page load
+document.addEventListener('DOMContentLoaded', disableHiddenCoordinateInputs);
+
 
 function showCreateTournamentModal() {
     const modal = new bootstrap.Modal(document.getElementById('createTournamentModal'));
