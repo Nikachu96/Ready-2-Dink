@@ -8303,173 +8303,80 @@ def get_unread_count(player_id):
     return jsonify({'unread_count': count})
 
 
-@app.route("/submit_match_result", methods=["POST"])
+@app.route('/submit_match_result', methods=['POST'])
 def submit_match_result():
-    import traceback
+    """Submit match result and handle tournament completion/reward logic"""
     try:
-        """
-        Submit final score, update player/team stats & ranking points,
-        auto-generate next-round matches (singles or doubles),
-        and update tournament status when completed.
-        """
-        data = request.get_json()
-        match_id = data.get("match_id")
-        score = data.get("match_score")
-        team1_sets = int(data.get("player1_sets_won", 0))
-        team2_sets = int(data.get("player2_sets_won", 0))
+        match_id = request.form.get("match_id")
+        winner_id = request.form.get("winner_id")
+        player1_score = request.form.get("player1_score", 0)
+        player2_score = request.form.get("player2_score", 0)
 
         conn = get_db_connection()
         conn.row_factory = sqlite3.Row
-        match = conn.execute("SELECT * FROM matches WHERE id = ?", (match_id,)).fetchone()
+
+        # --- Fetch match info ---
+        match = conn.execute("""
+            SELECT * FROM matches WHERE id = ?
+        """, (match_id,)).fetchone()
+
         if not match:
+            flash("Match not found.", "danger")
             conn.close()
-            return jsonify({"success": False, "message": "Match not found."})
+            return redirect(url_for("tournaments_overview"))
 
-        is_doubles = bool(match["team1_id"] and match["team2_id"])
-
-        # --- Determine winner & loser ---
-        if team1_sets > team2_sets:
-            winner_id = match["team1_id"] if is_doubles else match["player1_id"]
-            loser_id  = match["team2_id"] if is_doubles else match["player2_id"]
-        else:
-            winner_id = match["team2_id"] if is_doubles else match["player2_id"]
-            loser_id  = match["team1_id"] if is_doubles else match["player1_id"]
+        tournament_id = match["tournament_id"]
 
         # --- Update match record ---
         conn.execute("""
             UPDATE matches
-            SET status = 'completed', match_result = ?, winner_id = ?
+            SET winner_id = ?, player1_score = ?, player2_score = ?, status = 'completed', completed_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        """, (score, winner_id, match_id))
+        """, (winner_id, player1_score, player2_score, match_id))
         conn.commit()
 
-        # --- Update wins/losses & ranking points ---
-        WIN_POINTS  = 10
-        ROUND_POINTS = 5
+        # --- Check if tournament now completed ---
+        tournament = conn.execute("""
+            SELECT * FROM custom_tournaments WHERE id = ?
+        """, (tournament_id,)).fetchone()
 
-        if is_doubles:
-            conn.execute("UPDATE match_teams SET wins = COALESCE(wins,0)+1 WHERE id = ?", (winner_id,))
-            conn.execute("UPDATE match_teams SET losses = COALESCE(losses,0)+1 WHERE id = ?", (loser_id,))
+        if tournament and tournament["status"] != "completed":
+            # Check if all matches are done
+            remaining = conn.execute("""
+                SELECT COUNT(*) as count FROM matches
+                WHERE tournament_id = ? AND status != 'completed'
+            """, (tournament_id,)).fetchone()["count"]
 
-            for tid, won in [(winner_id, True), (loser_id, False)]:
-                team = conn.execute("SELECT player1_id, player2_id FROM match_teams WHERE id = ?", (tid,)).fetchone()
-                if team:
-                    for pid in [team["player1_id"], team["player2_id"]]:
-                        if won:
-                            conn.execute("""
-                                UPDATE players
-                                SET wins = COALESCE(wins,0)+1,
-                                    ranking_points = COALESCE(ranking_points,0)+?
-                                WHERE id = ?
-                            """, (WIN_POINTS + ROUND_POINTS, pid))
-                        else:
-                            conn.execute("""
-                                UPDATE players
-                                SET losses = COALESCE(losses,0)+1
-                                WHERE id = ?
-                            """, (pid,))
-        else:
-            conn.execute("""
-                UPDATE players
-                SET wins = COALESCE(wins,0)+1,
-                    ranking_points = COALESCE(ranking_points,0)+?
-                WHERE id = ?
-            """, (WIN_POINTS + ROUND_POINTS, winner_id))
-            conn.execute("""
-                UPDATE players
-                SET losses = COALESCE(losses,0)+1
-                WHERE id = ?
-            """, (loser_id,))
-        conn.commit()
-
-        # --- Check if tournament round is complete ---
-        remaining = conn.execute("""
-            SELECT COUNT(*) AS c FROM matches
-            WHERE tournament_id = ? AND round = ? AND status != 'completed'
-        """, (match["tournament_id"], match["round"])).fetchone()
-
-        tournament_winner_name = None
-        tournament_completed = False
-
-        if remaining["c"] == 0:
-            winners = conn.execute("""
-                SELECT winner_id FROM matches
-                WHERE tournament_id = ? AND round = ? ORDER BY id
-            """, (match["tournament_id"], match["round"])).fetchall()
-
-            if len(winners) > 1:
-                # --- Create next round ---
-                next_round = match["round"] + 1
-                new_matches = []
-                for i in range(0, len(winners), 2):
-                    if i + 1 < len(winners):
-                        new_matches.append((
-                            match["tournament_id"],
-                            winners[i]["winner_id"],
-                            winners[i + 1]["winner_id"],
-                            next_round,
-                            "pending",
-                            match["sport"],
-                            match["court_location"]
-                        ))
-
-                insert_sql = """
-                    INSERT INTO matches (tournament_id, {type}1_id, {type}2_id, round, status, sport, court_location)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                """.format(type="team" if is_doubles else "player")
-
-                conn.executemany(insert_sql, new_matches)
-                conn.commit()
-
-            else:
-                # --- Final match completed — tournament ends ---
-                final_winner_id = winners[0]["winner_id"]
+            if remaining == 0:
+                # Mark tournament as completed
                 conn.execute("""
                     UPDATE custom_tournaments
                     SET status = 'completed', winner_id = ?
                     WHERE id = ?
-                """, (final_winner_id, match["tournament_id"]))
+                """, (winner_id, tournament_id))
                 conn.commit()
-                tournament_completed = True
 
-                # --- Get winner name(s) for the message ---
-                if is_doubles:
-                    team = conn.execute("""
-                        SELECT p1.full_name AS p1_name, p2.full_name AS p2_name
-                        FROM match_teams mt
-                        JOIN players p1 ON mt.player1_id = p1.id
-                        JOIN players p2 ON mt.player2_id = p2.id
-                        WHERE mt.id = ?
-                    """, (final_winner_id,)).fetchone()
-                    tournament_winner_name = f"{team['p1_name']} & {team['p2_name']}"
-                else:
-                    p = conn.execute("SELECT full_name FROM players WHERE id = ?", (final_winner_id,)).fetchone()
-                    tournament_winner_name = p["full_name"]
+                # --- Reward the organizer with 40 points ---
+                organizer_id = tournament["organizer_id"]
+                conn.execute("""
+                    UPDATE players
+                    SET ranking_points = COALESCE(ranking_points, 0) + 40
+                    WHERE id = ?
+                """, (organizer_id,))
+                conn.commit()
 
-                # 🏆 --- Post-tournament winner logic placeholder ---
-                # ------------------------------------------------
-                #  Here’s where you can later:
-                #   - Send notifications or emails
-                #   - Award badges or prizes
-                #   - Log tournament results to history
-                #   - Post updates to a leaderboard or feed
-                #   - Trigger custom automations (Discord, email, etc.)
-                # ------------------------------------------------
-                print(f"🏆 Tournament Winner: {tournament_winner_name} (Tournament ID: {match['tournament_id']})")
+                logging.info(f"🏆 Tournament {tournament_id} completed. Organizer {organizer_id} awarded 40 points.")
+
+                flash("Tournament completed! Organizer awarded 40 ranking points.", "success")
 
         conn.close()
+        flash("Match result submitted successfully!", "success")
+        return redirect(url_for("tournaments_overview"))
 
-        # --- Response ---
-        if tournament_completed:
-            return jsonify({
-                "success": True,
-                "message": f"🏆 {tournament_winner_name} has won the entire tournament! Congratulations!"
-            })
-        else:
-            return jsonify({
-                "success": True,
-                "message": "✅ Match result recorded and stats updated successfully."
-            })
+    except Exception as e:
+        logging.error(f"Error submitting match result: {e}")
+        flash("Error submitting match result.", "danger")
+        return redirect(url_for("tournaments_overview"))
 
     except Exception as e:
         print("❌ SUBMIT MATCH RESULT ERROR:", e)
@@ -9111,6 +9018,8 @@ def join_custom_tournament(tournament_id):
     conn.close()
 
     # --- STRIPE PAYMENT ---
+    flash("You successfully joined the tournament!", "success")
+    return redirect(url_for("tournaments_overview"))
 
 @app.route('/tournament_payment_success/<int:tournament_id>')
 def tournament_payment_success(tournament_id):
