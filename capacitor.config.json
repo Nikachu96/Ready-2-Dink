@@ -1,0 +1,14 @@
+{
+  "appId": "com.ready2dink.app",
+  "appName": "Ready 2 Dink",
+  "webDir": "www",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true
+    }
+  },
+  "server": {
+    "url": "https://ready2dink.com",
+    "cleartext": false
+  }
+}

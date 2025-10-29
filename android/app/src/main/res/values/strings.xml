@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ready 2 Dink</string>
+    <string name="title_activity_main">Ready 2 Dink</string>
+    <string name="package_name">com.ready2dink.app</string>
+    <string name="custom_url_scheme">com.ready2dink.app</string>
+</resources>
