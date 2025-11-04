@@ -5513,7 +5513,7 @@ def register():
                 cursor = conn.cursor()   # ✅ FIXED
                 placeholder = "?"
             else:
-                conn = get_pg_connection()
+                conn = get_db_connection()
                 cursor = conn.cursor()
                 placeholder = "%s"
 
@@ -6310,7 +6310,7 @@ def sign_nda():
         })
 
 
-@app.route('/nda-required')
+@app.route('/intro-guide')
 def nda_required():
     """Show NDA requirement page for users who haven't signed yet"""
     # Handle both logged-in users and pending registrations

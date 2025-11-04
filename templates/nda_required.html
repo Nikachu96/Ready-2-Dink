@@ -1,294 +1,161 @@
 {% extends "base.html" %}
-
-{% block title %}NDA Required - Ready 2 Dink Beta{% endblock %}
+{% block title %}Welcome to Ready 2 Dink!{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-12">
-        <div class="text-center mb-4">
-            <div class="card surface-dark" data-bs-theme="dark" style="background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%); color: white; border: none;">
-                <div class="card-body p-5 surface-dark">
-                    <div class="mb-4">
-                        <i class="fas fa-shield-alt fa-4x" style="color: #E0563F;"></i>
-                    </div>
-                    <h2 class="fw-bold mb-3">Welcome to Ready 2 Dink Beta!</h2>
-                    <p class="lead mb-4">
-                        Before you can access our exclusive beta platform, you'll need to read and digitally sign our Non-Disclosure Agreement.
-                    </p>
-                    <p class="mb-4" style="color: rgba(255,255,255,0.8) !important;">
-                        This ensures the confidentiality of our beta features and helps protect our intellectual property during testing.
-                    </p>
-                    <button class="btn btn-lg fw-bold" onclick="showNDAForm()" 
-                            style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; color: white;">
-                        <i class="fas fa-file-contract me-2"></i>
-                        Review & Sign NDA
-                    </button>
-                    
-                    <!-- Direct NDA Form (hidden initially, shown instead of modal) -->
-                    <div id="ndaFormContainer" class="mt-4" style="display: none;">
-                        <div class="card surface-dark" data-bs-theme="dark" style="background: linear-gradient(135deg, #2d1b69 0%, #1a1a2e 100%); color: white; border: 1px solid rgba(255,255,255,0.2);">
-                            <div class="card-header surface-dark">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-shield-alt me-2" style="color: #E0563F;"></i>
-                                    Non-Disclosure Agreement - Ready 2 Dink Beta Testing
-                                </h5>
-                            </div>
-                            <div class="card-body surface-dark" style="max-height: 400px; overflow-y: auto; color: white !important;">
-                                <div class="mb-4">
-                                    <h6 class="fw-bold mb-3" style="color: white !important;">Beta Testing Access Agreement</h6>
-                                    <ul class="list-unstyled" style="color: white !important;">
-                                        <li class="mb-2" style="color: white !important;"><i class="fas fa-check-circle me-2" style="color: #10B981;"></i>Access to Ready 2 Dink beta features</li>
-                                        <li class="mb-2" style="color: white !important;"><i class="fas fa-shield-alt me-2" style="color: #E0563F;"></i>Confidentiality of platform features and data</li>
-                                        <li class="mb-2" style="color: white !important;"><i class="fas fa-lock me-2" style="color: #D174D2;"></i>Non-disclosure of proprietary information</li>
-                                        <li class="mb-2" style="color: white !important;"><i class="fas fa-exclamation-triangle me-2" style="color: #F59E0B;"></i>Immediate termination for violations</li>
-                                    </ul>
-                                </div>
-                                
-                                <div class="mb-4">
-                                    <h6 class="fw-bold mb-2" style="color: white !important;">Key Terms:</h6>
-                                    <ul class="small" style="color: white !important;">
-                                        <li style="color: white !important;">Recipient's access is terminated by the Company</li>
-                                        <li style="color: white !important;">Ready 2 Dink launches publicly</li>
-                                    </ul>
-                                    <p class="small mb-3" style="color: white !important;">
-                                        Confidentiality obligations survive termination for <strong style="color: white !important;">3 years</strong>.
-                                    </p>
-                                </div>
-                                
-                                <div class="mb-4">
-                                    <h6 class="fw-bold" style="color: white !important;">6. LEGAL COMPLIANCE</h6>
-                                    <p class="small" style="color: white !important;">
-                                        This Agreement is governed by applicable laws. Any violations may result in legal action and immediate termination of beta access.
-                                    </p>
-                                    
-                                    <div class="alert alert-info d-flex align-items-center mb-3" style="background-color: rgba(59, 130, 246, 0.1); border: 1px solid #3B82F6; color: #93C5FD;">
-                                        <i class="fas fa-envelope me-2"></i>
-                                        <span>Questions? Contact us at <a href="mailto:legal@ready2dink.com" class="text-decoration-none" style="color: #60A5FA;">legal@ready2dink.com</a></span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Signature Section -->
-                                <div class="border-top pt-4" style="border-color: rgba(255,255,255,0.1) !important;">
-                                    <h6 class="fw-bold mb-3" style="color: white !important;">Digital Signature Required</h6>
-                                    <div class="mb-3">
-                                        <label for="ndaSignatureDirect" class="form-label" style="color: white !important;">Type your full legal name as your digital signature:</label>
-                                        <input type="text" class="form-control form-control-lg" id="ndaSignatureDirect" 
-                                               placeholder="Enter your full legal name" 
-                                               style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white !important;" 
-                                               required>
-                                        <div class="form-text" style="color: white !important;">
-                                            By typing your name above, you agree to be bound by this Non-Disclosure Agreement.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-footer d-flex justify-content-between align-items-center surface-dark" style="border-top: 1px solid rgba(255,255,255,0.1);">
-                                <small class="text-white">
-                                    <i class="fas fa-calendar me-1"></i>
-                                    Date: <span id="currentDateDirect"></span>
-                                </small>
-                                <div>
-                                    <button type="button" class="btn btn-outline-light me-2" onclick="hideNDAForm()">
-                                        <i class="fas fa-times me-2"></i>Cancel
-                                    </button>
-                                    <button type="button" class="btn btn-lg fw-bold" id="signNDABtnDirect" onclick="submitNDASignatureDirect()"
-                                            style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; color: white;">
-                                        <i class="fas fa-pen-nib me-2"></i>Sign Agreement
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<style>
+/* --- Fix text and icon colors --- */
+.policy-btn {
+  background: white !important;
+  color: black !important;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+}
 
-<!-- NDA Modal -->
-<div class="modal fade" id="ndaModal" tabindex="-1" aria-labelledby="ndaModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content surface-dark" data-bs-theme="dark" style="background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%); color: white; border: none;">
-            <div class="modal-header surface-dark" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <h5 class="modal-title" id="ndaModalLabel">
-                    <i class="fas fa-shield-alt me-2" style="color: #E0563F;"></i>
-                    Non-Disclosure Agreement - Ready 2 Dink Beta Testing
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body surface-dark" style="max-height: 60vh; overflow-y: auto;">
-                <div class="mb-4">
-                    <h6 class="fw-bold mb-3">Beta Testing Access Agreement</h6>
-                    <ul class="list-unstyled">
-                        <li class="mb-2"><i class="fas fa-check-circle me-2" style="color: #10B981;"></i>Access to Ready 2 Dink beta features</li>
-                        <li class="mb-2"><i class="fas fa-shield-alt me-2" style="color: #E0563F;"></i>Confidentiality of platform features and data</li>
-                        <li class="mb-2"><i class="fas fa-lock me-2" style="color: #D174D2;"></i>Non-disclosure of proprietary information</li>
-                        <li class="mb-2"><i class="fas fa-exclamation-triangle me-2" style="color: #F59E0B;"></i>Immediate termination for violations</li>
-                    </ul>
-                </div>
-                
-                <div class="mb-4">
-                    <h6 class="fw-bold mb-2">Key Terms:</h6>
-                    <ul class="small" style="color: rgba(255,255,255,0.8) !important;">
-                        <li style="color: rgba(255,255,255,0.8) !important;">Recipient's access is terminated by the Company</li>
-                        <li style="color: rgba(255,255,255,0.8) !important;">Ready 2 Dink launches publicly</li>
-                    </ul>
-                    <p class="small mb-3" style="color: rgba(255,255,255,0.8) !important;">
-                        Confidentiality obligations survive termination for <strong style="color: white !important;">3 years</strong>.
-                    </p>
-                </div>
-                
-                <div class="mb-4">
-                    <h6 class="fw-bold">6. LEGAL COMPLIANCE</h6>
-                    <p class="small" style="color: rgba(255,255,255,0.8) !important;">
-                        This Agreement is governed by applicable laws. Any violations may result in legal action and immediate termination of beta access.
-                    </p>
-                    
-                    <div class="alert alert-info d-flex align-items-center mb-3" style="background-color: rgba(59, 130, 246, 0.1); border: 1px solid #3B82F6; color: #93C5FD;">
-                        <i class="fas fa-envelope me-2"></i>
-                        <span>Questions? Contact us at <a href="mailto:legal@ready2dink.com" class="text-decoration-none" style="color: #60A5FA;">legal@ready2dink.com</a></span>
-                    </div>
-                </div>
-                
-                <!-- Signature Section -->
-                <div class="border-top pt-4" style="border-color: rgba(255,255,255,0.1) !important;">
-                    <h6 class="fw-bold mb-3">Digital Signature Required</h6>
-                    <div class="mb-3">
-                        <label for="ndaSignature" class="form-label">Type your full legal name as your digital signature:</label>
-                        <input type="text" class="form-control form-control-lg" id="ndaSignature" 
-                               placeholder="Enter your full legal name" 
-                               style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white;" 
-                               required>
-                        <div class="form-text" style="color: rgba(255,255,255,0.7) !important;">
-                            By typing your name above, you agree to be bound by this Non-Disclosure Agreement.
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer justify-content-between surface-dark" style="border-top: 1px solid rgba(255,255,255,0.1);">
-                <small style="color: rgba(255,255,255,0.7) !important;">
-                    <i class="fas fa-calendar me-1"></i>
-                    Date: <span id="currentDate"></span>
-                </small>
-                <div>
-                    <button type="button" class="btn btn-outline-light me-2" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-2"></i>Cancel
-                    </button>
-                    <button type="button" class="btn btn-lg fw-bold" id="signNDABtn" onclick="submitNDASignature()"
-                            style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; color: white;">
-                        <i class="fas fa-pen-nib me-2"></i>Sign Agreement
-                    </button>
-                </div>
-            </div>
-        </div>
+.policy-btn i {
+  color: #0077cc !important; /* Ready-2-Dink Blue */
+}
+
+.policy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 119, 204, 0.2);
+}
+
+/* --- Checkbox custom look --- */
+.form-check-input {
+  width: 1.3em;
+  height: 1.3em;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  background-color: transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.form-check-input:checked {
+  background-color: #0077cc;
+  border-color: #0077cc;
+}
+
+.form-check-label {
+  color: black !important;
+  font-weight: 500;
+}
+</style>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 text-center">
+
+    <!-- Brand Banner -->
+    <div class="rounded-top-4 py-5 mb-4" 
+         style="background: linear-gradient(135deg, #0077cc 0%, #E0563F 100%); color: white;">
+      <h2 class="fw-bold mb-2">Welcome to Ready 2 Dink!</h2>
+      <p class="lead mb-0">Let’s get you on the court.</p>
     </div>
+
+    <!-- White Card -->
+    <div class="card shadow-lg border-0 rounded-4" style="background-color: white;">
+      <div class="card-body p-5">
+
+        <!-- Two-column grid -->
+        <div class="row g-3 justify-content-center mb-4">
+
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="window.location.href='#terms'">
+              <i class="fas fa-scale-balanced fa-2x mb-2"></i>
+              <div class="fw-bold">Terms of Use</div>
+              <small>How the app works & your responsibilities</small>
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="window.location.href='#privacy'">
+              <i class="fas fa-lock fa-2x mb-2"></i>
+              <div class="fw-bold">Privacy Policy</div>
+              <small>How we protect your personal info</small>
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="window.location.href='#liability'">
+              <i class="fas fa-file-contract fa-2x mb-2"></i>
+              <div class="fw-bold">Liability Policy</div>
+              <small>What we’re not responsible for</small>
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="window.location.href='#community'">
+              <i class="fas fa-handshake fa-2x mb-2"></i>
+              <div class="fw-bold">Community Rules</div>
+              <small>Play fair, stay respectful, keep it fun</small>
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6 d-flex justify-content-center">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="window.location.href='#disclaimer'">
+              <i class="fas fa-info-circle fa-2x mb-2"></i>
+              <div class="fw-bold">Disclaimer</div>
+              <small>Information and service limits</small>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Agreement Checkbox -->
+        <div class="form-check text-start mb-4 d-flex align-items-center">
+          <input class="form-check-input me-2" type="checkbox" id="agreeCheck">
+          <label class="form-check-label" for="agreeCheck">
+            Do you agree to these terms, rules and policies?
+          </label>
+        </div>
+
+        <!-- Continue Button -->
+        <button id="continueBtn" class="btn fw-bold w-100 py-3 rounded-3"
+                style="background: linear-gradient(135deg, #0077cc 0%, #E0563F 100%); color:white;" disabled>
+          Continue
+        </button>
+
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-// Show NDA Form (direct, not modal)
-function showNDAForm() {
-    // Set current date
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    });
-    document.getElementById('currentDateDirect').textContent = dateStr;
-    
-    // Show the direct form
-    document.getElementById('ndaFormContainer').style.display = 'block';
-    
-    // Scroll to the form
-    document.getElementById('ndaFormContainer').scrollIntoView({ behavior: 'smooth' });
-}
+const agreeCheck = document.getElementById('agreeCheck');
+const continueBtn = document.getElementById('continueBtn');
 
-// Hide NDA Form
-function hideNDAForm() {
-    document.getElementById('ndaFormContainer').style.display = 'none';
-}
+agreeCheck.addEventListener('change', function() {
+  continueBtn.disabled = !this.checked;
+});
 
-// Submit NDA Signature (direct form)
-async function submitNDASignatureDirect() {
-    const signature = document.getElementById('ndaSignatureDirect').value.trim();
-    const signBtn = document.getElementById('signNDABtnDirect');
-    
-    if (signature.length < 3) {
-        showAlert('danger', '❌ Please enter your full legal name (at least 3 characters)');
-        return;
-    }
-    
-    // Disable button during submission
-    signBtn.disabled = true;
-    signBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing...';
-    
-    try {
-        const response = await fetch('/sign-nda', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                signature: signature
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showAlert('success', '✅ NDA signed successfully! Redirecting...');
-            
-            // Redirect after short delay
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showAlert('danger', `❌ ${result.message}`);
-            signBtn.disabled = false;
-            signBtn.innerHTML = '<i class="fas fa-pen-nib me-2"></i>Sign Agreement';
-        }
-    } catch (error) {
-        console.error('Error signing NDA:', error);
-        showAlert('danger', '❌ Network error. Please try again.');
-        signBtn.disabled = false;
-        signBtn.innerHTML = '<i class="fas fa-pen-nib me-2"></i>Sign Agreement';
-    }
-}
-
-// Alert function for NDA page
-function showAlert(type, message) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alertDiv);
-    
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.remove();
-        }
-    }, 5000);
-}
-
-// For backward compatibility, keep old modal functions but redirect to new form
-function showNDAModal() {
-    showNDAForm();
-}
-
-function submitNDASignature() {
-    submitNDASignatureDirect();
-}
-
-// Automatically show NDA form when page loads (mobile-friendly)
-document.addEventListener('DOMContentLoaded', function() {
-    // Small delay to ensure page is fully loaded, then auto-show the form
-    setTimeout(() => {
-        showNDAForm();
-    }, 500);
+continueBtn.addEventListener('click', function() {
+  if (agreeCheck.checked) {
+    window.location.href = "/dashboard"; // change route as needed
+  }
 });
 </script>
+<style>
+    .policy-btn {
+  background: white !important;
+  color: black !important;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+
+.policy-btn * {
+  color: black !important;   /* ensures text inside stays black */
+}
+
+.policy-btn i {
+  color: #0077cc !important; /* brand blue icons */
+}
+
+.policy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 119, 204, 0.2);
+}
+</style>
 {% endblock %}
