@@ -1,294 +1,454 @@
 {% extends "base.html" %}
-
-{% block title %}NDA Required - Ready 2 Dink Beta{% endblock %}
+{% block title %}Welcome to Ready 2 Dink!{% endblock %}
 
 {% block content %}
+<style>
+/* --- Policy Button Styling --- */
+.policy-btn {
+  background: white !important;
+  color: black !important;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+.policy-btn * {
+  color: black !important; /* all text inside stays black */
+}
+.policy-btn i {
+  color: #0077cc !important; /* Ready-2-Dink blue */
+}
+.policy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 119, 204, 0.2);
+}
+
+/* --- Checkbox Custom Look --- */
+.form-check-input {
+  width: 1.3em;
+  height: 1.3em;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  background-color: transparent;
+  transition: all 0.2s ease-in-out;
+}
+.form-check-input:checked {
+  background-color: #0077cc;
+  border-color: #0077cc;
+}
+.form-check-label {
+  color: black !important;
+  font-weight: 500;
+}
+</style>
+
 <div class="row justify-content-center">
-    <div class="col-12">
-        <div class="text-center mb-4">
-            <div class="card surface-dark" data-bs-theme="dark" style="background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%); color: white; border: none;">
-                <div class="card-body p-5 surface-dark">
-                    <div class="mb-4">
-                        <i class="fas fa-shield-alt fa-4x" style="color: #E0563F;"></i>
-                    </div>
-                    <h2 class="fw-bold mb-3">Welcome to Ready 2 Dink Beta!</h2>
-                    <p class="lead mb-4">
-                        Before you can access our exclusive beta platform, you'll need to read and digitally sign our Non-Disclosure Agreement.
-                    </p>
-                    <p class="mb-4" style="color: rgba(255,255,255,0.8) !important;">
-                        This ensures the confidentiality of our beta features and helps protect our intellectual property during testing.
-                    </p>
-                    <button class="btn btn-lg fw-bold" onclick="showNDAForm()" 
-                            style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; color: white;">
-                        <i class="fas fa-file-contract me-2"></i>
-                        Review & Sign NDA
-                    </button>
-                    
-                    <!-- Direct NDA Form (hidden initially, shown instead of modal) -->
-                    <div id="ndaFormContainer" class="mt-4" style="display: none;">
-                        <div class="card surface-dark" data-bs-theme="dark" style="background: linear-gradient(135deg, #2d1b69 0%, #1a1a2e 100%); color: white; border: 1px solid rgba(255,255,255,0.2);">
-                            <div class="card-header surface-dark">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-shield-alt me-2" style="color: #E0563F;"></i>
-                                    Non-Disclosure Agreement - Ready 2 Dink Beta Testing
-                                </h5>
-                            </div>
-                            <div class="card-body surface-dark" style="max-height: 400px; overflow-y: auto; color: white !important;">
-                                <div class="mb-4">
-                                    <h6 class="fw-bold mb-3" style="color: white !important;">Beta Testing Access Agreement</h6>
-                                    <ul class="list-unstyled" style="color: white !important;">
-                                        <li class="mb-2" style="color: white !important;"><i class="fas fa-check-circle me-2" style="color: #10B981;"></i>Access to Ready 2 Dink beta features</li>
-                                        <li class="mb-2" style="color: white !important;"><i class="fas fa-shield-alt me-2" style="color: #E0563F;"></i>Confidentiality of platform features and data</li>
-                                        <li class="mb-2" style="color: white !important;"><i class="fas fa-lock me-2" style="color: #D174D2;"></i>Non-disclosure of proprietary information</li>
-                                        <li class="mb-2" style="color: white !important;"><i class="fas fa-exclamation-triangle me-2" style="color: #F59E0B;"></i>Immediate termination for violations</li>
-                                    </ul>
-                                </div>
-                                
-                                <div class="mb-4">
-                                    <h6 class="fw-bold mb-2" style="color: white !important;">Key Terms:</h6>
-                                    <ul class="small" style="color: white !important;">
-                                        <li style="color: white !important;">Recipient's access is terminated by the Company</li>
-                                        <li style="color: white !important;">Ready 2 Dink launches publicly</li>
-                                    </ul>
-                                    <p class="small mb-3" style="color: white !important;">
-                                        Confidentiality obligations survive termination for <strong style="color: white !important;">3 years</strong>.
-                                    </p>
-                                </div>
-                                
-                                <div class="mb-4">
-                                    <h6 class="fw-bold" style="color: white !important;">6. LEGAL COMPLIANCE</h6>
-                                    <p class="small" style="color: white !important;">
-                                        This Agreement is governed by applicable laws. Any violations may result in legal action and immediate termination of beta access.
-                                    </p>
-                                    
-                                    <div class="alert alert-info d-flex align-items-center mb-3" style="background-color: rgba(59, 130, 246, 0.1); border: 1px solid #3B82F6; color: #93C5FD;">
-                                        <i class="fas fa-envelope me-2"></i>
-                                        <span>Questions? Contact us at <a href="mailto:legal@ready2dink.com" class="text-decoration-none" style="color: #60A5FA;">legal@ready2dink.com</a></span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Signature Section -->
-                                <div class="border-top pt-4" style="border-color: rgba(255,255,255,0.1) !important;">
-                                    <h6 class="fw-bold mb-3" style="color: white !important;">Digital Signature Required</h6>
-                                    <div class="mb-3">
-                                        <label for="ndaSignatureDirect" class="form-label" style="color: white !important;">Type your full legal name as your digital signature:</label>
-                                        <input type="text" class="form-control form-control-lg" id="ndaSignatureDirect" 
-                                               placeholder="Enter your full legal name" 
-                                               style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white !important;" 
-                                               required>
-                                        <div class="form-text" style="color: white !important;">
-                                            By typing your name above, you agree to be bound by this Non-Disclosure Agreement.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-footer d-flex justify-content-between align-items-center surface-dark" style="border-top: 1px solid rgba(255,255,255,0.1);">
-                                <small class="text-white">
-                                    <i class="fas fa-calendar me-1"></i>
-                                    Date: <span id="currentDateDirect"></span>
-                                </small>
-                                <div>
-                                    <button type="button" class="btn btn-outline-light me-2" onclick="hideNDAForm()">
-                                        <i class="fas fa-times me-2"></i>Cancel
-                                    </button>
-                                    <button type="button" class="btn btn-lg fw-bold" id="signNDABtnDirect" onclick="submitNDASignatureDirect()"
-                                            style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; color: white;">
-                                        <i class="fas fa-pen-nib me-2"></i>Sign Agreement
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="col-12 col-md-8 text-center">
+
+    <!-- Brand Banner -->
+    <div class="rounded-top-4 py-5 mb-4" 
+         style="background: linear-gradient(135deg, #0077cc 0%, #E0563F 100%); color: white;">
+      <h2 class="fw-bold mb-2">Welcome to Ready 2 Dink!</h2>
+      <p class="lead mb-0">Let’s get you on the court.</p>
     </div>
+
+    <!-- White Card -->
+    <div class="card shadow-lg border-0 rounded-4" style="background-color: white;">
+      <div class="card-body p-5">
+
+        <!-- Two-column grid -->
+        <div class="row g-3 justify-content-center mb-4">
+
+          <!-- Terms of Use -->
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="openTermsOfServiceWindow()">
+              <i class="fas fa-scale-balanced fa-2x mb-2"></i>
+              <div class="fw-bold">Terms of Use</div>
+              <small>How the app works & your responsibilities</small>
+            </button>
+          </div>
+
+          <!-- Privacy Policy -->
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="openTermsWindow()">
+              <i class="fas fa-lock fa-2x mb-2"></i>
+              <div class="fw-bold">Privacy Policy</div>
+              <small>How we protect your personal info</small>
+            </button>
+          </div>
+
+          <!-- Liability Policy -->
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="openLiabilityWindow()">
+              <i class="fas fa-file-contract fa-2x mb-2"></i>
+              <div class="fw-bold">Liability Policy</div>
+              <small>What we’re not responsible for</small>
+            </button>
+          </div>
+
+          <!-- Community Rules -->
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="openCommunityRulesWindow()">
+              <i class="fas fa-handshake fa-2x mb-2"></i>
+              <div class="fw-bold">Community Rules</div>
+              <small>Play fair, stay respectful, keep it fun</small>
+            </button>
+          </div>
+
+          <!-- Disclaimer -->
+          <div class="col-12 col-md-6 d-flex justify-content-center">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="openTermsServiceWindow()">
+              <i class="fas fa-info-circle fa-2x mb-2"></i>
+              <div class="fw-bold">Disclaimer</div>
+              <small>Information and service limits</small>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Agreement Checkbox -->
+        <div class="form-check text-start mb-4 mt-5 d-flex align-items-center">
+          <input class="form-check-input me-2" type="checkbox" id="agreeCheck">
+          <label class="form-check-label" for="agreeCheck">
+            Do you agree to these terms, rules and policies?
+          </label>
+        </div>
+
+        <!-- Continue Button -->
+        <button id="continueBtn" class="btn fw-bold w-100 py-3 rounded-3"
+                style="background: linear-gradient(135deg, #0077cc 0%, #E0563F 100%); color:white;" disabled>
+          Continue
+        </button>
+
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- NDA Modal -->
-<div class="modal fade" id="ndaModal" tabindex="-1" aria-labelledby="ndaModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content surface-dark" data-bs-theme="dark" style="background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%); color: white; border: none;">
-            <div class="modal-header surface-dark" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <h5 class="modal-title" id="ndaModalLabel">
-                    <i class="fas fa-shield-alt me-2" style="color: #E0563F;"></i>
-                    Non-Disclosure Agreement - Ready 2 Dink Beta Testing
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body surface-dark" style="max-height: 60vh; overflow-y: auto;">
-                <div class="mb-4">
-                    <h6 class="fw-bold mb-3">Beta Testing Access Agreement</h6>
-                    <ul class="list-unstyled">
-                        <li class="mb-2"><i class="fas fa-check-circle me-2" style="color: #10B981;"></i>Access to Ready 2 Dink beta features</li>
-                        <li class="mb-2"><i class="fas fa-shield-alt me-2" style="color: #E0563F;"></i>Confidentiality of platform features and data</li>
-                        <li class="mb-2"><i class="fas fa-lock me-2" style="color: #D174D2;"></i>Non-disclosure of proprietary information</li>
-                        <li class="mb-2"><i class="fas fa-exclamation-triangle me-2" style="color: #F59E0B;"></i>Immediate termination for violations</li>
-                    </ul>
-                </div>
-                
-                <div class="mb-4">
-                    <h6 class="fw-bold mb-2">Key Terms:</h6>
-                    <ul class="small" style="color: rgba(255,255,255,0.8) !important;">
-                        <li style="color: rgba(255,255,255,0.8) !important;">Recipient's access is terminated by the Company</li>
-                        <li style="color: rgba(255,255,255,0.8) !important;">Ready 2 Dink launches publicly</li>
-                    </ul>
-                    <p class="small mb-3" style="color: rgba(255,255,255,0.8) !important;">
-                        Confidentiality obligations survive termination for <strong style="color: white !important;">3 years</strong>.
-                    </p>
-                </div>
-                
-                <div class="mb-4">
-                    <h6 class="fw-bold">6. LEGAL COMPLIANCE</h6>
-                    <p class="small" style="color: rgba(255,255,255,0.8) !important;">
-                        This Agreement is governed by applicable laws. Any violations may result in legal action and immediate termination of beta access.
-                    </p>
-                    
-                    <div class="alert alert-info d-flex align-items-center mb-3" style="background-color: rgba(59, 130, 246, 0.1); border: 1px solid #3B82F6; color: #93C5FD;">
-                        <i class="fas fa-envelope me-2"></i>
-                        <span>Questions? Contact us at <a href="mailto:legal@ready2dink.com" class="text-decoration-none" style="color: #60A5FA;">legal@ready2dink.com</a></span>
-                    </div>
-                </div>
-                
-                <!-- Signature Section -->
-                <div class="border-top pt-4" style="border-color: rgba(255,255,255,0.1) !important;">
-                    <h6 class="fw-bold mb-3">Digital Signature Required</h6>
-                    <div class="mb-3">
-                        <label for="ndaSignature" class="form-label">Type your full legal name as your digital signature:</label>
-                        <input type="text" class="form-control form-control-lg" id="ndaSignature" 
-                               placeholder="Enter your full legal name" 
-                               style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white;" 
-                               required>
-                        <div class="form-text" style="color: rgba(255,255,255,0.7) !important;">
-                            By typing your name above, you agree to be bound by this Non-Disclosure Agreement.
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer justify-content-between surface-dark" style="border-top: 1px solid rgba(255,255,255,0.1);">
-                <small style="color: rgba(255,255,255,0.7) !important;">
-                    <i class="fas fa-calendar me-1"></i>
-                    Date: <span id="currentDate"></span>
-                </small>
-                <div>
-                    <button type="button" class="btn btn-outline-light me-2" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-2"></i>Cancel
-                    </button>
-                    <button type="button" class="btn btn-lg fw-bold" id="signNDABtn" onclick="submitNDASignature()"
-                            style="background: linear-gradient(45deg, #E0563F, #D174D2); border: none; color: white;">
-                        <i class="fas fa-pen-nib me-2"></i>Sign Agreement
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+
+  <div id="termsOfServiceContent" style="display:none;">
+  <h2>Ready 2 Dink Terms of Service</h2>
+  <p><em>Last Updated: October 2025</em></p>
+
+  <p>
+    <strong>IMPORTANT NOTICE:</strong> These Terms of Service ("Terms") constitute a legally binding agreement between you and
+    Ready 2 Dink ("R2D," "we," "us," or "our") governing your use of the R2D platform, matchmaking services, and tournament
+    participation. By creating an account and/or using our services, you agree to be bound by these Terms.
+  </p>
+
+  <h4>1. Eligibility and Account Information</h4>
+  <ul>
+    <li><strong>1.1 Minimum Age:</strong> You must be 18 years of age or older to create an account and use R2D services,
+      or have the express consent of a parent or legal guardian.</li>
+    <li><strong>1.2 Account Accuracy:</strong> You agree to provide accurate and truthful account information, including your
+      name, date of birth (DOB), email, and current pickleball skill level. You also agree to provide a current selfie or photo
+      for profile verification.</li>
+    <li><strong>1.3 Skill Level Integrity:</strong> Users must register and maintain their true, current skill level. Repeated or
+      willful misrepresentation of skill level, as determined by R2D, may result in immediate account suspension or termination
+      without refund.</li>
+  </ul>
+
+  <h4>2. Membership and Payment</h4>
+  <ul>
+    <li><strong>2.1 Membership Fees:</strong> Access to R2D services is subject to the following monthly fees:
+      <ul>
+        <li>Partner Matching: $4.99/month</li>
+        <li>Tournament Access + Partner Matching: $9.99/month</li>
+      </ul>
+    </li>
+    <li><strong>2.2 Non-Refundable Fees:</strong> Membership and tournament entry fees are generally non-refundable,
+      except where required by law.</li>
+    <li><strong>2.3 Automatic Renewal:</strong> Fees are billed monthly and automatically renew unless canceled before the next billing
+      date. You are responsible for canceling your membership if you no longer wish to use the service.</li>
+    <li><strong>2.4 Tournament Registration:</strong> Tournament fees are paid in full at registration. Players may register
+      for multiple tournaments simultaneously.</li>
+  </ul>
+
+  <h4>3. Conduct and Use of Platform</h4>
+  <ul>
+    <li><strong>3.1 Required Conduct:</strong> Respectful, safe, and sportsmanlike behavior is required at all times.
+      Abusive, unsafe, harassing, or inappropriate conduct toward other players or R2D representatives may result in immediate
+      account removal and forfeiture of any prepaid fees or winnings.</li>
+    <li><strong>3.2 Tournament Rules Compliance:</strong> By entering a tournament, you agree to adhere to these rules:
+      <ul>
+        <li><strong>Match Completion:</strong> Matches must be played and results submitted through the app within seven (7) days of scheduling.
+          Failure to complete a match within this timeframe will result in a forfeit for both teams, with no refund issued.</li>
+        <li><strong>Fair Play:</strong> All matches are self-refereed. Fair play and honesty are mandatory. In the event of a dispute,
+          replaying the point is always preferred to arguing.</li>
+        <li><strong>Result Submission:</strong> Submit match results honestly and accurately through the app and provide fair feedback on
+          opponent skill levels to maintain the integrity of the platform.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h4>4. Winnings, Prizes, and Taxes</h4>
+  <ul>
+    <li><strong>4.1 Prize Payment:</strong> Tournament prizes are paid exclusively via digital methods (Zelle, Venmo, PayPal).
+      <strong>No cash is handed out.</strong></li>
+    <li><strong>4.2 Tax Responsibility:</strong> Players are solely responsible for declaring all winnings and prizes to the relevant
+      tax authority. R2D is not responsible for advising or reporting player winnings to tax agencies.</li>
+  </ul>
+
+  <h4>5. Modification and Updates</h4>
+  <p>
+    R2D reserves the right to modify or update these Terms of Service at any time. Any changes will be posted on our platform,
+    and continued use of the service constitutes acceptance of the new Terms.
+  </p>
+</div>
+
+
+<div id="openCommunityRulesWindow" style="display:none;">
+  <h2>Ready 2 Dink Community Guidelines</h2>
+  <p>
+    These guidelines set the standards for behavior and sportsmanship expected of all Ready 2 Dink (R2D) users on and off the court.
+    Adherence to these guidelines ensures a safe, fair, and enjoyable experience for everyone.
+  </p>
+
+  <h4>1. Sportsmanship and Respect</h4>
+  <ul>
+    <li><strong>Respect Opponents and Partners:</strong> Treat everyone with courtesy, regardless of skill level, outcome of the match, or difference in opinion. Verbal abuse, harassment, or derogatory comments (based on gender, race, age, religion, or background) are strictly prohibited.</li>
+    <li><strong>Zero Tolerance for Abuse:</strong> Any language, gestures, or actions deemed threatening, intimidating, or excessively confrontational will result in immediate review and potential account suspension or permanent ban.</li>
+    <li><strong>Self-Refereed Integrity:</strong> Since all matches are self-refereed, respect your opponent's calls and be honest with your own. The primary rule is fairness over winning. If there is doubt about a call, the point should be replayed.</li>
+  </ul>
+
+  <h4>2. Fair Play and Skill Integrity</h4>
+  <ul>
+    <li><strong>Honest Skill Rating:</strong> You must register and maintain an accurate skill level rating (e.g., 3.0, 4.5). Misrepresenting your skill to gain an unfair advantage in matchmaking or tournament entry is considered cheating.</li>
+    <li><strong>Accurate Result Reporting:</strong> Submit match scores accurately and honestly through the R2D app immediately following completion of play.</li>
+    <li><strong>Match Commitment:</strong> Honor your commitment to complete scheduled matches within the agreed-upon timeframe (7 days for tournaments). If unavoidable circumstances prevent play, communicate proactively with your opponent/partner and R2D support.</li>
+  </ul>
+
+  <h4>3. Safety and Environment</h4>
+  <ul>
+    <li><strong>Prioritize Safety:</strong> You are responsible for your physical safety and the safety of those around you. Do not engage in unsafe play, aggressive actions, or actions that could damage property.</li>
+    <li><strong>Court Condition:</strong> Ensure the court you are playing on is safe, dry, and free of hazards before starting play. R2D is not responsible for the maintenance or safety of third-party facilities.</li>
+    <li><strong>Equipment:</strong> Use safe, non-damaged, and regulation-compliant equipment.</li>
+  </ul>
+
+  <h4>4. Enforcement and Consequences</h4>
+  <p>R2D reserves the right to enforce these Community Guidelines at its sole discretion. Consequences for violations may include:</p>
+  <ul>
+    <li>Verbal warning.</li>
+    <li>Match forfeiture.</li>
+    <li>Temporary account suspension.</li>
+    <li>Permanent account ban (for severe or repeated offenses).</li>
+    <li>Forfeiture of paid fees and/or winnings.</li>
+  </ul>
+  <p>
+    If you witness or experience a violation, please report it immediately to R2D support with relevant details.
+  </p>
+</div>
+
+
+<div id="openLiabilityWindow" style="display:none;">
+  <h2>Ready 2 Dink Liability Waiver and General Disclaimer</h2>
+
+  <h4>1. Nature of the R2D Service</h4>
+  <p>
+    Ready 2 Dink (R2D) functions solely as a platform to connect pickleball players for matches and tournaments.
+    R2D is not a tournament organizer, facility operator, or coaching service. We do not own, operate, manage,
+    or maintain the courts or facilities used by players.
+  </p>
+
+  <h4>2. Acknowledgment and Assumption of Risk</h4>
+
+  <p><strong>2.1 Participation is Voluntary and At Your Own Risk:</strong>
+    By using the R2D platform and participating in any match, tournament, or other activity arranged through R2D,
+    you acknowledge and agree that participation is entirely at your own risk.
+  </p>
+
+  <p><strong>2.2 Responsibility for Safety:</strong>
+    You are solely responsible for your own safety, health, equipment, and conduct at all times.
+    This includes, but is not limited to:
+  </p>
+  <ul>
+    <li>Ensuring your physical fitness is adequate for participation.</li>
+    <li>Selecting safe and appropriate venues.</li>
+    <li>Maintaining your own equipment (paddles, shoes, etc.).</li>
+    <li>Adhering to local rules and regulations.</li>
+  </ul>
+
+  <p><strong>2.3 Waiver of Liability:</strong>
+    You expressly agree to release, indemnify, and hold harmless Ready 2 Dink, its owners, partners,
+    affiliates, and employees from any and all liability, claims, demands, losses, or damages
+    (including those related to personal injury, property damage, accidents, or disputes) that may
+    occur before, during, or after any match or tournament arranged through the R2D platform.
+  </p>
+
+  <h4>3. General Disclaimer</h4>
+  <p>
+    R2D makes no guarantees, representations, or warranties regarding the skill level, conduct, or
+    accuracy of information provided by other users or the outcome of any match. Your use of the
+    R2D platform and reliance on any information found therein is solely at your own risk.
+  </p>
+  </div>
+
+<!-- Hidden Policy Text -->
+<div id="privacyContent" style="display:none;">
+  <h2>Ready 2 Dink Privacy Policy</h2>
+  <p><em>Last Updated: October 2025</em></p>
+  <p><strong>Ready 2 Dink ("R2D," "we," "us")</strong> is committed to respecting and protecting your privacy.
+  This policy outlines how we collect, use, and protect your personal data when you use our services.</p>
+
+  <h4>1. Information We Collect</h4>
+  <p>By creating an account and using the R2D platform, we collect the following types of personal information:</p>
+  <ul>
+    <li><strong>Identity Data:</strong> Your full name, date of birth (DOB), and a current selfie/photo.</li>
+    <li><strong>Contact Data:</strong> Your email address and physical address (if required for registration or payment purposes).</li>
+    <li><strong>Pickleball Data:</strong> Your self-reported skill level and preferred play locations.</li>
+    <li><strong>Payment Data:</strong> We do not store full credit card details (handled by third-party processors) but collect transaction history related to membership and tournament fees.</li>
+  </ul>
+
+  <h4>2. How We Use Your Information</h4>
+  <ul>
+    <li>To provide core matchmaking services (connecting you with compatible partners and opponents).</li>
+    <li>To verify user identity and age (using Name, DOB, and Selfie).</li>
+    <li>To maintain the integrity and fairness of tournament play and skill level ratings.</li>
+    <li>To process membership and tournament fees.</li>
+    <li>To communicate important updates, rules, and announcements regarding R2D services.</li>
+  </ul>
+  <p>We will not sell, rent, or trade your personal data to unaffiliated third parties for marketing purposes.</p>
+
+  <h4>3. Data Protection and Security</h4>
+  <p>We implement reasonable security measures designed to protect your data from unauthorized access, disclosure, alteration, or destruction. 
+  However, no data transmission or storage system can be guaranteed to be 100% secure. You acknowledge this inherent risk when providing personal information.</p>
+
+  <h4>4. Your Rights</h4>
+  <p><strong>4.1 Access and Modification:</strong> You have the right to access and modify your personal account information at any time through the R2D platform settings.</p>
+  <p><strong>4.2 Data Deletion:</strong> You may request the deletion of your account and all associated personal data by contacting R2D support. We will comply with this request, subject to any legal obligations we may have to retain certain data.</p>
 </div>
 
 <script>
-// Show NDA Form (direct, not modal)
-function showNDAForm() {
-    // Set current date
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    });
-    document.getElementById('currentDateDirect').textContent = dateStr;
-    
-    // Show the direct form
-    document.getElementById('ndaFormContainer').style.display = 'block';
-    
-    // Scroll to the form
-    document.getElementById('ndaFormContainer').scrollIntoView({ behavior: 'smooth' });
-}
+const agreeCheck = document.getElementById('agreeCheck');
+const continueBtn = document.getElementById('continueBtn');
 
-// Hide NDA Form
-function hideNDAForm() {
-    document.getElementById('ndaFormContainer').style.display = 'none';
-}
+// Inject player_id from Flask/Jinja
+const playerId = "{{ player_id }}";
 
-// Submit NDA Signature (direct form)
-async function submitNDASignatureDirect() {
-    const signature = document.getElementById('ndaSignatureDirect').value.trim();
-    const signBtn = document.getElementById('signNDABtnDirect');
-    
-    if (signature.length < 3) {
-        showAlert('danger', '❌ Please enter your full legal name (at least 3 characters)');
-        return;
-    }
-    
-    // Disable button during submission
-    signBtn.disabled = true;
-    signBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing...';
-    
-    try {
-        const response = await fetch('/sign-nda', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                signature: signature
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showAlert('success', '✅ NDA signed successfully! Redirecting...');
-            
-            // Redirect after short delay
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showAlert('danger', `❌ ${result.message}`);
-            signBtn.disabled = false;
-            signBtn.innerHTML = '<i class="fas fa-pen-nib me-2"></i>Sign Agreement';
-        }
-    } catch (error) {
-        console.error('Error signing NDA:', error);
-        showAlert('danger', '❌ Network error. Please try again.');
-        signBtn.disabled = false;
-        signBtn.innerHTML = '<i class="fas fa-pen-nib me-2"></i>Sign Agreement';
-    }
-}
-
-// Alert function for NDA page
-function showAlert(type, message) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alertDiv);
-    
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.remove();
-        }
-    }, 5000);
-}
-
-// For backward compatibility, keep old modal functions but redirect to new form
-function showNDAModal() {
-    showNDAForm();
-}
-
-function submitNDASignature() {
-    submitNDASignatureDirect();
-}
-
-// Automatically show NDA form when page loads (mobile-friendly)
-document.addEventListener('DOMContentLoaded', function() {
-    // Small delay to ensure page is fully loaded, then auto-show the form
-    setTimeout(() => {
-        showNDAForm();
-    }, 500);
+agreeCheck.addEventListener('change', function() {
+  continueBtn.disabled = !this.checked;
 });
+
+continueBtn.addEventListener('click', function() {
+  if (agreeCheck.checked) {
+    // Redirect dynamically to /home/<player_id>
+    window.location.href = `/home/${playerId}`;
+  }
+});
+
+function openTermsOfServiceWindow() {
+  const content = document.getElementById('termsOfServiceContent').innerHTML;
+  const newWin = window.open('', '_blank', 'width=800,height=700,scrollbars=yes,resizable=yes');
+  newWin.document.write(`
+    <html>
+    <head>
+      <title>Ready 2 Dink Terms of Service</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #000;
+          padding: 30px;
+          background: #fff;
+        }
+        h2, h4 { color: #0077cc; }
+        ul { margin-left: 1.2rem; }
+        strong { color: #000; }
+      </style>
+    </head>
+    <body>
+      ${content}
+    </body>
+    </html>
+  `);
+  newWin.document.close();
+}
+
+function openCommunityRulesWindow() {
+   const content = document.getElementById('openCommunityRulesWindow').innerHTML;
+  const newWin = window.open('', '_blank', 'width=800,height=700,scrollbars=yes,resizable=yes');
+  newWin.document.write(`
+    <html>
+    <head>
+      <title>Ready 2 Dink Community Rules</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #000;
+          padding: 30px;
+          background: #fff;
+        }
+        h2, h4 { color: #0077cc; }
+        ul { margin-left: 1.2rem; }
+        strong { color: #000; }
+      </style>
+    </head>
+    <body>
+      ${content}
+    </body>
+    </html>
+  `);
+  newWin.document.close();
+}
+
+function openLiabilityWindow() {
+  const content = document.getElementById('openLiabilityWindow').innerHTML;
+  const newWin = window.open('', '_blank', 'width=800,height=700,scrollbars=yes,resizable=yes');
+  newWin.document.write(`
+    <html>
+    <head>
+      <title>Ready 2 Dink Liability Waiver</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #000;
+          padding: 30px;
+          background: #fff;
+        }
+        h2, h4 { color: #0077cc; }
+        ul { margin-left: 1.2rem; }
+        strong { color: #000; }
+      </style>
+    </head>
+    <body>
+      ${content}
+    </body>
+    </html>
+  `);
+  newWin.document.close();
+}
+
+/* --- Open Terms in new window --- */
+function openTermsWindow() {
+  const content = document.getElementById('privacyContent').innerHTML;
+  const newWin = window.open('', '_blank', 'width=800,height=700,scrollbars=yes,resizable=yes');
+  newWin.document.write(`
+    <html>
+    <head>
+      <title>Ready 2 Dink Privacy Policy</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #000;
+          padding: 30px;
+          background: #fff;
+        }
+        h2, h4 { color: #0077cc; }
+        ul { margin-left: 1.2rem; }
+        strong { color: #000; }
+      </style>
+    </head>
+    <body>
+      ${content}
+    </body>
+    </html>
+  `);
+  newWin.document.close();
+}
 </script>
 {% endblock %}
