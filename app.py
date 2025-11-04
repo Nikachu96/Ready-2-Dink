@@ -6313,30 +6313,29 @@ def sign_nda():
 @app.route('/intro-guide')
 def nda_required():
     """Show NDA requirement page for users who haven't signed yet"""
-    # Handle both logged-in users and pending registrations
     player_id = session.get('player_id') or session.get('pending_player_id')
 
     if not player_id:
         return redirect(url_for('player_login'))
 
-    # Check if already signed
     conn = get_db_connection()
     player = conn.execute(
         '''
         SELECT nda_accepted FROM players WHERE id = ?
-    ''', (player_id, )).fetchone()
+        ''',
+        (player_id,)
+    ).fetchone()
     conn.close()
 
     if player and player['nda_accepted']:
-        # Already signed, check if this is a new registration flow
+        # Already signed — redirect as before
         if 'pending_player_id' in session:
-            # Continue to disclaimers for new registrations
             return redirect(url_for('show_disclaimers', player_id=player_id))
         else:
-            # Already established user, go to home
             return redirect(url_for('player_home', player_id=player_id))
 
-    return render_template('nda_required.html')
+    # 👇 Pass player_id into the template context
+    return render_template('nda_required.html', player_id=player_id)
 
 
 @app.route('/toggle-notifications', methods=['POST'])
