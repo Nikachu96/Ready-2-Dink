@@ -1964,6 +1964,28 @@
         #continueBtn.enabled:hover {
           background: #0057d6;
         }
+        /* === FIX TEXT VISIBILITY ON LIGHT BACKGROUNDS === */
+        section,
+        .card,
+        .form-box,
+        .white-bg,
+        .light-section {
+          color: #212529 !important; /* dark gray text for readability */
+        }
+
+        section input,
+        section label,
+        .card input,
+        .card label,
+        .form-box input,
+        .form-box label {
+          color: #212529 !important;
+        }
+
+        .btn,
+        button {
+          color: #ffffff !important; /* keep buttons readable on dark or gradient backgrounds */
+        }
 
     </style>
 </head>
