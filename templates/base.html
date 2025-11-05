@@ -1964,28 +1964,46 @@
         #continueBtn.enabled:hover {
           background: #0057d6;
         }
-        /* === FIX TEXT VISIBILITY ON LIGHT BACKGROUNDS === */
-        section,
-        .card,
-        .form-box,
-        .white-bg,
-        .light-section {
-          color: #212529 !important; /* dark gray text for readability */
-        }
+        /* === FIX TEXT VISIBILITY ON LIGHT BACKGROUND SECTIONS === */
 
-        section input,
-        section label,
-        .card input,
-        .card label,
-        .form-box input,
-        .form-box label {
-          color: #212529 !important;
-        }
+/* Any container using a light background should use dark text */
+.bg-white,
+.bg-light,
+.card.bg-white,
+.card.bg-light,
+.container.bg-white,
+.container.bg-light {
+    color: #212529 !important;   /* dark gray text */
+}
 
-        .btn,
-        button {
-          color: #ffffff !important; /* keep buttons readable on dark or gradient backgrounds */
-        }
+/* Make text inside those light sections dark as well */
+.bg-white p,
+.bg-white span,
+.bg-white div,
+.bg-white li,
+.bg-white label,
+.bg-white .form-label,
+.bg-white input,
+.bg-white select,
+.bg-white textarea,
+.bg-light p,
+.bg-light span,
+.bg-light div,
+.bg-light li,
+.bg-light label,
+.bg-light .form-label,
+.bg-light input,
+.bg-light select,
+.bg-light textarea {
+    color: #212529 !important;
+}
+
+/* Keep buttons bright on both dark and light backgrounds */
+.btn,
+button {
+    color: #ffffff !important;
+}
+
 
     </style>
 </head>
