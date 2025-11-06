@@ -6225,6 +6225,118 @@ def unsubscribe_notifications():
     })
 
 
+@app.route('/sign-nda', methods=['POST'])
+def sign_nda():
+    """Handle NDA digital signature submission"""
+    try:
+        # Handle both logged-in users and pending registrations
+        player_id = session.get('player_id') or session.get(
+            'pending_player_id')
+
+        if not player_id:
+            return jsonify({'success': False, 'message': 'Not logged in'})
+
+        data = request.get_json()
+        signature = data.get('signature', '').strip()
+
+        if len(signature) < 3:
+            return jsonify({
+                'success': False,
+                'message': 'Signature must be at least 3 characters'
+            })
+
+        # Get client IP address for legal record
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR',
+                                        request.remote_addr)
+        if client_ip:
+            client_ip = client_ip.split(',')[0].strip()
+
+        # Record NDA acceptance in database
+        conn = get_db_connection()
+
+        # Get player details for email
+        player = conn.execute(
+            '''
+            SELECT * FROM players WHERE id = ?
+        ''', (player_id, )).fetchone()
+
+        if not player:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Player not found'})
+
+        # Update NDA status
+        conn.execute(
+            '''
+            UPDATE players 
+            SET nda_accepted = 1,
+                nda_accepted_date = datetime('now'),
+                nda_signature = ?,
+                nda_ip_address = ?
+            WHERE id = ?
+        ''', (signature, client_ip, player_id))
+        conn.commit()
+        conn.close()
+
+        # Send email notification
+        nda_date = datetime.now().strftime('%Y-%m-%d at %I:%M %p UTC')
+        email_sent = send_nda_confirmation_email(player_data=dict(player),
+                                                 signature=signature,
+                                                 nda_date=nda_date,
+                                                 ip_address=client_ip)
+
+        if email_sent:
+            logging.info(
+                f"NDA signed by player {player_id} with signature '{signature}' from IP {client_ip} - Email sent"
+            )
+        else:
+            logging.warning(
+                f"NDA signed by player {player_id} with signature '{signature}' from IP {client_ip} - Email failed"
+            )
+
+        # Set the session player_id if it was a pending registration
+        if 'pending_player_id' in session:
+            session['player_id'] = player_id
+
+        return jsonify({
+            'success': True,
+            'message': 'NDA signed successfully!'
+        })
+
+    except Exception as e:
+        logging.error(f"Error in sign_nda: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Server error: {str(e)}'
+        })
+
+
+@app.route('/intro-guide')
+def nda_required():
+    """Show NDA requirement page for users who haven't signed yet"""
+    player_id = session.get('player_id') or session.get('pending_player_id')
+
+    if not player_id:
+        return redirect(url_for('player_login'))
+
+    conn = get_db_connection()
+    player = conn.execute(
+        '''
+        SELECT nda_accepted FROM players WHERE id = ?
+        ''',
+        (player_id,)
+    ).fetchone()
+    conn.close()
+
+    if player and player['nda_accepted']:
+        # Already signed — redirect as before
+        if 'pending_player_id' in session:
+            return redirect(url_for('show_disclaimers', player_id=player_id))
+        else:
+            return redirect(url_for('player_home', player_id=player_id))
+
+    # 👇 Pass player_id into the template context
+    return render_template('nda_required.html', player_id=player_id)
+
 
 @app.route('/toggle-notifications', methods=['POST'])
 def toggle_notifications():
@@ -13488,74 +13600,6 @@ def submit_team_match_result():
         f'Team match result submitted successfully! Final score: {match_score}'
     })
 
-# ------------------------------------------------------------
-# ✅ Referral tracking setup (adds ambassador-related columns if missing)
-# ------------------------------------------------------------
-def add_referral_columns():
-    try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("ALTER TABLE players ADD COLUMN referral_code TEXT")
-    except Exception:
-        pass
-    try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("ALTER TABLE players ADD COLUMN referred_by_ambassador_id INTEGER")
-    except Exception:
-        pass
-    try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("ALTER TABLE players ADD COLUMN referral_verified INTEGER DEFAULT 0")
-    except Exception:
-        pass
-    try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("ALTER TABLE players ADD COLUMN verified_referral_count INTEGER DEFAULT 0")
-    except Exception:
-        pass
-    conn.commit()
-    conn.close()
-
-
-# Run this automatically once when the app starts
-# --------------------------------------------
-# Generate and track ambassador referral codes
-# --------------------------------------------
-import random
-import string
-
-def generate_referral_code():
-    """Generate a unique 6-character referral code"""
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
-
-def assign_referral_code(player_id):
-    """Assigns a referral code to a player if they don't already have one"""
-    conn = get_db_connection()
-    c = conn.cursor()
-
-    # Check if user already has a referral code
-    existing = c.execute("SELECT referral_code FROM players WHERE id = ?", (player_id,)).fetchone()
-    if existing and existing['referral_code']:
-        conn.close()
-        return existing['referral_code']
-
-    # Generate a unique code
-    while True:
-        code = generate_referral_code()
-        duplicate = c.execute("SELECT 1 FROM players WHERE referral_code = ?", (code,)).fetchone()
-        if not duplicate:
-            break
-
-    c.execute("UPDATE players SET referral_code = ? WHERE id = ?", (code, player_id))
-    conn.commit()
-    conn.close()
-    return code
-
-add_referral_columns()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
