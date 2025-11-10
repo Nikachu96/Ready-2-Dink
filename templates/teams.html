@@ -28,51 +28,43 @@
                     </h3>
                 </div>
                 <div class="card-body">
-                    {% if user_teams %}
-                        {% for team in user_teams %}
-                        <div class="doubles-team-card mb-3 p-3">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <h5 class="mb-1">
-                                        {% if team.team_name %}
-                                            {{ team.team_name }}
-                                        {% else %}
-                                            {{ team.player1_name }} & {{ team.player2_name }}
-                                        {% endif %}
-                                    </h5>
-                                    <p class="text-secondary mb-2">
-                                        <i class="fas fa-map-marker-alt me-1"></i>{{ team.location }}
-                                        <span class="ms-3">
-                                            <i class="fas fa-road me-1"></i>{{ team.travel_radius }} miles
-                                        </span>
-                                    </p>
-                                    <div class="team-stats">
-                                        <span class="badge bg-success me-2">
-                                            <i class="fas fa-trophy me-1"></i>{{ team.wins }} Wins
-                                        </span>
-                                        <span class="badge bg-danger me-2">
-                                            <i class="fas fa-times me-1"></i>{{ team.losses }} Losses
-                                        </span>
-                                        <span class="badge bg-info">
-                                            <i class="fas fa-star me-1"></i>{{ team.ranking_points }} Points
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 text-end">
-                                    <a href="{{ url_for('find_teams') }}" class="btn btn-cyan">
-                                        <i class="fas fa-search me-1"></i>Find Teams
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-users text-muted display-1 mb-3"></i>
-                            <h5>No Teams Yet</h5>
-                            <p class="text-muted">Form your first doubles team by inviting another player!</p>
-                        </div>
-                    {% endif %}
+                   <div class="text-center py-3">
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTeamModal">
+        <i class="fas fa-plus me-2"></i>Create Team
+    </button>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="createTeamModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-users me-2"></i>Create Team</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="createTeamForm">
+          <div class="mb-3">
+            <label class="form-label">Team Name</label>
+            <input type="text" class="form-control" id="newTeamName" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Home Court</label>
+            <input type="text" class="form-control" id="newHomeCourt" placeholder="City or court name">
+          </div>
+          <div class="mb-3 position-relative">
+    <label class="form-label">Invite Player</label>
+    <input type="text" class="form-control" id="modalPlayerSearch" placeholder="Search by username">
+    <ul class="list-group position-absolute w-100 mt-1" id="modalSearchResults" style="display:none;"></ul>
+</div>
+          <button type="submit" class="btn btn-success w-100">
+            <i class="fas fa-paper-plane me-2"></i>Create & Send Invite
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
                 </div>
             </div>
         </div>
@@ -172,10 +164,10 @@
                 </div>
                 <div class="card-body">
                     <form id="inviteTeamForm" class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-4 position-relative">
                             <label for="playerSelect" class="form-label">Select Player</label>
-                            <select class="form-select" id="playerSelect" required>
-                                <option value="">Choose a player...</option>
+                                <input type="text" class="form-control" id="playerSearch" placeholder="Search players by username...">
+                                    <ul class="list-group position-absolute w-100 mt-1" id="searchResults"></ul>
                                 <!-- Players will be loaded via JavaScript -->
                             </select>
                         </div>
@@ -198,9 +190,9 @@
                             </select>
                         </div>
                         <div class="col-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-paper-plane me-2"></i>Send Team Invitation
-                            </button>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTeamModal">
+        <i class="fas fa-plus me-2"></i>Create Team
+    </button>
                         </div>
                     </form>
                 </div>
@@ -209,7 +201,9 @@
     </div>
 </div>
 
+
 <!-- CSS Styles -->
+ 
 <style>
 .doubles-team-card {
     background: var(--glass-bg);
@@ -257,33 +251,200 @@
     color: white !important;
 }
 </style>
+<style>
+#searchResults {
+    position: absolute;
+    z-index: 5000;
+    background: #000; /* solid black background */
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-sm);
+    color: #fff; /* white text */
+    max-height: 240px;
+    overflow-y: auto;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+}
+
+#searchResults .list-group-item {
+    background: #000;
+    color: #fff;
+    border: none;
+    padding: 0.6rem 0.8rem;
+}
+
+#searchResults .list-group-item:hover {
+    background: #111; /* slightly lighter black on hover */
+    cursor: pointer;
+}
+</style>
+
+
+
+
 
 <!-- JavaScript -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    loadAvailablePlayers();
     setupInviteForm();
 });
 
-function loadAvailablePlayers() {
-    // Fetch available players for team invitations
-    fetch('/api/available_players')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const select = document.getElementById('playerSelect');
-                select.innerHTML = '<option value="">Choose a player...</option>';
-                
-                data.players.forEach(player => {
-                    const option = document.createElement('option');
-                    option.value = player.id;
-                    option.textContent = `${player.full_name} (${player.location1})`;
-                    select.appendChild(option);
-                });
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ===========================
+    // 🔍 MAIN PAGE PLAYER SEARCH
+    // ===========================
+    const playerSearch = document.getElementById('playerSearch');
+    const searchResults = document.getElementById('searchResults');
+
+    if (playerSearch && searchResults) {
+        playerSearch.addEventListener('input', function() {
+            const query = this.value.trim();
+            searchResults.innerHTML = '';
+
+            if (query.length < 2) return;
+
+            fetch(`/api/search_players?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        data.players.forEach(player => {
+                            const li = document.createElement('li');
+                            li.className = 'list-group-item list-group-item-action';
+                            li.textContent = `${player.username || player.full_name} (${player.location1 || 'No location'})`;
+                            li.onclick = () => {
+                                playerSearch.value = player.username || player.full_name;
+                                playerSearch.dataset.playerId = player.id;
+                                searchResults.innerHTML = '';
+                            };
+                            searchResults.appendChild(li);
+                        });
+                    }
+                })
+                .catch(err => console.error("Search error:", err));
+        });
+    }
+
+    // ===========================
+    // 🧱 CREATE TEAM FORM
+    // ===========================
+    const createTeamForm = document.getElementById('createTeamForm');
+    if (createTeamForm) {
+        createTeamForm.addEventListener('submit', e => {
+            e.preventDefault();
+            const name = document.getElementById('newTeamName').value.trim();
+            const home = document.getElementById('newHomeCourt').value.trim();
+            const modalField = document.getElementById('modalPlayerSearch');
+            const invitee = modalField && modalField.dataset ? modalField.dataset.playerId : null;
+
+            if (!invitee) {
+                showNotification('Please select a player to invite', 'warning');
+                return;
             }
-        })
-        .catch(error => console.error('Error loading players:', error));
+
+            fetch('/create_team', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({team_name: name, home_court: home, invitee_id: invitee})
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log("Create team response:", data);
+                showNotification(data.message, data.success ? 'success' : 'danger');
+                if (data.success) setTimeout(()=>location.reload(), 1500);
+            })
+            .catch(err => {
+                console.error("Error creating team:", err);
+                showNotification('Server error while creating team.', 'danger');
+            });
+        });
+    }
+
+    // ===========================
+    // 🔎 MODAL SEARCH FIELD
+    // ===========================
+    // ===========================
+// 🔎 MODAL PLAYER SEARCH
+// ===========================
+const modalSearch = document.getElementById('modalPlayerSearch');
+const modalSearchResults = document.getElementById('modalSearchResults');
+
+if (modalSearch && modalSearchResults) {
+    modalSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        modalSearchResults.innerHTML = '';
+
+        if (query.length < 2) return; // don't search until at least 2 chars
+
+        fetch(`/api/search_players?q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.players.length > 0) {
+                    modalSearchResults.style.display = 'block'; // make sure visible
+
+                    data.players.forEach(player => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item list-group-item-action';
+                        li.textContent = `${player.username || player.full_name} (${player.location1 || 'No location'})`;
+
+                        // when clicked, fill in and save player id
+                        li.addEventListener('click', () => {
+                            modalSearch.value = player.username || player.full_name;
+                            modalSearch.dataset.playerId = player.id;
+                            modalSearchResults.innerHTML = '';
+                            modalSearchResults.style.display = 'none';
+                            console.log("Selected player id:", player.id); // 👀 Debug check
+                        });
+
+                        modalSearchResults.appendChild(li);
+                    });
+                } else {
+                    modalSearchResults.style.display = 'none';
+                }
+            })
+            .catch(err => {
+                console.error("Modal search error:", err);
+                modalSearchResults.style.display = 'none';
+            });
+    });
 }
+
+    // ===========================
+    // 📬 RESPOND TO INVITES
+    // ===========================
+    window.respondToInvitation = function(invitationId, response) {
+        fetch('/respond_team_invitation', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({invitation_id: invitationId, response: response})
+        })
+        .then(res => res.json())
+        .then(data => {
+            showNotification(data.message, data.success ? 'success' : 'danger');
+            if (data.success) setTimeout(()=>location.reload(), 1500);
+        })
+        .catch(err => console.error("Error responding:", err));
+    }
+
+    // ===========================
+    // 💬 SHOW NOTIFICATIONS
+    // ===========================
+    window.showNotification = function(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        notification.style.top = '100px';
+        notification.style.right = '20px';
+        notification.style.zIndex = '9999';
+        notification.style.minWidth = '300px';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            if (notification.parentNode) notification.remove();
+        }, 5000);
+    };
+});
+
 
 function setupInviteForm() {
     document.getElementById('inviteTeamForm').addEventListener('submit', function(e) {
@@ -379,5 +540,6 @@ function showNotification(message, type) {
         }
     }, 5000);
 }
+
 </script>
 {% endblock %}

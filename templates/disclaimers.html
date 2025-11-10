@@ -1,142 +1,347 @@
 {% extends "base.html" %}
-
-{% block title %}Terms & Disclaimers - Ready 2 Dink{% endblock %}
+{% block title %}Welcome to Ready 2 Dink!{% endblock %}
 
 {% block content %}
+<style>
+/* --- Policy Button Styling --- */
+.policy-btn {
+  background: white !important;
+  color: black !important;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+.policy-btn * {
+  color: black !important;
+}
+.policy-btn i {
+  color: #0077cc !important;
+}
+.policy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 119, 204, 0.2);
+}
+
+/* --- Checkbox Custom Look --- */
+.form-check-input {
+  width: 1.3em;
+  height: 1.3em;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  background-color: transparent;
+  transition: all 0.2s ease-in-out;
+}
+.form-check-input:checked {
+  background-color: #0077cc;
+  border-color: #0077cc;
+}
+.form-check-label {
+  color: black !important;
+  font-weight: 500;
+}
+</style>
+
 <div class="row justify-content-center">
-    <div class="col-md-10 col-lg-8">
-        <div class="card">
-            <div class="card-header text-white" style="background: var(--gradient-primary); border: none;">
-                <div class="d-flex align-items-center">
-                    <img src="{{ url_for('static', filename='images/ready2dink-logo-new.png') }}" alt="Ready 2 Dink" style="height: 40px; width: auto;" class="me-3">
-                    <div>
-                        <h4 class="card-title mb-0 fw-bold">Terms & Disclaimers</h4>
-                        <p class="mb-0 opacity-90">Please read and accept to continue</p>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body" style="max-height: 70vh; overflow-y: auto;">
-                <div class="disclaimer-content">
-                    <h5 class="text-primary mb-3">1. General Disclaimer / Liability Waiver</h5>
-                    <p class="mb-3">By using Ready 2 Dink, you acknowledge and agree that:</p>
-                    <ul class="mb-4">
-                        <li>R2D is a platform only that connects players for matches and tournaments.</li>
-                        <li>We are not responsible for injuries, accidents, or disputes that may occur before, during, or after a match.</li>
-                        <li>Participation is entirely at your own risk. You are responsible for your own safety, equipment, and conduct.</li>
-                        <li>You release R2D, its owners, and partners from any liability related to your use of the app.</li>
-                    </ul>
+  <div class="col-12 col-md-8 text-center">
 
-                    <h5 class="text-primary mb-3">2. Terms of Service (ToS)</h5>
-                    <p class="mb-3">When creating an account, you agree to the following:</p>
-                    <ul class="mb-4">
-                        <li><strong>Eligibility:</strong> You must be 18+ or have parental consent to use Ready 2 Dink.</li>
-                        <li><strong>Account Info:</strong> You agree to provide accurate information, including name, DOB, selfie, and skill level.</li>
-                        <li><strong>Membership Fees:</strong> $4.99/month for partner matching, $9.99/month for tournament access + partner matching</li>
-                        <li><strong>Skill Level Integrity:</strong> Users must register at their true skill level. Repeated misrepresentation may result in suspension.</li>
-                        <li><strong>Match Completion:</strong> Tournament matches must be played within 7 days. Failure to complete it will result in a forfeit, no refund will be issued.</li>
-                        <li><strong>Conduct:</strong> Respectful behavior is required. Abusive, unsafe, or inappropriate conduct may result in account removal.</li>
-                        <li>Ready 2 Dink reserves the right to modify or update these Terms at any time.</li>
-                    </ul>
-
-                    <h5 class="text-primary mb-3">3. Privacy Policy</h5>
-                    <p class="mb-3">We respect your privacy. By using R2D, you agree that:</p>
-                    <ul class="mb-4">
-                        <li>We collect your name, DOB, address, email, selfie, skill level, and preferred play locations to provide matchmaking services.</li>
-                        <li>This information is used only within the app and will not be sold to third parties.</li>
-                        <li>Your data is protected with reasonable security measures, but no system is 100% secure.</li>
-                        <li>You may request deleting your account and personal data at any time.</li>
-                    </ul>
-
-                    <h5 class="text-primary mb-3">4. Payment & Refund Disclaimer</h5>
-                    <p class="mb-3">By subscribing or registering for tournaments, you agree that:</p>
-                    <ul class="mb-4">
-                        <li>Membership fees and tournament entry fees are non-refundable, except where required by law.</li>
-                        <li>Fees are billed monthly and may automatically renew unless canceled before the billing date.</li>
-                        <li>You are responsible for canceling your membership if you no longer wish to use Ready 2 Dink</li>
-                        <li>Tournament fees are paid at time of registration</li>
-                        <li>Players can register to multiple tournaments at the same time</li>
-                        <li>Prizes are paid via Zelle, Venmo or PayPal</li>
-                        <li><strong>NO CASH IS HANDED OUT</strong></li>
-                        <li><strong>IT IS THE PLAYER'S RESPONSIBILITY TO DECLARE THE WINNINGS TO THE TAX BUREAU.</strong></li>
-                    </ul>
-
-                    <h5 class="text-primary mb-3">5. Tournament Rules Disclaimer</h5>
-                    <p class="mb-3">By entering a tournament, you agree to:</p>
-                    <ul class="mb-4">
-                        <li>Complete your scheduled match within 7 days. If you cannot, the match will be forfeited.</li>
-                        <li>Submit match results honestly through the app.</li>
-                        <li>Provide fair feedback on opponent skill levels to maintain integrity of the platform.</li>
-                        <li>Accept that Ready 2 Dink reserves the right to make final decisions regarding disputes, forfeits, or rule enforcement.</li>
-                        <li>There are no referees during matches, fair play is required, in a doubt, replaying the point is better than arguing.</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-top">
-                <form method="POST" action="{{ url_for('accept_disclaimers') }}">
-                    <input type="hidden" name="player_id" value="{{ player_id }}">
-                    
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="accept_terms" name="accept_terms" required>
-                        <label class="form-check-label fw-bold" for="accept_terms">
-                            I have read, understand, and agree to all the Terms & Disclaimers above
-                        </label>
-                    </div>
-                    
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-success btn-lg" id="accept-btn" disabled>
-                            <i class="fas fa-check me-2"></i>Accept & Continue
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+    <!-- Brand Banner -->
+    <div class="rounded-top-4 py-5 mb-4" 
+         style="background: linear-gradient(135deg, #0077cc 0%, #E0563F 100%); color: white;">
+      <h2 class="fw-bold mb-2">Welcome to Ready 2 Dink!</h2>
+      <p class="lead mb-0">Let’s get you on the court.</p>
     </div>
+
+    <!-- White Card -->
+    <div class="card shadow-lg border-0 rounded-4" style="background-color: white;">
+      <div class="card-body p-5">
+
+        <!-- Two-column grid -->
+        <div class="row g-3 justify-content-center mb-4">
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="openTermsOfServiceWindow()">
+              <i class="fas fa-scale-balanced fa-2x mb-2"></i>
+              <div class="fw-bold">Terms of Use</div>
+              <small>How the app works & your responsibilities</small>
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="openTermsWindow()">
+              <i class="fas fa-lock fa-2x mb-2"></i>
+              <div class="fw-bold">Privacy Policy</div>
+              <small>How we protect your personal info</small>
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="openLiabilityWindow()">
+              <i class="fas fa-file-contract fa-2x mb-2"></i>
+              <div class="fw-bold">Liability Policy</div>
+              <small>What we’re not responsible for</small>
+            </button>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <button class="btn policy-btn w-100 py-4 fw-semibold rounded-4 d-flex flex-column align-items-center justify-content-center"
+                    onclick="openCommunityRulesWindow()">
+              <i class="fas fa-handshake fa-2x mb-2"></i>
+              <div class="fw-bold">Community Rules</div>
+              <small>Play fair, stay respectful, keep it fun</small>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ✅ Agreement Form (kept from old page) -->
+        <form method="POST" action="{{ url_for('accept_disclaimers') }}">
+          <input type="hidden" name="player_id" value="{{ player_id }}">
+          
+          <div class="form-check text-start mb-4 mt-5 d-flex align-items-center justify-content-center">
+            <input class="form-check-input me-2" type="checkbox" id="accept_terms" name="accept_terms" required>
+            <label class="form-check-label fw-bold" for="accept_terms">
+              I have read, understand, and agree to all the above policies.
+            </label>
+          </div>
+
+          <div class="d-grid">
+            <button type="submit" class="btn btn-success btn-lg" id="accept-btn" disabled>
+              <i class="fas fa-check me-2"></i>Accept & Continue
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- Hidden Policy Text Blocks -->
+<div id="termsOfServiceContent" style="display:none;">
+ <h2>Ready 2 Dink Terms of Service</h2>
+  <p><em>Last Updated: October 2025</em></p>
+
+  <p>
+    <strong>IMPORTANT NOTICE:</strong> These Terms of Service ("Terms") constitute a legally binding agreement between you and
+    Ready 2 Dink ("R2D," "we," "us," or "our") governing your use of the R2D platform, matchmaking services, and tournament
+    participation. By creating an account and/or using our services, you agree to be bound by these Terms.
+  </p>
+
+  <h4>1. Eligibility and Account Information</h4>
+  <ul>
+    <li><strong>1.1 Minimum Age:</strong> You must be 18 years of age or older to create an account and use R2D services,
+      or have the express consent of a parent or legal guardian.</li>
+    <li><strong>1.2 Account Accuracy:</strong> You agree to provide accurate and truthful account information, including your
+      name, date of birth (DOB), email, and current pickleball skill level. You also agree to provide a current selfie or photo
+      for profile verification.</li>
+    <li><strong>1.3 Skill Level Integrity:</strong> Users must register and maintain their true, current skill level. Repeated or
+      willful misrepresentation of skill level, as determined by R2D, may result in immediate account suspension or termination
+      without refund.</li>
+  </ul>
+
+  <h4>2. Membership and Payment</h4>
+  <ul>
+    <li><strong>2.1 Membership Fees:</strong> Access to R2D services is subject to the following monthly fees:
+      <ul>
+        <li>Partner Matching: $4.99/month</li>
+        <li>Tournament Access + Partner Matching: $9.99/month</li>
+      </ul>
+    </li>
+    <li><strong>2.2 Non-Refundable Fees:</strong> Membership and tournament entry fees are generally non-refundable,
+      except where required by law.</li>
+    <li><strong>2.3 Automatic Renewal:</strong> Fees are billed monthly and automatically renew unless canceled before the next billing
+      date. You are responsible for canceling your membership if you no longer wish to use the service.</li>
+    <li><strong>2.4 Tournament Registration:</strong> Tournament fees are paid in full at registration. Players may register
+      for multiple tournaments simultaneously.</li>
+  </ul>
+
+  <h4>3. Conduct and Use of Platform</h4>
+  <ul>
+    <li><strong>3.1 Required Conduct:</strong> Respectful, safe, and sportsmanlike behavior is required at all times.
+      Abusive, unsafe, harassing, or inappropriate conduct toward other players or R2D representatives may result in immediate
+      account removal and forfeiture of any prepaid fees or winnings.</li>
+    <li><strong>3.2 Tournament Rules Compliance:</strong> By entering a tournament, you agree to adhere to these rules:
+      <ul>
+        <li><strong>Match Completion:</strong> Matches must be played and results submitted through the app within seven (7) days of scheduling.
+          Failure to complete a match within this timeframe will result in a forfeit for both teams, with no refund issued.</li>
+        <li><strong>Fair Play:</strong> All matches are self-refereed. Fair play and honesty are mandatory. In the event of a dispute,
+          replaying the point is always preferred to arguing.</li>
+        <li><strong>Result Submission:</strong> Submit match results honestly and accurately through the app and provide fair feedback on
+          opponent skill levels to maintain the integrity of the platform.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h4>4. Winnings, Prizes, and Taxes</h4>
+  <ul>
+    <li><strong>4.1 Prize Payment:</strong> Tournament prizes are paid exclusively via digital methods (Zelle, Venmo, PayPal).
+      <strong>No cash is handed out.</strong></li>
+    <li><strong>4.2 Tax Responsibility:</strong> Players are solely responsible for declaring all winnings and prizes to the relevant
+      tax authority. R2D is not responsible for advising or reporting player winnings to tax agencies.</li>
+  </ul>
+
+  <h4>5. Modification and Updates</h4>
+  <p>
+    R2D reserves the right to modify or update these Terms of Service at any time. Any changes will be posted on our platform,
+    and continued use of the service constitutes acceptance of the new Terms.
+  </p>
+</div>
+
+<div id="privacyContent" style="display:none;">
+  <h2>Ready 2 Dink Privacy Policy</h2>
+  <p><em>Last Updated: October 2025</em></p>
+  <p><strong>Ready 2 Dink ("R2D," "we," "us")</strong> is committed to respecting and protecting your privacy.
+  This policy outlines how we collect, use, and protect your personal data when you use our services.</p>
+
+  <h4>1. Information We Collect</h4>
+  <p>By creating an account and using the R2D platform, we collect the following types of personal information:</p>
+  <ul>
+    <li><strong>Identity Data:</strong> Your full name, date of birth (DOB), and a current selfie/photo.</li>
+    <li><strong>Contact Data:</strong> Your email address and physical address (if required for registration or payment purposes).</li>
+    <li><strong>Pickleball Data:</strong> Your self-reported skill level and preferred play locations.</li>
+    <li><strong>Payment Data:</strong> We do not store full credit card details (handled by third-party processors) but collect transaction history related to membership and tournament fees.</li>
+  </ul>
+
+  <h4>2. How We Use Your Information</h4>
+  <ul>
+    <li>To provide core matchmaking services (connecting you with compatible partners and opponents).</li>
+    <li>To verify user identity and age (using Name, DOB, and Selfie).</li>
+    <li>To maintain the integrity and fairness of tournament play and skill level ratings.</li>
+    <li>To process membership and tournament fees.</li>
+    <li>To communicate important updates, rules, and announcements regarding R2D services.</li>
+  </ul>
+  <p>We will not sell, rent, or trade your personal data to unaffiliated third parties for marketing purposes.</p>
+
+  <h4>3. Data Protection and Security</h4>
+  <p>We implement reasonable security measures designed to protect your data from unauthorized access, disclosure, alteration, or destruction. 
+  However, no data transmission or storage system can be guaranteed to be 100% secure. You acknowledge this inherent risk when providing personal information.</p>
+
+  <h4>4. Your Rights</h4>
+  <p><strong>4.1 Access and Modification:</strong> You have the right to access and modify your personal account information at any time through the R2D platform settings.</p>
+  <p><strong>4.2 Data Deletion:</strong> You may request the deletion of your account and all associated personal data by contacting R2D support. We will comply with this request, subject to any legal obligations we may have to retain certain data.</p>
+</div>
+
+<div id="openCommunityRulesWindow" style="display:none;">
+  <h2>Ready 2 Dink Community Guidelines</h2>
+  <p>
+    These guidelines set the standards for behavior and sportsmanship expected of all Ready 2 Dink (R2D) users on and off the court.
+    Adherence to these guidelines ensures a safe, fair, and enjoyable experience for everyone.
+  </p>
+
+  <h4>1. Sportsmanship and Respect</h4>
+  <ul>
+    <li><strong>Respect Opponents and Partners:</strong> Treat everyone with courtesy, regardless of skill level, outcome of the match, or difference in opinion. Verbal abuse, harassment, or derogatory comments (based on gender, race, age, religion, or background) are strictly prohibited.</li>
+    <li><strong>Zero Tolerance for Abuse:</strong> Any language, gestures, or actions deemed threatening, intimidating, or excessively confrontational will result in immediate review and potential account suspension or permanent ban.</li>
+    <li><strong>Self-Refereed Integrity:</strong> Since all matches are self-refereed, respect your opponent's calls and be honest with your own. The primary rule is fairness over winning. If there is doubt about a call, the point should be replayed.</li>
+  </ul>
+
+  <h4>2. Fair Play and Skill Integrity</h4>
+  <ul>
+    <li><strong>Honest Skill Rating:</strong> You must register and maintain an accurate skill level rating (e.g., 3.0, 4.5). Misrepresenting your skill to gain an unfair advantage in matchmaking or tournament entry is considered cheating.</li>
+    <li><strong>Accurate Result Reporting:</strong> Submit match scores accurately and honestly through the R2D app immediately following completion of play.</li>
+    <li><strong>Match Commitment:</strong> Honor your commitment to complete scheduled matches within the agreed-upon timeframe (7 days for tournaments). If unavoidable circumstances prevent play, communicate proactively with your opponent/partner and R2D support.</li>
+  </ul>
+
+  <h4>3. Safety and Environment</h4>
+  <ul>
+    <li><strong>Prioritize Safety:</strong> You are responsible for your physical safety and the safety of those around you. Do not engage in unsafe play, aggressive actions, or actions that could damage property.</li>
+    <li><strong>Court Condition:</strong> Ensure the court you are playing on is safe, dry, and free of hazards before starting play. R2D is not responsible for the maintenance or safety of third-party facilities.</li>
+    <li><strong>Equipment:</strong> Use safe, non-damaged, and regulation-compliant equipment.</li>
+  </ul>
+
+  <h4>4. Enforcement and Consequences</h4>
+  <p>R2D reserves the right to enforce these Community Guidelines at its sole discretion. Consequences for violations may include:</p>
+  <ul>
+    <li>Verbal warning.</li>
+    <li>Match forfeiture.</li>
+    <li>Temporary account suspension.</li>
+    <li>Permanent account ban (for severe or repeated offenses).</li>
+    <li>Forfeiture of paid fees and/or winnings.</li>
+  </ul>
+  <p>
+    If you witness or experience a violation, please report it immediately to R2D support with relevant details.
+  </p>
+</div>
+
+<div id="openLiabilityWindow" style="display:none;">
+   <h2>Ready 2 Dink Liability Waiver and General Disclaimer</h2>
+
+  <h4>1. Nature of the R2D Service</h4>
+  <p>
+    Ready 2 Dink (R2D) functions solely as a platform to connect pickleball players for matches and tournaments.
+    R2D is not a tournament organizer, facility operator, or coaching service. We do not own, operate, manage,
+    or maintain the courts or facilities used by players.
+  </p>
+
+  <h4>2. Acknowledgment and Assumption of Risk</h4>
+
+  <p><strong>2.1 Participation is Voluntary and At Your Own Risk:</strong>
+    By using the R2D platform and participating in any match, tournament, or other activity arranged through R2D,
+    you acknowledge and agree that participation is entirely at your own risk.
+  </p>
+
+  <p><strong>2.2 Responsibility for Safety:</strong>
+    You are solely responsible for your own safety, health, equipment, and conduct at all times.
+    This includes, but is not limited to:
+  </p>
+  <ul>
+    <li>Ensuring your physical fitness is adequate for participation.</li>
+    <li>Selecting safe and appropriate venues.</li>
+    <li>Maintaining your own equipment (paddles, shoes, etc.).</li>
+    <li>Adhering to local rules and regulations.</li>
+  </ul>
+
+  <p><strong>2.3 Waiver of Liability:</strong>
+    You expressly agree to release, indemnify, and hold harmless Ready 2 Dink, its owners, partners,
+    affiliates, and employees from any and all liability, claims, demands, losses, or damages
+    (including those related to personal injury, property damage, accidents, or disputes) that may
+    occur before, during, or after any match or tournament arranged through the R2D platform.
+  </p>
+
+  <h4>3. General Disclaimer</h4>
+  <p>
+    R2D makes no guarantees, representations, or warranties regarding the skill level, conduct, or
+    accuracy of information provided by other users or the outcome of any match. Your use of the
+    R2D platform and reliance on any information found therein is solely at your own risk.
+  </p>
+</div>
+
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const checkbox = document.getElementById('accept_terms');
-    const acceptBtn = document.getElementById('accept-btn');
-    
-    checkbox.addEventListener('change', function() {
-        acceptBtn.disabled = !checkbox.checked;
-        if (checkbox.checked) {
-            acceptBtn.classList.remove('btn-outline-success');
-            acceptBtn.classList.add('btn-success');
-        } else {
-            acceptBtn.classList.remove('btn-success');
-            acceptBtn.classList.add('btn-outline-success');
-        }
-    });
+  const checkbox = document.getElementById('accept_terms');
+  const acceptBtn = document.getElementById('accept-btn');
+
+  checkbox.addEventListener('change', function() {
+    acceptBtn.disabled = !checkbox.checked;
+    if (checkbox.checked) {
+      acceptBtn.classList.add('btn-success');
+    } else {
+      acceptBtn.classList.remove('btn-success');
+    }
+  });
 });
+
+function openWindow(contentId, title) {
+  const content = document.getElementById(contentId).innerHTML;
+  const newWin = window.open('', '_blank', 'width=800,height=700,scrollbars=yes,resizable=yes');
+  newWin.document.write(`
+    <html><head><title>${title}</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #000; padding: 30px; background: #fff; }
+      h2, h4 { color: #0077cc; }
+      ul { margin-left: 1.2rem; }
+      strong { color: #000; }
+    </style>
+    </head><body>${content}</body></html>`);
+  newWin.document.close();
+}
+
+function openTermsOfServiceWindow() { openWindow('termsOfServiceContent', 'Ready 2 Dink Terms of Service'); }
+function openLiabilityWindow() { openWindow('openLiabilityWindow', 'Ready 2 Dink Liability Waiver'); }
+function openCommunityRulesWindow() { openWindow('openCommunityRulesWindow', 'Ready 2 Dink Community Rules'); }
+function openTermsWindow() { openWindow('privacyContent', 'Ready 2 Dink Privacy Policy'); }
+function openDisclaimerWindow() { openWindow('openDisclaimerWindow', 'Ready 2 Dink Disclaimer'); }
 </script>
-
-<style>
-.disclaimer-content {
-    font-size: 0.95rem;
-    line-height: 1.6;
-}
-
-.disclaimer-content h5 {
-    border-bottom: 2px solid var(--bs-primary);
-    padding-bottom: 0.5rem;
-    margin-top: 2rem;
-}
-
-.disclaimer-content h5:first-child {
-    margin-top: 0;
-}
-
-.disclaimer-content ul {
-    padding-left: 1.5rem;
-}
-
-.disclaimer-content li {
-    margin-bottom: 0.5rem;
-}
-
-.card-footer {
-    background: rgba(var(--bs-dark-rgb), 0.1) !important;
-}
-</style>
 {% endblock %}

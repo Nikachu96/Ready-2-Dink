@@ -1448,12 +1448,13 @@ def init_db():
     c.execute('''
         CREATE TABLE IF NOT EXISTS teams (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            player1_id INTEGER NOT NULL,
-            player2_id INTEGER NOT NULL,
+            player1_id INTEGER,
+            home_court TEXT,
+            player2_id INTEGER,
             team_name TEXT,
             status TEXT DEFAULT 'active',  -- active, inactive, dissolved
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            created_by INTEGER NOT NULL,  -- who initiated the team
+            created_by INTEGER,
             FOREIGN KEY(player1_id) REFERENCES players(id),
             FOREIGN KEY(player2_id) REFERENCES players(id),
             FOREIGN KEY(created_by) REFERENCES players(id),
@@ -1468,6 +1469,7 @@ def init_db():
             inviter_id INTEGER NOT NULL,
             invitee_id INTEGER NOT NULL,
             invitation_message TEXT,
+            team_id INTEGER,
             status TEXT DEFAULT 'pending',  -- pending, accepted, rejected, expired
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             responded_at TEXT,
@@ -1481,6 +1483,13 @@ def init_db():
     try:
         c.execute(
             'ALTER TABLE tournament_instances ADD COLUMN latitude REAL DEFAULT NULL'
+        )
+    except Exception:
+        pass  # Column already exists
+
+    try:
+        c.execute(
+            'ALTER TABLE teams ADD COLUMN home_court TEXT'
         )
     except Exception:
         pass  # Column already exists
@@ -2509,6 +2518,101 @@ def require_admin():
         return decorated_function
 
     return decorator
+
+# --- TEAM ROUTES ---
+@app.route("/api/search_players")
+def api_search_players():
+    """Search players by username or name."""
+    query = request.args.get("q", "").strip()
+    current_player_id = session.get("current_player_id")
+
+    if not query:
+        return jsonify({"success": True, "players": []})
+
+    conn = get_db_connection()
+    conn.row_factory = sqlite3.Row
+    players = conn.execute("""
+        SELECT id, full_name, username, location1
+        FROM players
+        WHERE (username LIKE ? OR full_name LIKE ?)
+          AND id != ?
+        LIMIT 10
+    """, (f"%{query}%", f"%{query}%", current_player_id or 0)).fetchall()
+    conn.close()
+
+    return jsonify({"success": True, "players": [dict(p) for p in players]})
+
+
+@app.route("/create_team", methods=["POST"])
+def create_team():
+    """Create a new team and send an invitation to another player."""
+    data = request.get_json()
+    current_player_id = session.get("current_player_id")
+
+    if not current_player_id:
+        return jsonify({"success": False, "message": "Please log in first."})
+
+    team_name = data.get("team_name", "").strip() or None
+    home_court = data.get("home_court", "").strip() or None
+    invitee_id = data.get("invitee_id")
+
+    if not invitee_id:
+        return jsonify({"success": False, "message": "Missing invitee player."})
+
+    try:
+        conn = get_db_connection()
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # --- Ensure tables exist before inserting ---
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS teams (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_name TEXT,
+                home_court TEXT,
+                player1_id INTEGER,
+                player2_id INTEGER,
+                status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS team_invitations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_id INTEGER,
+                inviter_id INTEGER,
+                invitee_id INTEGER,
+                status TEXT DEFAULT 'pending',
+                responded_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # --- Create the team record ---
+        cursor.execute("""
+            INSERT INTO teams (team_name, home_court, player1_id, status)
+            VALUES (?, ?, ?, 'pending')
+        """, (team_name, home_court, current_player_id))
+        team_id = cursor.lastrowid
+
+        # --- Create a pending invitation ---
+        cursor.execute("""
+            INSERT INTO team_invitations (team_id, inviter_id, invitee_id, status)
+            VALUES (?, ?, ?, 'pending')
+        """, (team_id, current_player_id, invitee_id))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            "success": True,
+            "message": f"Team '{team_name or 'Unnamed Team'}' created and invite sent!"
+        })
+
+    except Exception as err:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "message": f"Server error: {str(err)}"})
 
 
 def get_tournament_team_members(tournament_match_id, player_id, conn=None):
@@ -4958,9 +5062,13 @@ def player_login_post():
             if not nda_status or not nda_status['nda_accepted']:
                 # NDA not signed - redirect to NDA page
                 conn.close()
-                return redirect(url_for('nda_required'))
+               # Redirect users to the disclaimers flow or home page
+                player_id = session.get('player_id') or session.get('current_player_id')
+                if player_id:
+                    return redirect(url_for('show_disclaimers', player_id=player_id))
+                    return redirect(url_for('player_login'))
 
-        conn.close()
+            conn.close()
 
         # Redirect to appropriate dashboard
         if player['is_admin']:
@@ -5000,7 +5108,11 @@ def index():
 
             # Then check NDA for non-admin users (only if disclaimers are done)
             if not player['is_admin'] and not player['nda_accepted']:
-                return redirect(url_for('nda_required'))
+                # Redirect users to the disclaimers flow or home page
+                player_id = session.get('player_id') or session.get('current_player_id')
+                if player_id:
+                    return redirect(url_for('show_disclaimers', player_id=player_id))
+                    return redirect(url_for('player_login'))
 
             # All checks passed, redirect to home
             return redirect(url_for('player_home', player_id=player_id))
@@ -5012,7 +5124,7 @@ def index():
 @app.route('/home/<int:player_id>')
 @require_disclaimers_accepted
 def player_home(player_id):
-    """Personalized home page for a player"""
+    """Personalized home page for a player — NDA removed, disclaimers required."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -5024,52 +5136,29 @@ def player_home(player_id):
     check_and_handle_trial_expiry(player_id)
 
     # Get player info (refresh after potential trial expiry update)
-    cursor.execute('SELECT * FROM players WHERE id = ?', (player_id, ))
+    cursor.execute('SELECT * FROM players WHERE id = ?', (player_id,))
     player = cursor.fetchone()
     if not player:
         flash('Player not found', 'danger')
         return redirect(url_for('index'))
 
-    # Get connections (players they've played against)
+    # ✅ Ensure disclaimers accepted (NDA no longer required)
+    if not player['disclaimers_accepted']:
+        return redirect(url_for('show_disclaimers', player_id=player_id))
+
+    # --- Get connections (players they've played against) ---
     cursor.execute(
         '''
         SELECT DISTINCT 
-            CASE 
-                WHEN m.player1_id = ? THEN p2.id
-                ELSE p1.id 
-            END as opponent_id,
-            CASE 
-                WHEN m.player1_id = ? THEN p2.full_name
-                ELSE p1.full_name 
-            END as opponent_name,
-            CASE 
-                WHEN m.player1_id = ? THEN p2.selfie
-                ELSE p1.selfie 
-            END as opponent_selfie,
-            CASE 
-                WHEN m.player1_id = ? THEN p2.wins
-                ELSE p1.wins 
-            END as opponent_wins,
-            CASE 
-                WHEN m.player1_id = ? THEN p2.losses
-                ELSE p1.losses 
-            END as opponent_losses,
-            CASE 
-                WHEN m.player1_id = ? THEN p2.tournament_wins
-                ELSE p1.tournament_wins 
-            END as opponent_tournament_wins,
-            CASE 
-                WHEN m.player1_id = ? THEN p2.latitude
-                ELSE p1.latitude 
-            END as opponent_latitude,
-            CASE 
-                WHEN m.player1_id = ? THEN p2.longitude
-                ELSE p1.longitude 
-            END as opponent_longitude,
-            CASE 
-                WHEN m.player1_id = ? THEN p2.location1
-                ELSE p1.location1 
-            END as opponent_location1,
+            CASE WHEN m.player1_id = ? THEN p2.id ELSE p1.id END as opponent_id,
+            CASE WHEN m.player1_id = ? THEN p2.full_name ELSE p1.full_name END as opponent_name,
+            CASE WHEN m.player1_id = ? THEN p2.selfie ELSE p1.selfie END as opponent_selfie,
+            CASE WHEN m.player1_id = ? THEN p2.wins ELSE p1.wins END as opponent_wins,
+            CASE WHEN m.player1_id = ? THEN p2.losses ELSE p1.losses END as opponent_losses,
+            CASE WHEN m.player1_id = ? THEN p2.tournament_wins ELSE p1.tournament_wins END as opponent_tournament_wins,
+            CASE WHEN m.player1_id = ? THEN p2.latitude ELSE p1.latitude END as opponent_latitude,
+            CASE WHEN m.player1_id = ? THEN p2.longitude ELSE p1.longitude END as opponent_longitude,
+            CASE WHEN m.player1_id = ? THEN p2.location1 ELSE p1.location1 END as opponent_location1,
             COUNT(*) as matches_played,
             MAX(m.created_at) as last_played
         FROM matches m
@@ -5079,11 +5168,13 @@ def player_home(player_id):
         GROUP BY opponent_id, opponent_name, opponent_selfie, opponent_wins, opponent_losses, opponent_tournament_wins, opponent_latitude, opponent_longitude, opponent_location1
         ORDER BY last_played DESC
         LIMIT 10
-    ''', (player_id, player_id, player_id, player_id, player_id, player_id,
-          player_id, player_id, player_id, player_id, player_id))
+        ''',
+        (player_id, player_id, player_id, player_id, player_id, player_id,
+         player_id, player_id, player_id, player_id, player_id)
+    )
     connections = cursor.fetchall()
 
-    # Get recent activity
+    # --- Get recent activity ---
     cursor.execute(
         '''
         SELECT m.*, 
@@ -5095,24 +5186,25 @@ def player_home(player_id):
         WHERE m.player1_id = ? OR m.player2_id = ?
         ORDER BY m.created_at DESC
         LIMIT 5
-    ''', (player_id, player_id))
+        ''', (player_id, player_id)
+    )
     recent_matches = cursor.fetchall()
 
-    # Get player's tournaments
+    # --- Get player's tournaments ---
     cursor.execute(
         '''
         SELECT * FROM tournaments 
         WHERE player_id = ? 
         ORDER BY created_at DESC
         LIMIT 5
-    ''', (player_id, ))
+        ''', (player_id,)
+    )
     tournaments = cursor.fetchall()
 
-    # Get available tournaments (call-to-action)
+    # --- Get available tournaments (call-to-action) ---
     tournament_levels = get_tournament_levels()
     available_tournaments = []
 
-    # Get all open tournament instances ordered by price (lowest to highest)
     cursor.execute('''
         SELECT * FROM tournament_instances 
         WHERE status = 'open' AND current_players < max_players
@@ -5121,32 +5213,27 @@ def player_home(player_id):
     open_tournaments = cursor.fetchall()
 
     for tournament in open_tournaments:
-        spots_remaining = tournament['max_players'] - tournament[
-            'current_players']
+        spots_remaining = tournament['max_players'] - tournament['current_players']
         level_info = tournament_levels.get(tournament['skill_level'], {})
 
         available_tournaments.append({
-            'id':
-            tournament['id'],
-            'level':
-            tournament['skill_level'],
-            'name':
-            tournament['name'],
-            'description':
-            level_info.get('description', 'Tournament'),
-            'entry_fee':
-            tournament['entry_fee'],
-            'current_entries':
-            tournament['current_players'],
-            'max_players':
-            tournament['max_players'],
-            'spots_remaining':
-            spots_remaining,
-            'prize_pool':
-            f"1st: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.5:.0f} • 2nd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.3:.0f} • 3rd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.12:.0f} • 4th: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.08:.0f}"
+            'id': tournament['id'],
+            'level': tournament['skill_level'],
+            'name': tournament['name'],
+            'description': level_info.get('description', 'Tournament'),
+            'entry_fee': tournament['entry_fee'],
+            'current_entries': tournament['current_players'],
+            'max_players': tournament['max_players'],
+            'spots_remaining': spots_remaining,
+            'prize_pool': (
+                f"1st: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.5:.0f} • "
+                f"2nd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.3:.0f} • "
+                f"3rd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.12:.0f} • "
+                f"4th: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.08:.0f}"
+            )
         })
 
-    # Get player's tournaments with bracket info
+    # --- Get player's tournaments with bracket info ---
     cursor.execute(
         '''
         SELECT t.*, ti.name as tournament_instance_name, ti.status as tournament_status,
@@ -5156,35 +5243,37 @@ def player_home(player_id):
         WHERE t.player_id = ? 
         ORDER BY t.created_at DESC
         LIMIT 5
-    ''', (player_id, ))
+        ''', (player_id,)
+    )
     player_tournaments = cursor.fetchall()
 
     conn.close()
 
-    # Get player's ranking and leaderboard
+    # --- Rankings and leaderboard ---
     player_ranking = get_player_ranking(player_id)
     leaderboard = get_leaderboard(10)
 
-    # Check if it's the player's birthday
+    # --- Birthday, invitations, and challenges ---
     is_birthday = is_player_birthday(player['dob'])
-
-    # Get team invitations (pair-up requests) and match challenges separately
     team_invitations = get_player_team_invitations(player_id)
     match_challenges = get_player_match_challenges(player_id)
 
-    return render_template('player_home.html',
-                           player=player,
-                           connections=connections,
-                           recent_matches=recent_matches,
-                           tournaments=tournaments,
-                           player_tournaments=player_tournaments,
-                           team_invitations=team_invitations,
-                           match_challenges=match_challenges,
-                           available_tournaments=available_tournaments,
-                           player_ranking=player_ranking,
-                           leaderboard=leaderboard,
-                           is_birthday=is_birthday,
-                           current_player_id=player_id)
+    # ✅ Return as before
+    return render_template(
+        'player_home.html',
+        player=player,
+        connections=connections,
+        recent_matches=recent_matches,
+        tournaments=tournaments,
+        player_tournaments=player_tournaments,
+        team_invitations=team_invitations,
+        match_challenges=match_challenges,
+        available_tournaments=available_tournaments,
+        player_ranking=player_ranking,
+        leaderboard=leaderboard,
+        is_birthday=is_birthday,
+        current_player_id=player_id
+    )
 
 @app.route("/challenges")
 def challenges():
@@ -5576,7 +5665,6 @@ def show_disclaimers(player_id):
         return redirect(url_for('index'))
 
     if player['disclaimers_accepted']:
-        flash('You have already accepted the terms and disclaimers', 'info')
         return redirect(url_for('player_home', player_id=player_id))
 
     return render_template('disclaimers.html', player_id=player_id)
@@ -5589,8 +5677,6 @@ def accept_disclaimers():
     accept_terms = request.form.get('accept_terms')
 
     if not player_id or not accept_terms:
-        flash('You must accept the terms and disclaimers to continue',
-              'danger')
         return redirect(url_for('show_disclaimers', player_id=player_id))
 
     try:
@@ -5617,6 +5703,8 @@ def accept_disclaimers():
     except Exception as e:
         flash(f'Error accepting disclaimers: {str(e)}', 'danger')
         return redirect(url_for('show_disclaimers', player_id=player_id))
+    
+
 
 
 @app.route('/guardian-consent/<int:player_id>')
@@ -6309,33 +6397,6 @@ def sign_nda():
             'message': f'Server error: {str(e)}'
         })
 
-
-@app.route('/intro-guide')
-def nda_required():
-    """Show NDA requirement page for users who haven't signed yet"""
-    player_id = session.get('player_id') or session.get('pending_player_id')
-
-    if not player_id:
-        return redirect(url_for('player_login'))
-
-    conn = get_db_connection()
-    player = conn.execute(
-        '''
-        SELECT nda_accepted FROM players WHERE id = ?
-        ''',
-        (player_id,)
-    ).fetchone()
-    conn.close()
-
-    if player and player['nda_accepted']:
-        # Already signed — redirect as before
-        if 'pending_player_id' in session:
-            return redirect(url_for('show_disclaimers', player_id=player_id))
-        else:
-            return redirect(url_for('player_home', player_id=player_id))
-
-    # 👇 Pass player_id into the template context
-    return render_template('nda_required.html', player_id=player_id)
 
 
 @app.route('/toggle-notifications', methods=['POST'])
@@ -7723,7 +7784,6 @@ def rematch(match_id):
         })
 
     except Exception as e:
-        import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -10850,44 +10910,7 @@ def issue_tournament_credit():
     return redirect(url_for('admin_dashboard'))
 
 
-@app.route('/api/search_players')
-def api_search_players():
-    """API endpoint to search for players"""
-    query = request.args.get('q', '').strip()
 
-    if len(query) < 2:
-        return jsonify({'players': []})
-
-    conn = get_db_connection()
-
-    # Search by name, email, or player ID
-    players = conn.execute(
-        '''
-        SELECT id, full_name, email, player_id, tournament_credits
-        FROM players 
-        WHERE full_name LIKE ? OR email LIKE ? OR player_id LIKE ?
-        ORDER BY full_name
-        LIMIT 10
-    ''', (f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
-
-    conn.close()
-
-    players_list = []
-    for player in players:
-        players_list.append({
-            'id':
-            player['id'],
-            'full_name':
-            player['full_name'],
-            'email':
-            player['email'],
-            'player_id':
-            player['player_id'],
-            'tournament_credits':
-            float(player['tournament_credits'] or 0)
-        })
-
-    return jsonify({'players': players_list})
 
 @app.route('/search_players')
 def search_players():
