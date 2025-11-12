@@ -5595,16 +5595,11 @@ def register():
             # Hash the password
             password_hash = generate_password_hash(password)
 
-            # Choose DB backend
+            # Connect to DB
             use_sqlite = os.environ.get("USE_SQLITE") == "1"
-            if use_sqlite:
-                conn = get_db_connection()
-                cursor = conn.cursor()   # ✅ FIXED
-                placeholder = "?"
-            else:
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                placeholder = "%s"
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            placeholder = "?" if use_sqlite else "%s"
 
             # Generate unique player_id
             player_id = generate_unique_player_id(conn, cursor, use_sqlite)
@@ -5620,17 +5615,29 @@ def register():
             """
             values = (first_name, last_name, full_name, username, email, dob, gender,
                       address, location1, skill_level, password_hash, player_id)
-
             cursor.execute(query, values)
             conn.commit()
 
-            # Cleanup
+            # ✅ Get the internal numeric ID (SQLite autoincrement)
+            cursor.execute("SELECT id FROM players WHERE player_id = ?", (player_id,))
+            row = cursor.fetchone()
+            numeric_id = row["id"] if row else None
+
+            # ✅ AUTO-LOGIN (mirror /login behavior)
+            session.clear()
+            session["current_player_id"] = numeric_id
+            session["player_id"] = numeric_id
+
+            # ✅ Skip login screen, redirect straight to player_home
+            flash("Account created and logged in successfully! Welcome!", "success")
+
+            # Clean up
             if not use_sqlite:
                 cursor.close()
             conn.close()
 
-            flash("Account created successfully! Please log in.", "success")
-            return redirect(url_for("player_login"))
+            # Redirect
+            return redirect(url_for("player_home", player_id=numeric_id))
 
         except Exception as e:
             tb = traceback.format_exc()
