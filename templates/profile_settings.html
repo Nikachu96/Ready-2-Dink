@@ -159,7 +159,17 @@
                             </div>
                         </div>
                     </div>
-                    
+                            <div class="row">
+                                <div class="col-12">
+                                    <button type="button" class="btn btn-outline-primary" id="gps-btn" onclick="requestLocationPermission()">
+                                        <i class="fas fa-location-dot me-1"></i>Use My Current Location
+                                    </button>
+                                        <input type="hidden" id="latitude" name="latitude">
+                                        <input type="hidden" id="longitude" name="longitude">
+                                        <input type="hidden" id="location1" name="location1">
+                                </div>
+                            </div>
+
                     <div class="row">
                         <div class="col-md-4">
                             <div class="mb-3">
@@ -263,60 +273,9 @@
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="payout_preference" class="form-label">
-                            <i class="fas fa-money-bill me-1"></i>Payout Preference for Tournament Winnings
-                        </label>
-                        <select class="form-select" id="payout_preference" name="payout_preference">
-                            <option value="">Select payout method...</option>
-                            <option value="PayPal" {{ 'selected' if player.payout_preference == 'PayPal' }}>PayPal</option>
-                            <option value="Venmo" {{ 'selected' if player.payout_preference == 'Venmo' }}>Venmo</option>
-                            <option value="Zelle" {{ 'selected' if player.payout_preference == 'Zelle' }}>Zelle</option>
-                        </select>
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Choose how you'd prefer to receive tournament winnings
-                        </div>
-                    </div>
                     
-                    <!-- PayPal Account Info -->
-                    <div class="mb-3" id="paypal_section" style="display: none;">
-                        <label for="paypal_email" class="form-label">
-                            <i class="fab fa-paypal me-1"></i>PayPal Email Address
-                        </label>
-                        <input type="email" class="form-control" id="paypal_email" name="paypal_email" 
-                               value="{{ player.paypal_email or '' }}" placeholder="your.email@example.com">
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Enter the email address associated with your PayPal account
-                        </div>
-                    </div>
-                    
-                    <!-- Venmo Account Info -->
-                    <div class="mb-3" id="venmo_section" style="display: none;">
-                        <label for="venmo_username" class="form-label">
-                            <i class="fas fa-user me-1"></i>Venmo Username
-                        </label>
-                        <input type="text" class="form-control" id="venmo_username" name="venmo_username" 
-                               value="{{ player.venmo_username or '' }}" placeholder="@your-venmo-username">
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Enter your Venmo username (with or without the @ symbol)
-                        </div>
-                    </div>
-                    
-                    <!-- Zelle Account Info -->
-                    <div class="mb-3" id="zelle_section" style="display: none;">
-                        <label for="zelle_info" class="form-label">
-                            <i class="fas fa-mobile-alt me-1"></i>Zelle Email or Phone Number
-                        </label>
-                        <input type="text" class="form-control" id="zelle_info" name="zelle_info" 
-                               value="{{ player.zelle_info or '' }}" placeholder="email@example.com or (555) 123-4567">
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Enter the email or phone number linked to your Zelle account
-                        </div>
-                    </div>
+                  
+                 
                     
                     <!-- Location Settings Section -->
                     <div class="card account-info-card mb-4">
@@ -363,36 +322,12 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="location_zip_code" class="form-label">
-                                            <i class="fas fa-map-pin me-1"></i>Update Location by ZIP Code
-                                        </label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" id="location_zip_code" 
-                                                   name="location_zip_code" placeholder="Enter ZIP code" maxlength="5">
-                                            <button type="button" class="btn btn-outline-secondary" id="update_location_btn">
-                                                <i class="fas fa-sync me-1"></i>Update
-                                            </button>
-                                        </div>
-                                        <div class="form-text">
-                                            <i class="fas fa-info-circle me-1"></i>
-                                            Enter ZIP code to update your location coordinates
-                                        </div>
+                                        
+                                      
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="row">
-                                <div class="col-12">
-                                    <button type="button" class="btn btn-outline-primary" id="gps_location_btn">
-                                        <i class="fas fa-crosshairs me-1"></i>Use My Current GPS Location
-                                    </button>
-                                    <div class="form-text mt-2">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Click to use your device's GPS for precise location matching
-                                    </div>
-                                    <div id="location_status" class="mt-2"></div>
-                                </div>
-                            </div>
                             
                             <!-- Hidden fields for GPS coordinates -->
                             <input type="hidden" id="latitude" name="latitude" value="{{ player.latitude or '' }}">
@@ -676,9 +611,11 @@
                         </h5>
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <button type="button" class="btn btn-outline-secondary w-100" id="resetPasswordBtn">
-                                    <i class="fas fa-key me-2"></i>Reset Password
-                                </button>
+                                <button type="button" class="btn btn-outline-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#resetPasswordModal">
+  <i class="fas fa-key me-1"></i> Reset Password
+</button>
                             </div>
                             <div class="col-md-4">
                                 <button type="button" class="btn btn-outline-warning w-100" id="cancelMembershipBtn">
@@ -808,31 +745,57 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Payout preference field management
-function togglePayoutFields() {
-    const selectedMethod = document.getElementById('payout_preference').value;
-    const paypalSection = document.getElementById('paypal_section');
-    const venmoSection = document.getElementById('venmo_section');
-    const zelleSection = document.getElementById('zelle_section');
-    
-    // Hide all sections first
-    paypalSection.style.display = 'none';
-    venmoSection.style.display = 'none';
-    zelleSection.style.display = 'none';
-    
-    // Show the relevant section
-    if (selectedMethod === 'PayPal') {
-        paypalSection.style.display = 'block';
-    } else if (selectedMethod === 'Venmo') {
-        venmoSection.style.display = 'block';
-    } else if (selectedMethod === 'Zelle') {
-        zelleSection.style.display = 'block';
+  document.addEventListener("DOMContentLoaded", function () {
+  const resetBtn = document.getElementById("confirmResetPassword");
+  const resetEmailInput = document.getElementById("resetEmail");
+
+  if (!resetBtn) {
+    console.warn("Reset password button not found");
+    return;
+  }
+
+  resetBtn.addEventListener("click", async function () {
+    const email = resetEmailInput?.value?.trim();
+
+    if (!email) {
+      alert("No email address found. Please check your profile email.");
+      return;
     }
-}
+
+    // Show loading feedback
+    resetBtn.disabled = true;
+    resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+
+    try {
+      const response = await fetch("/forgot_password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("✅ Password reset email sent! Check your inbox.");
+      } else {
+        alert("⚠️ " + (data.message || "Failed to send reset email."));
+      }
+    } catch (err) {
+      alert("❌ Network error: " + err.message);
+      console.error(err);
+    } finally {
+      resetBtn.disabled = false;
+      resetBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Reset Email';
+    }
+  });
+});
+// Payout preference field management
+
 
 // Initialize payout fields on page load
 // Payout field toggle function (called from main DOMContentLoaded)
@@ -1283,7 +1246,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // === ACCOUNT MANAGEMENT BUTTONS ===
-    const resetPasswordBtn = document.getElementById('resetPasswordBtn');
+   
     const cancelMembershipBtn = document.getElementById('cancelMembershipBtn');
     const deleteAccountBtn = document.getElementById('deleteAccountBtn');
     const confirmResetPassword = document.getElementById('confirmResetPassword');
@@ -1309,21 +1272,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    if (confirmResetPassword) {
-        confirmResetPassword.addEventListener('click', function() {
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
-            this.disabled = true;
-            setTimeout(() => {
-                alert('Password reset email sent! Check your inbox for instructions.');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal'));
-                modal.hide();
-                this.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Reset Email';
-                this.disabled = false;
-            }, 2000);
-        });
-    }
+   
     
     console.log('=== ALL PROFILE SETTINGS INITIALIZED ===');
+});
+
+document.getElementById("confirmResetPassword").addEventListener("click", async () => {
+  const email = document.getElementById("resetEmail").value.trim();
+  if (!email) return alert("Missing email address.");
+
+  const btn = document.getElementById("confirmResetPassword");
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+
+  try {
+    const res = await fetch("/forgot_password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+
+    alert(data.message || "Something went wrong.");
+  } catch (err) {
+    alert("Error: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Reset Email';
+  }
 });
 
 // Update match preference in backend
@@ -1404,67 +1380,94 @@ function confirmLeaveTeam() {
 }
 
 // GPS Location Function
-function getGPSLocation() {
-    const gpsBtn = document.getElementById('gps_location_btn');
-    const locationStatus = document.getElementById('location_status');
-    
-    if (!navigator.geolocation) {
-        showLocationStatus('GPS not supported by this browser', 'danger');
-        return;
-    }
-    
-    if (!gpsBtn) return;
-    
+function requestLocationPermission() {
+    const gpsBtn = document.getElementById('gps-btn');
+    const latField = document.getElementById('latitude');
+    const lngField = document.getElementById('longitude');
+    const methodField = document.getElementById('location_method');
+
     gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting Location...';
     gpsBtn.disabled = true;
-    
-    showLocationStatus('Requesting GPS location...', 'info');
-    
-    navigator.geolocation.getCurrentPosition(
+
+    if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
             function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                
-                // Update hidden fields
-                document.getElementById('latitude').value = lat;
-                document.getElementById('longitude').value = lng;
-                document.getElementById('location_method').value = 'gps';
-                
-                showLocationStatus(`GPS location updated: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, 'success');
-                
-                // Reset button
-                gpsBtn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Use My Current GPS Location';
-                gpsBtn.disabled = false;
+                // Success - got GPS coordinates
+                latField.value = position.coords.latitude;
+                lngField.value = position.coords.longitude;
+                methodField.value = 'gps';
+
+                gpsBtn.innerHTML = '<i class="fas fa-check me-1"></i>GPS Enabled';
+                gpsBtn.className = 'btn btn-sm btn-success';
+
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show mt-2';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>GPS Location Captured!</strong> You'll get the most accurate matches in your area.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                gpsBtn.closest('.card-body').appendChild(alertDiv);
+                latField.value = position.coords.latitude;
+                lngField.value = position.coords.longitude;
+                methodField.value = 'gps';
+                document.getElementById('location1').value =
+                position.coords.latitude + "," + position.coords.longitude;
             },
             function(error) {
-                let errorMessage = 'Error getting GPS location: ';
+                // Error or permission denied
+                console.error('GPS Error:', error);
+                gpsBtn.innerHTML = '<i class="fas fa-location-dot me-1"></i>Enable GPS';
+                gpsBtn.disabled = false;
+
+                let errorMsg = 'Unable to get your location. ';
                 switch(error.code) {
                     case error.PERMISSION_DENIED:
-                        errorMessage += 'Location access denied by user';
+                        errorMsg += 'Please allow location access and try again.';
                         break;
                     case error.POSITION_UNAVAILABLE:
-                        errorMessage += 'Location information unavailable';
+                        errorMsg += 'Location information is unavailable.';
                         break;
                     case error.TIMEOUT:
-                        errorMessage += 'Location request timed out';
+                        errorMsg += 'Location request timed out.';
                         break;
                     default:
-                        errorMessage += 'Unknown error occurred';
+                        errorMsg += 'An unknown error occurred.';
                         break;
                 }
-                
-                showLocationStatus(errorMessage, 'danger');
-                
-                // Reset button
-                gpsBtn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Use My Current GPS Location';
-                gpsBtn.disabled = false;
+
+                // Show error message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-warning alert-dismissible fade show mt-2';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>GPS Not Available:</strong> ${errorMsg} Your ZIP code will be used instead.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                gpsBtn.closest('.card-body').appendChild(alertDiv);
             },
             {
                 enableHighAccuracy: true,
                 timeout: 10000,
-                maximumAge: 300000
+                maximumAge: 300000 // 5 minutes
             }
-    );
+        );
+    } else {
+        // Geolocation not supported
+        gpsBtn.innerHTML = '<i class="fas fa-times me-1"></i>GPS Not Available';
+        gpsBtn.className = 'btn btn-sm btn-secondary';
+        gpsBtn.disabled = true;
+
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-info alert-dismissible fade show mt-2';
+        alertDiv.innerHTML = `
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>GPS Not Supported:</strong> Your browser doesn't support location services. Your ZIP code will be used instead.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        gpsBtn.closest('.card-body').appendChild(alertDiv);
+    }
 }
 
 // Update Location from ZIP Code  
