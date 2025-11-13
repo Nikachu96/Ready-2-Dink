@@ -10045,7 +10045,6 @@ def admin_update_player(player_id):
 
 
 @app.route('/admin/players/<int:player_id>/delete', methods=['POST'])
-@require_admin()
 def admin_delete_player(player_id):
     """Delete a test player (except ID 1)"""
     # Prevent deletion of the main admin account (ID 1)
@@ -10074,7 +10073,7 @@ def admin_delete_player(player_id):
         flash(f'Error deleting player: {str(e)}', 'danger')
 
     conn.close()
-    return redirect(url_for('admin_players'))
+    return redirect(url_for('player_login'))
 
 
 @app.route('/update_tournament_instance', methods=['POST'])

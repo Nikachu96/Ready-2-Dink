@@ -148,7 +148,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="address" class="form-label">
-                                    <i class="fas fa-home me-1"></i>Street Address *
+                                    <i class="fas fa-home me-1"></i>Street Address
                                 </label>
                                 <input type="text" class="form-control" id="address" name="address" 
                                        value="{{ player.address }}" placeholder="123 Main St" required>
@@ -157,7 +157,7 @@
                         <div class="col-md-2">
                             <div class="mb-3">
                                 <label for="zip_code" class="form-label">
-                                    <i class="fas fa-map-pin me-1"></i>Zip Code *
+                                    <i class="fas fa-map-pin me-1"></i>Zip Code
                                 </label>
                                 <input type="text" class="form-control" id="zip_code" name="zip_code" 
                                        value="{{ player.zip_code or '' }}" placeholder="12345">
@@ -166,7 +166,7 @@
                         <div class="col-md-2">
                             <div class="mb-3">
                                 <label for="city" class="form-label">
-                                    <i class="fas fa-city me-1"></i>City *
+                                    <i class="fas fa-city me-1"></i>City
                                 </label>
                                 <input type="text" class="form-control" id="city" name="city" 
                                        value="{{ player.city or '' }}" placeholder="Your City">
@@ -175,7 +175,7 @@
                         <div class="col-md-2">
                             <div class="mb-3">
                                 <label for="state" class="form-label">
-                                    <i class="fas fa-flag me-1"></i>State *
+                                    <i class="fas fa-flag me-1"></i>State
                                 </label>
                                 <input type="text" class="form-control" id="state" name="state" 
                                        value="{{ player.state or '' }}" placeholder="CA">
@@ -197,7 +197,7 @@
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="dob" class="form-label">
-                                    <i class="fas fa-birthday-cake me-1"></i>Date of Birth *
+                                    <i class="fas fa-birthday-cake me-1"></i>Date of Birth 
                                 </label>
                                 <input type="text" class="form-control" id="dob" name="dob" 
                                        value="{{ player.dob }}" placeholder="MM-DD-YYYY" required>
@@ -244,24 +244,7 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="travel_radius" class="form-label">
-                                    <i class="fas fa-route me-1"></i>Maximum Travel Distance (miles)
-                                </label>
-                                <select class="form-select" id="travel_radius" name="travel_radius">
-                                    <option value="5" {{ 'selected' if player.travel_radius == 5 }}>5 miles</option>
-                                    <option value="10" {{ 'selected' if player.travel_radius == 10 }}>10 miles</option>
-                                    <option value="15" {{ 'selected' if player.travel_radius == 15 }}>15 miles</option>
-                                    <option value="25" {{ 'selected' if player.travel_radius == 25 or not player.travel_radius }}>25 miles (default)</option>
-                                    <option value="50" {{ 'selected' if player.travel_radius == 50 }}>50 miles</option>
-                                    <option value="75" {{ 'selected' if player.travel_radius == 75 }}>75 miles</option>
-                                    <option value="100" {{ 'selected' if player.travel_radius == 100 }}>100 miles</option>
-                                </select>
-                                <div class="form-text">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    How far you're willing to travel for matches and tournaments
-                                </div>
-                            </div>
+                            
                         </div>
                     </div>
                     
@@ -429,9 +412,10 @@
                                 </button>
                             </div>
                             <div class="col-md-4">
-                                <button type="button" class="btn btn-outline-danger w-100" id="deleteAccountBtn">
-                                    <i class="fas fa-trash-alt me-2"></i>Delete Account
-                                </button>
+                                <!-- Delete Account Modal Trigger (outside the modal) -->
+<button type="button" class="btn btn-outline-danger w-100" id="openDeleteAccountModal">
+  <i class="fas fa-trash-alt me-2"></i>Delete Account
+</button>
                             </div>
                         </div>
                         <div class="mt-3">
@@ -513,48 +497,107 @@
     </div>
 </div>
 
+
+
 <!-- Delete Account Modal -->
 <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-trash-alt me-2"></i>Delete Account
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Warning!</strong> This action cannot be undone.
-                </div>
-                <p>Deleting your account will permanently remove:</p>
-                <ul>
-                    <li>Your profile and all personal information</li>
-                    <li>Match history and tournament records</li>
-                    <li>Ranking points and achievements</li>
-                    <li>All messages and connections</li>
-                </ul>
-                <div class="mb-3">
-                    <label for="deleteConfirmText" class="form-label">
-                        Type <strong>DELETE</strong> to confirm:
-                    </label>
-                    <input type="text" class="form-control" id="deleteConfirmText" placeholder="Type DELETE">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteAccount" disabled>
-                    <i class="fas fa-trash-alt me-1"></i>Delete Account Permanently
-                </button>
-            </div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-exclamation-triangle me-2"></i>Confirm Account Deletion
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>
+          <strong>Warning!</strong> This action is permanent and cannot be undone.
+        </p>
+        <ul>
+          <li>All your matches, tournaments, and stats will be erased.</li>
+          <li>Your account and personal data will be permanently deleted.</li>
+        </ul>
+        <div class="mb-3">
+          <label for="deleteConfirmText" class="form-label">
+            Type <strong>DELETE</strong> to confirm:
+          </label>
+          <input
+            type="text"
+            class="form-control"
+            id="deleteConfirmText"
+            placeholder="Type DELETE to confirm"
+          >
         </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteAccount" disabled>
+          <i class="fas fa-trash-alt me-1"></i>Delete Account Permanently
+        </button>
+      </div>
     </div>
+  </div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const openDeleteBtn = document.getElementById("openDeleteAccountModal");
+  const deleteModalEl = document.getElementById("deleteAccountModal");
+  const deleteConfirmInput = document.getElementById("deleteConfirmText");
+  const confirmDeleteBtn = document.getElementById("confirmDeleteAccount");
+
+  if (openDeleteBtn && deleteModalEl) {
+    openDeleteBtn.addEventListener("click", () => {
+      console.log("🗑️ Delete Account clicked — opening modal");
+      new bootstrap.Modal(deleteModalEl).show();
+    });
+  }
+
+  if (deleteConfirmInput && confirmDeleteBtn) {
+    deleteConfirmInput.addEventListener("input", () => {
+      confirmDeleteBtn.disabled = (deleteConfirmInput.value.trim().toUpperCase() !== "DELETE");
+    });
+
+    confirmDeleteBtn.addEventListener("click", async () => {
+      console.log("🚨 Confirm delete initiated");
+      if (deleteConfirmInput.value.trim().toUpperCase() !== "DELETE") {
+        alert("Please type DELETE to confirm.");
+        return;
+      }
+
+      confirmDeleteBtn.disabled = true;
+      confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+
+      try {
+        const res = await fetch(`/admin/players/{{ player.id }}/delete`, {
+          method: "POST",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+
+        if (res.ok) {
+          alert("✅ Account deleted successfully.");
+          window.location.href = "/";
+        } else {
+          const msg = await res.text();
+          alert("❌ Delete failed: " + msg);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Network error: " + err.message);
+      } finally {
+        confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt me-1"></i>Delete Account Permanently';
+        confirmDeleteBtn.disabled = false;
+      }
+    });
+  }
+});
+</script>
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
   const resetBtn = document.getElementById("confirmResetPassword");
@@ -888,8 +931,11 @@ function showTeamSection(preference) {
     }
 }
 
-// MAIN DOM CONTENT LOADED - ALL FUNCTIONALITY CONSOLIDATED
+// === MAIN DOM CONTENT LOADED — CLEAN CONSOLIDATED SCRIPT ===
 document.addEventListener("DOMContentLoaded", function () {
+  console.log("✅ Profile Settings JS initialized");
+
+  // === MATCH PREFERENCE FUNCTIONALITY ===
   const radios = document.querySelectorAll('input[name="match_preference_radio"]');
   radios.forEach(radio => {
     radio.addEventListener("change", function () {
@@ -897,446 +943,178 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-        
-
-    // === PAYOUT PREFERENCE FUNCTIONALITY ===
-    const payoutSelect = document.getElementById('payout_preference');
-    if (payoutSelect) {
-        payoutSelect.addEventListener('change', togglePayoutFields);
-        togglePayoutFields();
-    }
-    
-    // === DELETE ACCOUNT FUNCTIONALITY ===
-    const deleteBtn = document.getElementById('delete_account_btn');
-    const deleteConfirmText = document.getElementById('deleteConfirmText');
-    const confirmDeleteBtn = document.getElementById('confirmDeleteAccount');
-    
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
-            modal.show();
-        });
-    }
-    
-    if (deleteConfirmText && confirmDeleteBtn) {
-        deleteConfirmText.addEventListener('input', function() {
-            const inputText = this.value.trim();
-            if (inputText === 'DELETE') {
-                confirmDeleteBtn.disabled = false;
-                confirmDeleteBtn.classList.remove('disabled');
-            } else {
-                confirmDeleteBtn.disabled = true;
-                confirmDeleteBtn.classList.add('disabled');
-            }
-        });
-        
-        confirmDeleteBtn.addEventListener('click', function() {
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
-            this.disabled = true;
-            setTimeout(() => {
-                alert('Account deletion initiated. All your data will be permanently removed within 24 hours.');
-                window.location.href = '/';
-            }, 2000);
-        });
-    }
-    
-    // === CANCEL MEMBERSHIP FUNCTIONALITY ===
-    const cancelBtn = document.getElementById('confirmCancelMembership');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
-            const reason = document.getElementById('cancelReason').value;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
-            this.disabled = true;
-            setTimeout(() => {
-                alert('Membership cancellation requested. You will receive a confirmation email shortly.');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('cancelMembershipModal'));
-                modal.hide();
-                this.innerHTML = '<i class="fas fa-times me-1"></i>Cancel Membership';
-                this.disabled = false;
-            }, 2000);
-        });
-    }
-    
-    // === LOCATION FUNCTIONALITY ===  
-    const rangeSlider = document.getElementById('search_radius_range');
-    const numberInput = document.getElementById('search_radius_miles');
-    const gpsBtn = document.getElementById('gps_location_btn');
-    const updateLocationBtn = document.getElementById('update_location_btn');
-    
-    if (rangeSlider && numberInput) {
-        rangeSlider.addEventListener('input', function() {
-            numberInput.value = this.value;
-        });
-        numberInput.addEventListener('input', function() {
-            rangeSlider.value = this.value;
-        });
-    }
-    
-    if (gpsBtn) {
-        gpsBtn.addEventListener('click', getGPSLocation);
-    }
-    
-    if (updateLocationBtn) {
-        updateLocationBtn.addEventListener('click', updateLocationFromZip);
-    }
-    
-    // === COURT SEARCH FUNCTIONALITY ===
-    const courtInputs = document.querySelectorAll('.court-search');
-    courtInputs.forEach(input => {
-        const mapId = input.id + '-map';
-        let searchTimeout;
-        
-        // If input has a value, search for it immediately (wait for Leaflet to load)
-        if (input.value && input.value.length >= 3) {
-            setTimeout(() => {
-                const mapContainer = document.getElementById(mapId);
-                if (mapContainer && typeof L !== 'undefined') {
-                    mapContainer.style.display = 'block';
-                    initializeMap(mapId, input.id);
-                    searchCourt(input.value, mapId, input.id);
-                }
-            }, 1000); // Increased delay to ensure Leaflet loads
-        }
-        
-        input.addEventListener('input', function() {
-            const query = this.value.trim();
-            const mapContainer = document.getElementById(mapId);
-            
-            if (query.length >= 3) {
-                if (mapContainer) {
-                    mapContainer.style.display = 'block';
-                    if (!maps[mapId]) {
-                        setTimeout(() => {
-                            initializeMap(mapId, input.id);
-                        }, 100);
-                    }
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(() => {
-                        searchCourt(query, mapId, input.id);
-                    }, 500);
-                }
-            } else {
-                if (mapContainer) {
-                    mapContainer.style.display = 'none';
-                }
-            }
-        });
-        
-        input.addEventListener('focus', function() {
-            if (this.value.length >= 3) {
-                const mapContainer = document.getElementById(mapId);
-                if (mapContainer) {
-                    mapContainer.style.display = 'block';
-                    setTimeout(() => {
-                        if (maps[mapId]) {
-                            maps[mapId].invalidateSize();
-                        }
-                    }, 100);
-                }
-            }
-        });
-    });
-    
-    // === ACCOUNT MANAGEMENT BUTTONS ===
-   
-    const cancelMembershipBtn = document.getElementById('cancelMembershipBtn');
-    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
-    const confirmResetPassword = document.getElementById('confirmResetPassword');
-    
-    if (resetPasswordBtn) {
-        resetPasswordBtn.addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
-            modal.show();
-        });
-    }
-    
-    if (cancelMembershipBtn) {
-        cancelMembershipBtn.addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('cancelMembershipModal'));
-            modal.show();
-        });
-    }
-    
-    if (deleteAccountBtn) {
-        deleteAccountBtn.addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
-            modal.show();
-        });
-    }
-    
-   
-    
-    console.log('=== ALL PROFILE SETTINGS INITIALIZED ===');
-});
-
-document.getElementById("confirmResetPassword").addEventListener("click", async () => {
-  const email = document.getElementById("resetEmail").value.trim();
-  if (!email) return alert("Missing email address.");
-
-  const btn = document.getElementById("confirmResetPassword");
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
-
-  try {
-    const res = await fetch("/forgot_password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email })
-    });
-    const data = await res.json();
-
-    alert(data.message || "Something went wrong.");
-  } catch (err) {
-    alert("Error: " + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Reset Email';
+  // === PAYOUT PREFERENCE FUNCTIONALITY ===
+  const payoutSelect = document.getElementById("payout_preference");
+  if (payoutSelect) {
+    payoutSelect.addEventListener("change", togglePayoutFields);
+    togglePayoutFields();
   }
-});
 
-// Update match preference in backend
-function updateMatchPreference(preference) {
-  fetch('/update_match_preference', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',  // ✅ ensures Flask session cookie is sent
-    body: JSON.stringify({ match_preference: preference })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      console.log("✅ Match preference updated:", preference);
-      const alert = document.createElement("div");
-      alert.className = "alert alert-success mt-3";
-      alert.innerHTML = `<i class='fas fa-check-circle me-2'></i>${data.message}`;
-      document.querySelector(".account-info-card").appendChild(alert);
-      setTimeout(() => alert.remove(), 3000);
-    } else {
-      console.error("❌ Update failed:", data.message);
-    }
-  })
-  .catch(err => console.error("❌ Network error:", err));
-}
-// Send team invitation function
-function sendTeamInvitation() {
-    const selectedPartner = document.querySelector('input[name="partner_connection"]:checked');
-    const message = document.getElementById('invitation_message').value;
-
-    if (!selectedPartner) {
-        alert('Please select a partner to invite.');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('invitee_id', selectedPartner.value);
-    formData.append('message', message);
-
-    // Show loading state
-    const button = event.target;
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
-    button.disabled = true;
-
-    fetch('/send_team_invitation', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Team invitation sent successfully!');
-            // Reset form
-            document.getElementById('invitation_message').value = '';
-            selectedPartner.checked = false;
-        } else {
-            alert('Failed to send invitation: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error sending invitation. Please try again.');
-    })
-    .finally(() => {
-        // Reset button
-        button.innerHTML = originalText;
-        button.disabled = false;
+  // === CANCEL MEMBERSHIP FUNCTIONALITY ===
+  const cancelMembershipBtn = document.getElementById("cancelMembershipBtn");
+  const confirmCancelMembership = document.getElementById("confirmCancelMembership");
+  if (cancelMembershipBtn) {
+    cancelMembershipBtn.addEventListener("click", () => {
+      new bootstrap.Modal(document.getElementById("cancelMembershipModal")).show();
     });
-}
+  }
+  if (confirmCancelMembership) {
+    confirmCancelMembership.addEventListener("click", function () {
+      const reason = document.getElementById("cancelReason")?.value || "";
+      this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+      this.disabled = true;
+      setTimeout(() => {
+        alert("Membership cancellation requested. You will receive a confirmation email shortly.");
+        const modal = bootstrap.Modal.getInstance(document.getElementById("cancelMembershipModal"));
+        modal.hide();
+        this.innerHTML = '<i class="fas fa-times me-1"></i>Cancel Membership';
+        this.disabled = false;
+      }, 2000);
+    });
+  }
 
-// Confirm leave team function
-function confirmLeaveTeam() {
-    return confirm('Are you sure you want to switch partners? This will dissolve your current team and both players can form new partnerships. This action cannot be undone.');
-}
+  // === DELETE ACCOUNT FUNCTIONALITY ===
+  const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+  const deleteModalEl = document.getElementById("deleteAccountModal");
+  const deleteConfirmText = document.getElementById("deleteConfirmText");
+  const confirmDeleteBtn = document.getElementById("confirmDeleteAccount");
 
-// GPS Location Function
-function requestLocationPermission() {
-    const gpsBtn = document.getElementById('gps-btn');
-    const latField = document.getElementById('latitude');
-    const lngField = document.getElementById('longitude');
-    const methodField = document.getElementById('location_method');
+  if (deleteAccountBtn && deleteModalEl) {
+    deleteAccountBtn.addEventListener("click", function () {
+      console.log("🟢 Delete button clicked — showing modal...");
+      const modal = new bootstrap.Modal(deleteModalEl);
+      modal.show();
+    });
+  }
 
-    gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting Location...';
-    gpsBtn.disabled = true;
+  if (deleteConfirmText && confirmDeleteBtn) {
+    deleteConfirmText.addEventListener("input", function () {
+      const value = this.value.trim().toUpperCase();
+      confirmDeleteBtn.disabled = (value !== "DELETE");
+    });
 
-    if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                // Success - got GPS coordinates
-                latField.value = position.coords.latitude;
-                lngField.value = position.coords.longitude;
-                methodField.value = 'gps';
+    confirmDeleteBtn.addEventListener("click", async function () {
+      console.log("🧨 Confirm delete clicked");
+      if (deleteConfirmText.value.trim().toUpperCase() !== "DELETE") {
+        alert("Please type DELETE to confirm.");
+        return;
+      }
 
-                gpsBtn.innerHTML = '<i class="fas fa-check me-1"></i>GPS Enabled';
-                gpsBtn.className = 'btn btn-sm btn-success';
+      this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+      this.disabled = true;
 
-                // Show success message
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show mt-2';
-                alertDiv.innerHTML = `
-                    <i class="fas fa-check-circle me-2"></i>
-                    <strong>GPS Location Captured!</strong> You'll get the most accurate matches in your area.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                gpsBtn.closest('.card-body').appendChild(alertDiv);
-                latField.value = position.coords.latitude;
-                lngField.value = position.coords.longitude;
-                methodField.value = 'gps';
-                document.getElementById('location1').value =
-                position.coords.latitude + "," + position.coords.longitude;
-            },
-            function(error) {
-                // Error or permission denied
-                console.error('GPS Error:', error);
-                gpsBtn.innerHTML = '<i class="fas fa-location-dot me-1"></i>Enable GPS';
-                gpsBtn.disabled = false;
-
-                let errorMsg = 'Unable to get your location. ';
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMsg += 'Please allow location access and try again.';
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMsg += 'Location information is unavailable.';
-                        break;
-                    case error.TIMEOUT:
-                        errorMsg += 'Location request timed out.';
-                        break;
-                    default:
-                        errorMsg += 'An unknown error occurred.';
-                        break;
-                }
-
-                // Show error message
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-warning alert-dismissible fade show mt-2';
-                alertDiv.innerHTML = `
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>GPS Not Available:</strong> ${errorMsg} Your ZIP code will be used instead.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                gpsBtn.closest('.card-body').appendChild(alertDiv);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 300000 // 5 minutes
-            }
-        );
-    } else {
-        // Geolocation not supported
-        gpsBtn.innerHTML = '<i class="fas fa-times me-1"></i>GPS Not Available';
-        gpsBtn.className = 'btn btn-sm btn-secondary';
-        gpsBtn.disabled = true;
-
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-info alert-dismissible fade show mt-2';
-        alertDiv.innerHTML = `
-            <i class="fas fa-info-circle me-2"></i>
-            <strong>GPS Not Supported:</strong> Your browser doesn't support location services. Your ZIP code will be used instead.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        gpsBtn.closest('.card-body').appendChild(alertDiv);
-    }
-}
-
-// Update Location from ZIP Code  
-function updateLocationFromZip() {
-    const zipCodeInput = document.getElementById('location_zip_code');
-    const updateLocationBtn = document.getElementById('update_location_btn');
-    const locationStatus = document.getElementById('location_status');
-    
-    if (!zipCodeInput || !updateLocationBtn) return;
-    
-    const zipCode = zipCodeInput.value.trim();
-        
-        if (!zipCode || zipCode.length !== 5 || !/^\d{5}$/.test(zipCode)) {
-            showLocationStatus('Please enter a valid 5-digit ZIP code', 'danger');
-            return;
-        }
-        
-        updateLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Converting...';
-        updateLocationBtn.disabled = true;
-        
-        showLocationStatus('Converting ZIP code to coordinates...', 'info');
-        
-        // Call our backend endpoint to convert ZIP to coordinates
-        fetch('/api/zip-to-coordinates', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ zip_code: zipCode })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.latitude && data.longitude) {
-                // Update hidden fields
-                document.getElementById('latitude').value = data.latitude;
-                document.getElementById('longitude').value = data.longitude;
-                document.getElementById('location_method').value = 'zip';
-                
-                showLocationStatus(`Location updated from ZIP ${zipCode}: ${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}`, 'success');
-                zipCodeInput.value = ''; // Clear the input
-            } else {
-                showLocationStatus(data.message || 'Could not convert ZIP code to coordinates', 'danger');
-            }
-            
-            // Reset button
-            updateLocationBtn.innerHTML = '<i class="fas fa-sync me-1"></i>Update';
-            updateLocationBtn.disabled = false;
-        })
-        .catch(error => {
-            showLocationStatus('Error converting ZIP code: ' + error.message, 'danger');
-            
-            // Reset button
-            updateLocationBtn.innerHTML = '<i class="fas fa-sync me-1"></i>Update';
-            updateLocationBtn.disabled = false;
+      try {
+        const response = await fetch(`/admin/players/{{ player.id }}/delete`, {
+          method: "POST",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
         });
-}
 
-// Show location status messages
-function showLocationStatus(message, type) {
-    const locationStatus = document.getElementById('location_status');
-    if (!locationStatus) return;
-        
-        const alertClass = `alert alert-${type} alert-dismissible fade show`;
-        locationStatus.innerHTML = `
-            <div class="${alertClass}" role="alert">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-        
-        // Auto-hide success messages after 5 seconds
-        if (type === 'success') {
-            setTimeout(() => {
-                const alert = locationStatus.querySelector('.alert');
-                if (alert) {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }
-            }, 5000);
+        if (response.redirected) {
+          window.location.href = response.url;
+          return;
         }
-}
+
+        if (response.ok) {
+          alert("✅ Account deleted successfully.");
+          window.location.href = "/";
+        } else {
+          const text = await response.text();
+          alert("❌ Delete failed: " + text);
+        }
+      } catch (err) {
+        alert("Network error: " + err.message);
+        console.error(err);
+      } finally {
+        this.innerHTML = '<i class="fas fa-trash-alt me-1"></i>Delete Account Permanently';
+        this.disabled = false;
+      }
+    });
+  }
+
+  // === RESET PASSWORD FUNCTIONALITY ===
+  const resetPasswordBtn = document.getElementById("confirmResetPassword");
+  if (resetPasswordBtn) {
+    resetPasswordBtn.addEventListener("click", async () => {
+      const email = document.getElementById("resetEmail")?.value.trim();
+      if (!email) return alert("Missing email address.");
+      const btn = resetPasswordBtn;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+
+      try {
+        const res = await fetch("/forgot_password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        alert(data.message || "Something went wrong.");
+      } catch (err) {
+        alert("Error: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Reset Email';
+      }
+    });
+  }
+
+  // === LOCATION FUNCTIONALITY ===
+  const rangeSlider = document.getElementById("search_radius_range");
+  const numberInput = document.getElementById("search_radius_miles");
+  if (rangeSlider && numberInput) {
+    rangeSlider.addEventListener("input", () => (numberInput.value = rangeSlider.value));
+    numberInput.addEventListener("input", () => (rangeSlider.value = numberInput.value));
+  }
+
+  const gpsBtn = document.getElementById("gps_location_btn");
+  if (gpsBtn) gpsBtn.addEventListener("click", getGPSLocation);
+
+  const updateLocationBtn = document.getElementById("update_location_btn");
+  if (updateLocationBtn) updateLocationBtn.addEventListener("click", updateLocationFromZip);
+
+  // === COURT SEARCH FUNCTIONALITY ===
+  const courtInputs = document.querySelectorAll(".court-search");
+  courtInputs.forEach((input) => {
+    const mapId = input.id + "-map";
+    let searchTimeout;
+    if (input.value && input.value.length >= 3) {
+      setTimeout(() => {
+        const mapContainer = document.getElementById(mapId);
+        if (mapContainer && typeof L !== "undefined") {
+          mapContainer.style.display = "block";
+          initializeMap(mapId, input.id);
+          searchCourt(input.value, mapId, input.id);
+        }
+      }, 1000);
+    }
+    input.addEventListener("input", function () {
+      const query = this.value.trim();
+      const mapContainer = document.getElementById(mapId);
+      if (query.length >= 3) {
+        if (mapContainer) {
+          mapContainer.style.display = "block";
+          if (!maps[mapId]) setTimeout(() => initializeMap(mapId, input.id), 100);
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => searchCourt(query, mapId, input.id), 500);
+        }
+      } else if (mapContainer) {
+        mapContainer.style.display = "none";
+      }
+    });
+    input.addEventListener("focus", function () {
+      if (this.value.length >= 3) {
+        const mapContainer = document.getElementById(mapId);
+        if (mapContainer) {
+          mapContainer.style.display = "block";
+          setTimeout(() => {
+            if (maps[mapId]) maps[mapId].invalidateSize();
+          }, 100);
+        }
+      }
+    });
+  });
+
+  console.log("=== All profile settings initialized successfully ===");
+});
 </script>
 {% endblock %}
