@@ -10,6 +10,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+from itsdangerous import URLSafeTimedSerializer
 import logging
 import uuid
 import traceback
@@ -19,6 +20,27 @@ from haversine import haversine, Unit
 from dotenv import load_dotenv
 import random
 import string
+import sendgrid
+from sendgrid.helpers.mail import Mail
+
+
+def parse_location_field(location_text):
+    """Convert 'lat,lon' text into floats, or return (None, None) if invalid."""
+    try:
+        if not location_text:
+            return None, None
+        lat_str, lon_str = [s.strip() for s in location_text.split(',')]
+        return float(lat_str), float(lon_str)
+    except Exception:
+        return None, None
+    
+def calculate_distance_from_location1(loc1_text, loc2_text):
+    """Calculate distance in miles between two 'lat,lon' strings."""
+    lat1, lon1 = parse_location_field(loc1_text)
+    lat2, lon2 = parse_location_field(loc2_text)
+    if None in (lat1, lon1, lat2, lon2):
+        return None
+    return round(haversine((lat1, lon1), (lat2, lon2), unit=Unit.MILES), 1)
 
 def generate_unique_player_id(conn, cursor, use_sqlite):
     """Generate a unique player_id string that doesn’t already exist in the DB."""
@@ -615,13 +637,19 @@ def send_nda_confirmation_email(player_data, signature, nda_date, ip_address):
         return False
 
 
+
 app = Flask(__name__)
 # Load environment variables from .env file
+
 load_dotenv()
 
+# Assign secret key from environment before creating serializer
+# use SESSION_SECRET from .env
 app.secret_key = os.environ.get("SESSION_SECRET")
 if not app.secret_key:
-    raise RuntimeError("SESSION_SECRET environment variable must be set")
+    raise ValueError("SESSION_SECRET missing in environment file!")
+
+serializer = URLSafeTimedSerializer(app.secret_key)
 
 
 # Add custom Jinja filter for JSON parsing
@@ -4247,157 +4275,118 @@ def suggest_match_time(player1, player2):
         return "This week - Flexible timing"
 
 
-def get_filtered_compatible_players(player_id,
-                                    match_type="",
-                                    skill_level="",
-                                    distance=None):
-    """Get list of compatible players with filters applied"""
+def get_filtered_compatible_players(current_player_id, match_type=None, skill_level=None, distance=None):
+    """
+    Returns a list of compatible players filtered by:
+    - skill_level
+    - match_type (optional)
+    - player's own search_radius_miles
+    - geographic distance using the location1 field ('lat,lon')
+    """
     conn = get_db_connection()
+    conn.row_factory = sqlite3.Row
 
-    # Get the player's preferences and location
-    player = conn.execute('SELECT * FROM players WHERE id = ?',
-                          (player_id, )).fetchone()
-    if not player or not player['is_looking_for_match']:
+    # Fetch current player info
+    current_player = conn.execute('''
+        SELECT id, username, full_name, location1, search_radius_miles
+        FROM players
+        WHERE id = ?
+    ''', (current_player_id,)).fetchone()
+
+    if not current_player:
         conn.close()
         return []
 
-    # Get player's coordinates for distance filtering
-    player_lat = player['latitude']
-    player_lng = player['longitude']
-
-    # Build the SQL query with filters
+    # --- Main query for potential matches ---
     base_query = '''
-        SELECT id, full_name as name, first_name, last_name, location1 as location, skill_level, preferred_court, 
-               wins, losses, ranking_points, selfie, latitude, longitude, gender, search_radius_miles as travel_radius
-        FROM players 
-        WHERE id != ? 
-        AND is_looking_for_match = 1
+        SELECT id, username, full_name, skill_level, selfie,
+               wins, losses, ranking_points, gender,
+               location1, search_radius_miles
+        FROM players
+        WHERE id != ? AND account_status = "active"
     '''
-    params = [player_id]
+    params = [current_player_id]
 
-    # Apply skill level filter
     if skill_level:
-        base_query += " AND skill_level = ?"
+        base_query += ' AND skill_level = ?'
         params.append(skill_level)
-    else:
-        # Default to same or adjacent skill levels if no filter specified
-        skill_levels = ['Beginner', 'Intermediate', 'Advanced']
-        try:
-            current_skill_idx = skill_levels.index(player['skill_level'])
-            # Include current level and adjacent levels
-            adjacent_skills = [player['skill_level']]
-            if current_skill_idx > 0:
-                adjacent_skills.append(skill_levels[current_skill_idx - 1])
-            if current_skill_idx < len(skill_levels) - 1:
-                adjacent_skills.append(skill_levels[current_skill_idx + 1])
 
-            placeholders = ','.join(['?' for _ in adjacent_skills])
-            base_query += f" AND skill_level IN ({placeholders})"
-            params.extend(adjacent_skills)
-        except ValueError:
-            # If skill level not in standard list, just use exact match
-            base_query += " AND skill_level = ?"
-            params.append(player['skill_level'])
+    if match_type:
+        base_query += ' AND (match_preference = ? OR match_preference IS NULL)'
+        params.append(match_type)
 
-    # Apply discoverability filter based on match type
-    if match_type == "singles":
-        base_query += " AND (discoverability_preference = 'singles' OR discoverability_preference = 'both' OR discoverability_preference IS NULL)"
-    elif match_type == "doubles":
-        base_query += " AND (discoverability_preference = 'doubles' OR discoverability_preference = 'both' OR discoverability_preference IS NULL)"
-    # If no match_type specified, show all players (backward compatibility)
-
-    base_query += " ORDER BY ranking_points DESC, wins DESC, created_at ASC"
-
-    compatible_players = conn.execute(base_query, params).fetchall()
-
-    # Calculate distances and apply distance filter
-    filtered_players = []
-    for p in compatible_players:
-        player_data = dict(p)
-        player_data['name'] = p['full_name']
-        player_data['location'] = p['location1']
-
-        # Calculate distance if both players have GPS coordinates
-        if player_lat and player_lng and p['latitude'] and p['longitude']:
-            distance_miles = calculate_distance(player_lat, player_lng,
-                                                p['latitude'], p['longitude'])
-            player_data['distance_miles'] = round(distance_miles, 1)
-
-            # Apply distance filter
-            if distance and distance_miles > distance:
-                continue  # Skip this player if they're too far
-
-            # Check if opponent is within player's travel radius
-            player_travel_radius = player['travel_radius'] if player[
-                'travel_radius'] else 25
-            opponent_travel_radius = p['travel_radius'] if p[
-                'travel_radius'] else 25
-
-            # Use the more restrictive radius
-            max_allowed_distance = min(player_travel_radius,
-                                       opponent_travel_radius)
-            if distance_miles > max_allowed_distance:
-                continue  # Skip if outside mutual travel range
-
-        elif distance:
-            # If no GPS and distance filter is applied, skip this player
-            continue
-
-        filtered_players.append(player_data)
-
+    all_players = conn.execute(base_query, params).fetchall()
     conn.close()
-    logging.info(
-        f"Filtered search for player {player_id}: Found {len(filtered_players)} compatible players with filters: match_type={match_type}, skill_level={skill_level}, distance={distance}"
-    )
-    return filtered_players
 
+    # --- Distance filtering ---
+    max_distance = distance or current_player["search_radius_miles"] or 15
+    current_loc = current_player["location1"]
+
+    results = []
+    for p in all_players:
+        player_dict = dict(p)
+
+        # Calculate distance based on location1 text "lat,lon"
+        dist = calculate_distance_from_location1(current_loc, p["location1"])
+        if dist is not None and dist <= max_distance:
+            player_dict["distance_miles"] = dist
+            player_dict["distance_display"] = (
+                "< 1 mile away" if dist < 1 else f"~{round(dist, 1)} miles away"
+            )
+
+            # --- Ensure essential fields are safe defaults ---
+            player_dict["ranking_points"] = p["ranking_points"] if p["ranking_points"] is not None else 0
+            player_dict["gender"] = p["gender"] if p["gender"] else "Prefer not to say"
+
+            # --- Use username for display name ---
+            player_dict["name"] = p["username"] if p["username"] else p["full_name"]
+
+            results.append(player_dict)
+
+    # Sort by proximity
+    results.sort(key=lambda x: x.get("distance_miles", 9999))
+    return results
 
 def get_compatible_players(player_id):
-    """Get list of compatible players using GPS-based distance filtering"""
+    """Get list of compatible players using GPS-based distance filtering."""
     conn = get_db_connection()
+    conn.row_factory = sqlite3.Row
 
-    # Get the player's preferences and location
-    player = conn.execute('SELECT * FROM players WHERE id = ?',
-                          (player_id, )).fetchone()
+    # --- Fetch the current player and their info ---
+    player = conn.execute(
+        'SELECT * FROM players WHERE id = ?', (player_id,)
+    ).fetchone()
     if not player or not player['is_looking_for_match']:
         conn.close()
         return []
 
-    # Get player's travel radius (default 25 miles if not set)
-    player_travel_radius = player['search_radius_miles'] if player[
-        'search_radius_miles'] is not None else 25
+    player_travel_radius = player['search_radius_miles'] if player['search_radius_miles'] else 25
     player_lat = player['latitude']
     player_lng = player['longitude']
 
-    # If player has no GPS coordinates, fallback to more inclusive matching
+    # --------------------------
+    #  Fallback (no GPS coords)
+    # --------------------------
     if player_lat is None or player_lng is None:
-        logging.warning(
-            f"Player {player_id} has no GPS coordinates, using flexible fallback matching"
-        )
+        logging.warning(f"Player {player_id} has no GPS coordinates, using fallback matching")
 
-        # More flexible fallback - match by skill level and general area, not exact location
-        # This makes it easier to find matches when GPS isn't available
         query = '''
-            SELECT id, full_name as name, first_name, last_name, location1 as location, skill_level, preferred_court, 
-                   wins, losses, ranking_points, selfie, latitude, longitude, gender, search_radius_miles as travel_radius
-            FROM players 
-            WHERE id != ? 
-            AND is_looking_for_match = 1
-            AND skill_level = ?
+            SELECT id, username, full_name, first_name, last_name, location1 AS location,
+                   skill_level, preferred_court, wins, losses, ranking_points,
+                   selfie, latitude, longitude, gender, search_radius_miles AS travel_radius
+            FROM players
+            WHERE id != ?
+              AND is_looking_for_match = 1
+              AND skill_level = ?
             ORDER BY ranking_points DESC, wins DESC, created_at ASC
         '''
-
         params = [player_id, player['skill_level']]
         compatible_players = conn.execute(query, params).fetchall()
 
-        # If no matches with same skill level, try adjacent skill levels for more options
+        # Try adjacent skill levels if none found
         if not compatible_players:
             skill_levels = ['Beginner', 'Intermediate', 'Advanced']
-            current_skill_idx = skill_levels.index(
-                player['skill_level']
-            ) if player['skill_level'] in skill_levels else 1
-
-            # Try one level up or down
+            current_skill_idx = skill_levels.index(player['skill_level']) if player['skill_level'] in skill_levels else 1
             adjacent_skills = []
             if current_skill_idx > 0:
                 adjacent_skills.append(skill_levels[current_skill_idx - 1])
@@ -4406,79 +4395,74 @@ def get_compatible_players(player_id):
 
             for skill in adjacent_skills:
                 query = '''
-                    SELECT id, full_name as name, first_name, last_name, location1 as location, skill_level, preferred_court, 
-                           wins, losses, ranking_points, selfie, latitude, longitude, gender, search_radius_miles as travel_radius
-                    FROM players 
-                    WHERE id != ? 
-                    AND is_looking_for_match = 1
-                    AND skill_level = ?
+                    SELECT id, username, full_name, first_name, last_name, location1 AS location,
+                           skill_level, preferred_court, wins, losses, ranking_points,
+                           selfie, latitude, longitude, gender, search_radius_miles AS travel_radius
+                    FROM players
+                    WHERE id != ?
+                      AND is_looking_for_match = 1
+                      AND skill_level = ?
                     ORDER BY ranking_points DESC, wins DESC, created_at ASC
                     LIMIT 5
                 '''
-                adjacent_players = conn.execute(query,
-                                                [player_id, skill]).fetchall()
+                adjacent_players = conn.execute(query, [player_id, skill]).fetchall()
                 compatible_players.extend(adjacent_players)
-                if compatible_players:  # Stop if we found some matches
+                if compatible_players:
                     break
 
+    # --------------------------
+    #  GPS-based matching
+    # --------------------------
     else:
-        # GPS-based matching - get all players with same skill level and GPS coordinates
         query = '''
-            SELECT id, full_name as name, first_name, last_name, location1 as location, skill_level, preferred_court, 
-                   wins, losses, ranking_points, selfie, latitude, longitude, gender, search_radius_miles as travel_radius
-            FROM players 
-            WHERE id != ? 
-            AND is_looking_for_match = 1
-            AND skill_level = ?
-            AND latitude IS NOT NULL 
-            AND longitude IS NOT NULL
+            SELECT id, username, full_name, first_name, last_name, location1 AS location,
+                   skill_level, preferred_court, wins, losses, ranking_points,
+                   selfie, latitude, longitude, gender, search_radius_miles AS travel_radius
+            FROM players
+            WHERE id != ?
+              AND is_looking_for_match = 1
+              AND skill_level = ?
+              AND latitude IS NOT NULL
+              AND longitude IS NOT NULL
             ORDER BY ranking_points DESC, wins DESC, created_at ASC
         '''
+        all_players = conn.execute(query, (player_id, player['skill_level'])).fetchall()
 
-        all_players = conn.execute(
-            query, (player_id, player['skill_level'])).fetchall()
-
-        # Filter by distance using GPS coordinates and both players' travel radius
         compatible_players = []
         for candidate in all_players:
-            distance = calculate_distance_haversine(player_lat, player_lng,
-                                                    candidate['latitude'],
-                                                    candidate['longitude'])
-
+            distance = calculate_distance_haversine(
+                player_lat, player_lng, candidate['latitude'], candidate['longitude']
+            )
             if distance is not None:
-                # Check if distance is within BOTH players' travel radius
-                candidate_travel_radius = candidate[
-                    'travel_radius'] if candidate[
-                        'travel_radius'] is not None else 25
-
-                # Player must be within both their own travel radius AND the candidate's travel radius
+                candidate_travel_radius = candidate['travel_radius'] if candidate['travel_radius'] else 25
                 if distance <= player_travel_radius and distance <= candidate_travel_radius:
-                    # Add distance and travel radius info to the player record
                     candidate_dict = dict(candidate)
                     candidate_dict['distance_miles'] = round(distance, 1)
-                    candidate_dict[
-                        'candidate_travel_radius'] = candidate_travel_radius
+                    candidate_dict['candidate_travel_radius'] = candidate_travel_radius
                     compatible_players.append(candidate_dict)
 
-        # Sort by distance (closest first), then by ranking
-        compatible_players.sort(
-            key=lambda x: (x['distance_miles'], -x['ranking_points']))
-
+        compatible_players.sort(key=lambda x: (x['distance_miles'], -x['ranking_points']))
         logging.info(
-            f"GPS-based matching for player {player_id}: found {len(compatible_players)} players within travel radius (user: {player_travel_radius} miles)"
+            f"GPS-based matching for player {player_id}: found {len(compatible_players)} within {player_travel_radius} miles."
         )
 
-    # Convert to list of dictionaries
+    # --------------------------
+    #  Build clean dicts
+    # --------------------------
     players_list = []
     for p in compatible_players:
-        # Use first_name if available, otherwise fall back to full_name
-        display_name = p['first_name'] if p['first_name'] else p['name'].split(
-        )[0] if p['name'] else 'Unknown'
+        # Prefer username → first_name → fallback to first word of full_name
+        display_name = (
+            p['username']
+            or p['first_name']
+            or (p['full_name'].split()[0] if p['full_name'] else 'Unknown')
+        )
 
         player_data = {
             'id': p['id'],
+            'username': p['username'],
             'name': display_name,
-            'full_name': p['name'],
+            'full_name': p['full_name'],
             'first_name': p['first_name'],
             'last_name': p['last_name'],
             'location': p['location'],
@@ -4488,22 +4472,19 @@ def get_compatible_players(player_id):
             'losses': p['losses'] or 0,
             'ranking_points': p['ranking_points'] or 0,
             'selfie': p['selfie'],
-            'gender': p['gender'] if 'gender' in p else 'prefer_not_to_say',
-            'travel_radius': p['travel_radius'] if 'travel_radius' in p else 25
+            'gender': p['gender'] if p['gender'] else 'Prefer not to say',
+            'travel_radius': p['travel_radius'] if p['travel_radius'] else 25,
         }
 
-        # Add distance and candidate travel radius if available (for GPS-based matches)
         if 'distance_miles' in p:
             player_data['distance_miles'] = p['distance_miles']
         if 'candidate_travel_radius' in p:
-            player_data['candidate_travel_radius'] = p[
-                'candidate_travel_radius']
+            player_data['candidate_travel_radius'] = p['candidate_travel_radius']
 
         players_list.append(player_data)
 
     conn.close()
     return players_list
-
 
 def find_match_for_player(player_id):
     """Find and create a match for a player using GPS-based distance filtering"""
@@ -4688,6 +4669,30 @@ def create_direct_challenge(challenger_id,
 
 # Initialize database
 init_db()
+
+def send_email(to, subject, html_content):
+    """
+    Send an email using SendGrid (HTML content supported).
+    Uses SENDGRID_API_KEY and FROM_EMAIL from environment.
+    """
+    try:
+        api_key = os.environ.get("SENDGRID_API_KEY")
+        from_email = os.environ.get("FROM_EMAIL", "noreply@ready2dink.com")
+
+        if not api_key:
+            print("❌ SENDGRID_API_KEY is missing!")
+            return False
+
+        sg = sendgrid.SendGridAPIClient(api_key=api_key)
+        message = Mail(from_email=from_email, to_emails=to, subject=subject, html_content=html_content)
+        response = sg.send(message)
+
+        print(f"✅ Email sent to {to}: {response.status_code}")
+        return True
+
+    except Exception as e:
+        print(f"⚠️ SendGrid email error: {e}")
+        return False
 
 
 def send_email_notification(to_email, subject, message_body, from_email=None):
@@ -5580,57 +5585,78 @@ def register():
             gender = request.form.get("gender", "prefer_not_to_say").strip()
             dob = request.form.get("dob", "").strip()
             address = request.form.get("address", "N/A").strip()
-            location1 = request.form.get("location1", "Unknown").strip()
+            zip_code = request.form.get("zip_code", "").strip()
+            location1 = request.form.get("location1", "").strip()
             skill_level = request.form.get("skill_level", "Beginner").strip()
             password = request.form.get("password", "")
 
             # Validation
-            if not all([
-                full_name, username, email, dob, address, location1, gender,
-                skill_level, password
-            ]):
+            if not all([full_name, username, email, dob, address, zip_code, gender, skill_level, password]):
                 flash("All required fields must be filled.", "danger")
                 return redirect(url_for("register"))
 
-            # Hash the password
+            # 🔹 Fallback: if no manual location, use ZIP code coordinates
+            if not location1 or location1.lower() in ["unknown", ""]:
+                try:
+                    geo_res = requests.get(
+                        f"https://nominatim.openstreetmap.org/search?postalcode={zip_code}&country=US&format=json&limit=1",
+                        headers={"User-Agent": "Ready2DinkApp"}
+                    )
+                    geo_data = geo_res.json()
+                    if geo_data and len(geo_data) > 0:
+                        lat = geo_data[0]["lat"]
+                        lon = geo_data[0]["lon"]
+                        location1 = f"{lat},{lon}"
+                    else:
+                        location1 = "Unknown"
+                except Exception as e:
+                    print(f"ZIP geocode lookup failed: {e}")
+                    location1 = "Unknown"
+
+            # Hash password
             password_hash = generate_password_hash(password)
 
-            # Choose DB backend
+            # Connect DB
             use_sqlite = os.environ.get("USE_SQLITE") == "1"
-            if use_sqlite:
-                conn = get_db_connection()
-                cursor = conn.cursor()   # ✅ FIXED
-                placeholder = "?"
-            else:
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                placeholder = "%s"
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            placeholder = "?" if use_sqlite else "%s"
 
             # Generate unique player_id
             player_id = generate_unique_player_id(conn, cursor, use_sqlite)
 
-            # Insert new player
+            # Insert player with zip_code
             query = f"""
                 INSERT INTO players
                 (first_name, last_name, full_name, username, email, dob,
-                 gender, address, location1, skill_level, password_hash, player_id, created_at)
+                 gender, address, zip_code, location1, skill_level,
+                 password_hash, player_id, created_at)
                 VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
                         {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
-                        {placeholder}, CURRENT_TIMESTAMP)
+                        {placeholder}, {placeholder}, CURRENT_TIMESTAMP)
             """
             values = (first_name, last_name, full_name, username, email, dob, gender,
-                      address, location1, skill_level, password_hash, player_id)
-
+                      address, zip_code, location1, skill_level, password_hash, player_id)
             cursor.execute(query, values)
             conn.commit()
 
-            # Cleanup
+            # Retrieve numeric id
+            cursor.execute("SELECT id FROM players WHERE player_id = ?", (player_id,))
+            row = cursor.fetchone()
+            numeric_id = row["id"] if row else None
+
+            # ✅ Auto-login
+            session.clear()
+            session["current_player_id"] = numeric_id
+            session["player_id"] = numeric_id
+
+            flash("Account created and logged in successfully! Welcome!", "success")
+
             if not use_sqlite:
                 cursor.close()
             conn.close()
 
-            flash("Account created successfully! Please log in.", "success")
-            return redirect(url_for("player_login"))
+            return redirect(url_for("player_home", player_id=numeric_id))
 
         except Exception as e:
             tb = traceback.format_exc()
@@ -5814,6 +5840,84 @@ def submit_guardian_consent(player_id):
         flash(f'Error processing consent: {str(e)}', 'danger')
         return redirect(url_for('guardian_consent_form', player_id=player_id))
 
+@app.route("/forgot_password", methods=["POST"])
+def forgot_password():
+    """Send a secure password reset link using SendGrid."""
+    try:
+        data = request.get_json()
+        email = data.get("email")
+
+        if not email:
+            return jsonify({"success": False, "message": "Email is required"}), 400
+
+        conn = get_db_connection()
+        conn.row_factory = sqlite3.Row
+        player = conn.execute(
+            "SELECT id, full_name, email FROM players WHERE email = ?", (email,)
+        ).fetchone()
+        conn.close()
+
+        if not player:
+            return jsonify({"success": False, "message": "No account found for that email"}), 404
+
+        # Generate secure token (expires in 1 hour)
+        token = serializer.dumps(email, salt="password-reset")
+        reset_url = url_for("reset_password_token", token=token, _external=True)
+
+        # ✅ Use your existing SendGrid send_email() function
+        subject = "Ready2Dink Password Reset"
+        html_body = f"""
+        <div style="font-family:Arial, sans-serif; line-height:1.5; color:#333;">
+          <h2 style="color:#0066cc;">Ready-2-Dink Password Reset</h2>
+          <p>Hi {player['full_name']},</p>
+          <p>We received a request to reset your password. Click below to continue:</p>
+          <p style="margin:20px 0;">
+            <a href="{reset_url}" style="background:#0066cc;color:#fff;padding:10px 18px;text-decoration:none;border-radius:5px;">Reset Password</a>
+          </p>
+          <p>This link will expire in 1 hour. If you didn’t request this, you can safely ignore it.</p>
+          <hr>
+          <p style="font-size:12px;">Ready-2-Dink Support Team</p>
+        </div>
+        """
+        send_email(to=email, subject=subject, html_content=html_body)
+
+        return jsonify({"success": True, "message": "Reset email sent successfully!"})
+
+    except Exception as e:
+        print(">>> Forgot password error <<<")
+        print(traceback.format_exc())
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+
+
+@app.route("/reset_password/<token>", methods=["GET", "POST"])
+def reset_password_token(token):
+    """Render and process password reset form."""
+    try:
+        email = serializer.loads(token, salt="password-reset", max_age=3600)
+    except Exception:
+        return render_template("reset_password.html", expired=True)
+
+    if request.method == "POST":
+        new_pw = request.form.get("new_password")
+        confirm_pw = request.form.get("confirm_password")
+
+        if not new_pw or not confirm_pw:
+            flash("Please fill in all fields.", "danger")
+            return redirect(request.url)
+        if new_pw != confirm_pw:
+            flash("Passwords do not match.", "danger")
+            return redirect(request.url)
+
+        pw_hash = generate_password_hash(new_pw)
+        conn = get_db_connection()
+        conn.execute("UPDATE players SET password_hash = ? WHERE email = ?", (pw_hash, email))
+        conn.commit()
+        conn.close()
+
+        flash("Password successfully reset! You can now log in.", "success")
+        return redirect(url_for("player_login"))
+
+    return render_template("reset_password.html", expired=False)
 
 @app.route('/pending-guardian-approval/<int:player_id>')
 def pending_guardian_approval(player_id):
@@ -8118,10 +8222,8 @@ def api_zip_to_coordinates():
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
-    """Update player profile information"""
+    """Update player profile information with optional GPS/ZIP geolocation and match preference"""
     conn = get_db_connection()
-
-    # Get current player ID from session
     current_player_id = session.get('current_player_id')
     if not current_player_id:
         flash('Please log in first', 'warning')
@@ -8129,123 +8231,164 @@ def update_profile():
 
     player_id = current_player_id
 
-    # Form validation
-    required_fields = [
-        'full_name', 'address', 'zip_code', 'city', 'state', 'dob', 'gender',
-        'preferred_court_1', 'skill_level', 'email'
-    ]
-    for field in required_fields:
-        if not request.form.get(field):
-            flash(f'{field.replace("_", " ").title()} is required', 'danger')
-            return redirect(url_for('profile_settings'))
+    try:
+        # --- Handle optional username update ---
+        new_username = request.form.get('username', '').strip()
 
-    # Handle file upload
-    selfie_filename = None
-    if 'selfie' in request.files:
-        file = request.files['selfie']
-        if file and file.filename and file.filename != '':
-            if allowed_file(file.filename):
+        if new_username:
+            current = conn.execute(
+                "SELECT username FROM players WHERE id = ?", (player_id,)
+            ).fetchone()
+            current_username = current['username'] if current else None
+
+            if new_username != current_username:
+                existing_user = conn.execute(
+                    "SELECT id FROM players WHERE username = ? AND id != ?",
+                    (new_username, player_id)
+                ).fetchone()
+                if existing_user:
+                    flash('That username is already taken. Please choose another.', 'danger')
+                    conn.close()
+                    return redirect(url_for('profile_settings'))
+
+                conn.execute("UPDATE players SET username = ? WHERE id = ?", (new_username, player_id))
+                logging.info(f"Updated username for player {player_id} → {new_username}")
+
+        # --- Basic validation ---
+        required_fields = [
+            'full_name', 'dob', 'gender', 'preferred_court_1', 'skill_level', 'email'
+        ]
+        for field in required_fields:
+            if not request.form.get(field):
+                flash(f'{field.replace("_", " ").title()} is required', 'danger')
+                return redirect(url_for('profile_settings'))
+
+        # --- Handle uploaded selfie ---
+        selfie_filename = None
+        if 'selfie' in request.files:
+            file = request.files['selfie']
+            if file and file.filename and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
                 selfie_filename = timestamp + filename
-                static_folder = app.static_folder or 'static'
-                upload_path = os.path.join(static_folder, 'uploads')
+                upload_path = os.path.join(app.static_folder or 'static', 'uploads')
                 os.makedirs(upload_path, exist_ok=True)
                 file.save(os.path.join(upload_path, selfie_filename))
 
-    # Process location data updates
-    user_latitude = request.form.get('latitude', '').strip()
-    user_longitude = request.form.get('longitude', '').strip()
-    search_radius = request.form.get('search_radius_miles', '').strip()
+        # --- Gather inputs ---
+        user_lat = request.form.get('latitude', '').strip()
+        user_lng = request.form.get('longitude', '').strip()
+        zip_code = request.form.get('zip_code', '').strip()
+        search_radius = request.form.get('search_radius_miles', '').strip()
 
-    latitude, longitude = None, None
-    if user_latitude and user_longitude:
+        # --- Normalize radius ---
         try:
-            latitude = float(user_latitude)
-            longitude = float(user_longitude)
-        except (ValueError, TypeError):
-            logging.warning("Invalid GPS coordinates provided")
+            search_radius_miles = max(15, min(50, int(search_radius))) if search_radius else 15
+        except ValueError:
+            search_radius_miles = 15
 
-    search_radius_miles = 15
-    if search_radius:
+        # --- Get existing location ---
+        existing = conn.execute(
+            "SELECT zip_code, location1 FROM players WHERE id = ?", (player_id,)
+        ).fetchone()
+        existing_zip = existing['zip_code'] if existing else None
+        existing_loc = existing['location1'] if existing else None
+
+        # --- Determine new location1 ---
+        new_location1 = existing_loc
+        if user_lat and user_lng:
+            try:
+                lat = float(user_lat)
+                lon = float(user_lng)
+                new_location1 = f"{lat},{lon}"
+            except ValueError:
+                logging.warning("Invalid GPS coordinates provided")
+        elif zip_code != existing_zip:
+            try:
+                geo_res = requests.get(
+                    f"https://nominatim.openstreetmap.org/search?postalcode={zip_code}&country=US&format=json&limit=1",
+                    headers={"User-Agent": "Ready2DinkApp"}
+                )
+                geo_data = geo_res.json()
+                if geo_data and len(geo_data) > 0:
+                    lat = geo_data[0]["lat"]
+                    lon = geo_data[0]["lon"]
+                    new_location1 = f"{lat},{lon}"
+                else:
+                    new_location1 = "Unknown"
+            except Exception as e:
+                logging.warning(f"ZIP geocode lookup failed: {e}")
+                new_location1 = "Unknown"
+
+        # --- Gender + travel radius validation ---
+        gender = request.form.get('gender', 'prefer_not_to_say').strip()
+        if gender not in ['male', 'female', 'non_binary', 'prefer_not_to_say']:
+            flash('Invalid gender option', 'danger')
+            return redirect(url_for('profile_settings'))
+
+        travel_radius = request.form.get('travel_radius', '25').strip()
         try:
-            search_radius_miles = max(15, min(50, int(search_radius)))
-        except (ValueError, TypeError):
-            logging.warning("Invalid search radius provided, using default 15")
+            travel_radius = max(5, min(100, int(travel_radius)))
+        except ValueError:
+            travel_radius = 25
 
-    gender = request.form.get('gender', 'prefer_not_to_say').strip()
-    valid_genders = ['male', 'female', 'non_binary', 'prefer_not_to_say']
-    if gender not in valid_genders:
-        flash('Please select a valid gender option', 'danger')
-        return redirect(url_for('profile_settings'))
+        # --- Build SQL update ---
+        update_fields = [
+            request.form['full_name'],
+            request.form['address'],
+            request.form['zip_code'],
+            request.form['city'],
+            request.form['state'],
+            request.form['dob'],
+            request.form.get('preferred_court_1', ''),
+            request.form.get('preferred_court_2', ''),
+            gender,
+            request.form.get('preferred_court_1_coordinates', ''),
+            request.form.get('preferred_court_2_coordinates', ''),
+            request.form['skill_level'],
+            request.form['email'],
+            request.form.get('payout_preference', ''),
+            request.form.get('paypal_email', ''),
+            request.form.get('venmo_username', ''),
+            request.form.get('zelle_info', ''),
+            user_lat or None,
+            user_lng or None,
+            search_radius_miles,
+            travel_radius,
+            player_id
+        ]
 
-    travel_radius_input = request.form.get('travel_radius', '25').strip()
-    try:
-        travel_radius = max(5, min(100, int(travel_radius_input)))
-    except (ValueError, TypeError):
-        flash('Travel radius must be a number between 5 and 100 miles',
-              'danger')
-        return redirect(url_for('profile_settings'))
-
-    try:
+        selfie_sql = ""
         if selfie_filename:
-            conn.execute(
-                '''
-                UPDATE players 
-                SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?, 
-                    dob = ?, preferred_court_1 = ?, preferred_court_2 = ?, gender = ?,
-                    court1_coordinates = ?, court2_coordinates = ?,
-                    skill_level = ?, email = ?, selfie = ?, payout_preference = ?,
-                    paypal_email = ?, venmo_username = ?, zelle_info = ?,
-                    latitude = ?, longitude = ?, search_radius_miles = ?, travel_radius = ?
-                WHERE id = ?
-                ''',
-                (request.form['full_name'], request.form['address'],
-                 request.form['zip_code'], request.form['city'],
-                 request.form['state'], request.form['dob'],
-                 request.form.get('preferred_court_1', ''),
-                 request.form.get('preferred_court_2', ''),
-                 request.form['gender'],
-                 request.form.get('preferred_court_1_coordinates', ''),
-                 request.form.get('preferred_court_2_coordinates', ''),
-                 request.form['skill_level'], request.form['email'],
-                 selfie_filename,
-                 request.form.get('payout_preference', ''),
-                 request.form.get('paypal_email', ''),
-                 request.form.get('venmo_username', ''),
-                 request.form.get('zelle_info', ''),
-                 latitude, longitude, search_radius_miles, travel_radius,
-                 player_id)
-            )
-        else:
-            conn.execute(
-                '''
-                UPDATE players 
-                SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?,
-                    dob = ?, preferred_court_1 = ?, preferred_court_2 = ?, gender = ?,
-                    court1_coordinates = ?, court2_coordinates = ?,
-                    skill_level = ?, email = ?, payout_preference = ?,
-                    paypal_email = ?, venmo_username = ?, zelle_info = ?,
-                    latitude = ?, longitude = ?, search_radius_miles = ?, travel_radius = ?
-                WHERE id = ?
-                ''',
-                (request.form['full_name'], request.form['address'],
-                 request.form['zip_code'], request.form['city'],
-                 request.form['state'], request.form['dob'],
-                 request.form.get('preferred_court_1', ''),
-                 request.form.get('preferred_court_2', ''),
-                 request.form['gender'],
-                 request.form.get('preferred_court_1_coordinates', ''),
-                 request.form.get('preferred_court_2_coordinates', ''),
-                 request.form['skill_level'], request.form['email'],
-                 request.form.get('payout_preference', ''),
-                 request.form.get('paypal_email', ''),
-                 request.form.get('venmo_username', ''),
-                 request.form.get('zelle_info', ''),
-                 latitude, longitude, search_radius_miles, travel_radius,
-                 player_id)
-            )
+            selfie_sql = ", selfie = ?"
+            update_fields.insert(13, selfie_filename)  # after email
 
+        conn.execute(f'''
+            UPDATE players 
+            SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?, 
+                dob = ?, preferred_court_1 = ?, preferred_court_2 = ?, gender = ?,
+                court1_coordinates = ?, court2_coordinates = ?,
+                skill_level = ?, email = ?{selfie_sql}, payout_preference = ?,
+                paypal_email = ?, venmo_username = ?, zelle_info = ?,
+                latitude = ?, longitude = ?, search_radius_miles = ?, travel_radius = ?
+            WHERE id = ?
+        ''', update_fields)
+
+        # --- Update match preference ---
+        match_preference = request.form.get('match_preference_radio')
+        if match_preference in ['singles', 'doubles']:
+            conn.execute(
+                "UPDATE players SET match_preference = ? WHERE id = ?",
+                (match_preference, player_id)
+            )
+            logging.info(f"✅ Player {player_id} updated match_preference → {match_preference}")
+
+        # --- Update location1 if changed ---
+        if new_location1 != existing_loc:
+            conn.execute("UPDATE players SET location1 = ? WHERE id = ?", (new_location1, player_id))
+            logging.info(f"Updated location1 for player {player_id} → {new_location1}")
+
+        # --- Commit all at once ---
         conn.commit()
         conn.close()
 
@@ -8253,9 +8396,12 @@ def update_profile():
         return redirect(url_for('index'))
 
     except Exception as e:
+        conn.rollback()
         conn.close()
+        logging.exception("Profile update failed")
         flash(f'Error updating profile: {str(e)}', 'danger')
         return redirect(url_for('profile_settings'))
+
 
 @app.route('/clear_profile_completion_flag', methods=['POST'])
 def clear_profile_completion_flag():
@@ -9203,38 +9349,37 @@ def admin_backfill_matches():
 
 @app.route('/update_match_preference', methods=['POST'])
 def update_match_preference():
-    """Update player's match preference"""
-    current_player_id = session.get('current_player_id')
+    """AJAX endpoint to update a player's singles/doubles preference."""
+    player_id = session.get('current_player_id')
 
-    if not current_player_id:
-        return jsonify({
-            'success': False,
-            'message': 'Authentication required'
-        })
+    # Support both form and JSON
+    if request.is_json:
+        data = request.get_json()
+        new_pref = data.get('match_preference')
+    else:
+        new_pref = request.form.get('match_preference')
 
-    preference = request.form.get('match_preference')
-    if preference not in [
-            'singles', 'doubles_with_partner', 'doubles_need_partner'
-    ]:
+    if not player_id:
+        logging.warning("❌ update_match_preference: No player_id in session")
+        return jsonify({'success': False, 'message': 'Not logged in'})
+    
+    if new_pref not in ['singles', 'doubles']:
+        logging.warning(f"❌ update_match_preference: Invalid value {new_pref}")
         return jsonify({'success': False, 'message': 'Invalid preference'})
 
     try:
         conn = get_db_connection()
-        conn.execute('UPDATE players SET match_preference = ? WHERE id = ?',
-                     (preference, current_player_id))
+        conn.execute(
+            'UPDATE players SET match_preference = ? WHERE id = ?',
+            (new_pref, player_id)
+        )
         conn.commit()
         conn.close()
-
-        return jsonify({
-            'success': True,
-            'message': 'Match preference updated successfully'
-        })
+        logging.info(f"✅ Player {player_id} updated match_preference → {new_pref}")
+        return jsonify({'success': True, 'message': 'Preference updated successfully'})
     except Exception as e:
-        logging.error(f"Error updating match preference: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to update preference'
-        })
+        logging.exception("❌ DB error updating match_preference")
+        return jsonify({'success': False, 'message': str(e)})
 
 
 @app.route('/send_team_invitation', methods=['POST'])
@@ -9900,7 +10045,6 @@ def admin_update_player(player_id):
 
 
 @app.route('/admin/players/<int:player_id>/delete', methods=['POST'])
-@require_admin()
 def admin_delete_player(player_id):
     """Delete a test player (except ID 1)"""
     # Prevent deletion of the main admin account (ID 1)
@@ -9929,7 +10073,7 @@ def admin_delete_player(player_id):
         flash(f'Error deleting player: {str(e)}', 'danger')
 
     conn.close()
-    return redirect(url_for('admin_players'))
+    return redirect(url_for('player_login'))
 
 
 @app.route('/update_tournament_instance', methods=['POST'])

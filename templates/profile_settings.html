@@ -99,7 +99,30 @@
                 <hr>
 
                 <!-- Edit Form -->
-                <form method="POST" action="{{ url_for('update_profile') }}" enctype="multipart/form-data">
+               <form method="POST" action="{{ url_for('update_profile') }}" enctype="multipart/form-data">
+
+    <!-- Username Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="card-title mb-0 text-neon text-bold">
+                <i class="fas fa-user-tag me-2"></i>Username
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="username" class="form-label">
+                    <i class="fas fa-at me-1"></i>Username *
+                </label>
+                <input type="text" class="form-control" id="username" name="username" 
+                       value="{{ player.username or '' }}" required>
+                <div class="form-text">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Your public handle — must be unique and at least 3 characters.
+                </div>
+            </div>
+        </div>
+    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -125,7 +148,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="address" class="form-label">
-                                    <i class="fas fa-home me-1"></i>Street Address *
+                                    <i class="fas fa-home me-1"></i>Street Address
                                 </label>
                                 <input type="text" class="form-control" id="address" name="address" 
                                        value="{{ player.address }}" placeholder="123 Main St" required>
@@ -134,37 +157,47 @@
                         <div class="col-md-2">
                             <div class="mb-3">
                                 <label for="zip_code" class="form-label">
-                                    <i class="fas fa-map-pin me-1"></i>Zip Code *
+                                    <i class="fas fa-map-pin me-1"></i>Zip Code
                                 </label>
                                 <input type="text" class="form-control" id="zip_code" name="zip_code" 
-                                       value="{{ player.zip_code or '' }}" placeholder="12345" required>
+                                       value="{{ player.zip_code or '' }}" placeholder="12345">
                             </div>
                         </div>
                         <div class="col-md-2">
                             <div class="mb-3">
                                 <label for="city" class="form-label">
-                                    <i class="fas fa-city me-1"></i>City *
+                                    <i class="fas fa-city me-1"></i>City
                                 </label>
                                 <input type="text" class="form-control" id="city" name="city" 
-                                       value="{{ player.city or '' }}" placeholder="Your City" required>
+                                       value="{{ player.city or '' }}" placeholder="Your City">
                             </div>
                         </div>
                         <div class="col-md-2">
                             <div class="mb-3">
                                 <label for="state" class="form-label">
-                                    <i class="fas fa-flag me-1"></i>State *
+                                    <i class="fas fa-flag me-1"></i>State
                                 </label>
                                 <input type="text" class="form-control" id="state" name="state" 
-                                       value="{{ player.state or '' }}" placeholder="CA" required>
+                                       value="{{ player.state or '' }}" placeholder="CA">
                             </div>
                         </div>
                     </div>
-                    
+                            <div class="row">
+                                <div class="col-12">
+                                    <button type="button" class="btn btn-outline-primary" id="gps-btn" onclick="requestLocationPermission()">
+                                        <i class="fas fa-location-dot me-1"></i>Use My Current Location
+                                    </button>
+                                        <input type="hidden" id="latitude" name="latitude">
+                                        <input type="hidden" id="longitude" name="longitude">
+                                        <input type="hidden" id="location1" name="location1">
+                                </div>
+                            </div>
+
                     <div class="row">
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="dob" class="form-label">
-                                    <i class="fas fa-birthday-cake me-1"></i>Date of Birth *
+                                    <i class="fas fa-birthday-cake me-1"></i>Date of Birth 
                                 </label>
                                 <input type="text" class="form-control" id="dob" name="dob" 
                                        value="{{ player.dob }}" placeholder="MM-DD-YYYY" required>
@@ -211,24 +244,7 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="travel_radius" class="form-label">
-                                    <i class="fas fa-route me-1"></i>Maximum Travel Distance (miles)
-                                </label>
-                                <select class="form-select" id="travel_radius" name="travel_radius">
-                                    <option value="5" {{ 'selected' if player.travel_radius == 5 }}>5 miles</option>
-                                    <option value="10" {{ 'selected' if player.travel_radius == 10 }}>10 miles</option>
-                                    <option value="15" {{ 'selected' if player.travel_radius == 15 }}>15 miles</option>
-                                    <option value="25" {{ 'selected' if player.travel_radius == 25 or not player.travel_radius }}>25 miles (default)</option>
-                                    <option value="50" {{ 'selected' if player.travel_radius == 50 }}>50 miles</option>
-                                    <option value="75" {{ 'selected' if player.travel_radius == 75 }}>75 miles</option>
-                                    <option value="100" {{ 'selected' if player.travel_radius == 100 }}>100 miles</option>
-                                </select>
-                                <div class="form-text">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    How far you're willing to travel for matches and tournaments
-                                </div>
-                            </div>
+                            
                         </div>
                     </div>
                     
@@ -263,60 +279,9 @@
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="payout_preference" class="form-label">
-                            <i class="fas fa-money-bill me-1"></i>Payout Preference for Tournament Winnings
-                        </label>
-                        <select class="form-select" id="payout_preference" name="payout_preference">
-                            <option value="">Select payout method...</option>
-                            <option value="PayPal" {{ 'selected' if player.payout_preference == 'PayPal' }}>PayPal</option>
-                            <option value="Venmo" {{ 'selected' if player.payout_preference == 'Venmo' }}>Venmo</option>
-                            <option value="Zelle" {{ 'selected' if player.payout_preference == 'Zelle' }}>Zelle</option>
-                        </select>
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Choose how you'd prefer to receive tournament winnings
-                        </div>
-                    </div>
                     
-                    <!-- PayPal Account Info -->
-                    <div class="mb-3" id="paypal_section" style="display: none;">
-                        <label for="paypal_email" class="form-label">
-                            <i class="fab fa-paypal me-1"></i>PayPal Email Address
-                        </label>
-                        <input type="email" class="form-control" id="paypal_email" name="paypal_email" 
-                               value="{{ player.paypal_email or '' }}" placeholder="your.email@example.com">
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Enter the email address associated with your PayPal account
-                        </div>
-                    </div>
-                    
-                    <!-- Venmo Account Info -->
-                    <div class="mb-3" id="venmo_section" style="display: none;">
-                        <label for="venmo_username" class="form-label">
-                            <i class="fas fa-user me-1"></i>Venmo Username
-                        </label>
-                        <input type="text" class="form-control" id="venmo_username" name="venmo_username" 
-                               value="{{ player.venmo_username or '' }}" placeholder="@your-venmo-username">
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Enter your Venmo username (with or without the @ symbol)
-                        </div>
-                    </div>
-                    
-                    <!-- Zelle Account Info -->
-                    <div class="mb-3" id="zelle_section" style="display: none;">
-                        <label for="zelle_info" class="form-label">
-                            <i class="fas fa-mobile-alt me-1"></i>Zelle Email or Phone Number
-                        </label>
-                        <input type="text" class="form-control" id="zelle_info" name="zelle_info" 
-                               value="{{ player.zelle_info or '' }}" placeholder="email@example.com or (555) 123-4567">
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Enter the email or phone number linked to your Zelle account
-                        </div>
-                    </div>
+                  
+                 
                     
                     <!-- Location Settings Section -->
                     <div class="card account-info-card mb-4">
@@ -327,19 +292,7 @@
                         </div>
                         <div class="card-body">
                             <!-- Current Location Display -->
-                            {% if player.latitude and player.longitude %}
-                            <div class="alert alert-info mb-3">
-                                <div class="row align-items-center">
-                                    <div class="col-auto">
-                                        <i class="fas fa-map-pin text-primary fa-lg"></i>
-                                    </div>
-                                    <div class="col">
-                                        <strong>Current Location:</strong> {{ "%.4f, %.4f"|format(player.latitude, player.longitude) }}
-                                        <br><small class="text-muted">GPS coordinates from your registration</small>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
+                            
 
                             <div class="row">
                                 <div class="col-md-6">
@@ -348,8 +301,7 @@
                                             <i class="fas fa-search me-1"></i>Player & Tournament Search Radius (up to)
                                         </label>
                                         <div class="input-group">
-                                            <input type="range" class="form-range" id="search_radius_range" 
-                                                   min="15" max="50" step="5" value="{{ player.search_radius_miles or 15 }}">
+    
                                             <input type="number" class="form-control" id="search_radius_miles" 
                                                    name="search_radius_miles" min="15" max="50" step="5" 
                                                    value="{{ player.search_radius_miles or 15 }}" style="width: 80px;">
@@ -363,36 +315,12 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="location_zip_code" class="form-label">
-                                            <i class="fas fa-map-pin me-1"></i>Update Location by ZIP Code
-                                        </label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" id="location_zip_code" 
-                                                   name="location_zip_code" placeholder="Enter ZIP code" maxlength="5">
-                                            <button type="button" class="btn btn-outline-secondary" id="update_location_btn">
-                                                <i class="fas fa-sync me-1"></i>Update
-                                            </button>
-                                        </div>
-                                        <div class="form-text">
-                                            <i class="fas fa-info-circle me-1"></i>
-                                            Enter ZIP code to update your location coordinates
-                                        </div>
+                                        
+                                      
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="row">
-                                <div class="col-12">
-                                    <button type="button" class="btn btn-outline-primary" id="gps_location_btn">
-                                        <i class="fas fa-crosshairs me-1"></i>Use My Current GPS Location
-                                    </button>
-                                    <div class="form-text mt-2">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Click to use your device's GPS for precise location matching
-                                    </div>
-                                    <div id="location_status" class="mt-2"></div>
-                                </div>
-                            </div>
                             
                             <!-- Hidden fields for GPS coordinates -->
                             <input type="hidden" id="latitude" name="latitude" value="{{ player.latitude or '' }}">
@@ -402,254 +330,50 @@
                     </div>
                     
                     <!-- Team Management Section -->
-                    <div class="card account-info-card mb-4">
-                        <div class="card-header">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-users me-2"></i>Team & Match Preferences
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <!-- Current Team Status -->
-                            {% if current_team %}
-                            <div class="alert alert-success mb-3">
-                                <div class="row align-items-center">
-                                    <div class="col-auto">
-                                        <i class="fas fa-users text-success fa-2x"></i>
-                                    </div>
-                                    <div class="col">
-                                        <h6 class="mb-1">
-                                            <strong>Current Team: {{ current_team.team_name or 'Doubles Partnership' }}</strong>
-                                        </h6>
-                                        <div class="d-flex align-items-center mb-2">
-                                            {% if current_team.player1_id == player.id %}
-                                                {% set partner = current_team.player2_name %}
-                                                {% set partner_selfie = current_team.player2_selfie %}
-                                            {% else %}
-                                                {% set partner = current_team.player1_name %}
-                                                {% set partner_selfie = current_team.player1_selfie %}
-                                            {% endif %}
-                                            
-                                            {% if partner_selfie %}
-                                                <img src="{{ url_for('static', filename='uploads/' + partner_selfie) }}" 
-                                                     class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;" 
-                                                     alt="{{ partner }}">
-                                            {% endif %}
-                                            <span class="text-bold">Partner: {{ partner }}</span>
-                                        </div>
-                                        <small class="text-muted">Team formed on {{ current_team.created_at[:10] }}</small>
-                                    </div>
-                                    <div class="col-auto">
-                                        <a href="{{ url_for('leave_team') }}" class="btn btn-outline-primary btn-sm" onclick="return confirmLeaveTeam()">
-                                            <i class="fas fa-sync-alt me-1"></i>Switch Partner today
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
+                   <div class="card account-info-card mb-4">
+  <div class="card-header">
+    <h6 class="card-title mb-0">
+      <i class="fas fa-table-tennis me-2"></i>Team & Match Preferences
+    </h6>
+  </div>
+  <div class="card-body">
+    <div class="mb-3">
+      <label class="form-label">
+        <i class="fas fa-table-tennis me-1"></i>Select Match Type
+      </label>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="match_preference_radio"
+                   id="singles_pref" value="singles"
+                   {{ 'checked' if player.match_preference == 'singles' }}>
+            <label class="form-check-label" for="singles_pref">
+              <i class="fas fa-user me-1"></i><strong>Singles</strong><br>
+              <small class="text-muted">Play individual matches</small>
+            </label>
+          </div>
+        </div>
 
-                            <!-- Match Preference Selection -->
-                            <div class="mb-3">
-                                <label class="form-label">
-                                    <i class="fas fa-table-tennis me-1"></i>Match Type Preference
-                                </label>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="match_preference_radio" 
-                                                   id="singles_pref" value="singles" 
-                                                   {{ 'checked' if player.match_preference == 'singles' or not player.match_preference }}
-                                                   {{ 'disabled' if current_team }}>
-                                            <label class="form-check-label" for="singles_pref">
-                                                <i class="fas fa-user me-1"></i>
-                                                <strong>Singles</strong><br>
-                                                <small class="text-muted">Play individual matches</small>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="match_preference_radio" 
-                                                   id="doubles_with_partner_pref" value="doubles_with_partner" 
-                                                   {{ 'checked' if player.match_preference == 'doubles_with_partner' }}
-                                                   {{ 'disabled' if current_team }}>
-                                            <label class="form-check-label" for="doubles_with_partner_pref">
-                                                <i class="fas fa-users me-1"></i>
-                                                <strong>Doubles (Have Partner)</strong><br>
-                                                <small class="text-muted">Play with a teammate</small>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="match_preference_radio" 
-                                                   id="doubles_need_partner_pref" value="doubles_need_partner" 
-                                                   {{ 'checked' if player.match_preference == 'doubles_need_partner' }}
-                                                   {{ 'disabled' if current_team }}>
-                                            <label class="form-check-label" for="doubles_need_partner_pref">
-                                                <i class="fas fa-search me-1"></i>
-                                                <strong>Need a Partner</strong><br>
-                                                <small class="text-muted">Looking for a teammate</small>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% if current_team %}
-                                <div class="form-text text-info mt-2">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    You must leave your current team before changing match preferences
-                                </div>
-                                {% endif %}
-                            </div>
+        <div class="col-md-6">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="match_preference_radio"
+                   id="doubles_pref" value="doubles"
+                   {{ 'checked' if player.match_preference == 'doubles' }}>
+            <label class="form-check-label" for="doubles_pref">
+              <i class="fas fa-users me-1"></i><strong>Doubles</strong><br>
+              <small class="text-muted">Play with a partner</small>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
 
-                            <!-- Team Action Buttons -->
-                            {% if not current_team %}
-                            <div class="row mt-3" id="team_action_section" style="display: none;">
-                                <!-- Have Partner - Show Invite Form -->
-                                <div id="have_partner_section" class="col-12" style="display: none;">
-                                    <div class="card bg-dark border-secondary">
-                                        <div class="card-header">
-                                            <h6 class="mb-0">
-                                                <i class="fas fa-handshake me-2"></i>Invite Your Partner
-                                            </h6>
-                                        </div>
-                                        <div class="card-body">
-                                            {% if connections %}
-                                            <div class="mb-3">
-                                                <label class="form-label">Select from players you've played with:</label>
-                                                <div class="row">
-                                                    {% for connection in connections %}
-                                                    <div class="col-md-6 mb-2">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio" name="partner_connection" 
-                                                                   id="partner_{{ connection.id }}" value="{{ connection.id }}">
-                                                            <label class="form-check-label d-flex align-items-center" 
-                                                                   for="partner_{{ connection.id }}">
-                                                                {% if connection.selfie %}
-                                                                    <img src="{{ url_for('static', filename='uploads/' + connection.selfie) }}" 
-                                                                         class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;" 
-                                                                         alt="{{ connection.full_name }}">
-                                                                {% endif %}
-                                                                {{ connection.full_name }}
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                    {% endfor %}
-                                                </div>
-                                            </div>
-                                            {% else %}
-                                            <div class="alert alert-info">
-                                                <i class="fas fa-info-circle me-2"></i>
-                                                You haven't played any matches yet. Complete some matches first to build connections!
-                                            </div>
-                                            {% endif %}
-                                            
-                                            <div class="mb-3">
-                                                <label for="invitation_message" class="form-label">Invitation Message (Optional)</label>
-                                                <textarea class="form-control" id="invitation_message" rows="2" 
-                                                        placeholder="Hey! Want to be my doubles partner?"></textarea>
-                                            </div>
-                                            
-                                            <button type="button" class="btn btn-primary" onclick="sendTeamInvitation()">
-                                                <i class="fas fa-paper-plane me-1"></i>Send Invitation
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Need Partner - Show Search Button -->
-                                <div id="need_partner_section" class="col-12" style="display: none;">
-                                    <div class="card bg-dark border-secondary">
-                                        <div class="card-body text-center">
-                                            <i class="fas fa-search fa-3x text-primary mb-3"></i>
-                                            <h6 class="mb-2">Find Your Perfect Partner</h6>
-                                            <p class="text-muted mb-3">Search for other players who also need a doubles partner</p>
-                                            <a href="{{ url_for('team_search') }}" class="btn btn-primary">
-                                                <i class="fas fa-search me-1"></i>Search for Partners
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <!-- Pending Team Invitations -->
-                            {% if pending_invitations %}
-                            <div class="mt-4">
-                                <h6 class="text-neon mb-3">
-                                    <i class="fas fa-envelope me-2"></i>Team Invitations ({{ pending_invitations|length }})
-                                </h6>
-                                {% for invitation in pending_invitations %}
-                                <div class="card bg-dark border-warning mb-2">
-                                    <div class="card-body">
-                                        <div class="row align-items-center">
-                                            <div class="col-auto">
-                                                {% if invitation.inviter_selfie %}
-                                                    <img src="{{ url_for('static', filename='uploads/' + invitation.inviter_selfie) }}" 
-                                                         class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" 
-                                                         alt="{{ invitation.inviter_name }}">
-                                                {% else %}
-                                                    <div class="rounded-circle avatar-placeholder d-inline-flex align-items-center justify-content-center" 
-                                                         style="width: 40px; height: 40px;">
-                                                        <i class="fas fa-user text-white"></i>
-                                                    </div>
-                                                {% endif %}
-                                            </div>
-                                            <div class="col">
-                                                <h6 class="mb-1">{{ invitation.inviter_name }} wants to team up!</h6>
-                                                {% if invitation.invitation_message %}
-                                                <p class="mb-1 text-muted">"{{ invitation.invitation_message }}"</p>
-                                                {% endif %}
-                                                <small class="text-muted">Sent {{ invitation.created_at.strftime('%Y-%m-%d') }}</small>
-                                            </div>
-                                            <div class="col-auto">
-                                                <a href="{{ url_for('accept_team_invitation_route', invitation_id=invitation.id) }}" 
-                                                   class="btn btn-success btn-sm me-1">
-                                                    <i class="fas fa-check me-1"></i>Accept
-                                                </a>
-                                                <a href="{{ url_for('reject_team_invitation_route', invitation_id=invitation.id) }}" 
-                                                   class="btn btn-outline-danger btn-sm">
-                                                    <i class="fas fa-times me-1"></i>Decline
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
+    
+  </div>
+</div>
                     
                     <!-- Discoverability Section -->
-                    <div class="card account-info-card mb-4">
-                        <div class="card-header">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-eye me-2"></i>Discoverability
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label for="discoverability_preference" class="form-label">
-                                    <i class="fas fa-search me-1"></i>How can other players find you?
-                                </label>
-                                <select class="form-select" id="discoverability_preference" name="discoverability_preference">
-                                    <option value="singles" {{ 'selected' if player.discoverability_preference == 'singles' }}>
-                                        <i class="fas fa-user me-1"></i>Singles Only - Available for singles challenges only
-                                    </option>
-                                    <option value="doubles" {{ 'selected' if player.discoverability_preference == 'doubles' }}>
-                                        <i class="fas fa-users me-1"></i>Doubles Only - Available for doubles partner search only
-                                    </option>
-                                    <option value="both" {{ 'selected' if player.discoverability_preference == 'both' or not player.discoverability_preference }}>
-                                        <i class="fas fa-globe me-1"></i>Both - Available for singles challenges and doubles partner search
-                                    </option>
-                                </select>
-                                <div class="form-text">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Control how other players can discover and connect with you in the app
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                   
                     
                     <div class="mb-3">
                         <label for="selfie" class="form-label">
@@ -676,9 +400,11 @@
                         </h5>
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <button type="button" class="btn btn-outline-secondary w-100" id="resetPasswordBtn">
-                                    <i class="fas fa-key me-2"></i>Reset Password
-                                </button>
+                                <button type="button" class="btn btn-outline-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#resetPasswordModal">
+  <i class="fas fa-key me-1"></i> Reset Password
+</button>
                             </div>
                             <div class="col-md-4">
                                 <button type="button" class="btn btn-outline-warning w-100" id="cancelMembershipBtn">
@@ -686,9 +412,10 @@
                                 </button>
                             </div>
                             <div class="col-md-4">
-                                <button type="button" class="btn btn-outline-danger w-100" id="deleteAccountBtn">
-                                    <i class="fas fa-trash-alt me-2"></i>Delete Account
-                                </button>
+                                <!-- Delete Account Modal Trigger (outside the modal) -->
+<button type="button" class="btn btn-outline-danger w-100" id="openDeleteAccountModal">
+  <i class="fas fa-trash-alt me-2"></i>Delete Account
+</button>
                             </div>
                         </div>
                         <div class="mt-3">
@@ -770,69 +497,154 @@
     </div>
 </div>
 
+
+
 <!-- Delete Account Modal -->
 <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-trash-alt me-2"></i>Delete Account
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Warning!</strong> This action cannot be undone.
-                </div>
-                <p>Deleting your account will permanently remove:</p>
-                <ul>
-                    <li>Your profile and all personal information</li>
-                    <li>Match history and tournament records</li>
-                    <li>Ranking points and achievements</li>
-                    <li>All messages and connections</li>
-                </ul>
-                <div class="mb-3">
-                    <label for="deleteConfirmText" class="form-label">
-                        Type <strong>DELETE</strong> to confirm:
-                    </label>
-                    <input type="text" class="form-control" id="deleteConfirmText" placeholder="Type DELETE">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteAccount" disabled>
-                    <i class="fas fa-trash-alt me-1"></i>Delete Account Permanently
-                </button>
-            </div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-exclamation-triangle me-2"></i>Confirm Account Deletion
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>
+          <strong>Warning!</strong> This action is permanent and cannot be undone.
+        </p>
+        <ul>
+          <li>All your matches, tournaments, and stats will be erased.</li>
+          <li>Your account and personal data will be permanently deleted.</li>
+        </ul>
+        <div class="mb-3">
+          <label for="deleteConfirmText" class="form-label">
+            Type <strong>DELETE</strong> to confirm:
+          </label>
+          <input
+            type="text"
+            class="form-control"
+            id="deleteConfirmText"
+            placeholder="Type DELETE to confirm"
+          >
         </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteAccount" disabled>
+          <i class="fas fa-trash-alt me-1"></i>Delete Account Permanently
+        </button>
+      </div>
     </div>
+  </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Payout preference field management
-function togglePayoutFields() {
-    const selectedMethod = document.getElementById('payout_preference').value;
-    const paypalSection = document.getElementById('paypal_section');
-    const venmoSection = document.getElementById('venmo_section');
-    const zelleSection = document.getElementById('zelle_section');
-    
-    // Hide all sections first
-    paypalSection.style.display = 'none';
-    venmoSection.style.display = 'none';
-    zelleSection.style.display = 'none';
-    
-    // Show the relevant section
-    if (selectedMethod === 'PayPal') {
-        paypalSection.style.display = 'block';
-    } else if (selectedMethod === 'Venmo') {
-        venmoSection.style.display = 'block';
-    } else if (selectedMethod === 'Zelle') {
-        zelleSection.style.display = 'block';
+document.addEventListener("DOMContentLoaded", function () {
+  const openDeleteBtn = document.getElementById("openDeleteAccountModal");
+  const deleteModalEl = document.getElementById("deleteAccountModal");
+  const deleteConfirmInput = document.getElementById("deleteConfirmText");
+  const confirmDeleteBtn = document.getElementById("confirmDeleteAccount");
+
+  if (openDeleteBtn && deleteModalEl) {
+    openDeleteBtn.addEventListener("click", () => {
+      console.log("🗑️ Delete Account clicked — opening modal");
+      new bootstrap.Modal(deleteModalEl).show();
+    });
+  }
+
+  if (deleteConfirmInput && confirmDeleteBtn) {
+    deleteConfirmInput.addEventListener("input", () => {
+      confirmDeleteBtn.disabled = (deleteConfirmInput.value.trim().toUpperCase() !== "DELETE");
+    });
+
+    confirmDeleteBtn.addEventListener("click", async () => {
+      console.log("🚨 Confirm delete initiated");
+      if (deleteConfirmInput.value.trim().toUpperCase() !== "DELETE") {
+        alert("Please type DELETE to confirm.");
+        return;
+      }
+
+      confirmDeleteBtn.disabled = true;
+      confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+
+      try {
+        const res = await fetch(`/admin/players/{{ player.id }}/delete`, {
+          method: "POST",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+
+        if (res.ok) {
+          alert("✅ Account deleted successfully.");
+          window.location.href = "/";
+        } else {
+          const msg = await res.text();
+          alert("❌ Delete failed: " + msg);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Network error: " + err.message);
+      } finally {
+        confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt me-1"></i>Delete Account Permanently';
+        confirmDeleteBtn.disabled = false;
+      }
+    });
+  }
+});
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+  const resetBtn = document.getElementById("confirmResetPassword");
+  const resetEmailInput = document.getElementById("resetEmail");
+
+  if (!resetBtn) {
+    console.warn("Reset password button not found");
+    return;
+  }
+
+  resetBtn.addEventListener("click", async function () {
+    const email = resetEmailInput?.value?.trim();
+
+    if (!email) {
+      alert("No email address found. Please check your profile email.");
+      return;
     }
-}
+
+    // Show loading feedback
+    resetBtn.disabled = true;
+    resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+
+    try {
+      const response = await fetch("/forgot_password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("✅ Password reset email sent! Check your inbox.");
+      } else {
+        alert("⚠️ " + (data.message || "Failed to send reset email."));
+      }
+    } catch (err) {
+      alert("❌ Network error: " + err.message);
+      console.error(err);
+    } finally {
+      resetBtn.disabled = false;
+      resetBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Reset Email';
+    }
+  });
+});
+// Payout preference field management
+
 
 // Initialize payout fields on page load
 // Payout field toggle function (called from main DOMContentLoaded)
@@ -1119,432 +931,190 @@ function showTeamSection(preference) {
     }
 }
 
-// MAIN DOM CONTENT LOADED - ALL FUNCTIONALITY CONSOLIDATED
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== INITIALIZING ALL PROFILE SETTINGS ===');
-    
-    // === RADIO BUTTON FUNCTIONALITY ===
-    const radios = document.querySelectorAll('input[name="match_preference_radio"]');
-    console.log('Found', radios.length, 'radio buttons');
-    
-    if (radios.length > 0) {
-        radios.forEach(function(radio, index) {
-            console.log(`Radio ${index}: value=${radio.value}, disabled=${radio.disabled}, checked=${radio.checked}`);
-            radio.addEventListener('change', function() {
-                console.log('*** RADIO CLICKED ***', this.value);
-                handleRadioChange.call(this);
-            });
-        });
-        
-        // Initialize on page load
-        const checkedRadio = document.querySelector('input[name="match_preference_radio"]:checked');
-        if (checkedRadio) {
-            console.log('Initial checked radio:', checkedRadio.value);
-            showTeamSection(checkedRadio.value);
-        }
-    }
-    
-    // === PAYOUT PREFERENCE FUNCTIONALITY ===
-    const payoutSelect = document.getElementById('payout_preference');
-    if (payoutSelect) {
-        payoutSelect.addEventListener('change', togglePayoutFields);
-        togglePayoutFields();
-    }
-    
-    // === DELETE ACCOUNT FUNCTIONALITY ===
-    const deleteBtn = document.getElementById('delete_account_btn');
-    const deleteConfirmText = document.getElementById('deleteConfirmText');
-    const confirmDeleteBtn = document.getElementById('confirmDeleteAccount');
-    
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
-            modal.show();
-        });
-    }
-    
-    if (deleteConfirmText && confirmDeleteBtn) {
-        deleteConfirmText.addEventListener('input', function() {
-            const inputText = this.value.trim();
-            if (inputText === 'DELETE') {
-                confirmDeleteBtn.disabled = false;
-                confirmDeleteBtn.classList.remove('disabled');
-            } else {
-                confirmDeleteBtn.disabled = true;
-                confirmDeleteBtn.classList.add('disabled');
-            }
-        });
-        
-        confirmDeleteBtn.addEventListener('click', function() {
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
-            this.disabled = true;
-            setTimeout(() => {
-                alert('Account deletion initiated. All your data will be permanently removed within 24 hours.');
-                window.location.href = '/';
-            }, 2000);
-        });
-    }
-    
-    // === CANCEL MEMBERSHIP FUNCTIONALITY ===
-    const cancelBtn = document.getElementById('confirmCancelMembership');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
-            const reason = document.getElementById('cancelReason').value;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
-            this.disabled = true;
-            setTimeout(() => {
-                alert('Membership cancellation requested. You will receive a confirmation email shortly.');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('cancelMembershipModal'));
-                modal.hide();
-                this.innerHTML = '<i class="fas fa-times me-1"></i>Cancel Membership';
-                this.disabled = false;
-            }, 2000);
-        });
-    }
-    
-    // === LOCATION FUNCTIONALITY ===  
-    const rangeSlider = document.getElementById('search_radius_range');
-    const numberInput = document.getElementById('search_radius_miles');
-    const gpsBtn = document.getElementById('gps_location_btn');
-    const updateLocationBtn = document.getElementById('update_location_btn');
-    
-    if (rangeSlider && numberInput) {
-        rangeSlider.addEventListener('input', function() {
-            numberInput.value = this.value;
-        });
-        numberInput.addEventListener('input', function() {
-            rangeSlider.value = this.value;
-        });
-    }
-    
-    if (gpsBtn) {
-        gpsBtn.addEventListener('click', getGPSLocation);
-    }
-    
-    if (updateLocationBtn) {
-        updateLocationBtn.addEventListener('click', updateLocationFromZip);
-    }
-    
-    // === COURT SEARCH FUNCTIONALITY ===
-    const courtInputs = document.querySelectorAll('.court-search');
-    courtInputs.forEach(input => {
-        const mapId = input.id + '-map';
-        let searchTimeout;
-        
-        // If input has a value, search for it immediately (wait for Leaflet to load)
-        if (input.value && input.value.length >= 3) {
-            setTimeout(() => {
-                const mapContainer = document.getElementById(mapId);
-                if (mapContainer && typeof L !== 'undefined') {
-                    mapContainer.style.display = 'block';
-                    initializeMap(mapId, input.id);
-                    searchCourt(input.value, mapId, input.id);
-                }
-            }, 1000); // Increased delay to ensure Leaflet loads
-        }
-        
-        input.addEventListener('input', function() {
-            const query = this.value.trim();
-            const mapContainer = document.getElementById(mapId);
-            
-            if (query.length >= 3) {
-                if (mapContainer) {
-                    mapContainer.style.display = 'block';
-                    if (!maps[mapId]) {
-                        setTimeout(() => {
-                            initializeMap(mapId, input.id);
-                        }, 100);
-                    }
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(() => {
-                        searchCourt(query, mapId, input.id);
-                    }, 500);
-                }
-            } else {
-                if (mapContainer) {
-                    mapContainer.style.display = 'none';
-                }
-            }
-        });
-        
-        input.addEventListener('focus', function() {
-            if (this.value.length >= 3) {
-                const mapContainer = document.getElementById(mapId);
-                if (mapContainer) {
-                    mapContainer.style.display = 'block';
-                    setTimeout(() => {
-                        if (maps[mapId]) {
-                            maps[mapId].invalidateSize();
-                        }
-                    }, 100);
-                }
-            }
-        });
+// === MAIN DOM CONTENT LOADED — CLEAN CONSOLIDATED SCRIPT ===
+document.addEventListener("DOMContentLoaded", function () {
+  console.log("✅ Profile Settings JS initialized");
+
+  // === MATCH PREFERENCE FUNCTIONALITY ===
+  const radios = document.querySelectorAll('input[name="match_preference_radio"]');
+  radios.forEach(radio => {
+    radio.addEventListener("change", function () {
+      updateMatchPreference(this.value);
     });
-    
-    // === ACCOUNT MANAGEMENT BUTTONS ===
-    const resetPasswordBtn = document.getElementById('resetPasswordBtn');
-    const cancelMembershipBtn = document.getElementById('cancelMembershipBtn');
-    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
-    const confirmResetPassword = document.getElementById('confirmResetPassword');
-    
-    if (resetPasswordBtn) {
-        resetPasswordBtn.addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
-            modal.show();
+  });
+
+  // === PAYOUT PREFERENCE FUNCTIONALITY ===
+  const payoutSelect = document.getElementById("payout_preference");
+  if (payoutSelect) {
+    payoutSelect.addEventListener("change", togglePayoutFields);
+    togglePayoutFields();
+  }
+
+  // === CANCEL MEMBERSHIP FUNCTIONALITY ===
+  const cancelMembershipBtn = document.getElementById("cancelMembershipBtn");
+  const confirmCancelMembership = document.getElementById("confirmCancelMembership");
+  if (cancelMembershipBtn) {
+    cancelMembershipBtn.addEventListener("click", () => {
+      new bootstrap.Modal(document.getElementById("cancelMembershipModal")).show();
+    });
+  }
+  if (confirmCancelMembership) {
+    confirmCancelMembership.addEventListener("click", function () {
+      const reason = document.getElementById("cancelReason")?.value || "";
+      this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+      this.disabled = true;
+      setTimeout(() => {
+        alert("Membership cancellation requested. You will receive a confirmation email shortly.");
+        const modal = bootstrap.Modal.getInstance(document.getElementById("cancelMembershipModal"));
+        modal.hide();
+        this.innerHTML = '<i class="fas fa-times me-1"></i>Cancel Membership';
+        this.disabled = false;
+      }, 2000);
+    });
+  }
+
+  // === DELETE ACCOUNT FUNCTIONALITY ===
+  const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+  const deleteModalEl = document.getElementById("deleteAccountModal");
+  const deleteConfirmText = document.getElementById("deleteConfirmText");
+  const confirmDeleteBtn = document.getElementById("confirmDeleteAccount");
+
+  if (deleteAccountBtn && deleteModalEl) {
+    deleteAccountBtn.addEventListener("click", function () {
+      console.log("🟢 Delete button clicked — showing modal...");
+      const modal = new bootstrap.Modal(deleteModalEl);
+      modal.show();
+    });
+  }
+
+  if (deleteConfirmText && confirmDeleteBtn) {
+    deleteConfirmText.addEventListener("input", function () {
+      const value = this.value.trim().toUpperCase();
+      confirmDeleteBtn.disabled = (value !== "DELETE");
+    });
+
+    confirmDeleteBtn.addEventListener("click", async function () {
+      console.log("🧨 Confirm delete clicked");
+      if (deleteConfirmText.value.trim().toUpperCase() !== "DELETE") {
+        alert("Please type DELETE to confirm.");
+        return;
+      }
+
+      this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+      this.disabled = true;
+
+      try {
+        const response = await fetch(`/admin/players/{{ player.id }}/delete`, {
+          method: "POST",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
         });
-    }
-    
-    if (cancelMembershipBtn) {
-        cancelMembershipBtn.addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('cancelMembershipModal'));
-            modal.show();
+
+        if (response.redirected) {
+          window.location.href = response.url;
+          return;
+        }
+
+        if (response.ok) {
+          alert("✅ Account deleted successfully.");
+          window.location.href = "/";
+        } else {
+          const text = await response.text();
+          alert("❌ Delete failed: " + text);
+        }
+      } catch (err) {
+        alert("Network error: " + err.message);
+        console.error(err);
+      } finally {
+        this.innerHTML = '<i class="fas fa-trash-alt me-1"></i>Delete Account Permanently';
+        this.disabled = false;
+      }
+    });
+  }
+
+  // === RESET PASSWORD FUNCTIONALITY ===
+  const resetPasswordBtn = document.getElementById("confirmResetPassword");
+  if (resetPasswordBtn) {
+    resetPasswordBtn.addEventListener("click", async () => {
+      const email = document.getElementById("resetEmail")?.value.trim();
+      if (!email) return alert("Missing email address.");
+      const btn = resetPasswordBtn;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+
+      try {
+        const res = await fetch("/forgot_password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
         });
+        const data = await res.json();
+        alert(data.message || "Something went wrong.");
+      } catch (err) {
+        alert("Error: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Reset Email';
+      }
+    });
+  }
+
+  // === LOCATION FUNCTIONALITY ===
+  const rangeSlider = document.getElementById("search_radius_range");
+  const numberInput = document.getElementById("search_radius_miles");
+  if (rangeSlider && numberInput) {
+    rangeSlider.addEventListener("input", () => (numberInput.value = rangeSlider.value));
+    numberInput.addEventListener("input", () => (rangeSlider.value = numberInput.value));
+  }
+
+  const gpsBtn = document.getElementById("gps_location_btn");
+  if (gpsBtn) gpsBtn.addEventListener("click", getGPSLocation);
+
+  const updateLocationBtn = document.getElementById("update_location_btn");
+  if (updateLocationBtn) updateLocationBtn.addEventListener("click", updateLocationFromZip);
+
+  // === COURT SEARCH FUNCTIONALITY ===
+  const courtInputs = document.querySelectorAll(".court-search");
+  courtInputs.forEach((input) => {
+    const mapId = input.id + "-map";
+    let searchTimeout;
+    if (input.value && input.value.length >= 3) {
+      setTimeout(() => {
+        const mapContainer = document.getElementById(mapId);
+        if (mapContainer && typeof L !== "undefined") {
+          mapContainer.style.display = "block";
+          initializeMap(mapId, input.id);
+          searchCourt(input.value, mapId, input.id);
+        }
+      }, 1000);
     }
-    
-    if (deleteAccountBtn) {
-        deleteAccountBtn.addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
-            modal.show();
-        });
-    }
-    
-    if (confirmResetPassword) {
-        confirmResetPassword.addEventListener('click', function() {
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
-            this.disabled = true;
-            setTimeout(() => {
-                alert('Password reset email sent! Check your inbox for instructions.');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal'));
-                modal.hide();
-                this.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Reset Email';
-                this.disabled = false;
-            }, 2000);
-        });
-    }
-    
-    console.log('=== ALL PROFILE SETTINGS INITIALIZED ===');
+    input.addEventListener("input", function () {
+      const query = this.value.trim();
+      const mapContainer = document.getElementById(mapId);
+      if (query.length >= 3) {
+        if (mapContainer) {
+          mapContainer.style.display = "block";
+          if (!maps[mapId]) setTimeout(() => initializeMap(mapId, input.id), 100);
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => searchCourt(query, mapId, input.id), 500);
+        }
+      } else if (mapContainer) {
+        mapContainer.style.display = "none";
+      }
+    });
+    input.addEventListener("focus", function () {
+      if (this.value.length >= 3) {
+        const mapContainer = document.getElementById(mapId);
+        if (mapContainer) {
+          mapContainer.style.display = "block";
+          setTimeout(() => {
+            if (maps[mapId]) maps[mapId].invalidateSize();
+          }, 100);
+        }
+      }
+    });
+  });
+
+  console.log("=== All profile settings initialized successfully ===");
 });
-
-// Update match preference in backend
-function updateMatchPreference(preference) {
-    console.log('=== UPDATING MATCH PREFERENCE ===');
-    console.log('Preference:', preference);
-    
-    fetch('/update_match_preference', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'match_preference=' + encodeURIComponent(preference)
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Update response:', data);
-        if (data.success) {
-            console.log('✅ Match preference updated successfully!');
-        } else {
-            console.error('❌ Failed to update preference:', data.message);
-        }
-    })
-    .catch(error => {
-        console.error('❌ Network error updating preference:', error);
-    });
-}
-
-// Send team invitation function
-function sendTeamInvitation() {
-    const selectedPartner = document.querySelector('input[name="partner_connection"]:checked');
-    const message = document.getElementById('invitation_message').value;
-
-    if (!selectedPartner) {
-        alert('Please select a partner to invite.');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('invitee_id', selectedPartner.value);
-    formData.append('message', message);
-
-    // Show loading state
-    const button = event.target;
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
-    button.disabled = true;
-
-    fetch('/send_team_invitation', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Team invitation sent successfully!');
-            // Reset form
-            document.getElementById('invitation_message').value = '';
-            selectedPartner.checked = false;
-        } else {
-            alert('Failed to send invitation: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error sending invitation. Please try again.');
-    })
-    .finally(() => {
-        // Reset button
-        button.innerHTML = originalText;
-        button.disabled = false;
-    });
-}
-
-// Confirm leave team function
-function confirmLeaveTeam() {
-    return confirm('Are you sure you want to switch partners? This will dissolve your current team and both players can form new partnerships. This action cannot be undone.');
-}
-
-// GPS Location Function
-function getGPSLocation() {
-    const gpsBtn = document.getElementById('gps_location_btn');
-    const locationStatus = document.getElementById('location_status');
-    
-    if (!navigator.geolocation) {
-        showLocationStatus('GPS not supported by this browser', 'danger');
-        return;
-    }
-    
-    if (!gpsBtn) return;
-    
-    gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Getting Location...';
-    gpsBtn.disabled = true;
-    
-    showLocationStatus('Requesting GPS location...', 'info');
-    
-    navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                
-                // Update hidden fields
-                document.getElementById('latitude').value = lat;
-                document.getElementById('longitude').value = lng;
-                document.getElementById('location_method').value = 'gps';
-                
-                showLocationStatus(`GPS location updated: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, 'success');
-                
-                // Reset button
-                gpsBtn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Use My Current GPS Location';
-                gpsBtn.disabled = false;
-            },
-            function(error) {
-                let errorMessage = 'Error getting GPS location: ';
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMessage += 'Location access denied by user';
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMessage += 'Location information unavailable';
-                        break;
-                    case error.TIMEOUT:
-                        errorMessage += 'Location request timed out';
-                        break;
-                    default:
-                        errorMessage += 'Unknown error occurred';
-                        break;
-                }
-                
-                showLocationStatus(errorMessage, 'danger');
-                
-                // Reset button
-                gpsBtn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Use My Current GPS Location';
-                gpsBtn.disabled = false;
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 300000
-            }
-    );
-}
-
-// Update Location from ZIP Code  
-function updateLocationFromZip() {
-    const zipCodeInput = document.getElementById('location_zip_code');
-    const updateLocationBtn = document.getElementById('update_location_btn');
-    const locationStatus = document.getElementById('location_status');
-    
-    if (!zipCodeInput || !updateLocationBtn) return;
-    
-    const zipCode = zipCodeInput.value.trim();
-        
-        if (!zipCode || zipCode.length !== 5 || !/^\d{5}$/.test(zipCode)) {
-            showLocationStatus('Please enter a valid 5-digit ZIP code', 'danger');
-            return;
-        }
-        
-        updateLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Converting...';
-        updateLocationBtn.disabled = true;
-        
-        showLocationStatus('Converting ZIP code to coordinates...', 'info');
-        
-        // Call our backend endpoint to convert ZIP to coordinates
-        fetch('/api/zip-to-coordinates', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ zip_code: zipCode })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.latitude && data.longitude) {
-                // Update hidden fields
-                document.getElementById('latitude').value = data.latitude;
-                document.getElementById('longitude').value = data.longitude;
-                document.getElementById('location_method').value = 'zip';
-                
-                showLocationStatus(`Location updated from ZIP ${zipCode}: ${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}`, 'success');
-                zipCodeInput.value = ''; // Clear the input
-            } else {
-                showLocationStatus(data.message || 'Could not convert ZIP code to coordinates', 'danger');
-            }
-            
-            // Reset button
-            updateLocationBtn.innerHTML = '<i class="fas fa-sync me-1"></i>Update';
-            updateLocationBtn.disabled = false;
-        })
-        .catch(error => {
-            showLocationStatus('Error converting ZIP code: ' + error.message, 'danger');
-            
-            // Reset button
-            updateLocationBtn.innerHTML = '<i class="fas fa-sync me-1"></i>Update';
-            updateLocationBtn.disabled = false;
-        });
-}
-
-// Show location status messages
-function showLocationStatus(message, type) {
-    const locationStatus = document.getElementById('location_status');
-    if (!locationStatus) return;
-        
-        const alertClass = `alert alert-${type} alert-dismissible fade show`;
-        locationStatus.innerHTML = `
-            <div class="${alertClass}" role="alert">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-        
-        // Auto-hide success messages after 5 seconds
-        if (type === 'success') {
-            setTimeout(() => {
-                const alert = locationStatus.querySelector('.alert');
-                if (alert) {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }
-            }, 5000);
-        }
-}
 </script>
 {% endblock %}
