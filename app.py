@@ -8222,7 +8222,7 @@ def api_zip_to_coordinates():
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
-    """Update player profile information with optional GPS/ZIP geolocation"""
+    """Update player profile information with optional GPS/ZIP geolocation and match preference"""
     conn = get_db_connection()
     current_player_id = session.get('current_player_id')
     if not current_player_id:
@@ -8231,88 +8231,107 @@ def update_profile():
 
     player_id = current_player_id
 
-    # --- Basic validation ---
-    required_fields = [
-        'full_name', 'address', 'zip_code', 'city', 'state',
-        'dob', 'gender', 'preferred_court_1', 'skill_level', 'email'
-    ]
-    for field in required_fields:
-        if not request.form.get(field):
-            flash(f'{field.replace("_", " ").title()} is required', 'danger')
+    try:
+        # --- Handle optional username update ---
+        new_username = request.form.get('username', '').strip()
+
+        if new_username:
+            current = conn.execute(
+                "SELECT username FROM players WHERE id = ?", (player_id,)
+            ).fetchone()
+            current_username = current['username'] if current else None
+
+            if new_username != current_username:
+                existing_user = conn.execute(
+                    "SELECT id FROM players WHERE username = ? AND id != ?",
+                    (new_username, player_id)
+                ).fetchone()
+                if existing_user:
+                    flash('That username is already taken. Please choose another.', 'danger')
+                    conn.close()
+                    return redirect(url_for('profile_settings'))
+
+                conn.execute("UPDATE players SET username = ? WHERE id = ?", (new_username, player_id))
+                logging.info(f"Updated username for player {player_id} → {new_username}")
+
+        # --- Basic validation ---
+        required_fields = [
+            'full_name', 'dob', 'gender', 'preferred_court_1', 'skill_level', 'email'
+        ]
+        for field in required_fields:
+            if not request.form.get(field):
+                flash(f'{field.replace("_", " ").title()} is required', 'danger')
+                return redirect(url_for('profile_settings'))
+
+        # --- Handle uploaded selfie ---
+        selfie_filename = None
+        if 'selfie' in request.files:
+            file = request.files['selfie']
+            if file and file.filename and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+                selfie_filename = timestamp + filename
+                upload_path = os.path.join(app.static_folder or 'static', 'uploads')
+                os.makedirs(upload_path, exist_ok=True)
+                file.save(os.path.join(upload_path, selfie_filename))
+
+        # --- Gather inputs ---
+        user_lat = request.form.get('latitude', '').strip()
+        user_lng = request.form.get('longitude', '').strip()
+        zip_code = request.form.get('zip_code', '').strip()
+        search_radius = request.form.get('search_radius_miles', '').strip()
+
+        # --- Normalize radius ---
+        try:
+            search_radius_miles = max(15, min(50, int(search_radius))) if search_radius else 15
+        except ValueError:
+            search_radius_miles = 15
+
+        # --- Get existing location ---
+        existing = conn.execute(
+            "SELECT zip_code, location1 FROM players WHERE id = ?", (player_id,)
+        ).fetchone()
+        existing_zip = existing['zip_code'] if existing else None
+        existing_loc = existing['location1'] if existing else None
+
+        # --- Determine new location1 ---
+        new_location1 = existing_loc
+        if user_lat and user_lng:
+            try:
+                lat = float(user_lat)
+                lon = float(user_lng)
+                new_location1 = f"{lat},{lon}"
+            except ValueError:
+                logging.warning("Invalid GPS coordinates provided")
+        elif zip_code != existing_zip:
+            try:
+                geo_res = requests.get(
+                    f"https://nominatim.openstreetmap.org/search?postalcode={zip_code}&country=US&format=json&limit=1",
+                    headers={"User-Agent": "Ready2DinkApp"}
+                )
+                geo_data = geo_res.json()
+                if geo_data and len(geo_data) > 0:
+                    lat = geo_data[0]["lat"]
+                    lon = geo_data[0]["lon"]
+                    new_location1 = f"{lat},{lon}"
+                else:
+                    new_location1 = "Unknown"
+            except Exception as e:
+                logging.warning(f"ZIP geocode lookup failed: {e}")
+                new_location1 = "Unknown"
+
+        # --- Gender + travel radius validation ---
+        gender = request.form.get('gender', 'prefer_not_to_say').strip()
+        if gender not in ['male', 'female', 'non_binary', 'prefer_not_to_say']:
+            flash('Invalid gender option', 'danger')
             return redirect(url_for('profile_settings'))
 
-    # --- Handle uploaded selfie ---
-    selfie_filename = None
-    if 'selfie' in request.files:
-        file = request.files['selfie']
-        if file and file.filename and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-            selfie_filename = timestamp + filename
-            upload_path = os.path.join(app.static_folder or 'static', 'uploads')
-            os.makedirs(upload_path, exist_ok=True)
-            file.save(os.path.join(upload_path, selfie_filename))
-
-    # --- Gather inputs ---
-    user_lat = request.form.get('latitude', '').strip()
-    user_lng = request.form.get('longitude', '').strip()
-    zip_code = request.form.get('zip_code', '').strip()
-    search_radius = request.form.get('search_radius_miles', '').strip()
-
-    # --- Normalize radius ---
-    try:
-        search_radius_miles = max(15, min(50, int(search_radius))) if search_radius else 15
-    except ValueError:
-        search_radius_miles = 15
-
-    # --- Get player's existing location for comparison ---
-    existing = conn.execute(
-        "SELECT zip_code, location1 FROM players WHERE id = ?", (player_id,)
-    ).fetchone()
-    existing_zip = existing['zip_code'] if existing else None
-    existing_loc = existing['location1'] if existing else None
-
-    # --- Determine new location1 ---
-    new_location1 = existing_loc
-    if user_lat and user_lng:
-        # GPS provided
+        travel_radius = request.form.get('travel_radius', '25').strip()
         try:
-            lat = float(user_lat)
-            lon = float(user_lng)
-            new_location1 = f"{lat},{lon}"
+            travel_radius = max(5, min(100, int(travel_radius)))
         except ValueError:
-            logging.warning("Invalid GPS coordinates provided")
-    elif zip_code != existing_zip:
-        # ZIP changed → fetch approximate coords
-        try:
-            geo_res = requests.get(
-                f"https://nominatim.openstreetmap.org/search?postalcode={zip_code}&country=US&format=json&limit=1",
-                headers={"User-Agent": "Ready2DinkApp"}
-            )
-            geo_data = geo_res.json()
-            if geo_data and len(geo_data) > 0:
-                lat = geo_data[0]["lat"]
-                lon = geo_data[0]["lon"]
-                new_location1 = f"{lat},{lon}"
-            else:
-                new_location1 = "Unknown"
-        except Exception as e:
-            logging.warning(f"ZIP geocode lookup failed: {e}")
-            new_location1 = "Unknown"
+            travel_radius = 25
 
-    # --- Gender + travel radius validation ---
-    gender = request.form.get('gender', 'prefer_not_to_say').strip()
-    if gender not in ['male', 'female', 'non_binary', 'prefer_not_to_say']:
-        flash('Invalid gender option', 'danger')
-        return redirect(url_for('profile_settings'))
-
-    travel_radius = request.form.get('travel_radius', '25').strip()
-    try:
-        travel_radius = max(5, min(100, int(travel_radius)))
-    except ValueError:
-        travel_radius = 25
-
-    try:
         # --- Build SQL update ---
         update_fields = [
             request.form['full_name'],
@@ -8342,7 +8361,7 @@ def update_profile():
         selfie_sql = ""
         if selfie_filename:
             selfie_sql = ", selfie = ?"
-            update_fields.insert(13, selfie_filename)  # add after email
+            update_fields.insert(13, selfie_filename)  # after email
 
         conn.execute(f'''
             UPDATE players 
@@ -8355,11 +8374,21 @@ def update_profile():
             WHERE id = ?
         ''', update_fields)
 
-        # --- Update location1 only if changed ---
+        # --- Update match preference ---
+        match_preference = request.form.get('match_preference_radio')
+        if match_preference in ['singles', 'doubles']:
+            conn.execute(
+                "UPDATE players SET match_preference = ? WHERE id = ?",
+                (match_preference, player_id)
+            )
+            logging.info(f"✅ Player {player_id} updated match_preference → {match_preference}")
+
+        # --- Update location1 if changed ---
         if new_location1 != existing_loc:
             conn.execute("UPDATE players SET location1 = ? WHERE id = ?", (new_location1, player_id))
             logging.info(f"Updated location1 for player {player_id} → {new_location1}")
 
+        # --- Commit all at once ---
         conn.commit()
         conn.close()
 
@@ -8369,6 +8398,7 @@ def update_profile():
     except Exception as e:
         conn.rollback()
         conn.close()
+        logging.exception("Profile update failed")
         flash(f'Error updating profile: {str(e)}', 'danger')
         return redirect(url_for('profile_settings'))
 
@@ -9319,38 +9349,37 @@ def admin_backfill_matches():
 
 @app.route('/update_match_preference', methods=['POST'])
 def update_match_preference():
-    """Update player's match preference"""
-    current_player_id = session.get('current_player_id')
+    """AJAX endpoint to update a player's singles/doubles preference."""
+    player_id = session.get('current_player_id')
 
-    if not current_player_id:
-        return jsonify({
-            'success': False,
-            'message': 'Authentication required'
-        })
+    # Support both form and JSON
+    if request.is_json:
+        data = request.get_json()
+        new_pref = data.get('match_preference')
+    else:
+        new_pref = request.form.get('match_preference')
 
-    preference = request.form.get('match_preference')
-    if preference not in [
-            'singles', 'doubles_with_partner', 'doubles_need_partner'
-    ]:
+    if not player_id:
+        logging.warning("❌ update_match_preference: No player_id in session")
+        return jsonify({'success': False, 'message': 'Not logged in'})
+    
+    if new_pref not in ['singles', 'doubles']:
+        logging.warning(f"❌ update_match_preference: Invalid value {new_pref}")
         return jsonify({'success': False, 'message': 'Invalid preference'})
 
     try:
         conn = get_db_connection()
-        conn.execute('UPDATE players SET match_preference = ? WHERE id = ?',
-                     (preference, current_player_id))
+        conn.execute(
+            'UPDATE players SET match_preference = ? WHERE id = ?',
+            (new_pref, player_id)
+        )
         conn.commit()
         conn.close()
-
-        return jsonify({
-            'success': True,
-            'message': 'Match preference updated successfully'
-        })
+        logging.info(f"✅ Player {player_id} updated match_preference → {new_pref}")
+        return jsonify({'success': True, 'message': 'Preference updated successfully'})
     except Exception as e:
-        logging.error(f"Error updating match preference: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to update preference'
-        })
+        logging.exception("❌ DB error updating match_preference")
+        return jsonify({'success': False, 'message': str(e)})
 
 
 @app.route('/send_team_invitation', methods=['POST'])
