@@ -230,171 +230,59 @@
         {% endif %}
 
         <!-- Confirmed Matches - Still Upcoming -->
-        {% set upcoming_matches = confirmed_matches|selectattr("time_status", "equalto", "upcoming")|list %}
-        {% if upcoming_matches %}
-        <div class="row mb-5">
-            <div class="col-12">
-                <h2 class="text-bold mb-4 neon-text">
-                    <i class="fas fa-calendar-check me-2"></i>Upcoming Matches
-                </h2>
-                
-                {% for match in upcoming_matches %}
-                <div class="neon-frame challenge-card confirmed mb-4">
-                    <div class="card-body p-4">
-                        <div class="row align-items-center">
-                            <div class="col-auto">
-                                {% if match.opponent_selfie %}
-                                    <img src="{{ url_for('static', filename='uploads/' + match.opponent_selfie) }}" 
-                                         class="challenge-avatar" alt="Opponent">
-                                {% else %}
-                                    <div class="avatar-placeholder">
-                                        {{ match.opponent_name[0].upper() }}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <div class="col">
-                                <h5 class="mb-1 text-white text-bold neon-text">{{ match.opponent_name }}</h5>
-                                <div class="d-flex flex-wrap gap-2 mb-2">
-                                    <span class="badge badge-success text-bold">{{ match.opponent_skill }}</span>
-                                    <span class="badge badge-success text-bold">Confirmed</span>
-                                </div>
-                                <div class="match-details">
-                                    <div class="text-white text-bold"><i class="fas fa-map-marker-alt me-2 text-neon"></i>{{ match.court_location or 'Location TBD' }}</div>
-                                    <div class="text-white text-bold"><i class="fas fa-clock me-2 text-neon"></i>{{ match.scheduled_time or 'Time TBD' }}</div>
-                                    <div class="text-white text-bold"><i class="fas fa-calendar me-2 text-neon"></i>Confirmed {{ match.created_at[:10] }}</div>
-                                </div>
-                            </div>
-                            <div class="col-auto">
-                                <button class="btn btn-success btn-lg start-match-btn"
-                                    data-match-id="{{ match.id }}">
-                                    <i class="fas fa-play-circle me-1"></i>Start Match
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
+{% if confirmed_matches %}
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-bold mb-4 neon-text">
+            <i class="fas fa-calendar-check me-2"></i>Confirmed Matches
+        </h2>
 
-        <!-- Challenge Players by Skill Level -->
-        <div class="row mb-5">
-            <div class="col-12">
-                <h2 class="text-bold mb-4 neon-text">
-                    <i class="fas fa-plus-circle me-2"></i>Pick Player to Challenge:
-                </h2>
-                
-                {% if available_players %}
-                    {% set advanced_players = available_players | selectattr("skill_level", "in", ["Advanced", "Expert", "Pro"]) | list %}
-                    {% set beginner_players = available_players | selectattr("skill_level", "in", ["Beginner", "Intermediate", "Recreational"]) | list %}
-                    
-                    <!-- Advanced Players Section -->
-                    {% if advanced_players %}
-                    <div class="mb-5">
-                        <h3 class="text-white text-bold mb-3">Advanced Players</h3>
-                        <div class="row">
-                            {% for player in advanced_players %}
-                            <div class="col-md-6 mb-3">
-                                <div class="challenge-player-card advanced">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            {% if player.selfie %}
-                                                <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                                     class="challenge-player-avatar advanced" alt="{{ player.full_name }}">
-                                            {% else %}
-                                                <div class="challenge-player-avatar-placeholder advanced">
-                                                    {{ player.full_name[0].upper() }}
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                        <div class="col">
-                                            <h5 class="mb-1 text-white text-bold">{{ player.full_name }}</h5>
-                                            <div class="player-details">
-                                                <div class="text-white mb-1">
-                                                    <span class="me-3"><strong>Skill</strong> {{ player.skill_level }}</span>
-                                                </div>
-                                                <div class="text-white">
-                                                    <span><strong>Points</strong> {{ player.ranking_points or 0 }} pts</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-auto">
-                                            <div class="d-flex flex-column gap-2">
-                                                <button onclick="showChallengeModal({{ player.id }}, '{{ player.full_name }}')" 
-                                                        class="btn btn-challenge-advanced">
-                                                    Challenge
-                                                </button>
-                                                <button onclick="showPlayerStats({{ player.id }})" 
-                                                        class="btn btn-stats-advanced">
-                                                    View Stats
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
+        {% for match in confirmed_matches %}
+        <div class="neon-frame challenge-card confirmed mb-4">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+
+                    <div class="col">
+                        <h5 class="mb-1 text-white text-bold neon-text">{{ match.opponent_name }}</h5>
+                        <div class="d-flex flex-wrap gap-2 mb-2">
+                            <span class="badge badge-success text-bold">{{ match.opponent_skill }}</span>
+                            <span class="badge badge-success text-bold">Confirmed</span>
                         </div>
                     </div>
-                    {% endif %}
-                    
-                    <!-- Beginner Players Section -->
-                    {% if beginner_players %}
-                    <div class="mb-5">
-                        <h3 class="text-white text-bold mb-3">Beginner Players</h3>
-                        <div class="row">
-                            {% for player in beginner_players %}
-                            <div class="col-md-6 mb-3">
-                                <div class="challenge-player-card beginner">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            {% if player.selfie %}
-                                                <img src="{{ url_for('static', filename='uploads/' + player.selfie) }}" 
-                                                     class="challenge-player-avatar beginner" alt="{{ player.full_name }}">
-                                            {% else %}
-                                                <div class="challenge-player-avatar-placeholder beginner">
-                                                    {{ player.full_name[0].upper() }}
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                        <div class="col">
-                                            <h5 class="mb-1 text-white text-bold">{{ player.full_name }}</h5>
-                                            <div class="player-details">
-                                                <div class="text-white mb-1">
-                                                    <span class="me-3"><strong>Skill</strong> {{ player.skill_level }}</span>
-                                                </div>
-                                                <div class="text-white">
-                                                    <span><strong>Points</strong> {{ player.ranking_points or 0 }} pts</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-auto">
-                                            <div class="d-flex flex-column gap-2">
-                                                <button onclick="showChallengeModal({{ player.id }}, '{{ player.full_name }}')" 
-                                                        class="btn btn-challenge-beginner">
-                                                    Challenge
-                                                </button>
-                                                <button onclick="showPlayerStats({{ player.id }})" 
-                                                        class="btn btn-stats-beginner">
-                                                    View Stats
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
+
+                    <div class="col-auto">
+                        <button class="btn btn-success btn-lg start-match-btn"
+                                data-match-id="{{ match.id }}">
+                            <i class="fas fa-play-circle me-1"></i>Start Match
+                        </button>
                     </div>
-                    {% endif %}
-                {% else %}
-                    <div class="neon-frame text-center py-5">
-                        <p class="text-white-50 mb-0">No available players to challenge at the moment</p>
-                    </div>
-                {% endif %}
+
+                </div>
             </div>
         </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+        <div class="row mb-5">
+    <div class="col-12 text-center">
+        <h2 class="text-bold mb-4 neon-text">
+            <i class="fas fa-random me-2"></i>Random Matchup
+        </h2>
+
+        <p class="text-white-50 mb-4">
+            Click below to automatically find a nearby opponent with similar skill level.
+        </p>
+
+        <button class="btn btn-lg btn-primary px-5 py-3"
+                onclick="findRandomMatchup()">
+            🎲 Random Matchup
+        </button>
+
+        <div id="randomMatchupStatus" class="mt-4 text-white-50"></div>
+    </div>
+</div>
 
         <!-- Match History -->
         {% if completed_matches %}
@@ -425,10 +313,16 @@
                         <h5 class="mb-1 text-white fw-bold">{{ match.opponent_name }}</h5>
                         <div class="d-flex flex-wrap gap-2 mb-2">
                             <span class="skill-badge">{{ match.opponent_skill }}</span>
-                            <span class="result-badge result-{{ match.result }}">{{ match.result.title() }}</span>
-                            {% if match.match_result %}
-                                <span class="record-badge">{{ match.match_result }}</span>
+                            {% if match.winner_id %}
+                        {% if match.winner_id == current_player_id %}
+                            <span class="result-badge result-won">Won</span>
+                            {% else %}
+                            <span class="result-badge result-lost">Lost</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="result-badge">TBD</span>
                             {% endif %}
+                                <span class="result-badge">{{match.match_result}}</span>
                         </div>
                         <div class="match-details">
                             <div><i class="fas fa-map-marker-alt me-2"></i>{{ match.court_location or 'Various locations' }}</div>
@@ -659,6 +553,54 @@
 </script>
 
 <script>
+function findRandomMatchup() {
+    const status = document.getElementById("randomMatchupStatus");
+    status.innerHTML = "Searching for players nearby...";
+
+    fetch("/matchmaking/random", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            status.innerHTML = `<span class="text-danger">${data.message}</span>`;
+            return;
+        }
+
+        // Automatically send challenge
+        fetch("/challenges/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                opponent_id: data.opponent_id,
+                sport: "Pickleball",
+                court_location: "TBD",
+                match_date: data.default_match_date,
+                scheduled_time: data.default_match_time
+            })
+        })
+        .then(res => res.json())
+        .then(challenge => {
+            if (!challenge.success) {
+                status.innerHTML = `<span class="text-danger">${challenge.error}</span>`;
+                return;
+            }
+
+            status.innerHTML = `
+                <span class="text-success">
+                    Match Created!<br>
+                    <strong>${challenge.team1.join(" & ")} vs ${challenge.team2.join(" & ")}</strong>
+                </span>
+            `;
+        });
+    })
+    .catch(err => {
+        status.innerHTML = `<span class="text-danger">Error: ${err}</span>`;
+    });
+}
+
 async function rematch(matchId) {
     if (!confirm("Start a rematch with the same players?")) return;
     try {
