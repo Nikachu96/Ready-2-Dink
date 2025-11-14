@@ -5286,8 +5286,8 @@ def challenges():
     current_player_id = session.get("current_player_id")
     if not current_player_id:
         flash("Please log in to view your challenges.", "warning")
-        return redirect(url_for("login"))
-
+        return redirect(url_for("player_login"))
+    
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
 
@@ -6669,11 +6669,13 @@ def tournaments_overview():
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
 
+    if not current_player_id:
+        flash("Please log in to view your challenges.", "warning")
+        return redirect(url_for("player_login"))
+    
     player = conn.execute('SELECT * FROM players WHERE id = ?', (current_player_id,)).fetchone()
-    if not player:
-        flash('Player profile not found', 'danger')
-        conn.close()
-        return redirect(url_for('player_login'))
+    current_player_id = session.get("current_player_id")
+
 
     # Load all custom tournaments
     custom_tournaments_raw = conn.execute('''
@@ -13280,6 +13282,12 @@ def contact():
 @app.route('/teams')
 def teams():
     """Teams dashboard showing user's teams, invitations, and team search"""
+    current_player_id = session.get('current_player_id')
+
+
+    if not current_player_id:
+        flash("Please log in to view your team.", "warning")
+        return redirect(url_for("player_login"))
     if 'player_id' not in session:
         return redirect(url_for('login'))
 
