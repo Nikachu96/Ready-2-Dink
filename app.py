@@ -5282,21 +5282,25 @@ def player_home(player_id):
 
 @app.route("/challenges")
 def challenges():
-    """Display challenges, excluding completed tournaments."""
+    """Display all challenge and match data for the player."""
     current_player_id = session.get("current_player_id")
     if not current_player_id:
         flash("Please log in to view your challenges.", "warning")
         return redirect(url_for("player_login"))
-    
+
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
 
-    # --- Get current player info ---
+    # ---------------------------
+    #  PLAYER INFO
+    # ---------------------------
     player = conn.execute("""
         SELECT * FROM players WHERE id = ?
     """, (current_player_id,)).fetchone()
 
-    # --- Incoming Challenges ---
+    # ---------------------------
+    #  INCOMING CHALLENGES
+    # ---------------------------
     incoming_challenges = conn.execute("""
         SELECT m.*, 
                c.full_name AS challenger_name,
@@ -5317,7 +5321,9 @@ def challenges():
         ORDER BY m.created_at DESC
     """, (current_player_id,)).fetchall()
 
-    # --- Outgoing Challenges ---
+    # ---------------------------
+    #  OUTGOING CHALLENGES
+    # ---------------------------
     outgoing_challenges = conn.execute("""
         SELECT m.*, 
                o.full_name AS opponent_name,
@@ -5338,16 +5344,47 @@ def challenges():
         ORDER BY m.created_at DESC
     """, (current_player_id,)).fetchall()
 
-    # --- Completed Matches (Match History) ---
+    # ---------------------------
+    #  CONFIRMED MATCHES (Start Match button)
+    # ---------------------------
+    confirmed_matches = conn.execute("""
+        SELECT m.*,
+               p.full_name AS opponent_name,
+               p.selfie AS opponent_selfie,
+               p.skill_level AS opponent_skill
+        FROM matches m
+        JOIN players p 
+            ON (
+                CASE 
+                    WHEN m.player1_id = ? THEN m.player2_id
+                    ELSE m.player1_id
+                END
+            ) = p.id
+        WHERE (m.player1_id = ? OR m.player2_id = ?)
+          AND m.status = 'confirmed'
+          AND (
+                m.tournament_id IS NULL
+                OR m.tournament_id NOT IN (
+                    SELECT id FROM custom_tournaments WHERE status = 'completed'
+                )
+              )
+        ORDER BY m.id DESC
+    """, (current_player_id, current_player_id, current_player_id)).fetchall()
+
+    # ---------------------------
+    #  COMPLETED MATCHES
+    # ---------------------------
     completed_matches = conn.execute("""
         SELECT m.*, 
-               p2.full_name AS opponent_name,
-               p2.selfie AS opponent_selfie
+               opp.full_name AS opponent_name,
+               opp.selfie AS opponent_selfie
         FROM matches m
-        JOIN players p2 ON (CASE 
-                                WHEN m.player1_id = ? THEN m.player2_id
-                                ELSE m.player1_id
-                            END) = p2.id
+        JOIN players opp ON (
+                CASE 
+                    WHEN m.player1_id = ? THEN m.player2_id
+                    ELSE m.player1_id
+                END
+            ) = opp.id
         WHERE (m.player1_id = ? OR m.player2_id = ?)
           AND m.status = 'completed'
           AND (
@@ -5363,9 +5400,10 @@ def challenges():
 
     return render_template(
         "challenges.html",
-        player=player,  # ✅ added this
+        player=player,
         incoming_challenges=incoming_challenges,
         outgoing_challenges=outgoing_challenges,
+        confirmed_matches=confirmed_matches,   # ⭐ ADDED
         completed_matches=completed_matches
     )
 
@@ -7731,6 +7769,159 @@ def decline_challenge():
             'message': f'Error declining challenge: {str(e)}'
         })
 
+@app.route("/matchmaking/random", methods=["POST"])
+def random_matchmaking():
+    try:
+        player_id = session.get("player_id")
+        if not player_id:
+            return jsonify({"success": False, "message": "Not logged in"}), 401
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # ----------------------------
+        # Helper functions
+        # ----------------------------
+
+        def parse_location1(value):
+            """Parse 'lat,lon' string into floats."""
+            if not value:
+                return None, None
+            try:
+                lat_str, lon_str = value.split(",")
+                return float(lat_str), float(lon_str)
+            except:
+                return None, None
+
+        def safe_value(row, key):
+            """Safely extract value from sqlite3.Row using indexing only."""
+            return row[key] if key in row.keys() else None
+
+        def extract_coords(row):
+            """
+            Get coordinates from:
+            1. latitude, longitude
+            2. fallback: location1 "lat,lon"
+            """
+            lat = safe_value(row, "latitude")
+            lon = safe_value(row, "longitude")
+
+            # If missing, try fallback
+            if lat is None or lon is None:
+                loc = safe_value(row, "location1")
+                fallback_lat, fallback_lon = parse_location1(loc)
+
+                if lat is None:
+                    lat = fallback_lat
+                if lon is None:
+                    lon = fallback_lon
+
+            # Still invalid?
+            if lat is None or lon is None:
+                return None, None
+
+            return float(lat), float(lon)
+
+        # Haversine distance
+        import math
+        def distance(lat1, lon1, lat2, lon2):
+            R = 3958.8
+            dlat = math.radians(lat2 - lat1)
+            dlon = math.radians(lon2 - lon1)
+            a = (math.sin(dlat/2)**2 +
+                 math.cos(math.radians(lat1)) *
+                 math.cos(math.radians(lat2)) *
+                 math.sin(dlon/2)**2)
+            return R * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
+
+        # ----------------------------
+        # Load user
+        # ----------------------------
+        cursor.execute("""
+            SELECT id, latitude, longitude, location1, search_radius_miles, skill_level
+            FROM players
+            WHERE id = ?
+        """, (player_id,))
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({"success": False, "message": "User not found"}), 404
+
+        # Extract coords w/ fallback
+        user_lat, user_lon = extract_coords(user)
+
+        if user_lat is None or user_lon is None:
+            return jsonify({"success": False, "message": "Your location is invalid"}), 400
+
+        radius = user["search_radius_miles"] or 25
+        skill_level = user["skill_level"]
+
+        # ----------------------------
+        # Skill groups
+        # ----------------------------
+        skill_groups = {
+            "Beginner": ["Beginner", "Intermediate", "Recreational"],
+            "Intermediate": ["Beginner", "Intermediate", "Recreational"],
+            "Recreational": ["Beginner", "Intermediate", "Recreational"],
+            "Advanced": ["Advanced", "Expert", "Pro"],
+            "Expert": ["Advanced", "Expert", "Pro"],
+            "Pro": ["Advanced", "Expert", "Pro"]
+        }
+
+        allowed_skills = skill_groups.get(skill_level, [skill_level])
+
+        # ----------------------------
+        # Load opponents
+        # ----------------------------
+        placeholders = ",".join(["?"] * len(allowed_skills))
+
+        cursor.execute(f"""
+            SELECT id, full_name, latitude, longitude, location1
+            FROM players
+            WHERE id != ?
+              AND skill_level IN ({placeholders})
+        """, (player_id, *allowed_skills))
+
+        candidates = cursor.fetchall()
+
+        # ----------------------------
+        # Filter by radius + fallback coords
+        # ----------------------------
+        nearby = []
+        for p in candidates:
+            opp_lat, opp_lon = extract_coords(p)
+            if opp_lat is None or opp_lon is None:
+                continue
+
+            if distance(user_lat, user_lon, opp_lat, opp_lon) <= radius:
+                nearby.append(p)
+
+        if not nearby:
+            return jsonify({
+                "success": False,
+                "message": "No nearby players found within your radius & skill range."
+            })
+
+        # Pick random opponent
+        import random
+        opponent = random.choice(nearby)
+
+        # Default scheduling
+        default_date = "2025-01-01"
+        default_time = "18:00"
+
+        return jsonify({
+            "success": True,
+            "message": "Opponent found!",
+            "opponent_id": opponent["id"],
+            "default_match_date": default_date,
+            "default_match_time": default_time
+        })
+
+    except Exception as e:
+        logging.error(f"Random matchmaking error: {traceback.format_exc()}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
 
 # Form-based challenge endpoints (non-JSON)
 @app.route('/challenges/send', methods=['POST'])
@@ -8512,84 +8703,93 @@ def get_unread_count(player_id):
 
 @app.route('/submit_match_result', methods=['POST'])
 def submit_match_result():
-    """Submit match result and handle tournament completion/reward logic"""
+    """Submit match result (JSON API for score modal)."""
+
     try:
-        match_id = request.form.get("match_id")
-        winner_id = request.form.get("winner_id")
-        player1_score = request.form.get("player1_score", 0)
-        player2_score = request.form.get("player2_score", 0)
+        data = request.get_json()
+        match_id = data.get("match_id")
+        winner_team = data.get("winner")      # "team1" or "team2"
+        p1_sets = data.get("player1_sets_won", 0)
+        p2_sets = data.get("player2_sets_won", 0)
+        match_score = data.get("match_score", "")
 
         conn = get_db_connection()
         conn.row_factory = sqlite3.Row
 
-        # --- Fetch match info ---
-        match = conn.execute("""
-            SELECT * FROM matches WHERE id = ?
-        """, (match_id,)).fetchone()
-
+        # --------------------------
+        # Fetch match
+        # --------------------------
+        match = conn.execute("SELECT * FROM matches WHERE id = ?", (match_id,)).fetchone()
         if not match:
-            flash("Match not found.", "danger")
-            conn.close()
-            return redirect(url_for("tournaments_overview"))
+            return jsonify({"success": False, "message": "Match not found."}), 404
 
-        tournament_id = match["tournament_id"]
+        # Determine real winner_id
+        if winner_team == "team1":
+            winner_id = match["player1_id"]
+        else:
+            winner_id = match["player2_id"]
 
-        # --- Update match record ---
+        # --------------------------
+        # Update match as completed
+        # --------------------------
         conn.execute("""
             UPDATE matches
-            SET winner_id = ?, player1_score = ?, player2_score = ?, status = 'completed', completed_at = CURRENT_TIMESTAMP
+            SET winner_id = ?,
+                player1_score = ?,
+                player2_score = ?,
+                match_result = ?,
+                status = 'completed',
+                completed_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        """, (winner_id, player1_score, player2_score, match_id))
+        """, (
+            winner_id,
+            p1_sets,
+            p2_sets,
+            match_score,
+            match_id
+        ))
         conn.commit()
 
-        # --- Check if tournament now completed ---
-        tournament = conn.execute("""
-            SELECT * FROM custom_tournaments WHERE id = ?
-        """, (tournament_id,)).fetchone()
+        # --------------------------
+        # Tournament logic (optional)
+        # --------------------------
+        tournament_id = match["tournament_id"]
+        if tournament_id:
+            tournament = conn.execute("""
+                SELECT * FROM custom_tournaments WHERE id = ?
+            """, (tournament_id,)).fetchone()
 
-        if tournament and tournament["status"] != "completed":
-            # Check if all matches are done
-            remaining = conn.execute("""
-                SELECT COUNT(*) as count FROM matches
-                WHERE tournament_id = ? AND status != 'completed'
-            """, (tournament_id,)).fetchone()["count"]
+            if tournament and tournament["status"] != "completed":
+                remaining = conn.execute("""
+                    SELECT COUNT(*) AS count FROM matches
+                    WHERE tournament_id = ? AND status != 'completed'
+                """, (tournament_id,)).fetchone()["count"]
 
-            if remaining == 0:
-                # Mark tournament as completed
-                conn.execute("""
-                    UPDATE custom_tournaments
-                    SET status = 'completed', winner_id = ?
-                    WHERE id = ?
-                """, (winner_id, tournament_id))
-                conn.commit()
+                if remaining == 0:
+                    # Mark tournament complete
+                    conn.execute("""
+                        UPDATE custom_tournaments
+                        SET status = 'completed',
+                            winner_id = ?
+                        WHERE id = ?
+                    """, (winner_id, tournament_id))
+                    conn.commit()
 
-                # --- Reward the organizer with 40 points ---
-                organizer_id = tournament["organizer_id"]
-                conn.execute("""
-                    UPDATE players
-                    SET ranking_points = COALESCE(ranking_points, 0) + 40
-                    WHERE id = ?
-                """, (organizer_id,))
-                conn.commit()
-
-                logging.info(f"🏆 Tournament {tournament_id} completed. Organizer {organizer_id} awarded 40 points.")
-
-                flash("Tournament completed! Organizer awarded 40 ranking points.", "success")
+                    # Award organizer points
+                    organizer_id = tournament["organizer_id"]
+                    conn.execute("""
+                        UPDATE players
+                        SET ranking_points = COALESCE(ranking_points, 0) + 40
+                        WHERE id = ?
+                    """, (organizer_id,))
+                    conn.commit()
 
         conn.close()
-        flash("Match result submitted successfully!", "success")
-        return redirect(url_for("tournaments_overview"))
+        return jsonify({"success": True})
 
     except Exception as e:
-        logging.error(f"Error submitting match result: {e}")
-        flash("Error submitting match result.", "danger")
-        return redirect(url_for("tournaments_overview"))
-
-    except Exception as e:
-        print("❌ SUBMIT MATCH RESULT ERROR:", e)
-        traceback.print_exc()
+        logging.error(f"SUBMIT MATCH RESULT ERROR: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
-
 
 @app.route('/submit_tournament_match_result', methods=['POST'])
 def submit_tournament_match_result_route():
@@ -9008,13 +9208,35 @@ def create_tournament():
 
 @app.route('/create_custom_tournament', methods=['POST'])
 def create_custom_tournament():
-    """Create a custom user tournament (no Stripe, no payment required)"""
+    """Create a custom user tournament — user can have only ONE active tournament (winner_id IS NULL)."""
     current_player_id = session.get('current_player_id')
     if not current_player_id:
         return jsonify({'success': False, 'message': 'Please log in to create tournaments'})
 
     try:
-        # Get form data
+        conn = get_db_connection()
+
+        # ----------------------------------------------------
+        # 1. CHECK IF USER ALREADY HAS AN ACTIVE TOURNAMENT
+        # ----------------------------------------------------
+        existing = conn.execute("""
+            SELECT id 
+            FROM custom_tournaments
+            WHERE organizer_id = ?
+            AND winner_id IS NULL
+            LIMIT 1
+        """, (current_player_id,)).fetchone()
+
+        if existing:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'You already have an active custom tournament. Finish it before creating another.'
+            })
+
+        # ----------------------------------------------------
+        # 2. GET FORM FIELDS
+        # ----------------------------------------------------
         tournament_name = request.form.get('tournament_name')
         description = request.form.get('description')
         location = request.form.get('location')
@@ -9022,45 +9244,43 @@ def create_custom_tournament():
         start_date = request.form.get('start_date')
         registration_deadline = request.form.get('registration_deadline')
 
-        # Safely parse numeric values
+        # Max players
         try:
             max_players = int(request.form.get('max_players', 32))
             if max_players < 2 or max_players > 256:
                 return jsonify({'success': False, 'message': 'Player count must be between 2 and 256'})
-        except (ValueError, TypeError):
+        except:
             max_players = 32
 
-        # Force entry fee and prize pool to 0
         entry_fee = 0.0
         prize_pool = 0.0
 
-        # GPS coordinates
+        # GPS + radius
         latitude = None
         longitude = None
-        join_radius_miles = 25
 
         latitude_str = request.form.get('latitude')
         longitude_str = request.form.get('longitude')
         join_radius_str = request.form.get('join_radius', '25')
 
         try:
-            if latitude_str and latitude_str.strip():
-                latitude = float(latitude_str.strip())
+            if latitude_str:
+                latitude = float(latitude_str)
                 if not (-90 <= latitude <= 90):
                     latitude = None
         except:
             latitude = None
 
         try:
-            if longitude_str and longitude_str.strip():
-                longitude = float(longitude_str.strip())
+            if longitude_str:
+                longitude = float(longitude_str)
                 if not (-180 <= longitude <= 180):
                     longitude = None
         except:
             longitude = None
 
         try:
-            join_radius_miles = int(join_radius_str.strip())
+            join_radius_miles = int(join_radius_str)
             if not (1 <= join_radius_miles <= 100):
                 join_radius_miles = 25
         except:
@@ -9068,18 +9288,22 @@ def create_custom_tournament():
 
         # Validate required fields
         if not all([tournament_name, location, format_type, start_date, registration_deadline]):
+            conn.close()
             return jsonify({'success': False, 'message': 'All fields are required'})
 
-        # Insert directly into database (no Stripe, no house_cut)
-        conn = get_db_connection()
+        # ----------------------------------------------------
+        # 3. INSERT NEW TOURNAMENT
+        # ----------------------------------------------------
         cursor = conn.execute('''
-        INSERT INTO custom_tournaments 
-        (organizer_id, tournament_name, description, location, max_players, 
-        entry_fee, format, start_date, registration_deadline, latitude, longitude)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (current_player_id, tournament_name, description, location,
-                max_players, entry_fee, format_type,
-                start_date, registration_deadline, latitude, longitude))
+            INSERT INTO custom_tournaments 
+            (organizer_id, tournament_name, description, location, max_players,
+             entry_fee, format, start_date, registration_deadline, latitude, longitude)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            current_player_id, tournament_name, description, location,
+            max_players, entry_fee, format_type, start_date,
+            registration_deadline, latitude, longitude
+        ))
 
         tournament_id = cursor.lastrowid
         conn.commit()
@@ -9090,8 +9314,8 @@ def create_custom_tournament():
         return jsonify({
             'success': True,
             'message': f'Tournament \"{tournament_name}\" created successfully! (Free entry)',
-            'tournament_name': tournament_name,
-            'tournament_id': tournament_id
+            'tournament_id': tournament_id,
+            'tournament_name': tournament_name
         })
 
     except Exception as e:
