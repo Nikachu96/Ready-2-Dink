@@ -23,6 +23,8 @@ import string
 import sendgrid
 from sendgrid.helpers.mail import Mail
 
+DB_PATH = 'database/app.db'
+
 
 def parse_location_field(location_text):
     """Convert 'lat,lon' text into floats, or return (None, None) if invalid."""
@@ -33,7 +35,8 @@ def parse_location_field(location_text):
         return float(lat_str), float(lon_str)
     except Exception:
         return None, None
-    
+
+
 def calculate_distance_from_location1(loc1_text, loc2_text):
     """Calculate distance in miles between two 'lat,lon' strings."""
     lat1, lon1 = parse_location_field(loc1_text)
@@ -42,23 +45,29 @@ def calculate_distance_from_location1(loc1_text, loc2_text):
         return None
     return round(haversine((lat1, lon1), (lat2, lon2), unit=Unit.MILES), 1)
 
+
 def generate_unique_player_id(conn, cursor, use_sqlite):
     """Generate a unique player_id string that doesn’t already exist in the DB."""
     while True:
         # Example ID format: PLY-8K2H9A
-        player_id = "PLY-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        player_id = "PLY-" + ''.join(
+            random.choices(string.ascii_uppercase + string.digits, k=6))
 
         if use_sqlite:
-            cursor.execute("SELECT COUNT(*) AS count FROM players WHERE player_id = ?", (player_id,))
+            cursor.execute(
+                "SELECT COUNT(*) AS count FROM players WHERE player_id = ?",
+                (player_id, ))
             result = cursor.fetchone()
             exists = result["count"] > 0
         else:
-            cursor.execute("SELECT COUNT(*) FROM players WHERE player_id = %s", (player_id,))
+            cursor.execute("SELECT COUNT(*) FROM players WHERE player_id = %s",
+                           (player_id, ))
             result = cursor.fetchone()
             exists = result[0] > 0
 
         if not exists:
             return player_id
+
 
 # Import Random Matchup Engine
 try:
@@ -75,6 +84,7 @@ if os.environ.get('FLASK_ENV') == 'development' or os.environ.get(
 else:
     logging.basicConfig(level=logging.INFO)
 
+
 # --- Bracket progression helper ---
 def advance_winner_to_next_round(tournament_id, winner_team_id, current_round):
     """
@@ -86,11 +96,12 @@ def advance_winner_to_next_round(tournament_id, winner_team_id, current_round):
 
     # Check if tournament uses doubles format
     tournament = conn.execute(
-        "SELECT format FROM custom_tournaments WHERE id = ?", (tournament_id,)
-    ).fetchone()
+        "SELECT format FROM custom_tournaments WHERE id = ?",
+        (tournament_id, )).fetchone()
     if not tournament:
         conn.close()
-        logging.warning(f"Tournament {tournament_id} not found during bracket advance.")
+        logging.warning(
+            f"Tournament {tournament_id} not found during bracket advance.")
         return
 
     format_type = tournament["format"]
@@ -99,8 +110,8 @@ def advance_winner_to_next_round(tournament_id, winner_team_id, current_round):
     # Collect all winners from the completed round
     if format_type == "doubles":
         winners = [
-            row["winner_team_id"]
-            for row in conn.execute("""
+            row["winner_team_id"] for row in conn.execute(
+                """
                 SELECT winner_team_id FROM matches
                 WHERE tournament_id = ? AND round = ? AND status = 'completed'
                 AND winner_team_id IS NOT NULL
@@ -108,8 +119,8 @@ def advance_winner_to_next_round(tournament_id, winner_team_id, current_round):
         ]
     else:  # Singles
         winners = [
-            row["winner_id"]
-            for row in conn.execute("""
+            row["winner_id"] for row in conn.execute(
+                """
                 SELECT winner_id FROM matches
                 WHERE tournament_id = ? AND round = ? AND status = 'completed'
                 AND winner_id IS NOT NULL
@@ -126,37 +137,45 @@ def advance_winner_to_next_round(tournament_id, winner_team_id, current_round):
         random.shuffle(winners)
         for i in range(0, len(winners), 2):
             if format_type == "doubles":
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO matches (tournament_id, team1_id, team2_id, round, status)
                     VALUES (?, ?, ?, ?, 'pending')
                 """, (tournament_id, winners[i], winners[i + 1], next_round))
             else:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO matches (tournament_id, player1_id, player2_id, round, status)
                     VALUES (?, ?, ?, ?, 'pending')
                 """, (tournament_id, winners[i], winners[i + 1], next_round))
         conn.commit()
-        logging.info(f"✅ Created Round {next_round} matches for tournament {tournament_id}")
+        logging.info(
+            f"✅ Created Round {next_round} matches for tournament {tournament_id}"
+        )
 
     # If only one winner remains → tournament complete
     elif len(winners) == 1:
         if format_type == "doubles":
-            conn.execute("""
+            conn.execute(
+                """
                 UPDATE custom_tournaments
                 SET status = 'completed', winner_team_id = ?
                 WHERE id = ?
             """, (winners[0], tournament_id))
         else:
-            conn.execute("""
+            conn.execute(
+                """
                 UPDATE custom_tournaments
                 SET status = 'completed', winner_id = ?
                 WHERE id = ?
             """, (winners[0], tournament_id))
 
         conn.commit()
-        logging.info(f"🏆 Tournament {tournament_id} completed. Winner ID: {winners[0]}")
+        logging.info(
+            f"🏆 Tournament {tournament_id} completed. Winner ID: {winners[0]}")
 
     conn.close()
+
 
 # Distance calculation functions
 def estimate_coordinates_from_location(location_text):
@@ -439,7 +458,6 @@ def get_distance_from_current_player(player_data, current_player_id):
         return None
 
 
-
 # Email configuration for SendGrid
 def send_admin_credentials_email(full_name, email, username, password,
                                  login_url):
@@ -637,7 +655,6 @@ def send_nda_confirmation_email(player_data, signature, nda_date, ip_address):
         return False
 
 
-
 app = Flask(__name__)
 # Load environment variables from .env file
 
@@ -779,7 +796,7 @@ def generate_referral_codes_for_existing_users(cursor):
 
 def init_db():
     """Initialize SQLite database with required tables"""
-    conn = sqlite3.connect('app.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     # Players table
@@ -1229,8 +1246,7 @@ def init_db():
 
     try:
         c.execute(
-            'ALTER TABLE matches ADD COLUMN scheduled_time TEXT DEFAULT NULL'
-        )
+            'ALTER TABLE matches ADD COLUMN scheduled_time TEXT DEFAULT NULL')
     except sqlite3.OperationalError:
         pass  # already exists
 
@@ -1240,8 +1256,6 @@ def init_db():
         )
     except sqlite3.OperationalError:
         pass  # Column already exists
-
-    
 
     try:
         c.execute(
@@ -1387,29 +1401,23 @@ def init_db():
 
     try:
         c.execute(
-            'ALTER TABLE matches ADD COLUMN team1_id INTEGER DEFAULT NULL'
-        )
+            'ALTER TABLE matches ADD COLUMN team1_id INTEGER DEFAULT NULL')
     except Exception:
         pass  # Column already exists
 
     try:
         c.execute(
-            'ALTER TABLE matches ADD COLUMN team2_id INTEGER DEFAULT NULL'
-        )
+            'ALTER TABLE matches ADD COLUMN team2_id INTEGER DEFAULT NULL')
     except Exception:
         pass  # Column already exists
 
     try:
-        c.execute(
-            'ALTER TABLE matches ADD COLUMN round INTEGER DEFAULT 1'
-        )
+        c.execute('ALTER TABLE matches ADD COLUMN round INTEGER DEFAULT 1')
     except Exception:
         pass  # Column already exists
 
     try:
-        c.execute(
-            'ALTER TABLE matches ADD COLUMN winner_team_id INTEGER'
-        )
+        c.execute('ALTER TABLE matches ADD COLUMN winner_team_id INTEGER')
     except Exception:
         pass  # Column already exists
 
@@ -1421,16 +1429,12 @@ def init_db():
         pass  # Column already exists
 
     try:
-        c.execute(
-            'ALTER TABLE matches ADD COLUMN loser_id INTEGER'
-        )
+        c.execute('ALTER TABLE matches ADD COLUMN loser_id INTEGER')
     except Exception:
         pass  # Column already exists
 
     try:
-        c.execute(
-            'ALTER TABLE matches ADD COLUMN completed_at TEXT'
-        )
+        c.execute('ALTER TABLE matches ADD COLUMN completed_at TEXT')
     except Exception:
         pass  # Column already exists
 
@@ -1516,9 +1520,7 @@ def init_db():
         pass  # Column already exists
 
     try:
-        c.execute(
-            'ALTER TABLE teams ADD COLUMN home_court TEXT'
-        )
+        c.execute('ALTER TABLE teams ADD COLUMN home_court TEXT')
     except Exception:
         pass  # Column already exists
 
@@ -1777,7 +1779,7 @@ def init_db():
         '''CREATE INDEX IF NOT EXISTS idx_match_schedules_proposer ON match_schedules(proposer_id)'''
     )
 
-    #custom tournaments 
+    #custom tournaments
     c.execute('''
         CREATE TABLE IF NOT EXISTS custom_tournaments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1802,8 +1804,6 @@ def init_db():
     );
               ''')
 
-
-    
     c.execute('''
               CREATE TABLE IF NOT EXISTS custom_tournament_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1885,7 +1885,6 @@ def init_db():
     c.execute(
         '''CREATE INDEX IF NOT EXISTS idx_match_reminders_status ON match_reminders(delivery_status)'''
     )
-    
 
     # Create default tournament instances if none exist
     existing_tournaments = c.execute(
@@ -1949,7 +1948,7 @@ def init_db():
 def get_db_connection():
     """Get database connection with dict cursor"""
     import sqlite3
-    conn = sqlite3.connect('app.db', check_same_thread=False)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     # Enable foreign key constraints
     conn.execute('PRAGMA foreign_keys = ON')
@@ -2493,7 +2492,7 @@ def require_permission(permission):
             player = cursor.fetchone()
             conn.close()
 
-           # if player and player.get('is_admin'):
+            # if player and player.get('is_admin'):
             #    return f(*args, **kwargs)  # Admin bypass
 
             # Check and handle trial expiry first
@@ -2547,6 +2546,7 @@ def require_admin():
 
     return decorator
 
+
 # --- TEAM ROUTES ---
 @app.route("/api/search_players")
 def api_search_players():
@@ -2559,7 +2559,8 @@ def api_search_players():
 
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
-    players = conn.execute("""
+    players = conn.execute(
+        """
         SELECT id, full_name, username, location1
         FROM players
         WHERE (username LIKE ? OR full_name LIKE ?)
@@ -2585,7 +2586,10 @@ def create_team():
     invitee_id = data.get("invitee_id")
 
     if not invitee_id:
-        return jsonify({"success": False, "message": "Missing invitee player."})
+        return jsonify({
+            "success": False,
+            "message": "Missing invitee player."
+        })
 
     try:
         conn = get_db_connection()
@@ -2617,14 +2621,16 @@ def create_team():
         """)
 
         # --- Create the team record ---
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO teams (team_name, home_court, player1_id, status)
             VALUES (?, ?, ?, 'pending')
         """, (team_name, home_court, current_player_id))
         team_id = cursor.lastrowid
 
         # --- Create a pending invitation ---
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO team_invitations (team_id, inviter_id, invitee_id, status)
             VALUES (?, ?, ?, 'pending')
         """, (team_id, current_player_id, invitee_id))
@@ -2633,14 +2639,19 @@ def create_team():
         conn.close()
 
         return jsonify({
-            "success": True,
-            "message": f"Team '{team_name or 'Unnamed Team'}' created and invite sent!"
+            "success":
+            True,
+            "message":
+            f"Team '{team_name or 'Unnamed Team'}' created and invite sent!"
         })
 
     except Exception as err:
         import traceback
         traceback.print_exc()
-        return jsonify({"success": False, "message": f"Server error: {str(err)}"})
+        return jsonify({
+            "success": False,
+            "message": f"Server error: {str(err)}"
+        })
 
 
 def get_tournament_team_members(tournament_match_id, player_id, conn=None):
@@ -3578,8 +3589,11 @@ def validate_tournament_join_gps(user_latitude,
     Returns the standard validation dictionary structure.
     """
     try:
-        tournament_name = tournament_instance.get('name', 'Unknown Tournament') if tournament_instance else 'Unknown Tournament'
-        join_radius = tournament_instance.get('join_radius_miles', 25) if tournament_instance else 25
+        tournament_name = tournament_instance.get(
+            'name', 'Unknown Tournament'
+        ) if tournament_instance else 'Unknown Tournament'
+        join_radius = tournament_instance.get(
+            'join_radius_miles', 25) if tournament_instance else 25
 
         # Always allow
         return {
@@ -3591,7 +3605,8 @@ def validate_tournament_join_gps(user_latitude,
         }
 
     except Exception as e:
-        logging.error(f"Unexpected error in GPS validation (player: {player_id}): {e}")
+        logging.error(
+            f"Unexpected error in GPS validation (player: {player_id}): {e}")
         return {
             'allowed': True,
             'distance_miles': 0.0,
@@ -4275,7 +4290,10 @@ def suggest_match_time(player1, player2):
         return "This week - Flexible timing"
 
 
-def get_filtered_compatible_players(current_player_id, match_type=None, skill_level=None, distance=None):
+def get_filtered_compatible_players(current_player_id,
+                                    match_type=None,
+                                    skill_level=None,
+                                    distance=None):
     """
     Returns a list of compatible players filtered by:
     - skill_level
@@ -4287,11 +4305,12 @@ def get_filtered_compatible_players(current_player_id, match_type=None, skill_le
     conn.row_factory = sqlite3.Row
 
     # Fetch current player info
-    current_player = conn.execute('''
+    current_player = conn.execute(
+        '''
         SELECT id, username, full_name, location1, search_radius_miles
         FROM players
         WHERE id = ?
-    ''', (current_player_id,)).fetchone()
+    ''', (current_player_id, )).fetchone()
 
     if not current_player:
         conn.close()
@@ -4330,16 +4349,18 @@ def get_filtered_compatible_players(current_player_id, match_type=None, skill_le
         dist = calculate_distance_from_location1(current_loc, p["location1"])
         if dist is not None and dist <= max_distance:
             player_dict["distance_miles"] = dist
-            player_dict["distance_display"] = (
-                "< 1 mile away" if dist < 1 else f"~{round(dist, 1)} miles away"
-            )
+            player_dict["distance_display"] = ("< 1 mile away" if dist < 1 else
+                                               f"~{round(dist, 1)} miles away")
 
             # --- Ensure essential fields are safe defaults ---
-            player_dict["ranking_points"] = p["ranking_points"] if p["ranking_points"] is not None else 0
-            player_dict["gender"] = p["gender"] if p["gender"] else "Prefer not to say"
+            player_dict["ranking_points"] = p["ranking_points"] if p[
+                "ranking_points"] is not None else 0
+            player_dict[
+                "gender"] = p["gender"] if p["gender"] else "Prefer not to say"
 
             # --- Use username for display name ---
-            player_dict["name"] = p["username"] if p["username"] else p["full_name"]
+            player_dict[
+                "name"] = p["username"] if p["username"] else p["full_name"]
 
             results.append(player_dict)
 
@@ -4347,20 +4368,21 @@ def get_filtered_compatible_players(current_player_id, match_type=None, skill_le
     results.sort(key=lambda x: x.get("distance_miles", 9999))
     return results
 
+
 def get_compatible_players(player_id):
     """Get list of compatible players using GPS-based distance filtering."""
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
 
     # --- Fetch the current player and their info ---
-    player = conn.execute(
-        'SELECT * FROM players WHERE id = ?', (player_id,)
-    ).fetchone()
+    player = conn.execute('SELECT * FROM players WHERE id = ?',
+                          (player_id, )).fetchone()
     if not player or not player['is_looking_for_match']:
         conn.close()
         return []
 
-    player_travel_radius = player['search_radius_miles'] if player['search_radius_miles'] else 25
+    player_travel_radius = player['search_radius_miles'] if player[
+        'search_radius_miles'] else 25
     player_lat = player['latitude']
     player_lng = player['longitude']
 
@@ -4368,7 +4390,9 @@ def get_compatible_players(player_id):
     #  Fallback (no GPS coords)
     # --------------------------
     if player_lat is None or player_lng is None:
-        logging.warning(f"Player {player_id} has no GPS coordinates, using fallback matching")
+        logging.warning(
+            f"Player {player_id} has no GPS coordinates, using fallback matching"
+        )
 
         query = '''
             SELECT id, username, full_name, first_name, last_name, location1 AS location,
@@ -4386,7 +4410,9 @@ def get_compatible_players(player_id):
         # Try adjacent skill levels if none found
         if not compatible_players:
             skill_levels = ['Beginner', 'Intermediate', 'Advanced']
-            current_skill_idx = skill_levels.index(player['skill_level']) if player['skill_level'] in skill_levels else 1
+            current_skill_idx = skill_levels.index(
+                player['skill_level']
+            ) if player['skill_level'] in skill_levels else 1
             adjacent_skills = []
             if current_skill_idx > 0:
                 adjacent_skills.append(skill_levels[current_skill_idx - 1])
@@ -4405,7 +4431,8 @@ def get_compatible_players(player_id):
                     ORDER BY ranking_points DESC, wins DESC, created_at ASC
                     LIMIT 5
                 '''
-                adjacent_players = conn.execute(query, [player_id, skill]).fetchall()
+                adjacent_players = conn.execute(query,
+                                                [player_id, skill]).fetchall()
                 compatible_players.extend(adjacent_players)
                 if compatible_players:
                     break
@@ -4426,22 +4453,26 @@ def get_compatible_players(player_id):
               AND longitude IS NOT NULL
             ORDER BY ranking_points DESC, wins DESC, created_at ASC
         '''
-        all_players = conn.execute(query, (player_id, player['skill_level'])).fetchall()
+        all_players = conn.execute(
+            query, (player_id, player['skill_level'])).fetchall()
 
         compatible_players = []
         for candidate in all_players:
-            distance = calculate_distance_haversine(
-                player_lat, player_lng, candidate['latitude'], candidate['longitude']
-            )
+            distance = calculate_distance_haversine(player_lat, player_lng,
+                                                    candidate['latitude'],
+                                                    candidate['longitude'])
             if distance is not None:
-                candidate_travel_radius = candidate['travel_radius'] if candidate['travel_radius'] else 25
+                candidate_travel_radius = candidate[
+                    'travel_radius'] if candidate['travel_radius'] else 25
                 if distance <= player_travel_radius and distance <= candidate_travel_radius:
                     candidate_dict = dict(candidate)
                     candidate_dict['distance_miles'] = round(distance, 1)
-                    candidate_dict['candidate_travel_radius'] = candidate_travel_radius
+                    candidate_dict[
+                        'candidate_travel_radius'] = candidate_travel_radius
                     compatible_players.append(candidate_dict)
 
-        compatible_players.sort(key=lambda x: (x['distance_miles'], -x['ranking_points']))
+        compatible_players.sort(
+            key=lambda x: (x['distance_miles'], -x['ranking_points']))
         logging.info(
             f"GPS-based matching for player {player_id}: found {len(compatible_players)} within {player_travel_radius} miles."
         )
@@ -4453,10 +4484,8 @@ def get_compatible_players(player_id):
     for p in compatible_players:
         # Prefer username → first_name → fallback to first word of full_name
         display_name = (
-            p['username']
-            or p['first_name']
-            or (p['full_name'].split()[0] if p['full_name'] else 'Unknown')
-        )
+            p['username'] or p['first_name']
+            or (p['full_name'].split()[0] if p['full_name'] else 'Unknown'))
 
         player_data = {
             'id': p['id'],
@@ -4479,12 +4508,14 @@ def get_compatible_players(player_id):
         if 'distance_miles' in p:
             player_data['distance_miles'] = p['distance_miles']
         if 'candidate_travel_radius' in p:
-            player_data['candidate_travel_radius'] = p['candidate_travel_radius']
+            player_data['candidate_travel_radius'] = p[
+                'candidate_travel_radius']
 
         players_list.append(player_data)
 
     conn.close()
     return players_list
+
 
 def find_match_for_player(player_id):
     """Find and create a match for a player using GPS-based distance filtering"""
@@ -4670,6 +4701,7 @@ def create_direct_challenge(challenger_id,
 # Initialize database
 init_db()
 
+
 def send_email(to, subject, html_content):
     """
     Send an email using SendGrid (HTML content supported).
@@ -4684,7 +4716,10 @@ def send_email(to, subject, html_content):
             return False
 
         sg = sendgrid.SendGridAPIClient(api_key=api_key)
-        message = Mail(from_email=from_email, to_emails=to, subject=subject, html_content=html_content)
+        message = Mail(from_email=from_email,
+                       to_emails=to,
+                       subject=subject,
+                       html_content=html_content)
         response = sg.send(message)
 
         print(f"✅ Email sent to {to}: {response.status_code}")
@@ -5067,10 +5102,12 @@ def player_login_post():
             if not nda_status or not nda_status['nda_accepted']:
                 # NDA not signed - redirect to NDA page
                 conn.close()
-               # Redirect users to the disclaimers flow or home page
-                player_id = session.get('player_id') or session.get('current_player_id')
+                # Redirect users to the disclaimers flow or home page
+                player_id = session.get('player_id') or session.get(
+                    'current_player_id')
                 if player_id:
-                    return redirect(url_for('show_disclaimers', player_id=player_id))
+                    return redirect(
+                        url_for('show_disclaimers', player_id=player_id))
                     return redirect(url_for('player_login'))
 
             conn.close()
@@ -5114,9 +5151,11 @@ def index():
             # Then check NDA for non-admin users (only if disclaimers are done)
             if not player['is_admin'] and not player['nda_accepted']:
                 # Redirect users to the disclaimers flow or home page
-                player_id = session.get('player_id') or session.get('current_player_id')
+                player_id = session.get('player_id') or session.get(
+                    'current_player_id')
                 if player_id:
-                    return redirect(url_for('show_disclaimers', player_id=player_id))
+                    return redirect(
+                        url_for('show_disclaimers', player_id=player_id))
                     return redirect(url_for('player_login'))
 
             # All checks passed, redirect to home
@@ -5141,7 +5180,7 @@ def player_home(player_id):
     check_and_handle_trial_expiry(player_id)
 
     # Get player info (refresh after potential trial expiry update)
-    cursor.execute('SELECT * FROM players WHERE id = ?', (player_id,))
+    cursor.execute('SELECT * FROM players WHERE id = ?', (player_id, ))
     player = cursor.fetchone()
     if not player:
         flash('Player not found', 'danger')
@@ -5173,10 +5212,8 @@ def player_home(player_id):
         GROUP BY opponent_id, opponent_name, opponent_selfie, opponent_wins, opponent_losses, opponent_tournament_wins, opponent_latitude, opponent_longitude, opponent_location1
         ORDER BY last_played DESC
         LIMIT 10
-        ''',
-        (player_id, player_id, player_id, player_id, player_id, player_id,
-         player_id, player_id, player_id, player_id, player_id)
-    )
+        ''', (player_id, player_id, player_id, player_id, player_id, player_id,
+              player_id, player_id, player_id, player_id, player_id))
     connections = cursor.fetchall()
 
     # --- Get recent activity ---
@@ -5191,8 +5228,7 @@ def player_home(player_id):
         WHERE m.player1_id = ? OR m.player2_id = ?
         ORDER BY m.created_at DESC
         LIMIT 5
-        ''', (player_id, player_id)
-    )
+        ''', (player_id, player_id))
     recent_matches = cursor.fetchall()
 
     # --- Get player's tournaments ---
@@ -5202,8 +5238,7 @@ def player_home(player_id):
         WHERE player_id = ? 
         ORDER BY created_at DESC
         LIMIT 5
-        ''', (player_id,)
-    )
+        ''', (player_id, ))
     tournaments = cursor.fetchall()
 
     # --- Get available tournaments (call-to-action) ---
@@ -5218,24 +5253,33 @@ def player_home(player_id):
     open_tournaments = cursor.fetchall()
 
     for tournament in open_tournaments:
-        spots_remaining = tournament['max_players'] - tournament['current_players']
+        spots_remaining = tournament['max_players'] - tournament[
+            'current_players']
         level_info = tournament_levels.get(tournament['skill_level'], {})
 
         available_tournaments.append({
-            'id': tournament['id'],
-            'level': tournament['skill_level'],
-            'name': tournament['name'],
-            'description': level_info.get('description', 'Tournament'),
-            'entry_fee': tournament['entry_fee'],
-            'current_entries': tournament['current_players'],
-            'max_players': tournament['max_players'],
-            'spots_remaining': spots_remaining,
-            'prize_pool': (
-                f"1st: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.5:.0f} • "
-                f"2nd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.3:.0f} • "
-                f"3rd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.12:.0f} • "
-                f"4th: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.08:.0f}"
-            )
+            'id':
+            tournament['id'],
+            'level':
+            tournament['skill_level'],
+            'name':
+            tournament['name'],
+            'description':
+            level_info.get('description', 'Tournament'),
+            'entry_fee':
+            tournament['entry_fee'],
+            'current_entries':
+            tournament['current_players'],
+            'max_players':
+            tournament['max_players'],
+            'spots_remaining':
+            spots_remaining,
+            'prize_pool':
+            (f"1st: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.5:.0f} • "
+             f"2nd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.3:.0f} • "
+             f"3rd: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.12:.0f} • "
+             f"4th: ${tournament['entry_fee'] * tournament['max_players'] * 0.7 * 0.08:.0f}"
+             )
         })
 
     # --- Get player's tournaments with bracket info ---
@@ -5248,8 +5292,7 @@ def player_home(player_id):
         WHERE t.player_id = ? 
         ORDER BY t.created_at DESC
         LIMIT 5
-        ''', (player_id,)
-    )
+        ''', (player_id, ))
     player_tournaments = cursor.fetchall()
 
     conn.close()
@@ -5264,21 +5307,20 @@ def player_home(player_id):
     match_challenges = get_player_match_challenges(player_id)
 
     # ✅ Return as before
-    return render_template(
-        'player_home.html',
-        player=player,
-        connections=connections,
-        recent_matches=recent_matches,
-        tournaments=tournaments,
-        player_tournaments=player_tournaments,
-        team_invitations=team_invitations,
-        match_challenges=match_challenges,
-        available_tournaments=available_tournaments,
-        player_ranking=player_ranking,
-        leaderboard=leaderboard,
-        is_birthday=is_birthday,
-        current_player_id=player_id
-    )
+    return render_template('player_home.html',
+                           player=player,
+                           connections=connections,
+                           recent_matches=recent_matches,
+                           tournaments=tournaments,
+                           player_tournaments=player_tournaments,
+                           team_invitations=team_invitations,
+                           match_challenges=match_challenges,
+                           available_tournaments=available_tournaments,
+                           player_ranking=player_ranking,
+                           leaderboard=leaderboard,
+                           is_birthday=is_birthday,
+                           current_player_id=player_id)
+
 
 @app.route("/challenges")
 def challenges():
@@ -5294,14 +5336,16 @@ def challenges():
     # ---------------------------
     #  PLAYER INFO
     # ---------------------------
-    player = conn.execute("""
+    player = conn.execute(
+        """
         SELECT * FROM players WHERE id = ?
-    """, (current_player_id,)).fetchone()
+    """, (current_player_id, )).fetchone()
 
     # ---------------------------
     #  INCOMING CHALLENGES
     # ---------------------------
-    incoming_challenges = conn.execute("""
+    incoming_challenges = conn.execute(
+        """
         SELECT m.*, 
                c.full_name AS challenger_name,
                c.selfie AS challenger_selfie,
@@ -5319,12 +5363,13 @@ def challenges():
                 )
               )
         ORDER BY m.created_at DESC
-    """, (current_player_id,)).fetchall()
+    """, (current_player_id, )).fetchall()
 
     # ---------------------------
     #  OUTGOING CHALLENGES
     # ---------------------------
-    outgoing_challenges = conn.execute("""
+    outgoing_challenges = conn.execute(
+        """
         SELECT m.*, 
                o.full_name AS opponent_name,
                o.selfie AS opponent_selfie,
@@ -5342,12 +5387,13 @@ def challenges():
                 )
               )
         ORDER BY m.created_at DESC
-    """, (current_player_id,)).fetchall()
+    """, (current_player_id, )).fetchall()
 
     # ---------------------------
     #  CONFIRMED MATCHES (Start Match button)
     # ---------------------------
-    confirmed_matches = conn.execute("""
+    confirmed_matches = conn.execute(
+        """
         SELECT m.*,
                p.full_name AS opponent_name,
                p.selfie AS opponent_selfie,
@@ -5374,7 +5420,8 @@ def challenges():
     # ---------------------------
     #  COMPLETED MATCHES
     # ---------------------------
-    completed_matches = conn.execute("""
+    completed_matches = conn.execute(
+        """
         SELECT m.*, 
                opp.full_name AS opponent_name,
                opp.selfie AS opponent_selfie
@@ -5403,9 +5450,9 @@ def challenges():
         player=player,
         incoming_challenges=incoming_challenges,
         outgoing_challenges=outgoing_challenges,
-        confirmed_matches=confirmed_matches,   # ⭐ ADDED
-        completed_matches=completed_matches
-    )
+        confirmed_matches=confirmed_matches,  # ⭐ ADDED
+        completed_matches=completed_matches)
+
 
 @app.route('/start_custom_tournament/<int:tournament_id>', methods=['POST'])
 def start_custom_tournament(tournament_id):
@@ -5418,8 +5465,8 @@ def start_custom_tournament(tournament_id):
     try:
         # Fetch the tournament
         tournament = conn.execute(
-            "SELECT * FROM custom_tournaments WHERE id = ?", (tournament_id,)
-        ).fetchone()
+            "SELECT * FROM custom_tournaments WHERE id = ?",
+            (tournament_id, )).fetchone()
         if not tournament:
             flash("Tournament not found.", "danger")
             return redirect(url_for("tournaments_overview"))
@@ -5436,24 +5483,28 @@ def start_custom_tournament(tournament_id):
 
         format_type = tournament["format"] or "singles"
         sport = "pickleball"  # Always pickleball
-        court_location = tournament["location"] or "TBD"  # Use tournament location
+        court_location = tournament[
+            "location"] or "TBD"  # Use tournament location
 
         # Fetch participants
         if format_type == "doubles":
-            participants = conn.execute("""
+            participants = conn.execute(
+                """
                 SELECT mt.id AS team_id
                 FROM custom_tournament_entries e
                 JOIN match_teams mt ON e.team_id = mt.id
                 WHERE e.tournament_id = ?
-            """, (tournament_id,)).fetchall()
+            """, (tournament_id, )).fetchall()
         else:
-            participants = conn.execute("""
+            participants = conn.execute(
+                """
                 SELECT player_id FROM custom_tournament_entries
                 WHERE tournament_id = ?
-            """, (tournament_id,)).fetchall()
+            """, (tournament_id, )).fetchall()
 
         if len(participants) < 2:
-            flash("Not enough participants to start the tournament.", "warning")
+            flash("Not enough participants to start the tournament.",
+                  "warning")
             return redirect(url_for("tournaments_overview"))
 
         # Shuffle participants for random matchups
@@ -5465,23 +5516,25 @@ def start_custom_tournament(tournament_id):
             if i + 1 < len(participants):
                 if format_type == "doubles":
                     matches_to_insert.append(
-                        (tournament_id, participants[i]["team_id"], participants[i + 1]["team_id"],
-                         1, "pending", sport, court_location)
-                    )
+                        (tournament_id, participants[i]["team_id"],
+                         participants[i + 1]["team_id"], 1, "pending", sport,
+                         court_location))
                 else:
                     matches_to_insert.append(
-                        (tournament_id, participants[i]["player_id"], participants[i + 1]["player_id"],
-                         1, "pending", sport, court_location)
-                    )
+                        (tournament_id, participants[i]["player_id"],
+                         participants[i + 1]["player_id"], 1, "pending", sport,
+                         court_location))
 
         # Bulk insert matches
         if format_type == "doubles":
-            conn.executemany("""
+            conn.executemany(
+                """
                 INSERT INTO matches (tournament_id, team1_id, team2_id, round, status, sport, court_location)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, matches_to_insert)
         else:
-            conn.executemany("""
+            conn.executemany(
+                """
                 INSERT INTO matches (tournament_id, player1_id, player2_id, round, status, sport, court_location)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, matches_to_insert)
@@ -5489,11 +5542,12 @@ def start_custom_tournament(tournament_id):
         # Mark tournament as in-progress
         conn.execute(
             "UPDATE custom_tournaments SET status = 'in_progress' WHERE id = ?",
-            (tournament_id,)
-        )
+            (tournament_id, ))
         conn.commit()
 
-        flash("Tournament started successfully! First-round matches generated.", "success")
+        flash(
+            "Tournament started successfully! First-round matches generated.",
+            "success")
 
     except sqlite3.IntegrityError as e:
         conn.rollback()
@@ -5508,13 +5562,15 @@ def start_custom_tournament(tournament_id):
 
     return redirect(url_for("tournaments_overview"))
 
+
 @app.route("/start_match/<int:match_id>")
 def start_match(match_id):
     """Return match player names for the score modal."""
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
 
-    match = conn.execute("SELECT * FROM matches WHERE id = ?", (match_id,)).fetchone()
+    match = conn.execute("SELECT * FROM matches WHERE id = ?",
+                         (match_id, )).fetchone()
     if not match:
         conn.close()
         return jsonify({"success": False, "error": "Match not found"})
@@ -5523,8 +5579,10 @@ def start_match(match_id):
 
     # Singles
     if match["player1_id"] and match["player2_id"]:
-        p1 = conn.execute("SELECT full_name FROM players WHERE id = ?", (match["player1_id"],)).fetchone()
-        p2 = conn.execute("SELECT full_name FROM players WHERE id = ?", (match["player2_id"],)).fetchone()
+        p1 = conn.execute("SELECT full_name FROM players WHERE id = ?",
+                          (match["player1_id"], )).fetchone()
+        p2 = conn.execute("SELECT full_name FROM players WHERE id = ?",
+                          (match["player2_id"], )).fetchone()
         data.update({
             "player1_name": p1["full_name"] if p1 else "Unknown",
             "player2_name": p2["full_name"] if p2 else "Unknown",
@@ -5534,21 +5592,23 @@ def start_match(match_id):
 
     # Doubles
     elif match["team1_id"] and match["team2_id"]:
-        t1 = conn.execute("""
+        t1 = conn.execute(
+            """
             SELECT p1.full_name AS p1_name, p2.full_name AS p2_name
             FROM match_teams mt
             JOIN players p1 ON mt.player1_id = p1.id
             JOIN players p2 ON mt.player2_id = p2.id
             WHERE mt.id = ?
-        """, (match["team1_id"],)).fetchone()
+        """, (match["team1_id"], )).fetchone()
 
-        t2 = conn.execute("""
+        t2 = conn.execute(
+            """
             SELECT p1.full_name AS p1_name, p2.full_name AS p2_name
             FROM match_teams mt
             JOIN players p1 ON mt.player1_id = p1.id
             JOIN players p2 ON mt.player2_id = p2.id
             WHERE mt.id = ?
-        """, (match["team2_id"],)).fetchone()
+        """, (match["team2_id"], )).fetchone()
 
         data.update({
             "player1_name": t1["p1_name"],
@@ -5560,6 +5620,7 @@ def start_match(match_id):
     conn.close()
     return jsonify(data)
 
+
 @app.route('/complete_match', methods=['POST'])
 def complete_match():
     data = request.get_json()
@@ -5569,7 +5630,8 @@ def complete_match():
     winner_team = data.get('winner_team')
 
     conn = get_db_connection()
-    match = conn.execute('SELECT * FROM matches WHERE id = ?', (match_id,)).fetchone()
+    match = conn.execute('SELECT * FROM matches WHERE id = ?',
+                         (match_id, )).fetchone()
     if not match:
         conn.close()
         return jsonify({'success': False, 'message': 'Match not found'})
@@ -5587,7 +5649,8 @@ def complete_match():
         loser_ids = [match['player1_id'], match['player3_id']]
 
     # Store match results
-    conn.execute('''
+    conn.execute(
+        '''
         UPDATE matches
         SET status = 'completed',
             player1_score = ?,
@@ -5600,14 +5663,19 @@ def complete_match():
 
     # Update player records
     for pid in [p for p in winner_ids if p]:
-        conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?', (pid,))
+        conn.execute('UPDATE players SET wins = wins + 1 WHERE id = ?',
+                     (pid, ))
     for pid in [p for p in loser_ids if p]:
-        conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?', (pid,))
+        conn.execute('UPDATE players SET losses = losses + 1 WHERE id = ?',
+                     (pid, ))
 
     conn.commit()
     conn.close()
 
-    return jsonify({'success': True, 'message': 'Match results recorded successfully'})
+    return jsonify({
+        'success': True,
+        'message': 'Match results recorded successfully'
+    })
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -5629,7 +5697,10 @@ def register():
             password = request.form.get("password", "")
 
             # Validation
-            if not all([full_name, username, email, dob, address, zip_code, gender, skill_level, password]):
+            if not all([
+                    full_name, username, email, dob, address, zip_code, gender,
+                    skill_level, password
+            ]):
                 flash("All required fields must be filled.", "danger")
                 return redirect(url_for("register"))
 
@@ -5638,8 +5709,7 @@ def register():
                 try:
                     geo_res = requests.get(
                         f"https://nominatim.openstreetmap.org/search?postalcode={zip_code}&country=US&format=json&limit=1",
-                        headers={"User-Agent": "Ready2DinkApp"}
-                    )
+                        headers={"User-Agent": "Ready2DinkApp"})
                     geo_data = geo_res.json()
                     if geo_data and len(geo_data) > 0:
                         lat = geo_data[0]["lat"]
@@ -5673,13 +5743,15 @@ def register():
                         {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
                         {placeholder}, {placeholder}, CURRENT_TIMESTAMP)
             """
-            values = (first_name, last_name, full_name, username, email, dob, gender,
-                      address, zip_code, location1, skill_level, password_hash, player_id)
+            values = (first_name, last_name, full_name, username, email, dob,
+                      gender, address, zip_code, location1, skill_level,
+                      password_hash, player_id)
             cursor.execute(query, values)
             conn.commit()
 
             # Retrieve numeric id
-            cursor.execute("SELECT id FROM players WHERE player_id = ?", (player_id,))
+            cursor.execute("SELECT id FROM players WHERE player_id = ?",
+                           (player_id, ))
             row = cursor.fetchone()
             numeric_id = row["id"] if row else None
 
@@ -5688,7 +5760,8 @@ def register():
             session["current_player_id"] = numeric_id
             session["player_id"] = numeric_id
 
-            flash("Account created and logged in successfully! Welcome!", "success")
+            flash("Account created and logged in successfully! Welcome!",
+                  "success")
 
             if not use_sqlite:
                 cursor.close()
@@ -5713,6 +5786,7 @@ def register():
             return f"<pre>Registration failed:\n{tb}</pre>", 500
 
     return render_template("register.html")
+
 
 @app.route('/disclaimers/<int:player_id>')
 def show_disclaimers(player_id):
@@ -5767,8 +5841,6 @@ def accept_disclaimers():
     except Exception as e:
         flash(f'Error accepting disclaimers: {str(e)}', 'danger')
         return redirect(url_for('show_disclaimers', player_id=player_id))
-    
-
 
 
 @app.route('/guardian-consent/<int:player_id>')
@@ -5878,6 +5950,7 @@ def submit_guardian_consent(player_id):
         flash(f'Error processing consent: {str(e)}', 'danger')
         return redirect(url_for('guardian_consent_form', player_id=player_id))
 
+
 @app.route("/forgot_password", methods=["POST"])
 def forgot_password():
     """Send a secure password reset link using SendGrid."""
@@ -5886,21 +5959,29 @@ def forgot_password():
         email = data.get("email")
 
         if not email:
-            return jsonify({"success": False, "message": "Email is required"}), 400
+            return jsonify({
+                "success": False,
+                "message": "Email is required"
+            }), 400
 
         conn = get_db_connection()
         conn.row_factory = sqlite3.Row
         player = conn.execute(
-            "SELECT id, full_name, email FROM players WHERE email = ?", (email,)
-        ).fetchone()
+            "SELECT id, full_name, email FROM players WHERE email = ?",
+            (email, )).fetchone()
         conn.close()
 
         if not player:
-            return jsonify({"success": False, "message": "No account found for that email"}), 404
+            return jsonify({
+                "success": False,
+                "message": "No account found for that email"
+            }), 404
 
         # Generate secure token (expires in 1 hour)
         token = serializer.dumps(email, salt="password-reset")
-        reset_url = url_for("reset_password_token", token=token, _external=True)
+        reset_url = url_for("reset_password_token",
+                            token=token,
+                            _external=True)
 
         # ✅ Use your existing SendGrid send_email() function
         subject = "Ready2Dink Password Reset"
@@ -5919,7 +6000,10 @@ def forgot_password():
         """
         send_email(to=email, subject=subject, html_content=html_body)
 
-        return jsonify({"success": True, "message": "Reset email sent successfully!"})
+        return jsonify({
+            "success": True,
+            "message": "Reset email sent successfully!"
+        })
 
     except Exception as e:
         print(">>> Forgot password error <<<")
@@ -5948,7 +6032,8 @@ def reset_password_token(token):
 
         pw_hash = generate_password_hash(new_pw)
         conn = get_db_connection()
-        conn.execute("UPDATE players SET password_hash = ? WHERE email = ?", (pw_hash, email))
+        conn.execute("UPDATE players SET password_hash = ? WHERE email = ?",
+                     (pw_hash, email))
         conn.commit()
         conn.close()
 
@@ -5956,6 +6041,7 @@ def reset_password_token(token):
         return redirect(url_for("player_login"))
 
     return render_template("reset_password.html", expired=False)
+
 
 @app.route('/pending-guardian-approval/<int:player_id>')
 def pending_guardian_approval(player_id):
@@ -6540,7 +6626,6 @@ def sign_nda():
         })
 
 
-
 @app.route('/toggle-notifications', methods=['POST'])
 def toggle_notifications():
     """Simple toggle for notification preferences"""
@@ -6710,10 +6795,10 @@ def tournaments_overview():
     if not current_player_id:
         flash("Please log in to view your challenges.", "warning")
         return redirect(url_for("player_login"))
-    
-    player = conn.execute('SELECT * FROM players WHERE id = ?', (current_player_id,)).fetchone()
-    current_player_id = session.get("current_player_id")
 
+    player = conn.execute('SELECT * FROM players WHERE id = ?',
+                          (current_player_id, )).fetchone()
+    current_player_id = session.get("current_player_id")
 
     # Load all custom tournaments
     custom_tournaments_raw = conn.execute('''
@@ -6731,20 +6816,17 @@ def tournaments_overview():
         # Count entries
         count = conn.execute(
             "SELECT COUNT(*) AS total FROM custom_tournament_entries WHERE tournament_id = ?",
-            (tournament['id'],)
-        ).fetchone()['total']
+            (tournament['id'], )).fetchone()['total']
 
         # Calculate derived fields
         tournament['current_entries'] = count
         tournament['spots_remaining'] = max(
-            0, (tournament.get('max_players') or 0) - count
-        )
-        tournament['is_organizer'] = (tournament['organizer_id'] == current_player_id)
-        tournament['can_start'] = (
-            tournament['is_organizer']
-            and tournament['status'] == 'open'
-            and count >= 2
-        )
+            0, (tournament.get('max_players') or 0) - count)
+        tournament['is_organizer'] = (
+            tournament['organizer_id'] == current_player_id)
+        tournament['can_start'] = (tournament['is_organizer']
+                                   and tournament['status'] == 'open'
+                                   and count >= 2)
 
         custom_tournaments.append(tournament)
 
@@ -6754,18 +6836,17 @@ def tournaments_overview():
     for level_name, level_info in tournament_levels.items():
         if 'spots_remaining' not in level_info:
             level_info['spots_remaining'] = (
-                level_info.get('max_players', 0) - level_info.get('current_entries', 0)
-                if 'max_players' in level_info and 'current_entries' in level_info
-            else 0
-        )
+                level_info.get('max_players', 0) -
+                level_info.get('current_entries', 0)
+                if 'max_players' in level_info
+                and 'current_entries' in level_info else 0)
 
     conn.close()
-    return render_template(
-        'tournaments_overview.html',
-        tournament_levels=tournament_levels,
-        custom_tournaments=custom_tournaments,
-        player=player
-    )
+    return render_template('tournaments_overview.html',
+                           tournament_levels=tournament_levels,
+                           custom_tournaments=custom_tournaments,
+                           player=player)
+
 
 @app.route('/tournament', methods=['GET', 'POST'])
 def tournament():
@@ -7769,6 +7850,7 @@ def decline_challenge():
             'message': f'Error declining challenge: {str(e)}'
         })
 
+
 @app.route("/matchmaking/random", methods=["POST"])
 def random_matchmaking():
     try:
@@ -7824,34 +7906,40 @@ def random_matchmaking():
 
         # Haversine distance
         import math
+
         def distance(lat1, lon1, lat2, lon2):
             R = 3958.8
             dlat = math.radians(lat2 - lat1)
             dlon = math.radians(lon2 - lon1)
-            a = (math.sin(dlat/2)**2 +
-                 math.cos(math.radians(lat1)) *
-                 math.cos(math.radians(lat2)) *
-                 math.sin(dlon/2)**2)
+            a = (math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) *
+                 math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2)
             return R * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
 
         # ----------------------------
         # Load user
         # ----------------------------
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT id, latitude, longitude, location1, search_radius_miles, skill_level
             FROM players
             WHERE id = ?
-        """, (player_id,))
+        """, (player_id, ))
         user = cursor.fetchone()
 
         if not user:
-            return jsonify({"success": False, "message": "User not found"}), 404
+            return jsonify({
+                "success": False,
+                "message": "User not found"
+            }), 404
 
         # Extract coords w/ fallback
         user_lat, user_lon = extract_coords(user)
 
         if user_lat is None or user_lon is None:
-            return jsonify({"success": False, "message": "Your location is invalid"}), 400
+            return jsonify({
+                "success": False,
+                "message": "Your location is invalid"
+            }), 400
 
         radius = user["search_radius_miles"] or 25
         skill_level = user["skill_level"]
@@ -7875,7 +7963,8 @@ def random_matchmaking():
         # ----------------------------
         placeholders = ",".join(["?"] * len(allowed_skills))
 
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             SELECT id, full_name, latitude, longitude, location1
             FROM players
             WHERE id != ?
@@ -7898,8 +7987,10 @@ def random_matchmaking():
 
         if not nearby:
             return jsonify({
-                "success": False,
-                "message": "No nearby players found within your radius & skill range."
+                "success":
+                False,
+                "message":
+                "No nearby players found within your radius & skill range."
             })
 
         # Pick random opponent
@@ -7933,7 +8024,8 @@ def send_challenge():
             return jsonify({'error': 'Not logged in'}), 401
 
         opponent_id = data.get('opponent_id')
-        partner1_id = data.get('partner1_id')  # Challenger’s partner (optional)
+        partner1_id = data.get(
+            'partner1_id')  # Challenger’s partner (optional)
         partner2_id = data.get('partner2_id')  # Opponent’s partner (optional)
         sport = data.get('sport', 'Pickleball')
         court_location = data.get('court_location', 'TBD')
@@ -7946,35 +8038,50 @@ def send_challenge():
         cursor = conn.cursor()
 
         # Create match record
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO matches (player1_id, player2_id, sport, court_location, match_date, scheduled_time, status, match_type)
             VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
-        """, (challenger_id, opponent_id, sport, court_location, match_date, scheduled_time, match_type))
+        """, (challenger_id, opponent_id, sport, court_location, match_date,
+              scheduled_time, match_type))
         match_id = cursor.lastrowid
 
         # Insert team members
         if match_type == 'doubles':
             # Team 1 = challenger + their partner
-            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)", (match_id, challenger_id))
-            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)", (match_id, partner1_id))
+            cursor.execute(
+                "INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)",
+                (match_id, challenger_id))
+            cursor.execute(
+                "INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)",
+                (match_id, partner1_id))
             # Team 2 = opponent + their partner
-            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)", (match_id, opponent_id))
-            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)", (match_id, partner2_id))
+            cursor.execute(
+                "INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)",
+                (match_id, opponent_id))
+            cursor.execute(
+                "INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)",
+                (match_id, partner2_id))
         else:
             # Singles
-            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)", (match_id, challenger_id))
-            cursor.execute("INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)", (match_id, opponent_id))
+            cursor.execute(
+                "INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 1, ?)",
+                (match_id, challenger_id))
+            cursor.execute(
+                "INSERT INTO match_teams (match_id, team_number, player_id) VALUES (?, 2, ?)",
+                (match_id, opponent_id))
 
         conn.commit()
 
         # Fetch player names for confirmation modal display
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT p.full_name, mt.team_number
             FROM match_teams mt
             JOIN players p ON mt.player_id = p.id
             WHERE mt.match_id = ?
             ORDER BY mt.team_number ASC
-        """, (match_id,))
+        """, (match_id, ))
         teams = cursor.fetchall()
 
         # Format data for modal window
@@ -7995,6 +8102,7 @@ def send_challenge():
         logging.error(f"Error sending challenge: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/rematch/<int:match_id>', methods=['POST'])
 def rematch(match_id):
     """
@@ -8006,52 +8114,57 @@ def rematch(match_id):
         cursor = conn.cursor()
 
         # Fetch the original match
-        match = cursor.execute("SELECT * FROM matches WHERE id = ?", (match_id,)).fetchone()
+        match = cursor.execute("SELECT * FROM matches WHERE id = ?",
+                               (match_id, )).fetchone()
         if not match:
             conn.close()
-            return jsonify({'success': False, 'message': 'Original match not found'}), 404
+            return jsonify({
+                'success': False,
+                'message': 'Original match not found'
+            }), 404
 
         # Copy key fields (sqlite3.Row behaves like a dict)
         challenger_id = match['player1_id']
         challenged_id = match['player2_id']
-        court_location = match['court_location'] if match['court_location'] else 'TBD'
+        court_location = match['court_location'] if match[
+            'court_location'] else 'TBD'
         sport = match['sport'] if match['sport'] else 'Pickleball'
         match_type = match['match_type'] if match['match_type'] else 'singles'
         match_date = match['match_date'] if match['match_date'] else None
-        scheduled_time = match['scheduled_time'] if match['scheduled_time'] else None
+        scheduled_time = match['scheduled_time'] if match[
+            'scheduled_time'] else None
 
         # Insert the new match (pending)
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO matches (
                 player1_id, player2_id, sport, court_location,
                 match_date, scheduled_time, status, match_type,
                 player1_confirmed, player2_confirmed
             )
             VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, 0, 0)
-        """, (
-            challenger_id,
-            challenged_id,
-            sport,
-            court_location,
-            match_date,
-            scheduled_time,
-            match_type
-        ))
+        """, (challenger_id, challenged_id, sport, court_location, match_date,
+              scheduled_time, match_type))
         new_match_id = cursor.lastrowid
 
         # Copy teams (for doubles)
         teams = cursor.execute(
-            "SELECT team_number, player_id FROM match_teams WHERE match_id = ?", (match_id,)
-        ).fetchall()
+            "SELECT team_number, player_id FROM match_teams WHERE match_id = ?",
+            (match_id, )).fetchall()
         for t in teams:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO match_teams (match_id, team_number, player_id)
                 VALUES (?, ?, ?)
             """, (new_match_id, t['team_number'], t['player_id']))
 
         # Get player names for notifications
-        challenger = cursor.execute("SELECT full_name FROM players WHERE id = ?", (challenger_id,)).fetchone()
-        challenged = cursor.execute("SELECT full_name FROM players WHERE id = ?", (challenged_id,)).fetchone()
+        challenger = cursor.execute(
+            "SELECT full_name FROM players WHERE id = ?",
+            (challenger_id, )).fetchone()
+        challenged = cursor.execute(
+            "SELECT full_name FROM players WHERE id = ?",
+            (challenged_id, )).fetchone()
 
         challenger_name = challenger['full_name'] if challenger else "Player 1"
         challenged_name = challenged['full_name'] if challenged else "Player 2"
@@ -8061,12 +8174,14 @@ def rematch(match_id):
         msg_for_challenger = f"You've started a rematch against {challenged_name}!"
         msg_for_challenged = f"{challenger_name} has challenged you to a rematch!"
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO notifications (player_id, type, title, message, data)
             VALUES (?, 'challenge', ?, ?, json_object('match_id', ?))
         """, (challenger_id, title, msg_for_challenger, new_match_id))
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO notifications (player_id, type, title, message, data)
             VALUES (?, 'challenge', ?, ?, json_object('match_id', ?))
         """, (challenged_id, title, msg_for_challenged, new_match_id))
@@ -8075,14 +8190,18 @@ def rematch(match_id):
         conn.close()
 
         return jsonify({
-            'success': True,
-            'new_match_id': new_match_id,
-            'message': f"Rematch challenge created successfully between {challenger_name} and {challenged_name}!"
+            'success':
+            True,
+            'new_match_id':
+            new_match_id,
+            'message':
+            f"Rematch challenge created successfully between {challenger_name} and {challenged_name}!"
         })
 
     except Exception as e:
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @app.route('/challenges/<int:challenge_id>/accept', methods=['POST'])
 def accept_challenge_route(challenge_id):
@@ -8288,7 +8407,8 @@ def profile_settings():
         AND m.status = 'completed'
         AND p.id != ?
         ORDER BY p.full_name
-        ''', (current_player_id, current_player_id, current_player_id)).fetchall()
+        ''',
+        (current_player_id, current_player_id, current_player_id)).fetchall()
 
     conn.close()
 
@@ -8299,11 +8419,11 @@ def profile_settings():
     return render_template(
         'profile_settings.html',
         player=player,
-        player_id=player['player_id'],   # 👈 pass player_id explicitly
+        player_id=player['player_id'],  # 👈 pass player_id explicitly
         current_team=current_team,
         pending_invitations=pending_invitations,
-        connections=[dict(c) for c in connections]
-    )
+        connections=[dict(c) for c in connections])
+
 
 @app.route('/update-availability/<int:player_id>', methods=['POST'])
 def update_availability(player_id):
@@ -8429,31 +8549,36 @@ def update_profile():
         new_username = request.form.get('username', '').strip()
 
         if new_username:
-            current = conn.execute(
-                "SELECT username FROM players WHERE id = ?", (player_id,)
-            ).fetchone()
+            current = conn.execute("SELECT username FROM players WHERE id = ?",
+                                   (player_id, )).fetchone()
             current_username = current['username'] if current else None
 
             if new_username != current_username:
                 existing_user = conn.execute(
                     "SELECT id FROM players WHERE username = ? AND id != ?",
-                    (new_username, player_id)
-                ).fetchone()
+                    (new_username, player_id)).fetchone()
                 if existing_user:
-                    flash('That username is already taken. Please choose another.', 'danger')
+                    flash(
+                        'That username is already taken. Please choose another.',
+                        'danger')
                     conn.close()
                     return redirect(url_for('profile_settings'))
 
-                conn.execute("UPDATE players SET username = ? WHERE id = ?", (new_username, player_id))
-                logging.info(f"Updated username for player {player_id} → {new_username}")
+                conn.execute("UPDATE players SET username = ? WHERE id = ?",
+                             (new_username, player_id))
+                logging.info(
+                    f"Updated username for player {player_id} → {new_username}"
+                )
 
         # --- Basic validation ---
         required_fields = [
-            'full_name', 'dob', 'gender', 'preferred_court_1', 'skill_level', 'email'
+            'full_name', 'dob', 'gender', 'preferred_court_1', 'skill_level',
+            'email'
         ]
         for field in required_fields:
             if not request.form.get(field):
-                flash(f'{field.replace("_", " ").title()} is required', 'danger')
+                flash(f'{field.replace("_", " ").title()} is required',
+                      'danger')
                 return redirect(url_for('profile_settings'))
 
         # --- Handle uploaded selfie ---
@@ -8464,7 +8589,8 @@ def update_profile():
                 filename = secure_filename(file.filename)
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
                 selfie_filename = timestamp + filename
-                upload_path = os.path.join(app.static_folder or 'static', 'uploads')
+                upload_path = os.path.join(app.static_folder or 'static',
+                                           'uploads')
                 os.makedirs(upload_path, exist_ok=True)
                 file.save(os.path.join(upload_path, selfie_filename))
 
@@ -8476,14 +8602,15 @@ def update_profile():
 
         # --- Normalize radius ---
         try:
-            search_radius_miles = max(15, min(50, int(search_radius))) if search_radius else 15
+            search_radius_miles = max(15, min(
+                50, int(search_radius))) if search_radius else 15
         except ValueError:
             search_radius_miles = 15
 
         # --- Get existing location ---
         existing = conn.execute(
-            "SELECT zip_code, location1 FROM players WHERE id = ?", (player_id,)
-        ).fetchone()
+            "SELECT zip_code, location1 FROM players WHERE id = ?",
+            (player_id, )).fetchone()
         existing_zip = existing['zip_code'] if existing else None
         existing_loc = existing['location1'] if existing else None
 
@@ -8500,8 +8627,7 @@ def update_profile():
             try:
                 geo_res = requests.get(
                     f"https://nominatim.openstreetmap.org/search?postalcode={zip_code}&country=US&format=json&limit=1",
-                    headers={"User-Agent": "Ready2DinkApp"}
-                )
+                    headers={"User-Agent": "Ready2DinkApp"})
                 geo_data = geo_res.json()
                 if geo_data and len(geo_data) > 0:
                     lat = geo_data[0]["lat"]
@@ -8527,28 +8653,19 @@ def update_profile():
 
         # --- Build SQL update ---
         update_fields = [
-            request.form['full_name'],
-            request.form['address'],
-            request.form['zip_code'],
-            request.form['city'],
-            request.form['state'],
-            request.form['dob'],
+            request.form['full_name'], request.form['address'],
+            request.form['zip_code'], request.form['city'],
+            request.form['state'], request.form['dob'],
             request.form.get('preferred_court_1', ''),
-            request.form.get('preferred_court_2', ''),
-            gender,
+            request.form.get('preferred_court_2', ''), gender,
             request.form.get('preferred_court_1_coordinates', ''),
             request.form.get('preferred_court_2_coordinates', ''),
-            request.form['skill_level'],
-            request.form['email'],
+            request.form['skill_level'], request.form['email'],
             request.form.get('payout_preference', ''),
             request.form.get('paypal_email', ''),
             request.form.get('venmo_username', ''),
-            request.form.get('zelle_info', ''),
-            user_lat or None,
-            user_lng or None,
-            search_radius_miles,
-            travel_radius,
-            player_id
+            request.form.get('zelle_info', ''), user_lat or None, user_lng
+            or None, search_radius_miles, travel_radius, player_id
         ]
 
         selfie_sql = ""
@@ -8556,7 +8673,8 @@ def update_profile():
             selfie_sql = ", selfie = ?"
             update_fields.insert(13, selfie_filename)  # after email
 
-        conn.execute(f'''
+        conn.execute(
+            f'''
             UPDATE players 
             SET full_name = ?, address = ?, zip_code = ?, city = ?, state = ?, 
                 dob = ?, preferred_court_1 = ?, preferred_court_2 = ?, gender = ?,
@@ -8572,14 +8690,17 @@ def update_profile():
         if match_preference in ['singles', 'doubles']:
             conn.execute(
                 "UPDATE players SET match_preference = ? WHERE id = ?",
-                (match_preference, player_id)
+                (match_preference, player_id))
+            logging.info(
+                f"✅ Player {player_id} updated match_preference → {match_preference}"
             )
-            logging.info(f"✅ Player {player_id} updated match_preference → {match_preference}")
 
         # --- Update location1 if changed ---
         if new_location1 != existing_loc:
-            conn.execute("UPDATE players SET location1 = ? WHERE id = ?", (new_location1, player_id))
-            logging.info(f"Updated location1 for player {player_id} → {new_location1}")
+            conn.execute("UPDATE players SET location1 = ? WHERE id = ?",
+                         (new_location1, player_id))
+            logging.info(
+                f"Updated location1 for player {player_id} → {new_location1}")
 
         # --- Commit all at once ---
         conn.commit()
@@ -8708,7 +8829,7 @@ def submit_match_result():
     try:
         data = request.get_json()
         match_id = data.get("match_id")
-        winner_team = data.get("winner")      # "team1" or "team2"
+        winner_team = data.get("winner")  # "team1" or "team2"
         p1_sets = data.get("player1_sets_won", 0)
         p2_sets = data.get("player2_sets_won", 0)
         match_score = data.get("match_score", "")
@@ -8719,9 +8840,13 @@ def submit_match_result():
         # --------------------------
         # Fetch match
         # --------------------------
-        match = conn.execute("SELECT * FROM matches WHERE id = ?", (match_id,)).fetchone()
+        match = conn.execute("SELECT * FROM matches WHERE id = ?",
+                             (match_id, )).fetchone()
         if not match:
-            return jsonify({"success": False, "message": "Match not found."}), 404
+            return jsonify({
+                "success": False,
+                "message": "Match not found."
+            }), 404
 
         # Determine real winner_id
         if winner_team == "team1":
@@ -8732,7 +8857,8 @@ def submit_match_result():
         # --------------------------
         # Update match as completed
         # --------------------------
-        conn.execute("""
+        conn.execute(
+            """
             UPDATE matches
             SET winner_id = ?,
                 player1_score = ?,
@@ -8741,13 +8867,7 @@ def submit_match_result():
                 status = 'completed',
                 completed_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        """, (
-            winner_id,
-            p1_sets,
-            p2_sets,
-            match_score,
-            match_id
-        ))
+        """, (winner_id, p1_sets, p2_sets, match_score, match_id))
         conn.commit()
 
         # --------------------------
@@ -8755,19 +8875,22 @@ def submit_match_result():
         # --------------------------
         tournament_id = match["tournament_id"]
         if tournament_id:
-            tournament = conn.execute("""
+            tournament = conn.execute(
+                """
                 SELECT * FROM custom_tournaments WHERE id = ?
-            """, (tournament_id,)).fetchone()
+            """, (tournament_id, )).fetchone()
 
             if tournament and tournament["status"] != "completed":
-                remaining = conn.execute("""
+                remaining = conn.execute(
+                    """
                     SELECT COUNT(*) AS count FROM matches
                     WHERE tournament_id = ? AND status != 'completed'
-                """, (tournament_id,)).fetchone()["count"]
+                """, (tournament_id, )).fetchone()["count"]
 
                 if remaining == 0:
                     # Mark tournament complete
-                    conn.execute("""
+                    conn.execute(
+                        """
                         UPDATE custom_tournaments
                         SET status = 'completed',
                             winner_id = ?
@@ -8777,11 +8900,12 @@ def submit_match_result():
 
                     # Award organizer points
                     organizer_id = tournament["organizer_id"]
-                    conn.execute("""
+                    conn.execute(
+                        """
                         UPDATE players
                         SET ranking_points = COALESCE(ranking_points, 0) + 40
                         WHERE id = ?
-                    """, (organizer_id,))
+                    """, (organizer_id, ))
                     conn.commit()
 
         conn.close()
@@ -8790,6 +8914,7 @@ def submit_match_result():
     except Exception as e:
         logging.error(f"SUBMIT MATCH RESULT ERROR: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
+
 
 @app.route('/submit_tournament_match_result', methods=['POST'])
 def submit_tournament_match_result_route():
@@ -8851,7 +8976,8 @@ def submit_tournament_match_result_route():
         # 🧩 Auto-advance bracket after successful result
     try:
         conn = get_db_connection()
-        match = conn.execute("""
+        match = conn.execute(
+            """
             SELECT tournament_id, round, 
                    CASE 
                        WHEN winner_team_id IS NOT NULL THEN winner_team_id 
@@ -8859,15 +8985,13 @@ def submit_tournament_match_result_route():
                    END AS winner_reference
             FROM matches
             WHERE id = ?
-        """, (tournament_match_id,)).fetchone()
+        """, (tournament_match_id, )).fetchone()
         conn.close()
 
         if match and match['tournament_id'] and match['winner_reference']:
-            advance_winner_to_next_round(
-                match['tournament_id'],
-                match['winner_reference'],
-                match['round']
-            )
+            advance_winner_to_next_round(match['tournament_id'],
+                                         match['winner_reference'],
+                                         match['round'])
     except Exception as e:
         logging.error(f"Bracket auto-advance error: {e}")
     else:
@@ -9132,6 +9256,7 @@ def admin_required(f):
 
     return decorated_function
 
+
 @app.route('/create_tournament', methods=['POST'])
 @require_admin()
 def create_tournament():
@@ -9165,7 +9290,8 @@ def create_tournament():
         if latitude_str and latitude_str.strip():
             latitude = float(latitude_str.strip())
             if not (-90 <= latitude <= 90):
-                flash('Latitude must be between -90 and 90 degrees.', 'warning')
+                flash('Latitude must be between -90 and 90 degrees.',
+                      'warning')
                 latitude = None
     except (ValueError, TypeError):
         flash('Invalid latitude format.', 'warning')
@@ -9174,7 +9300,8 @@ def create_tournament():
         if longitude_str and longitude_str.strip():
             longitude = float(longitude_str.strip())
             if not (-180 <= longitude <= 180):
-                flash('Longitude must be between -180 and 180 degrees.', 'warning')
+                flash('Longitude must be between -180 and 180 degrees.',
+                      'warning')
                 longitude = None
     except (ValueError, TypeError):
         flash('Invalid longitude format.', 'warning')
@@ -9182,7 +9309,8 @@ def create_tournament():
     try:
         join_radius_miles = int(join_radius_str.strip())
         if not (1 <= join_radius_miles <= 100):
-            flash('Join radius must be between 1 and 100 miles. Using 25.', 'warning')
+            flash('Join radius must be between 1 and 100 miles. Using 25.',
+                  'warning')
             join_radius_miles = 25
     except (ValueError, TypeError):
         join_radius_miles = 25
@@ -9190,15 +9318,18 @@ def create_tournament():
     # Insert into DB
     try:
         conn = get_db_connection()
-        conn.execute('''
+        conn.execute(
+            '''
             INSERT INTO tournament_instances 
             (name, skill_level, entry_fee, max_players, latitude, longitude, join_radius_miles)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (name, skill_level, entry_fee, max_players, latitude, longitude, join_radius_miles))
+        ''', (name, skill_level, entry_fee, max_players, latitude, longitude,
+              join_radius_miles))
         conn.commit()
         conn.close()
 
-        flash(f'Tournament "{name}" created successfully (Entry Fee: $0)', 'success')
+        flash(f'Tournament "{name}" created successfully (Entry Fee: $0)',
+              'success')
     except Exception as e:
         logging.error(f"Database error creating tournament: {e}")
         flash(f'Error creating tournament: {str(e)}', 'danger')
@@ -9211,7 +9342,10 @@ def create_custom_tournament():
     """Create a custom user tournament — user can have only ONE active tournament (winner_id IS NULL)."""
     current_player_id = session.get('current_player_id')
     if not current_player_id:
-        return jsonify({'success': False, 'message': 'Please log in to create tournaments'})
+        return jsonify({
+            'success': False,
+            'message': 'Please log in to create tournaments'
+        })
 
     try:
         conn = get_db_connection()
@@ -9219,19 +9353,22 @@ def create_custom_tournament():
         # ----------------------------------------------------
         # 1. CHECK IF USER ALREADY HAS AN ACTIVE TOURNAMENT
         # ----------------------------------------------------
-        existing = conn.execute("""
+        existing = conn.execute(
+            """
             SELECT id 
             FROM custom_tournaments
             WHERE organizer_id = ?
             AND winner_id IS NULL
             LIMIT 1
-        """, (current_player_id,)).fetchone()
+        """, (current_player_id, )).fetchone()
 
         if existing:
             conn.close()
             return jsonify({
-                'success': False,
-                'message': 'You already have an active custom tournament. Finish it before creating another.'
+                'success':
+                False,
+                'message':
+                'You already have an active custom tournament. Finish it before creating another.'
             })
 
         # ----------------------------------------------------
@@ -9248,7 +9385,12 @@ def create_custom_tournament():
         try:
             max_players = int(request.form.get('max_players', 32))
             if max_players < 2 or max_players > 256:
-                return jsonify({'success': False, 'message': 'Player count must be between 2 and 256'})
+                return jsonify({
+                    'success':
+                    False,
+                    'message':
+                    'Player count must be between 2 and 256'
+                })
         except:
             max_players = 32
 
@@ -9287,41 +9429,53 @@ def create_custom_tournament():
             join_radius_miles = 25
 
         # Validate required fields
-        if not all([tournament_name, location, format_type, start_date, registration_deadline]):
+        if not all([
+                tournament_name, location, format_type, start_date,
+                registration_deadline
+        ]):
             conn.close()
-            return jsonify({'success': False, 'message': 'All fields are required'})
+            return jsonify({
+                'success': False,
+                'message': 'All fields are required'
+            })
 
         # ----------------------------------------------------
         # 3. INSERT NEW TOURNAMENT
         # ----------------------------------------------------
-        cursor = conn.execute('''
+        cursor = conn.execute(
+            '''
             INSERT INTO custom_tournaments 
             (organizer_id, tournament_name, description, location, max_players,
              entry_fee, format, start_date, registration_deadline, latitude, longitude)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            current_player_id, tournament_name, description, location,
-            max_players, entry_fee, format_type, start_date,
-            registration_deadline, latitude, longitude
-        ))
+        ''', (current_player_id, tournament_name, description, location,
+              max_players, entry_fee, format_type, start_date,
+              registration_deadline, latitude, longitude))
 
         tournament_id = cursor.lastrowid
         conn.commit()
         conn.close()
 
-        logging.info(f"Free custom tournament created: {tournament_name} by player {current_player_id}")
+        logging.info(
+            f"Free custom tournament created: {tournament_name} by player {current_player_id}"
+        )
 
         return jsonify({
             'success': True,
-            'message': f'Tournament \"{tournament_name}\" created successfully! (Free entry)',
+            'message':
+            f'Tournament \"{tournament_name}\" created successfully! (Free entry)',
             'tournament_id': tournament_id,
             'tournament_name': tournament_name
         })
 
     except Exception as e:
         logging.error(f"Error creating custom tournament: {e}")
-        return jsonify({'success': False, 'message': f'Error creating tournament: {str(e)}'})
-    
+        return jsonify({
+            'success': False,
+            'message': f'Error creating tournament: {str(e)}'
+        })
+
+
 @app.route('/join_custom_tournament/<int:tournament_id>')
 def join_custom_tournament(tournament_id):
     """Join a custom tournament with payment and GPS validation - requires premium membership"""
@@ -9331,7 +9485,7 @@ def join_custom_tournament(tournament_id):
         return redirect(url_for("login"))
 
     conn = get_db_connection()
-    conn.row_factory = sqlite3.Row  
+    conn.row_factory = sqlite3.Row
 
     # --- FETCH TOURNAMENT ---
     tournament = conn.execute(
@@ -9347,17 +9501,15 @@ def join_custom_tournament(tournament_id):
         FROM custom_tournaments ct
         JOIN players p ON ct.organizer_id = p.id
         WHERE ct.id = ? AND ct.status = 'open'
-        ''',
-        (tournament_id,)
-    ).fetchone()
+        ''', (tournament_id, )).fetchone()
 
     if not tournament:
-        flash("Tournament not found or no longer accepting registrations", "danger")
+        flash("Tournament not found or no longer accepting registrations",
+              "danger")
         conn.close()
         return redirect(url_for("tournaments_overview"))
 
     # --- TOURNAMENT CAPACITY CHECK ---
- 
 
     # --- CHECK IF PLAYER ALREADY JOINED ---
     existing_entry = conn.execute(
@@ -9385,12 +9537,12 @@ def join_custom_tournament(tournament_id):
     except (ValueError, TypeError):
         user_latitude = None
         user_longitude = None
-        logging.warning(f"Invalid GPS coordinates received for player {current_player_id}")
+        logging.warning(
+            f"Invalid GPS coordinates received for player {current_player_id}")
 
     if not user_latitude or not user_longitude:
-        player = conn.execute(
-            "SELECT location1 FROM players WHERE id = ?", (current_player_id,)
-        ).fetchone()
+        player = conn.execute("SELECT location1 FROM players WHERE id = ?",
+                              (current_player_id, )).fetchone()
         if player and player["location1"]:
             try:
                 lat_str, lng_str = player["location1"].split(",")
@@ -9412,9 +9564,9 @@ def join_custom_tournament(tournament_id):
         conn.close()
         return redirect(url_for("tournaments_overview"))
 
-    gps_validation = validate_tournament_join_gps(
-        user_latitude, user_longitude, tournament, current_player_id
-    )
+    gps_validation = validate_tournament_join_gps(user_latitude,
+                                                  user_longitude, tournament,
+                                                  current_player_id)
 
     if not gps_validation["allowed"]:
         logging.warning(
@@ -9439,7 +9591,9 @@ def join_custom_tournament(tournament_id):
             (tournament_id, current_player_id),
         )
         conn.commit()
-        logging.info(f"Player {current_player_id} successfully added to tournament {tournament_id}")
+        logging.info(
+            f"Player {current_player_id} successfully added to tournament {tournament_id}"
+        )
     except Exception as e:
         logging.error(f"Error inserting tournament entry: {e}")
         flash("Failed to join tournament. Please try again.", "danger")
@@ -9451,6 +9605,7 @@ def join_custom_tournament(tournament_id):
     # --- STRIPE PAYMENT ---
     flash("You successfully joined the tournament!", "success")
     return redirect(url_for("tournaments_overview"))
+
 
 @app.route('/tournament_payment_success/<int:tournament_id>')
 def tournament_payment_success(tournament_id):
@@ -9588,21 +9743,23 @@ def update_match_preference():
     if not player_id:
         logging.warning("❌ update_match_preference: No player_id in session")
         return jsonify({'success': False, 'message': 'Not logged in'})
-    
+
     if new_pref not in ['singles', 'doubles']:
         logging.warning(f"❌ update_match_preference: Invalid value {new_pref}")
         return jsonify({'success': False, 'message': 'Invalid preference'})
 
     try:
         conn = get_db_connection()
-        conn.execute(
-            'UPDATE players SET match_preference = ? WHERE id = ?',
-            (new_pref, player_id)
-        )
+        conn.execute('UPDATE players SET match_preference = ? WHERE id = ?',
+                     (new_pref, player_id))
         conn.commit()
         conn.close()
-        logging.info(f"✅ Player {player_id} updated match_preference → {new_pref}")
-        return jsonify({'success': True, 'message': 'Preference updated successfully'})
+        logging.info(
+            f"✅ Player {player_id} updated match_preference → {new_pref}")
+        return jsonify({
+            'success': True,
+            'message': 'Preference updated successfully'
+        })
     except Exception as e:
         logging.exception("❌ DB error updating match_preference")
         return jsonify({'success': False, 'message': str(e)})
@@ -11280,8 +11437,6 @@ def issue_tournament_credit():
     return redirect(url_for('admin_dashboard'))
 
 
-
-
 @app.route('/search_players')
 def search_players():
     query = request.args.get('query', '').strip().lower()
@@ -11294,7 +11449,8 @@ def search_players():
     # Exclude the current player from results
     current_player_id = session.get('player_id')
 
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT id, full_name, username
         FROM players
         WHERE lower(full_name) LIKE ? OR lower(username) LIKE ?
@@ -11306,8 +11462,6 @@ def search_players():
     conn.close()
 
     return jsonify(results)
-
-
 
 
 @app.route('/api/recent_credit_transactions')
@@ -13507,7 +13661,6 @@ def contact():
 def teams():
     """Teams dashboard showing user's teams, invitations, and team search"""
     current_player_id = session.get('current_player_id')
-
 
     if not current_player_id:
         flash("Please log in to view your team.", "warning")
