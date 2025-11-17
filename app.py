@@ -4709,7 +4709,7 @@ def send_email(to, subject, html_content):
     """
     try:
         api_key = os.environ.get("SENDGRID_API_KEY")
-        from_email = os.environ.get("FROM_EMAIL", "admin@ready2dink.com")
+        from_email = os.environ.get("FROM_EMAIL", "lucien255@gmail.com")
 
         if not api_key:
             print("❌ SENDGRID_API_KEY is missing!")
