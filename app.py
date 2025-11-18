@@ -4700,18 +4700,19 @@ def register():
             email = request.form.get("email", "").strip()
             gender = request.form.get("gender", "prefer_not_to_say").strip()
             address = request.form.get("address", "N/A").strip()
-            zip_code = request.form.get("zip_code", "").strip()   # optional
+            zip_code = request.form.get("zip_code", "").strip()       # OPTIONAL NOW
             location1 = request.form.get("location1", "").strip()
             skill_level = request.form.get("skill_level", "Beginner").strip()
             password = request.form.get("password", "")
-            dob = request.form.get("dob", "").strip() or None     # <-- OPTIONAL DOB
 
-            # Validate actual required fields
+            # ✔ Only validate the fields that should be REQUIRED
             if not all([full_name, username, email, gender, skill_level, password]):
                 flash("Please fill out all required fields.", "danger")
                 return redirect(url_for("register"))
 
-            # If we have GPS OR ZIP → geocode ZIP only if needed
+            # ✔ ZIP and DOB ARE OPTIONAL now
+
+            # 🔹 If no GPS coordinates captured, and ZIP exists → try geocode
             if (not location1 or location1.lower() == "unknown") and zip_code:
                 try:
                     geo_res = requests.get(
@@ -4729,14 +4730,14 @@ def register():
                     print(f"ZIP geocode lookup failed: {e}")
                     location1 = "Unknown"
 
-            # If no GPS and no ZIP → still valid
+            # 🔹 If no GPS and no ZIP supplied at all → still allow registration
             if not location1:
                 location1 = "Unknown"
 
             # Hash password
             password_hash = generate_password_hash(password)
 
-            # DB connection
+            # Connect DB
             use_sqlite = os.environ.get("USE_SQLITE") == "1"
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -4745,28 +4746,25 @@ def register():
             # Generate unique player_id
             player_id = generate_unique_player_id(conn, cursor, use_sqlite)
 
-            # INSERT including dob (as NULL if empty)
+            # Insert player
             query = f"""
                 INSERT INTO players
                 (first_name, last_name, full_name, username, email,
                  gender, address, zip_code, location1, skill_level,
-                 dob, password_hash, player_id, created_at)
-                VALUES (
-                    {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
-                    {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
-                    {placeholder}, {placeholder}, {placeholder}, CURRENT_TIMESTAMP
-                )
+                 password_hash, player_id, created_at)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
+                        {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
+                        {placeholder}, {placeholder}, CURRENT_TIMESTAMP)
             """
             values = (
                 first_name, last_name, full_name, username, email,
                 gender, address, zip_code, location1, skill_level,
-                dob, password_hash, player_id
+                password_hash, player_id
             )
-
             cursor.execute(query, values)
             conn.commit()
 
-            # Get numeric id
+            # Retrieve numeric id
             cursor.execute("SELECT id FROM players WHERE player_id = ?", (player_id,))
             row = cursor.fetchone()
             numeric_id = row["id"] if row else None
