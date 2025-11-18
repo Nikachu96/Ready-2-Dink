@@ -4710,7 +4710,7 @@ def register():
                 flash("Please fill out all required fields.", "danger")
                 return redirect(url_for("register"))
 
-            # ✔ ZIP and DOB ARE OPTIONAL now
+
 
             # 🔹 If no GPS coordinates captured, and ZIP exists → try geocode
             if (not location1 or location1.lower() == "unknown") and zip_code:
@@ -4733,6 +4733,9 @@ def register():
             # 🔹 If no GPS and no ZIP supplied at all → still allow registration
             if not location1:
                 location1 = "Unknown"
+
+            if not dob:
+                dob = "Unknown"
 
             # Hash password
             password_hash = generate_password_hash(password)
