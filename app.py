@@ -4692,33 +4692,38 @@ def complete_match():
 def register():
     if request.method == "POST":
         try:
+            # -------------------------------
             # Collect form fields
+            # -------------------------------
             first_name = request.form.get("first_name", "").strip()
             last_name = request.form.get("last_name", "").strip()
             full_name = f"{first_name} {last_name}".strip()
             username = request.form.get("username", "").strip()
             email = request.form.get("email", "").strip()
             gender = request.form.get("gender", "prefer_not_to_say").strip()
-            address = request.form.get("address", "N/A").strip()
-            zip_code = request.form.get("zip_code", "").strip()       # OPTIONAL NOW
+            password = request.form.get("password", "")
+            zip_code = request.form.get("zip_code", "").strip()  # optional
             location1 = request.form.get("location1", "").strip()
             skill_level = request.form.get("skill_level", "Beginner").strip()
-            password = request.form.get("password", "")
+            dob = request.form.get("dob", "").strip() or None  # optional DOB
+            address = "N/A"  # required by DB
 
-            # ✔ Only validate the fields that should be REQUIRED
-            if not all([full_name, username, email, gender, skill_level, password]):
+            # -------------------------------
+            # Validate required fields ONLY
+            # -------------------------------
+            if not all(
+                [full_name, username, email, gender, skill_level, password]):
                 flash("Please fill out all required fields.", "danger")
                 return redirect(url_for("register"))
 
-            # ✔ ZIP and DOB ARE OPTIONAL now
-
-            # 🔹 If no GPS coordinates captured, and ZIP exists → try geocode
+            # -------------------------------
+            # ZIP → Coordinates (if needed)
+            # -------------------------------
             if (not location1 or location1.lower() == "unknown") and zip_code:
                 try:
                     geo_res = requests.get(
                         f"https://nominatim.openstreetmap.org/search?postalcode={zip_code}&country=US&format=json&limit=1",
-                        headers={"User-Agent": "Ready2DinkApp"}
-                    )
+                        headers={"User-Agent": "Ready2DinkApp"})
                     geo_data = geo_res.json()
                     if geo_data:
                         lat = geo_data[0]["lat"]
@@ -4726,18 +4731,20 @@ def register():
                         location1 = f"{lat},{lon}"
                     else:
                         location1 = "Unknown"
-                except Exception as e:
-                    print(f"ZIP geocode lookup failed: {e}")
+                except:
                     location1 = "Unknown"
 
-            # 🔹 If no GPS and no ZIP supplied at all → still allow registration
             if not location1:
                 location1 = "Unknown"
 
-            # Hash password
+            # -------------------------------
+            # Hash Password
+            # -------------------------------
             password_hash = generate_password_hash(password)
 
-            # Connect DB
+            # -------------------------------
+            # DB Connection
+            # -------------------------------
             use_sqlite = os.environ.get("USE_SQLITE") == "1"
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -4746,35 +4753,44 @@ def register():
             # Generate unique player_id
             player_id = generate_unique_player_id(conn, cursor, use_sqlite)
 
-            # Insert player
+            # -------------------------------
+            # INSERT — must match NOT NULL columns
+            # -------------------------------
             query = f"""
                 INSERT INTO players
-                (first_name, last_name, full_name, username, email,
-                 gender, address, zip_code, location1, skill_level,
-                 password_hash, player_id, created_at)
-                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
-                        {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
-                        {placeholder}, {placeholder}, CURRENT_TIMESTAMP)
+                (full_name, address, dob, location1, skill_level,
+                 email, gender, player_id, username, password_hash,
+                 zip_code, first_name, last_name)
+                VALUES (
+                    {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
+                    {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder},
+                    {placeholder}, {placeholder}, {placeholder}
+                )
             """
-            values = (
-                first_name, last_name, full_name, username, email,
-                gender, address, zip_code, location1, skill_level,
-                password_hash, player_id
-            )
+
+            values = (full_name, address, dob, location1, skill_level, email,
+                      gender, player_id, username, password_hash, zip_code,
+                      first_name, last_name)
+
             cursor.execute(query, values)
             conn.commit()
 
-            # Retrieve numeric id
-            cursor.execute("SELECT id FROM players WHERE player_id = ?", (player_id,))
+            # -------------------------------
+            # Get numeric ID
+            # -------------------------------
+            cursor.execute("SELECT id FROM players WHERE player_id = ?",
+                           (player_id, ))
             row = cursor.fetchone()
             numeric_id = row["id"] if row else None
 
-            # Auto-login
+            # -------------------------------
+            # Login user
+            # -------------------------------
             session.clear()
             session["current_player_id"] = numeric_id
             session["player_id"] = numeric_id
 
-            flash("Account created and logged in successfully! Welcome!", "success")
+            flash("Account created and logged in successfully!", "success")
 
             if not use_sqlite:
                 cursor.close()
@@ -4799,6 +4815,7 @@ def register():
             return f"<pre>Registration failed:\n{tb}</pre>", 500
 
     return render_template("register.html")
+
 
 @app.route('/disclaimers/<int:player_id>')
 def show_disclaimers(player_id):
@@ -7703,8 +7720,7 @@ def update_profile():
 
         # --- Basic validation ---
         required_fields = [
-            'full_name', 'gender', 'preferred_court_1', 'skill_level',
-            'email'
+            'full_name', 'gender', 'preferred_court_1', 'skill_level', 'email'
         ]
         for field in required_fields:
             if not request.form.get(field):
