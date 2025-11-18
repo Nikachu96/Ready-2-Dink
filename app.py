@@ -4734,8 +4734,7 @@ def register():
             if not location1:
                 location1 = "Unknown"
 
-            if not dob:
-                dob = "Unknown"
+    
 
             # Hash password
             password_hash = generate_password_hash(password)
