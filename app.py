@@ -4687,6 +4687,7 @@ def complete_match():
         'message': 'Match results recorded successfully'
     })
 
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -4714,7 +4715,8 @@ def register():
             # -------------------------------
             # Validate required fields ONLY
             # -------------------------------
-            if not all([full_name, username, email, gender, skill_level, password]):
+            if not all(
+                [full_name, username, email, gender, skill_level, password]):
                 flash("Please fill out all required fields.", "danger")
                 return redirect(url_for("register"))
 
@@ -4725,8 +4727,7 @@ def register():
                 try:
                     geo_res = requests.get(
                         f"https://nominatim.openstreetmap.org/search?postalcode={zip_code}&country=US&format=json&limit=1",
-                        headers={"User-Agent": "Ready2DinkApp"}
-                    )
+                        headers={"User-Agent": "Ready2DinkApp"})
                     geo_data = geo_res.json()
                     if geo_data:
                         lat = geo_data[0]["lat"]
@@ -4771,11 +4772,9 @@ def register():
                 )
             """
 
-            values = (
-                full_name, address, dob, location1, skill_level,
-                email, gender, player_id, username, password_hash,
-                zip_code, first_name, last_name
-            )
+            values = (full_name, address, dob, location1, skill_level, email,
+                      gender, player_id, username, password_hash, zip_code,
+                      first_name, last_name)
 
             cursor.execute(query, values)
             conn.commit()
@@ -4783,7 +4782,8 @@ def register():
             # -------------------------------
             # Get numeric ID
             # -------------------------------
-            cursor.execute("SELECT id FROM players WHERE player_id = ?", (player_id,))
+            cursor.execute("SELECT id FROM players WHERE player_id = ?",
+                           (player_id, ))
             row = cursor.fetchone()
             numeric_id = row["id"] if row else None
 
@@ -4819,7 +4819,7 @@ def register():
             return f"<pre>Registration failed:\n{tb}</pre>", 500
 
     return render_template("register.html")
-    
+
 
 @app.route('/disclaimers/<int:player_id>')
 def show_disclaimers(player_id):
