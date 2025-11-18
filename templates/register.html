@@ -82,10 +82,10 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="dob" class="form-label">
-                                    <i class="fas fa-birthday-cake me-1"></i>Date of Birth *
+                                    <i class="fas fa-birthday-cake me-1"></i>Date of Birth
                                 </label>
                                 <input type="text" class="form-control" id="dob" name="dob" 
-                                       placeholder="MM-DD-YYYY" value="{{ form_data.dob if form_data else '' }}" required>
+                                       placeholder="MM-DD-YYYY" value="{{ form_data.dob if form_data else '' }}">
                                 <div class="form-text text-muted">
                                     <i class="fas fa-info-circle me-1"></i>
                                     Format: MM-DD-YYYY (e.g., 08-05-1976)
@@ -95,11 +95,11 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="zip_code" class="form-label">
-                                    <i class="fas fa-map-marker-alt me-1"></i>ZIP Code *
+                                    <i class="fas fa-map-marker-alt me-1"></i>ZIP Code
                                 </label>
                                 <input type="text" class="form-control" id="zip_code" name="zip_code" 
                                        placeholder="12345" value="{{ form_data.zip_code if form_data else '' }}" 
-                                       pattern="[0-9]{5}" maxlength="5" required>
+                                       pattern="[0-9]{5}" maxlength="5">
                                 <div class="form-text text-muted">
                                     <i class="fas fa-info-circle me-1"></i>
                                     5-digit ZIP code for location-based matching
