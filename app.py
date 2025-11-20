@@ -6457,7 +6457,6 @@ def view_tournament_bracket(tournament_instance_id):
 
 
 @app.route('/leaderboard')
-@require_permission('can_view_leaderboard')
 def leaderboard():
     """Display player leaderboard by skill levels - requires premium membership"""
     beginner_leaderboard = get_leaderboard(50, 'Beginner')
