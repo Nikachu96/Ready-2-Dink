@@ -43,7 +43,7 @@
                                 <div class="col">
                                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
                                         <div>
-                                            <h5 class="mb-1 text-white text-bold neon-text">{{ challenge.challenger_name }}</h5>
+                                            <h5 class="mb-1 text-white text-bold neon-text">{{ challenge.challenger_username }}</h5>
                                             <div class="d-flex flex-wrap gap-2 mb-2">
                                                 <span class="badge badge-success text-bold">{{ challenge.challenger_skill }}</span>
                                                 <span class="badge badge-primary text-bold">{{ challenge.challenger_wins or 0 }}W-{{ challenge.challenger_losses or 0 }}L</span>
@@ -56,12 +56,12 @@
                                             <div class="match-details">
                                                 <div class="text-white text-bold"><i class="fas fa-map-marker-alt me-2 text-neon"></i>{{ challenge.court_location or 'Location TBD' }}</div>
                                                 <div class="text-white text-bold"><i class="fas fa-clock me-2 text-neon"></i>{{ challenge.scheduled_time or 'Time TBD' }}</div>
-                                                <div class="text-white text-bold"><i class="fas fa-calendar me-2 text-neon"></i>Challenged {{ challenge.created_at[:10] }}</div>
+                                                <div class="text-white text-bold"><i class="fas fa-calendar me-2 text-neon"></i>Challenged {{ challenge.created_at.strftime('%Y-%m-%d') }}</div>
                                             </div>
                                         </div>
                                         <div class="mt-3 mt-md-0">
                                             {% if challenge.status == 'pending' %}
-                                                <form method="POST" action="{{ url_for('accept_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
+                                                <form method="POST" action="{{ url_for('accept_challenge', challenge_id=challenge.id) }}" style="display: inline;">
                                                     <button type="submit" class="btn btn-success text-bold me-2">
                                                         <i class="fas fa-check me-1"></i>Accept
                                                     </button>
@@ -70,18 +70,18 @@
                                                         data-bs-toggle="modal" data-bs-target="#counterModal{{ challenge.id }}">
                                                     <i class="fas fa-exchange-alt me-1"></i>Counter-Propose
                                                 </button>
-                                                <form method="POST" action="{{ url_for('decline_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
+                                                <form method="POST" action="{{ url_for('decline_challenge', challenge_id=challenge.id) }}" style="display: inline;">
                                                     <button type="submit" class="btn btn-danger text-bold" onclick="return confirm('Are you sure you want to decline this challenge?')">
                                                         <i class="fas fa-times me-1"></i>Decline
                                                     </button>
                                                 </form>
                                             {% elif challenge.status == 'counter_proposed' %}
-                                                <form method="POST" action="{{ url_for('accept_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
+                                                <form method="POST" action="{{ url_for('accept_challenge', challenge_id=challenge.id) }}" style="display: inline;">
                                                     <button type="submit" class="btn btn-success text-bold me-2">
                                                         <i class="fas fa-handshake me-1"></i>Accept Counter
                                                     </button>
                                                 </form>
-                                                <form method="POST" action="{{ url_for('decline_challenge_route', challenge_id=challenge.id) }}" style="display: inline;">
+                                                <form method="POST" action="{{ url_for('decline_challenge', challenge_id=challenge.id) }}" style="display: inline;">
                                                     <button type="submit" class="btn btn-danger text-bold" onclick="return confirm('Are you sure you want to decline this challenge?')">
                                                         <i class="fas fa-times me-1"></i>Decline
                                                     </button>
@@ -124,14 +124,14 @@
                                              class="challenge-avatar" alt="Opponent">
                                     {% else %}
                                         <div class="avatar-placeholder">
-                                            {{ challenge.opponent_name[0].upper() }}
+                                            {{ challenge.opponent_username }}
                                         </div>
                                     {% endif %}
                                 </div>
                                 <div class="col">
                                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
                                         <div>
-                                            <h5 class="mb-1 text-white text-bold neon-text">{{ challenge.opponent_name }}</h5>
+                                            <h5 class="mb-1 text-white text-bold neon-text">{{ challenge.opponent_username }}</h5>
                                             <div class="d-flex flex-wrap gap-2 mb-2">
                                                 <span class="badge badge-success text-bold">{{ challenge.opponent_skill }}</span>
                                                 <span class="badge badge-primary text-bold">{{ challenge.opponent_wins or 0 }}W-{{ challenge.opponent_losses or 0 }}L</span>
@@ -144,7 +144,7 @@
                                             <div class="match-details">
                                                 <div class="text-white text-bold"><i class="fas fa-map-marker-alt me-2 text-neon"></i>{{ challenge.court_location or 'Location TBD' }}</div>
                                                 <div class="text-white text-bold"><i class="fas fa-clock me-2 text-neon"></i>{{ challenge.scheduled_time or 'Time TBD' }}</div>
-                                                <div class="text-white text-bold"><i class="fas fa-calendar me-2 text-neon"></i>Sent {{ challenge.created_at[:10] }}</div>
+                                                <div class="text-white text-bold"><i class="fas fa-calendar me-2 text-neon"></i>Sent {{ challenge.created_at.strftime('%Y-%m-%d') }}</div>
                                             </div>
                                         </div>
                                         <div class="mt-3 mt-md-0">
@@ -195,14 +195,14 @@
                                          class="challenge-avatar" alt="Opponent">
                                 {% else %}
                                     <div class="avatar-placeholder">
-                                        {{ match.opponent_name[0].upper() }}
+                                        {{ match.opponent_username }}
                                     </div>
                                 {% endif %}
                             </div>
                             <div class="col">
                                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
                                     <div>
-                                        <h5 class="mb-1 text-white text-bold neon-text">{{ match.opponent_name }}</h5>
+                                        <h5 class="mb-1 text-white text-bold neon-text">{{ match.opponent_username }}</h5>
                                         <div class="d-flex flex-wrap gap-2 mb-2">
                                             <span class="badge badge-success text-bold">{{ match.opponent_skill }}</span>
                                             <span class="badge badge-warning text-bold">Score Needed</span>
@@ -210,12 +210,12 @@
                                         <div class="match-details">
                                             <div class="text-white text-bold"><i class="fas fa-map-marker-alt me-2 text-neon"></i>{{ match.court_location or 'Location TBD' }}</div>
                                             <div class="text-white text-bold"><i class="fas fa-clock me-2 text-neon"></i>{{ match.scheduled_time or 'Time TBD' }}</div>
-                                            <div class="text-white text-bold"><i class="fas fa-calendar me-2 text-neon"></i>Confirmed {{ match.created_at[:10] }}</div>
+                                            <div class="text-white text-bold"><i class="fas fa-calendar me-2 text-neon"></i>Confirmed {{ match.created_at.strftime('%Y-%m-%d') }}</div>
                                         </div>
                                     </div>
                                     <div class="mt-3 mt-md-0">
                                         <button class="btn btn-warning btn-sm text-bold" 
-                                                onclick="showSubmitScore({{ match.id }}, '{{ match.opponent_name }}')">
+                                                onclick="showSubmitScore({{ match.id }}, '{{ match.opponent_username }}')">
                                             <i class="fas fa-trophy me-1"></i>Submit Score
                                         </button>
                                     </div>
@@ -238,29 +238,32 @@
         </h2>
 
         {% for match in confirmed_matches %}
-        <div class="neon-frame challenge-card confirmed mb-4">
-            <div class="card-body p-4">
-                <div class="row align-items-center">
+<div class="neon-frame challenge-card confirmed mb-4"
+     data-username="{{ match.opponent_username }}">
+    <div class="card-body p-4">
+        <div class="row align-items-center">
 
-                    <div class="col">
-                        <h5 class="mb-1 text-white text-bold neon-text">{{ match.opponent_name }}</h5>
-                        <div class="d-flex flex-wrap gap-2 mb-2">
-                            <span class="badge badge-success text-bold">{{ match.opponent_skill }}</span>
-                            <span class="badge badge-success text-bold">Confirmed</span>
-                        </div>
-                    </div>
-
-                    <div class="col-auto">
-                        <button class="btn btn-success btn-lg start-match-btn"
-                                data-match-id="{{ match.id }}">
-                            <i class="fas fa-play-circle me-1"></i>Start Match
-                        </button>
-                    </div>
-
+            <div class="col">
+                <h5 class="mb-1 text-white text-bold neon-text">
+                    {{ match.opponent_username }}
+                </h5>
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <span class="badge badge-success text-bold">{{ match.opponent_skill }}</span>
+                    <span class="badge badge-success text-bold">Confirmed</span>
                 </div>
             </div>
+
+            <div class="col-auto">
+                <button class="btn btn-success btn-lg start-match-btn"
+                        data-match-id="{{ match.id }}">
+                    <i class="fas fa-play-circle me-1"></i>Start Match
+                </button>
+            </div>
+
         </div>
-        {% endfor %}
+    </div>
+</div>
+{% endfor %}
     </div>
 </div>
 {% endif %}
@@ -303,14 +306,14 @@
                          class="challenge-avatar" alt="Opponent">
                 {% else %}
                     <div class="avatar-placeholder">
-                        {{ match.opponent_name[0].upper() }}
+                        {{ match.opponent_username}}
                     </div>
                 {% endif %}
             </div>
             <div class="col">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
                     <div>
-                        <h5 class="mb-1 text-white fw-bold">{{ match.opponent_name }}</h5>
+                        <h5 class="mb-1 text-white fw-bold">{{ match.opponent_username }}</h5>
                         <div class="d-flex flex-wrap gap-2 mb-2">
                             <span class="skill-badge">{{ match.opponent_skill }}</span>
                             {% if match.winner_id %}
@@ -326,12 +329,12 @@
                         </div>
                         <div class="match-details">
                             <div><i class="fas fa-map-marker-alt me-2"></i>{{ match.court_location or 'Various locations' }}</div>
-                            <div><i class="fas fa-calendar me-2"></i>Completed {{ match.created_at[:10] }}</div>
+                            <div><i class="fas fa-calendar me-2"></i>Completed {{ match.created_at.strftime('%Y-%m-%d') }}</div>
                         </div>
                     </div>
                     <!-- 🆕 Rematch Button -->
                     <button class="btn btn-sm btn-outline-light mt-3 mt-md-0" 
-                         onclick="rematch({{ match.match_id }})">
+                         onclick="rematch({{ match.id }})">
                     <i class="fas fa-redo me-1"></i> Rematch
                     </button>
                 </div>
@@ -354,7 +357,7 @@
         <div class="modal-content" style="background: var(--dark-surface); border: 1px solid var(--glass-border);">
             <div class="modal-header" style="border-bottom: 1px solid var(--glass-border);">
                 <h5 class="modal-title text-white text-bold neon-text" id="counterModalLabel{{ challenge.id }}">
-                    <i class="fas fa-exchange-alt me-2"></i>Counter-Propose to {{ challenge.challenger_name }}
+                    <i class="fas fa-exchange-alt me-2"></i>Counter-Propose to {{ challenge.challenger_username }}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -420,12 +423,12 @@
           <input type="hidden" id="partner2_id">
 
           <div class="mb-3">
-            <label for="partner1" class="form-label">Your Partner</label>
+            <label for="partner1" class="form-label">Your Partner (optional for doubles)</label>
             <input type="text" id="partner1" class="form-control" placeholder="Search your partner...">
           </div>
 
           <div class="mb-3">
-            <label for="partner2" class="form-label">Opponent’s Partner</label>
+            <label for="partner2" class="form-label">Opponent’s Partner (optional for doubles)</label>
             <input type="text" id="partner2" class="form-control" placeholder="Search opponent’s partner...">
           </div>
 
@@ -441,7 +444,7 @@
           </div>
 
           <div class="text-center">
-                        <button type="submit" id="challengePlayerName" class="btn btn-primary btn-lg text-bold">
+                        <button type="submit" class="btn btn-primary btn-lg text-bold">
                             <i class="fas fa-paper-plane me-2"></i>Send Challenge
                         </button>
                     </div>
@@ -633,8 +636,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     input.addEventListener("focus", function () {
         // Player's coordinates injected from Flask
-        const playerLat = {{ player['location1'].split(',')[0] | safe }};
-        const playerLng = {{ player['location1'].split(',')[1] | safe }};
+        const playerLat = {{ player['latitude'] }};
+        const playerLng = {{ player['longitude'] }};
 
         const playerLocation = new google.maps.LatLng(playerLat, playerLng);
 
@@ -721,8 +724,12 @@ document.addEventListener("DOMContentLoaded", function () {
 <script>
 document.querySelectorAll('.start-match-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    const card = btn.closest('.challenge-card');
+
+    // Always read username from dataset
+    const opponentName = card.dataset.username;
+
     const matchId = btn.dataset.matchId;
-    const opponentName = btn.closest('.challenge-card').querySelector('h5').innerText.trim();
     showSubmitScore(matchId, opponentName);
   });
 });
@@ -755,6 +762,7 @@ function showSubmitScore(matchId, opponentName) {
     .then(response => response.json())
     .then(data => {
       if (!data.success) return alert("Error loading match info.");
+      console.log(data);
 
       // Build team labels
       const team1 = [data.player1_name];
@@ -1079,23 +1087,6 @@ function handleCounterProposal(challengeId) {
     }
 }
 
-/* Optional: Lightweight partner search (replace /search_players with your endpoint) */
-function setupPartnerSearch(inputId, hiddenId) {
-    const input = document.getElementById(inputId);
-    const hidden = document.getElementById(hiddenId);
-
-    input.addEventListener("input", async () => {
-        const term = input.value.trim();
-        if (term.length < 2) return;
-
-        const res = await fetch(`/search_players?query=${encodeURIComponent(term)}`);
-        const players = await res.json();
-        if (players.length > 0) {
-            hidden.value = players[0].id;
-            input.value = players[0].username || players[0].full_name;
-        }
-    });
-}
 
 // Initialize partner autocompletes
 setupPartnerSearch("partner1", "partner1_id");

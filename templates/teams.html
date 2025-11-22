@@ -4,109 +4,139 @@
 
 {% block content %}
 <div class="container-fluid px-4 py-4">
-    <div class="row">
-        <!-- Page Header -->
-        <div class="col-12">
-            <div class="card-modern mb-4 text-center">
-                <h1 class="mb-0">
-                    <i class="fas fa-users text-cyan me-3"></i>
-                    Doubles Teams
-                </h1>
-                <p class="lead-text mt-2 mb-0">Form teams, challenge other doubles teams, and climb the doubles rankings!</p>
-            </div>
-        </div>
+
+    <!-- HEADER -->
+    <div class="text-center mb-4">
+        <h1>
+            <i class="fas fa-users text-cyan me-2"></i>Doubles Teams
+        </h1>
+        <p class="lead-text">Form teams, send invitations, and manage your doubles squads.</p>
     </div>
 
     <div class="row">
-        <!-- My Teams Section -->
+        <!-- =======================
+             LEFT: MY TEAMS
+        ======================== -->
         <div class="col-lg-6 mb-4">
             <div class="card-modern">
-                <div class="card-header-modern">
+                <div class="card-header-modern d-flex justify-content-between align-items-center">
                     <h3 class="mb-0">
-                        <i class="fas fa-users text-green me-2"></i>
-                        My Teams
+                        <i class="fas fa-users text-green me-2"></i>My Teams
                     </h3>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createTeamModal">
+                        <i class="fas fa-plus me-1"></i>Create Team
+                    </button>
                 </div>
-                <div class="card-body">
-                   <div class="text-center py-3">
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTeamModal">
-        <i class="fas fa-plus me-2"></i>Create Team
-    </button>
-</div>
 
-<!-- Modal -->
-<div class="modal fade" id="createTeamModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-users me-2"></i>Create Team</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <form id="createTeamForm">
-          <div class="mb-3">
-            <label class="form-label">Team Name</label>
-            <input type="text" class="form-control" id="newTeamName" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Home Court</label>
-            <input type="text" class="form-control" id="newHomeCourt" placeholder="City or court name">
-          </div>
-          <div class="mb-3 position-relative">
-    <label class="form-label">Invite Player</label>
-    <input type="text" class="form-control" id="modalPlayerSearch" placeholder="Search by username">
-    <ul class="list-group position-absolute w-100 mt-1" id="modalSearchResults" style="display:none;"></ul>
-</div>
-          <button type="submit" class="btn btn-success w-100">
-            <i class="fas fa-paper-plane me-2"></i>Create & Send Invite
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Team Invitations Section -->
-        <div class="col-lg-6 mb-4">
-            <div class="card-modern">
-                <div class="card-header-modern">
-                    <h3 class="mb-0">
-                        <i class="fas fa-envelope text-purple me-2"></i>
-                        Team Invitations
-                    </h3>
-                </div>
                 <div class="card-body">
-                    <!-- Received Invitations -->
-                    {% if pending_invitations %}
-                        <h6 class="text-cyan mb-3">
-                            <i class="fas fa-inbox me-1"></i>Received ({{ pending_invitations|length }})
-                        </h6>
-                        {% for invitation in pending_invitations %}
-                        <div class="invitation-card mb-3 p-3">
+                    {% if user_teams %}
+                        {% for team in user_teams %}
+                        {% set is_captain = (team.role|lower == 'captain') %}
+                        <div class="doubles-team-card p-3 mb-3"
+                             data-team-id="{{ team.team_id }}"
+                             data-team-name="{{ team.team_name }}"
+                             data-home-court="{{ team.home_court or '' }}"
+                             data-is-captain="{{ '1' if is_captain else '0' }}">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <h6 class="mb-1">{{ invitation.inviter_name }}</h6>
-                                    <p class="text-muted mb-2">
-                                        {% if invitation.team_name %}
-                                            Team: {{ invitation.team_name }}
-                                        {% endif %}
+                                    <h5 class="mb-1">{{ team.team_name }}</h5>
+                                    <p class="small text-muted mb-1">
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        {{ team.home_court or 'No home court set' }}
                                     </p>
-                                    <p class="small text-secondary mb-2">
-                                        <i class="fas fa-map-marker-alt me-1"></i>{{ invitation.location }}
-                                        <span class="ms-2">
-                                            <i class="fas fa-road me-1"></i>{{ invitation.travel_radius }} miles
-                                        </span>
+                                    <p class="small text-muted mb-1">
+                                        <i class="fas fa-id-card me-1"></i>
+                                        Your role: {{ team.role|capitalize }}
                                     </p>
-                                    <p class="small text-muted">{{ invitation.created_at }}</p>
+                                    <p class="small text-muted mb-0">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ team.created_at }}
+                                    </p>
+                                </div>
+                                <div class="text-end">
+                                    <!-- Captain controls -->
+                                    {% if is_captain %}
+                                        <div class="btn-group mb-2">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-light"
+                                                    onclick="openEditTeamModal({{ team.team_id }}, '{{ team.team_name|tojson }}', '{{ (team.home_court or '')|tojson }}')">
+                                                <i class="fas fa-edit me-1"></i>Edit
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-info"
+                                                    onclick="openAddMemberModal({{ team.team_id }}, '{{ team.team_name|tojson }}')">
+                                                <i class="fas fa-user-plus me-1"></i>Add Player
+                                            </button>
+                                        </div>
+                                        <div>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    onclick="deleteTeam({{ team.team_id }})">
+                                                <i class="fas fa-trash-alt me-1"></i>Delete
+                                            </button>
+                                        </div>
+                                    {% else %}
+                                        <!-- Non-captain: leave team -->
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-warning"
+                                                onclick="leaveTeam({{ team.team_id }})">
+                                            <i class="fas fa-sign-out-alt me-1"></i>Leave Team
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users-slash display-4 text-muted mb-3"></i>
+                            <h6>No Teams Yet</h6>
+                            <p class="text-muted mb-0">
+                                Create your first doubles team and start sending invitations!
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- =======================
+             RIGHT: INVITATIONS
+        ======================== -->
+        <div class="col-lg-6 mb-4">
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <h3 class="mb-0">
+                        <i class="fas fa-envelope text-purple me-2"></i>Team Invitations
+                    </h3>
+                </div>
+                <div class="card-body">
+
+                    <!-- RECEIVED INVITES -->
+                    {% if pending_invitations %}
+                        <h6 class="text-cyan mb-3">
+                            <i class="fas fa-inbox me-1"></i>
+                            Received ({{ pending_invitations|length }})
+                        </h6>
+                        {% for inv in pending_invitations %}
+                        <div class="invitation-card p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ inv.inviter_name }}</h6>
+                                    <p class="small text-muted mb-1">
+                                        <strong>Team:</strong> {{ inv.team_name }}
+                                    </p>
+                                    <p class="small text-muted mb-0">
+                                        <i class="fas fa-calendar me-1"></i>{{ inv.created_at }}
+                                    </p>
                                 </div>
                                 <div class="d-flex flex-column gap-2">
-                                    <button class="btn btn-sm btn-success" onclick="respondToInvitation({{ invitation.id }}, 'accept')">
+                                    <button class="btn btn-sm btn-success"
+                                            onclick="respondToInvitation({{ inv.invitation_id }}, 'accept')">
                                         <i class="fas fa-check me-1"></i>Accept
                                     </button>
-                                    <button class="btn btn-sm btn-danger" onclick="respondToInvitation({{ invitation.id }}, 'decline')">
+                                    <button class="btn btn-sm btn-danger"
+                                            onclick="respondToInvitation({{ inv.invitation_id }}, 'decline')">
                                         <i class="fas fa-times me-1"></i>Decline
                                     </button>
                                 </div>
@@ -115,26 +145,24 @@
                         {% endfor %}
                     {% endif %}
 
-                    <!-- Sent Invitations -->
+                    <!-- SENT INVITES -->
                     {% if sent_invitations %}
-                        <h6 class="text-green mb-3 mt-4">
-                            <i class="fas fa-paper-plane me-1"></i>Sent ({{ sent_invitations|length }})
+                        <h6 class="text-green mt-4 mb-3">
+                            <i class="fas fa-paper-plane me-1"></i>
+                            Sent ({{ sent_invitations|length }})
                         </h6>
-                        {% for invitation in sent_invitations %}
-                        <div class="invitation-card mb-3 p-3">
+                        {% for inv in sent_invitations %}
+                        <div class="invitation-card p-3 mb-3">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="mb-1">{{ invitation.invitee_name }}</h6>
-                                    <p class="text-muted mb-1">
-                                        {% if invitation.team_name %}
-                                            Team: {{ invitation.team_name }}
-                                        {% endif %}
+                                    <h6 class="mb-1">{{ inv.invitee_name }}</h6>
+                                    <p class="small text-muted mb-1">
+                                        <strong>Team:</strong> {{ inv.team_name }}
                                     </p>
-                                    <p class="small text-secondary">{{ invitation.created_at }}</p>
+                                    <p class="small text-muted mb-0">
+                                        <i class="fas fa-clock me-1"></i>Pending
+                                    </p>
                                 </div>
-                                <span class="badge bg-warning">
-                                    <i class="fas fa-clock me-1"></i>Pending
-                                </span>
                             </div>
                         </div>
                         {% endfor %}
@@ -142,404 +170,513 @@
 
                     {% if not pending_invitations and not sent_invitations %}
                         <div class="text-center py-4">
-                            <i class="fas fa-envelope-open text-muted display-1 mb-3"></i>
+                            <i class="fas fa-envelope-open display-4 text-muted mb-3"></i>
                             <h6>No Invitations</h6>
-                            <p class="text-muted">No pending team invitations</p>
+                            <p class="text-muted mb-0">You have no pending team invitations.</p>
                         </div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Invite Player Section -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card-modern">
-                <div class="card-header-modern">
-                    <h3 class="mb-0">
-                        <i class="fas fa-user-plus text-orange me-2"></i>
-                        Invite a Player to Form a Team
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <form id="inviteTeamForm" class="row g-3">
-                        <div class="col-md-4 position-relative">
-                            <label for="playerSelect" class="form-label">Select Player</label>
-                                <input type="text" class="form-control" id="playerSearch" placeholder="Search players by username...">
-                                    <ul class="list-group position-absolute w-100 mt-1" id="searchResults"></ul>
-                                <!-- Players will be loaded via JavaScript -->
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="teamName" class="form-label">Team Name (Optional)</label>
-                            <input type="text" class="form-control" id="teamName" placeholder="e.g., Thunder Paddles">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="teamLocation" class="form-label">Location</label>
-                            <input type="text" class="form-control" id="teamLocation" placeholder="City, State" required>
-                        </div>
-                        <div class="col-md-2">
-                            <label for="travelRadius" class="form-label">Travel Radius</label>
-                            <select class="form-select" id="travelRadius">
-                                <option value="5">5 miles</option>
-                                <option value="10" selected>10 miles</option>
-                                <option value="15">15 miles</option>
-                                <option value="25">25 miles</option>
-                                <option value="50">50 miles</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTeamModal">
-        <i class="fas fa-plus me-2"></i>Create Team
-    </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
+<!-- =======================
+     MODALS
+======================= -->
 
-<!-- CSS Styles -->
- 
+<!-- CREATE TEAM MODAL -->
+<div class="modal fade" id="createTeamModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">
+            <i class="fas fa-users me-1"></i>Create Team
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="createTeamForm">
+          <div class="mb-3">
+            <label class="form-label">Team Name</label>
+            <input type="text" id="newTeamName" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Home Court</label>
+            <input type="text" id="newHomeCourt" class="form-control" placeholder="City or court name">
+          </div>
+
+          <div class="mb-3 position-relative">
+            <label class="form-label">Invite Player</label>
+            <input type="text" id="modalPlayerSearch" class="form-control" placeholder="Search by username">
+            <ul id="modalSearchResults" class="list-group position-absolute w-100 mt-1" style="display:none;"></ul>
+          </div>
+
+          <button type="submit" class="btn btn-success w-100">
+            <i class="fas fa-paper-plane me-1"></i>Create &amp; Send Invite
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- EDIT TEAM MODAL (captains only) -->
+<div class="modal fade" id="editTeamModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">
+            <i class="fas fa-edit me-1"></i>Edit Team
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="editTeamForm">
+          <input type="hidden" id="editTeamId">
+          <div class="mb-3">
+            <label class="form-label">Team Name</label>
+            <input type="text" id="editTeamName" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Home Court</label>
+            <input type="text" id="editHomeCourt" class="form-control">
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-save me-1"></i>Save Changes
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ADD MEMBER MODAL (captains only) -->
+<div class="modal fade" id="addMemberModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">
+            <i class="fas fa-user-plus me-1"></i>Add Player to Team
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="addMemberForm">
+          <input type="hidden" id="addMemberTeamId">
+          <p class="small mb-2">
+            Team: <span id="addMemberTeamName" class="fw-bold"></span>
+          </p>
+
+          <div class="mb-3 position-relative">
+            <label class="form-label">Search Player</label>
+            <input type="text" id="addMemberSearch" class="form-control" placeholder="Search by username">
+            <ul id="addMemberResults" class="list-group position-absolute w-100 mt-1" style="display:none;"></ul>
+          </div>
+
+          <button type="submit" class="btn btn-success w-100">
+            <i class="fas fa-paper-plane me-1"></i>Send Invitation
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- =======================
+     STYLES
+======================= -->
 <style>
-.doubles-team-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-md);
-    backdrop-filter: blur(10px);
-    transition: var(--transition-normal);
-}
-
-.doubles-team-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-    border-color: var(--neon-cyan);
-}
-
+.doubles-team-card,
 .invitation-card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-sm);
-    backdrop-filter: blur(10px);
-    transition: var(--transition-normal);
+    border-radius: var(--border-radius-md);
+    backdrop-filter: blur(6px);
+    transition: 0.2s ease;
 }
 
+.doubles-team-card:hover,
 .invitation-card:hover {
-    border-color: var(--neon-purple);
-    box-shadow: var(--shadow-neon-purple);
+    transform: translateY(-2px);
+    border-color: var(--neon-cyan);
 }
 
-.team-stats .badge {
-    font-size: 0.85rem;
-    padding: 0.5rem 0.75rem;
-}
-
-.btn-cyan {
-    background: var(--gradient-primary);
-    border: none;
-    color: white !important;
-    font-weight: 600;
-    transition: var(--transition-normal);
-}
-
-.btn-cyan:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-neon-cyan);
-    color: white !important;
-}
-</style>
-<style>
-#searchResults {
-    position: absolute;
+#modalSearchResults,
+#addMemberResults {
+    background: #000;
     z-index: 5000;
-    background: #000; /* solid black background */
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-sm);
-    color: #fff; /* white text */
     max-height: 240px;
     overflow-y: auto;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
 }
 
-#searchResults .list-group-item {
+#modalSearchResults .list-group-item,
+#addMemberResults .list-group-item {
     background: #000;
     color: #fff;
     border: none;
-    padding: 0.6rem 0.8rem;
 }
 
-#searchResults .list-group-item:hover {
-    background: #111; /* slightly lighter black on hover */
+#modalSearchResults .list-group-item:hover,
+#addMemberResults .list-group-item:hover {
+    background: #111;
     cursor: pointer;
 }
 </style>
 
-
-
-
-
-<!-- JavaScript -->
+<!-- =======================
+     SCRIPTS
+======================= -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    setupInviteForm();
-});
-
-
-document.addEventListener('DOMContentLoaded', function() {
-    // ===========================
-    // 🔍 MAIN PAGE PLAYER SEARCH
-    // ===========================
-    const playerSearch = document.getElementById('playerSearch');
-    const searchResults = document.getElementById('searchResults');
-
-    if (playerSearch && searchResults) {
-        playerSearch.addEventListener('input', function() {
-            const query = this.value.trim();
-            searchResults.innerHTML = '';
-
-            if (query.length < 2) return;
-
-            fetch(`/api/search_players?q=${encodeURIComponent(query)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        data.players.forEach(player => {
-                            const li = document.createElement('li');
-                            li.className = 'list-group-item list-group-item-action';
-                            li.textContent = `${player.username || player.full_name} (${player.location1 || 'No location'})`;
-                            li.onclick = () => {
-                                playerSearch.value = player.username || player.full_name;
-                                playerSearch.dataset.playerId = player.id;
-                                searchResults.innerHTML = '';
-                            };
-                            searchResults.appendChild(li);
-                        });
-                    }
-                })
-                .catch(err => console.error("Search error:", err));
-        });
-    }
-
-    // ===========================
-    // 🧱 CREATE TEAM FORM
-    // ===========================
-    const createTeamForm = document.getElementById('createTeamForm');
-    if (createTeamForm) {
-        createTeamForm.addEventListener('submit', e => {
-            e.preventDefault();
-            const name = document.getElementById('newTeamName').value.trim();
-            const home = document.getElementById('newHomeCourt').value.trim();
-            const modalField = document.getElementById('modalPlayerSearch');
-            const invitee = modalField && modalField.dataset ? modalField.dataset.playerId : null;
-
-            if (!invitee) {
-                showNotification('Please select a player to invite', 'warning');
-                return;
-            }
-
-            fetch('/create_team', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({team_name: name, home_court: home, invitee_id: invitee})
-            })
-            .then(r => r.json())
-            .then(data => {
-                console.log("Create team response:", data);
-                showNotification(data.message, data.success ? 'success' : 'danger');
-                if (data.success) setTimeout(()=>location.reload(), 1500);
-            })
-            .catch(err => {
-                console.error("Error creating team:", err);
-                showNotification('Server error while creating team.', 'danger');
-            });
-        });
-    }
-
-    // ===========================
-    // 🔎 MODAL SEARCH FIELD
-    // ===========================
-    // ===========================
-// 🔎 MODAL PLAYER SEARCH
-// ===========================
-const modalSearch = document.getElementById('modalPlayerSearch');
-const modalSearchResults = document.getElementById('modalSearchResults');
-
-if (modalSearch && modalSearchResults) {
-    modalSearch.addEventListener('input', function() {
-        const query = this.value.trim();
-        modalSearchResults.innerHTML = '';
-
-        if (query.length < 2) return; // don't search until at least 2 chars
-
-        fetch(`/api/search_players?q=${encodeURIComponent(query)}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.players.length > 0) {
-                    modalSearchResults.style.display = 'block'; // make sure visible
-
-                    data.players.forEach(player => {
-                        const li = document.createElement('li');
-                        li.className = 'list-group-item list-group-item-action';
-                        li.textContent = `${player.username || player.full_name} (${player.location1 || 'No location'})`;
-
-                        // when clicked, fill in and save player id
-                        li.addEventListener('click', () => {
-                            modalSearch.value = player.username || player.full_name;
-                            modalSearch.dataset.playerId = player.id;
-                            modalSearchResults.innerHTML = '';
-                            modalSearchResults.style.display = 'none';
-                            console.log("Selected player id:", player.id); // 👀 Debug check
-                        });
-
-                        modalSearchResults.appendChild(li);
-                    });
-                } else {
-                    modalSearchResults.style.display = 'none';
-                }
-            })
-            .catch(err => {
-                console.error("Modal search error:", err);
-                modalSearchResults.style.display = 'none';
-            });
-    });
-}
-
-    // ===========================
-    // 📬 RESPOND TO INVITES
-    // ===========================
-    window.respondToInvitation = function(invitationId, response) {
-        fetch('/respond_team_invitation', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({invitation_id: invitationId, response: response})
-        })
-        .then(res => res.json())
-        .then(data => {
-            showNotification(data.message, data.success ? 'success' : 'danger');
-            if (data.success) setTimeout(()=>location.reload(), 1500);
-        })
-        .catch(err => console.error("Error responding:", err));
-    }
-
-    // ===========================
-    // 💬 SHOW NOTIFICATIONS
-    // ===========================
+document.addEventListener("DOMContentLoaded", () => {
+    // -------------------------------
+    // Toast Helper
+    // -------------------------------
     window.showNotification = function(message, type) {
-        const notification = document.createElement('div');
-        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-        notification.style.top = '100px';
-        notification.style.right = '20px';
-        notification.style.zIndex = '9999';
-        notification.style.minWidth = '300px';
-        notification.innerHTML = `
+        const box = document.createElement("div");
+        box.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        box.style.top = "100px";
+        box.style.right = "20px";
+        box.style.zIndex = "9999";
+        box.style.minWidth = "260px";
+        box.innerHTML = `
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
-        document.body.appendChild(notification);
+        document.body.appendChild(box);
         setTimeout(() => {
-            if (notification.parentNode) notification.remove();
+            if (box.parentNode) box.remove();
         }, 5000);
     };
-});
 
+    // -------------------------------
+    // Modal player search (Create Team)
+    // -------------------------------
+    const modalPlayerSearch = document.getElementById("modalPlayerSearch");
+    const modalSearchResults = document.getElementById("modalSearchResults");
 
-function setupInviteForm() {
-    document.getElementById('inviteTeamForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = {
-            invitee_id: document.getElementById('playerSelect').value,
-            team_name: document.getElementById('teamName').value,
-            location: document.getElementById('teamLocation').value,
-            travel_radius: document.getElementById('travelRadius').value
-        };
-        
-        if (!formData.invitee_id) {
-            showNotification('Please select a player to invite', 'warning');
-            return;
-        }
-        
-        if (!formData.location) {
-            showNotification('Please enter a location', 'warning');
-            return;
-        }
-        
-        fetch('/send_team_invitation', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showNotification(data.message, 'success');
-                this.reset();
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                showNotification(data.message, 'danger');
+    if (modalPlayerSearch && modalSearchResults) {
+        modalPlayerSearch.addEventListener("input", () => {
+            const q = modalPlayerSearch.value.trim();
+            modalSearchResults.innerHTML = "";
+            if (q.length < 2) {
+                modalSearchResults.style.display = "none";
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('Error sending invitation', 'danger');
+
+            fetch(`/api/search_players?q=${encodeURIComponent(q)}`)
+                .then(r => r.json())
+                .then(d => {
+                    if (!d.success || !d.players || d.players.length === 0) {
+                        modalSearchResults.style.display = "none";
+                        return;
+                    }
+
+                    d.players.forEach(p => {
+                        const li = document.createElement("li");
+                        li.className = "list-group-item list-group-item-action";
+                        li.textContent = p.username || p.full_name;
+                        li.addEventListener("click", () => {
+                            modalPlayerSearch.value = p.username || p.full_name;
+                            modalPlayerSearch.dataset.playerId = p.id;
+                            modalSearchResults.innerHTML = "";
+                            modalSearchResults.style.display = "none";
+                        });
+                        modalSearchResults.appendChild(li);
+                    });
+
+                    modalSearchResults.style.display = "block";
+                })
+                .catch(err => {
+                    console.error("Modal search error:", err);
+                    modalSearchResults.style.display = "none";
+                });
         });
-    });
-}
+    }
 
-function respondToInvitation(invitationId, response) {
-    fetch('/respond_team_invitation', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            invitation_id: invitationId,
-            response: response
+    // -------------------------------
+    // Create Team + initial invite
+    // -------------------------------
+    const createTeamForm = document.getElementById("createTeamForm");
+    if (createTeamForm) {
+        createTeamForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById("newTeamName").value.trim();
+            const home = document.getElementById("newHomeCourt").value.trim();
+            const inviteeId = modalPlayerSearch && modalPlayerSearch.dataset
+                ? modalPlayerSearch.dataset.playerId
+                : null;
+
+            if (!name) {
+                showNotification("Please enter a team name.", "warning");
+                return;
+            }
+
+            if (!inviteeId) {
+                showNotification("Please select a player to invite.", "warning");
+                return;
+            }
+
+            fetch("/create_team", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    team_name: name,
+                    home_court: home,
+                    invitee_id: inviteeId
+                })
+            })
+            .then(r => r.json())
+            .then(d => {
+                console.log("Create team response:", d);
+                if (d.success) {
+                    showNotification(d.message || "Team created!", "success");
+                    const modalEl = document.getElementById("createTeamModal");
+                    const m = bootstrap.Modal.getInstance(modalEl);
+                    if (m) m.hide();
+                    createTeamForm.reset();
+                    if (modalPlayerSearch && modalPlayerSearch.dataset) {
+                        delete modalPlayerSearch.dataset.playerId;
+                    }
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showNotification(d.message || "Failed to create team.", "danger");
+                }
+            })
+            .catch(err => {
+                console.error("Error creating team:", err);
+                showNotification("Server error while creating team.", "danger");
+            });
+        });
+    }
+
+    // -------------------------------
+    // Edit Team (captain only)
+    // -------------------------------
+    window.openEditTeamModal = function(teamId, teamName, homeCourt) {
+        document.getElementById("editTeamId").value = teamId;
+        document.getElementById("editTeamName").value = teamName || "";
+        document.getElementById("editHomeCourt").value = homeCourt || "";
+
+        const modalEl = document.getElementById("editTeamModal");
+        const m = new bootstrap.Modal(modalEl);
+        m.show();
+    };
+
+    const editTeamForm = document.getElementById("editTeamForm");
+    if (editTeamForm) {
+        editTeamForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const teamId = document.getElementById("editTeamId").value;
+            const name = document.getElementById("editTeamName").value.trim();
+            const home = document.getElementById("editHomeCourt").value.trim();
+
+            if (!name) {
+                showNotification("Team name cannot be empty.", "warning");
+                return;
+            }
+
+            fetch("/update_team", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    team_id: teamId,
+                    team_name: name,
+                    home_court: home
+                })
+            })
+            .then(r => r.json())
+            .then(d => {
+                showNotification(d.message || "Team updated.", d.success ? "success" : "danger");
+                if (d.success) {
+                    const modalEl = document.getElementById("editTeamModal");
+                    const m = bootstrap.Modal.getInstance(modalEl);
+                    if (m) m.hide();
+                    setTimeout(() => window.location.reload(), 1200);
+                }
+            })
+            .catch(err => {
+                console.error("Error updating team:", err);
+                showNotification("Server error while updating team.", "danger");
+            });
+        });
+    }
+
+    // -------------------------------
+    // Add Member (invite) - captain only
+    // -------------------------------
+    window.openAddMemberModal = function(teamId, teamName) {
+        document.getElementById("addMemberTeamId").value = teamId;
+        document.getElementById("addMemberTeamName").textContent = teamName;
+
+        const modalEl = document.getElementById("addMemberModal");
+        const m = new bootstrap.Modal(modalEl);
+        m.show();
+    };
+
+    const addMemberSearch = document.getElementById("addMemberSearch");
+    const addMemberResults = document.getElementById("addMemberResults");
+
+    if (addMemberSearch && addMemberResults) {
+        addMemberSearch.addEventListener("input", () => {
+            const q = addMemberSearch.value.trim();
+            addMemberResults.innerHTML = "";
+            if (q.length < 2) {
+                addMemberResults.style.display = "none";
+                return;
+            }
+
+            fetch(`/api/search_players?q=${encodeURIComponent(q)}`)
+                .then(r => r.json())
+                .then(d => {
+                    if (!d.success || !d.players || d.players.length === 0) {
+                        addMemberResults.style.display = "none";
+                        return;
+                    }
+
+                    d.players.forEach(p => {
+                        const li = document.createElement("li");
+                        li.className = "list-group-item list-group-item-action";
+                        li.textContent = p.username || p.full_name;
+                        li.addEventListener("click", () => {
+                            addMemberSearch.value = p.username || p.full_name;
+                            addMemberSearch.dataset.playerId = p.id;
+                            addMemberResults.innerHTML = "";
+                            addMemberResults.style.display = "none";
+                        });
+                        addMemberResults.appendChild(li);
+                    });
+
+                    addMemberResults.style.display = "block";
+                })
+                .catch(err => {
+                    console.error("Add member search error:", err);
+                    addMemberResults.style.display = "none";
+                });
+        });
+    }
+
+    const addMemberForm = document.getElementById("addMemberForm");
+    if (addMemberForm) {
+        addMemberForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const teamId = document.getElementById("addMemberTeamId").value;
+            const inviteeId = addMemberSearch && addMemberSearch.dataset
+                ? addMemberSearch.dataset.playerId
+                : null;
+
+            if (!inviteeId) {
+                showNotification("Please select a player to invite.", "warning");
+                return;
+            }
+
+            fetch("/team_add_member", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    team_id: teamId,
+                    invitee_id: inviteeId
+                })
+            })
+            .then(r => r.json())
+            .then(d => {
+                showNotification(d.message || "Invitation sent.", d.success ? "success" : "danger");
+                if (d.success) {
+                    const modalEl = document.getElementById("addMemberModal");
+                    const m = bootstrap.Modal.getInstance(modalEl);
+                    if (m) m.hide();
+                    addMemberForm.reset();
+                    if (addMemberSearch && addMemberSearch.dataset) {
+                        delete addMemberSearch.dataset.playerId;
+                    }
+                    setTimeout(() => window.location.reload(), 1200);
+                }
+            })
+            .catch(err => {
+                console.error("Error adding member:", err);
+                showNotification("Server error while sending invitation.", "danger");
+            });
+        });
+    }
+
+    // -------------------------------
+    // Delete Team (captain only)
+    // -------------------------------
+    window.deleteTeam = function(teamId) {
+        if (!confirm("Are you sure you want to delete this team? This cannot be undone.")) return;
+
+        fetch("/delete_team", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ team_id: teamId })
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification(data.message, 'success');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showNotification(data.message, 'danger');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Error responding to invitation', 'danger');
-    });
-}
+        .then(r => r.json())
+        .then(d => {
+            showNotification(d.message || "Team deleted.", d.success ? "success" : "danger");
+            if (d.success) setTimeout(() => window.location.reload(), 1200);
+        })
+        .catch(err => {
+            console.error("Error deleting team:", err);
+            showNotification("Server error while deleting team.", "danger");
+        });
+    };
 
-function showNotification(message, type) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    notification.style.top = '100px';
-    notification.style.right = '20px';
-    notification.style.zIndex = '9999';
-    notification.style.minWidth = '300px';
-    
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-}
+    // -------------------------------
+    // Leave Team (non-captain)
+    // -------------------------------
+    window.leaveTeam = function(teamId) {
+        if (!confirm("Are you sure you want to leave this team?")) return;
 
+        fetch("/team_leave", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ team_id: teamId })
+        })
+        .then(r => r.json())
+        .then(d => {
+            showNotification(d.message || "You left the team.", d.success ? "success" : "danger");
+            if (d.success) setTimeout(() => window.location.reload(), 1200);
+        })
+        .catch(err => {
+            console.error("Error leaving team:", err);
+            showNotification("Server error while leaving team.", "danger");
+        });
+    };
+
+    // -------------------------------
+    // Accept / Decline team invitations
+    // -------------------------------
+    window.respondToInvitation = function(invitationId, action) {
+        fetch("/respond_team_invitation", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                invitation_id: invitationId,
+                response: action
+            })
+        })
+        .then(r => r.json())
+        .then(d => {
+            showNotification(d.message || "Request processed.", d.success ? "success" : "danger");
+            if (d.success) setTimeout(() => window.location.reload(), 1200);
+        })
+        .catch(err => {
+            console.error("Error responding to invitation:", err);
+            showNotification("Server error while responding to invitation.", "danger");
+        });
+    };
+});
 </script>
+
 {% endblock %}
